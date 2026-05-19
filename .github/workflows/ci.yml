@@ -28,7 +28,7 @@ jobs:
       - name: Biome lint
         run: npm run lint
 
-      # TypeScript strict mode — fail on any type error.
+      # TypeScript strict mode - fail on any type error.
       - name: Typecheck
         run: npm run typecheck
 

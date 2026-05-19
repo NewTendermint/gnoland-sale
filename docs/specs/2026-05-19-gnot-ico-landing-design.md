@@ -1,4 +1,4 @@
-# GNOT Token Sale Landing — Design Document (ADR)
+# GNOT Token Sale Landing - Design Document (ADR)
 
 **Status**: Draft for review
 **Date**: 2026-05-19
@@ -25,7 +25,7 @@ We build the **frontend experience** at `sale.gno.land` (subdomain TBD): a marke
 - Goal-driven: every design decision serves the $2M conversion target
 
 **Reference designs**:
-- newtendermint.org (clean, focused, hero impact — same visual DNA)
+- newtendermint.org (clean, focused, hero impact - same visual DNA)
 - sale.fluent.xyz (split layout, sticky bid panel)
 - monad.xyz (overall site polish)
 - Plasma announcement (information density treatment)
@@ -40,11 +40,11 @@ Build `sale.gno.land` as a **Next.js 15 (App Router) site on Netlify**, integrat
 
 **Implementation order is layered, not big-bang**:
 
-1. **Layer 1 — Skeleton + UX**: Structure semantique, layout, navigation, interactions clavier/souris. **2 couleurs max** (bg + foreground), espacement et typographie de base. Tout interactif fonctionne, rien n'est "joli".
-2. **Layer 2 — Functionality**: Sonar OAuth, wallet connect, bid flow, Server Actions, DB, security headers. End-to-end testable sur sandbox.
-3. **Layer 3 — Design tokens**: Palette complète injectée (mint, blue, amber, red, glassmorph), typographie finalisée, dark backgrounds finaux.
-4. **Layer 4 — Voxel + illustrations**: Hero WebGL scene + illustrations sections (au fur et à mesure que les assets arrivent du designer).
-5. **Layer 5 — Motion + polish**: Lenis, fade-ups, magnetic cursor, counter-up, scroll-pin roadmap, parallax.
+1. **Layer 1 - Skeleton + UX**: Structure semantique, layout, navigation, interactions clavier/souris. **2 couleurs max** (bg + foreground), espacement et typographie de base. Tout interactif fonctionne, rien n'est "joli".
+2. **Layer 2 - Functionality**: Sonar OAuth, wallet connect, bid flow, Server Actions, DB, security headers. End-to-end testable sur sandbox.
+3. **Layer 3 - Design tokens**: Palette complète injectée (mint, blue, amber, red, glassmorph), typographie finalisée, dark backgrounds finaux.
+4. **Layer 4 - Voxel + illustrations**: Hero WebGL scene + illustrations sections (au fur et à mesure que les assets arrivent du designer).
+5. **Layer 5 - Motion + polish**: Lenis, fade-ups, magnetic cursor, counter-up, scroll-pin roadmap, parallax.
 
 **Why this order**:
 - Skeleton tôt = UX validable avant d'investir dans le visuel
@@ -141,12 +141,12 @@ Browser ─────────►│  │ - SSG/RSC marketing      │   �
 
 ### 4.2 What stays server-side (never exposed)
 
-**Note on OAuth credentials**: Sonar uses PKCE with `clientUUID` (public identifier, not a secret). There is **no `client_secret`** for PKCE public clients — the security guarantee comes from PKCE `codeVerifier` + per-user access tokens. We confirmed this by reading Sonar docs; the only identifier referenced is `clientUUID`. ⚠️ If Sonar later issues a secret for confidential clients, treat it like access tokens (server-only, encrypted).
+**Note on OAuth credentials**: Sonar uses PKCE with `clientUUID` (public identifier, not a secret). There is **no `client_secret`** for PKCE public clients - the security guarantee comes from PKCE `codeVerifier` + per-user access tokens. We confirmed this by reading Sonar docs; the only identifier referenced is `clientUUID`. ⚠️ If Sonar later issues a secret for confidential clients, treat it like access tokens (server-only, encrypted).
 
 Server-only items:
 - `accessToken` / `refreshToken` per user (encrypted at-rest via envelope encryption)
 - Encryption master key (`ENCRYPTION_KEY`, 32-byte hex, env var only)
-- IP HMAC pepper (`IP_HMAC_PEPPER`, 32-byte hex, env var only — see §4.7)
+- IP HMAC pepper (`IP_HMAC_PEPPER`, 32-byte hex, env var only - see §4.7)
 - Session signing/encryption secret (`SESSION_PASSWORD`, 32+ chars, env var only)
 - `codeVerifier` (PKCE, in Netlify Blobs with `expiresAt` metadata, deleted post-exchange)
 - All Sonar API calls: `listAvailableEntities`, `prePurchaseCheck`, `generatePurchasePermit`
@@ -158,7 +158,7 @@ Server-only items:
 
 ### 4.3 What lives client-side (legitimate)
 
-- Wallet connect (wagmi/RainbowKit) — user's wallet, not a secret
+- Wallet connect (wagmi/RainbowKit) - user's wallet, not a secret
 - Submission of **already-signed** permit to `SettlementSale.commit()` via wagmi `writeContract`
 - UI state, animations, public clearing price (poll via TanStack Query against our own `/api/sonar/commitments` proxy)
 
@@ -225,11 +225,11 @@ Server-only items:
 
 **Increase bid later**: same `replaceBidWithPermit()` flow with a higher amount. Sonar enforces "amounts can only go up, never down" at the contract level.
 
-**Cancel / reduce / refund**: separate contract methods (`cancelBid`, `reduceCommitment`, `claimRefund`) — wired in UI as secondary actions where enabled by sale config.
+**Cancel / reduce / refund**: separate contract methods (`cancelBid`, `reduceCommitment`, `claimRefund`) - wired in UI as secondary actions where enabled by sale config.
 
 **Pre-flight wallet gates** (block bid CTA until all satisfied):
 - Wallet connected (wagmi `isConnected`)
-- Chain is Base (`useChainId() === base.id`) — if not, show "Switch to Base" CTA
+- Chain is Base (`useChainId() === base.id`) - if not, show "Switch to Base" CTA
 - User has sufficient USDC/USDT balance (read via wagmi `useBalance`)
 - KYC complete (Sonar entity check)
 - Sale is in `Active` stage (`stage()` read from contract)
@@ -280,7 +280,7 @@ This section formalizes what data crosses our system boundaries and proves that,
 
 Three categories of data live in our DB:
 
-1. **Already-public data** (wallet addresses, entity UUIDs, bid amounts, timestamps): stored in clear. Hashing/truncating provides false anonymization — ~250M EVM wallets are rainbow-table-able and UUIDs are too. Storing in clear is more useful for forensics and provides equivalent security to a poorly hashed form.
+1. **Already-public data** (wallet addresses, entity UUIDs, bid amounts, timestamps): stored in clear. Hashing/truncating provides false anonymization - ~250M EVM wallets are rainbow-table-able and UUIDs are too. Storing in clear is more useful for forensics and provides equivalent security to a poorly hashed form.
 
 2. **Secrets** (OAuth access/refresh tokens): encrypted via libsodium AES-256-GCM, master key in env `ENCRYPTION_KEY`, NEVER stored in DB.
 
@@ -324,18 +324,18 @@ Allowed keys:
 - full permit signatures
 - any string > 256 chars (heuristic guard against accidental dumps)
 
-#### Reconstruction matrix — what an attacker with full access can extract
+#### Reconstruction matrix - what an attacker with full access can extract
 
 Worst case: attacker has full DB + `ENCRYPTION_KEY` + `IP_HMAC_PEPPER`.
 
 | Sensitive data | Reconstructable? | Why |
 |---|---|---|
-| Bidder identity (name/email/DOB/docs) | ❌ NO | We never receive it — Sonar holds it exclusively |
-| Wallet ↔ identity linkage | ❌ NO | Same — Sonar's database is the only source |
+| Bidder identity (name/email/DOB/docs) | ❌ NO | We never receive it - Sonar holds it exclusively |
+| Wallet ↔ identity linkage | ❌ NO | Same - Sonar's database is the only source |
 | KYC verification details | ❌ NO | Sonar's data, never ours |
 | Wallets that participated | ✅ Yes | But already public on Base via `SettlementSale` events |
 | Bid amounts and timestamps | ✅ Yes | Already public on-chain |
-| IPs of bidders | ❌ NO | HMAC with PEPPER; brute-force requires the PEPPER (server-only env var), and even with PEPPER would test 4B IPs per user — impractical at scale |
+| IPs of bidders | ❌ NO | HMAC with PEPPER; brute-force requires the PEPPER (server-only env var), and even with PEPPER would test 4B IPs per user - impractical at scale |
 | User-agents | ❌ NO | Only category retained; original lost at intake |
 | Sonar OAuth tokens | ✅ With `ENCRYPTION_KEY` | Useless without user's wallet private key for any financial action; Sonar can revoke; ~1h access token lifetime |
 
@@ -346,7 +346,7 @@ Worst case: attacker has full DB + `ENCRYPTION_KEY` + `IP_HMAC_PEPPER`.
 | Secret | Rotation cadence | Procedure |
 |---|---|---|
 | `ENCRYPTION_KEY` | Every 6 months OR immediately on suspected compromise | Re-encrypt all `oauth_tokens` rows in single transaction (decrypt with old key, encrypt with new), then promote new key in env |
-| `IP_HMAC_PEPPER` | Every 3 months | Old `ip_hmac` entries become unverifiable (acceptable — only matters for live abuse detection windows, not long-term audit) |
+| `IP_HMAC_PEPPER` | Every 3 months | Old `ip_hmac` entries become unverifiable (acceptable - only matters for live abuse detection windows, not long-term audit) |
 | `SESSION_PASSWORD` | Every 6 months | Forces all sessions to expire (acceptable inconvenience) |
 
 All three secrets stored in Netlify env vars, scoped to `production` deploy context (preview deploys use different values).
@@ -358,16 +358,16 @@ All three secrets stored in Netlify env vars, scoped to `production` deploy cont
   DELETE FROM oauth_tokens WHERE expires_at < now() - interval '7 days';
   ```
   Full table wipe scheduled for **30 days post-sale-close** (no operational need to retain tokens once sale is settled).
-- **`audit_log`**: 5 years retention (financial compliance default — confirm with legal counsel). After 5 years, archive to cold storage or hard-delete per regulator stance. No automated cleanup before that.
+- **`audit_log`**: 5 years retention (financial compliance default - confirm with legal counsel). After 5 years, archive to cold storage or hard-delete per regulator stance. No automated cleanup before that.
 - **PKCE state (Netlify Blobs)**: TTL 10 min via metadata; deleted on use (single-use); residual entries cleaned by daily sweep.
 
 #### GDPR / "right to be forgotten" stance
 
-A user requesting their data: we respond honestly — **we have no personal data**. The only items keyed to a user are:
-- Their wallet address (publicly visible on Base mainnet — we cannot un-publish blockchain data)
+A user requesting their data: we respond honestly - **we have no personal data**. The only items keyed to a user are:
+- Their wallet address (publicly visible on Base mainnet - we cannot un-publish blockchain data)
 - An `ip_hmac` (irreversible)
 
-We will, as a courtesy, delete their `audit_log` rows on request by wallet match. This is not a legal requirement under GDPR (the stored data isn't "personal data" by GDPR definition — wallet addresses + irreversible HMACs).
+We will, as a courtesy, delete their `audit_log` rows on request by wallet match. This is not a legal requirement under GDPR (the stored data isn't "personal data" by GDPR definition - wallet addresses + irreversible HMACs).
 
 **No procedure exists for "deleting identity" because we never had it.**
 
@@ -418,7 +418,7 @@ This lets non-devs edit `sections.md` without touching code. A CI job validates 
 
 ## 6. Visual design
 
-**Theme constraint**: **Dark background only**. No light mode toggle, no `prefers-color-scheme: light` override, no theme switcher in UI. All design tokens, illustrations, voxel scene lighting, and component states are designed exclusively for a dark UI on `#0a0e2a` deep navy. This is a final decision — light mode is explicit out-of-scope (§13).
+**Theme constraint**: **Dark background only**. No light mode toggle, no `prefers-color-scheme: light` override, no theme switcher in UI. All design tokens, illustrations, voxel scene lighting, and component states are designed exclusively for a dark UI on `#0a0e2a` deep navy. This is a final decision - light mode is explicit out-of-scope (§13).
 
 ### 6.1 Voxel dosage (3 levels)
 
@@ -461,7 +461,7 @@ This lets non-devs edit `sections.md` without touching code. A CI job validates 
   - CTA primary `Place a bid` (mint, magnetic cursor)
   - Secondary: `View docs · FAQ`
 
-### 6.4 Bid panel — 3 states
+### 6.4 Bid panel - 3 states
 
 | State | Trigger | Visual |
 |---|---|---|
@@ -480,7 +480,7 @@ Detach transition: 400ms `ease-out-quart`, transform + opacity only (no layout s
 | LCP | < 2.5s on 3G simulated | Text + panel render BEFORE canvas hydrates |
 | INP | < 100ms | WebGL never blocks main thread |
 | FPS target | 60fps; <30fps → fallback poster | Monitor `renderer.info.memory` |
-| GPU memory | < 100MB | — |
+| GPU memory | < 100MB | - |
 
 ### 6.6 Fallback strategy (paranoia, mirror of security)
 
@@ -563,7 +563,7 @@ A `/dev/states` Next.js route renders all widget states side-by-side. Visible on
 ### 9.4 Sonar sandbox
 
 Per-PR Netlify deploy preview connects to:
-- Sonar Echo sandbox (`api.sandbox.echo.xyz` — verify exact URL)
+- Sonar Echo sandbox (`api.sandbox.echo.xyz` - verify exact URL)
 - Base Sepolia testnet (`https://sepolia.base.org`)
 - Per-PR Netlify DB branch (isolated)
 
@@ -671,7 +671,7 @@ Already tracked in `content/sections.md` TBD summary, plus:
 - [ ] Sandbox identifier: confirm Base Sepolia is the testnet target
 - [ ] `replaceBidWithPermit()` exact ABI signature + Solidity struct layout for permit (need contract source or types from `sonar-core`)
 - [ ] EIP-2612 USDC permit signing: handled by sonar-core server-side, or client must sign? (impacts UX)
-- [ ] Whether Sonar provides webhooks for sale lifecycle events (commitment, sale closed, etc.) — if yes, HMAC verification
+- [ ] Whether Sonar provides webhooks for sale lifecycle events (commitment, sale closed, etc.) - if yes, HMAC verification
 - [ ] OAuth consent screen branding requirements (square + wide logo specs)
 - [ ] Geographic restrictions: confirmed list of blocked jurisdictions for this sale
 - [ ] `saleUUID` provisioning timeline (when does Sonar give us the prod UUID?)
@@ -679,7 +679,7 @@ Already tracked in `content/sections.md` TBD summary, plus:
 
 ### Verifications needed internally (non-blocking)
 - [ ] Final subdomain: `sale.gno.land` confirmed?
-- [ ] `sonar-react@0.14.0` compatibility with Next.js 15 App Router (RSC vs Client Components) — verify on day 1 of scaffolding
+- [ ] `sonar-react@0.14.0` compatibility with Next.js 15 App Router (RSC vs Client Components) - verify on day 1 of scaffolding
 - [ ] Drizzle migrations strategy with per-branch Netlify DB (auto-run on deploy?)
 - [ ] Final voxel asset count + format split (`.vox` vs `.jpeg`) from designer
 - [ ] MiCA whitepaper URL (legal team)
@@ -732,4 +732,4 @@ Already tracked in `content/sections.md` TBD summary, plus:
 
 ---
 
-*Draft v1 — 2026-05-19 — Awaiting user review before implementation plan.*
+*Draft v1 - 2026-05-19 - Awaiting user review before implementation plan.*

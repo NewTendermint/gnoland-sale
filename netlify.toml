@@ -9,7 +9,7 @@
   package = "@netlify/plugin-nextjs"
 
 # Global security headers applied to every response.
-# CSP is intentionally NOT defined here — it is generated per-request with a
+# CSP is intentionally NOT defined here - it is generated per-request with a
 # nonce by the Next.js middleware (added in Layer 2). Static CSP in a header
 # table would be incompatible with nonce-based script policy.
 [[headers]]

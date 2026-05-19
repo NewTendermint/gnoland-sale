@@ -1,4 +1,4 @@
-# GNOT ICO Landing — Project Instructions for Claude
+# GNOT ICO Landing - Project Instructions for Claude
 
 This file is loaded at the start of each Claude Code session in this repo. It tells you what this project is, where the source of truth lives, and the conventions that **must** be respected.
 
@@ -6,7 +6,7 @@ This file is loaded at the start of each Claude Code session in this repo. It te
 
 ## What this is
 
-`sale.gno.land` — a Next.js 15 landing page for the **GNOT public token sale** on Sonar (Coinbase's token sale infrastructure). The sale uses a Uniform Price Auction (English) on **Base mainnet**, accepts USDC/USDT, targets **$2M+ raise**.
+`sale.gno.land` - a Next.js 15 landing page for the **GNOT public token sale** on Sonar (Coinbase's token sale infrastructure). The sale uses a Uniform Price Auction (English) on **Base mainnet**, accepts USDC/USDT, targets **$2M+ raise**.
 
 Built in 5 deployable layers: skeleton+UX → functionality → design tokens → voxel/illustrations → motion+polish.
 
@@ -16,14 +16,14 @@ Built in 5 deployable layers: skeleton+UX → functionality → design tokens �
 
 When you start a session, read these in order. They override anything you think you remember from prior sessions:
 
-1. **`docs/specs/2026-05-19-gnot-ico-landing-design.md`** — the ADR. Architecture, security model, design language, testing, deployment. If a decision is ambiguous, the ADR wins.
-2. **`docs/plans/2026-05-19-gnot-ico-landing.md`** — the implementation plan, broken into 5 layers of tasks. Execute task-by-task; commit after each.
-3. **`content/sections.md`** — the canonical copy for all 16 page sections, including TBDs and notes. Edit content here, not in components.
-4. **`docs/REQUIREMENTS_FROM_TEAMS.md`** — pending asks to Sonar / marketing / infra teams. If you're blocked on missing input, check here first.
+1. **`docs/specs/2026-05-19-gnot-ico-landing-design.md`** - the ADR. Architecture, security model, design language, testing, deployment. If a decision is ambiguous, the ADR wins.
+2. **`docs/plans/2026-05-19-gnot-ico-landing.md`** - the implementation plan, broken into 5 layers of tasks. Execute task-by-task; commit after each.
+3. **`content/sections.md`** - the canonical copy for all 16 page sections, including TBDs and notes. Edit content here, not in components.
+4. **`docs/REQUIREMENTS_FROM_TEAMS.md`** - pending asks to Sonar / marketing / infra teams. If you're blocked on missing input, check here first.
 
 ### Sonar external documentation (READ FIRST when touching Sonar/OAuth/permit/bid code)
 
-Authoritative reference for the integration — verify SDK behavior and API surfaces against these before implementing:
+Authoritative reference for the integration - verify SDK behavior and API surfaces against these before implementing:
 
 - **Frontend-with-Backend pattern (our architecture)**: https://docs.echo.xyz/sonar/integration-guides/frontend-with-backend.md
 - **OAuth + PKCE flow**: https://docs.echo.xyz/sonar/core-features/authentication.md
@@ -48,11 +48,11 @@ When Sonar SDK behavior contradicts the spec or plan, the SDK source (`node_modu
 - **Lint/format**: Biome (not ESLint, not Prettier)
 - **Hosting**: Netlify with Next.js Runtime
 - **DB**: Netlify DB (Neon-powered) + Drizzle ORM
-- **KV**: Netlify Blobs (PKCE state, with check-on-read TTL — Blobs has no auto-expiry)
-- **Auth**: Sonar OAuth 2.0 + PKCE (likely PKCE-only public client — no `client_secret`, verify on day 1)
+- **KV**: Netlify Blobs (PKCE state, with check-on-read TTL - Blobs has no auto-expiry)
+- **Auth**: Sonar OAuth 2.0 + PKCE (likely PKCE-only public client - no `client_secret`, verify on day 1)
 - **Sale SDK**: `@echoxyz/sonar-react@0.14.0` (UI hooks, client) + `@echoxyz/sonar-core@0.15.0` (server)
 - **Wallet**: wagmi v2 + RainbowKit + viem
-- **Chain**: Base mainnet (prod), Base Sepolia (preview/sandbox) — **pinned**, do not add other chains
+- **Chain**: Base mainnet (prod), Base Sepolia (preview/sandbox) - **pinned**, do not add other chains
 - **3D**: `@react-three/fiber` + `@react-three/drei` (escape to raw three.js only if R3F perf insufficient)
 - **Animation**: `motion` (ex-Framer) + GSAP ScrollTrigger (only for Roadmap pin)
 - **Smooth scroll**: Lenis
@@ -71,7 +71,7 @@ When Sonar SDK behavior contradicts the spec or plan, the SDK source (`node_modu
 - **CSP nonce-based** via Next.js middleware. No `unsafe-inline` for scripts.
 - **OAuth tokens encrypted at rest** in Netlify DB (envelope encryption with libsodium, key in `ENCRYPTION_KEY` env var).
 - **iron-session cookies**: HttpOnly + Secure + SameSite=Lax + max-age=2h rolling.
-- **Audit log** every permit issuance (hashed entityID/wallet/IP — never raw PII).
+- **Audit log** every permit issuance (hashed entityID/wallet/IP - never raw PII).
 - **Bundle scan in CI** rejects any `SONAR_*`, `ENCRYPTION_KEY`, `SESSION_PASSWORD`, `DATABASE_URL` strings in client output.
 - **PII redaction in Sentry + logs**: wallets → `0x…`, UUIDs → `uuid:…`. Never log full permits.
 - **2FA required** on Netlify + GitHub accounts (operational rule).
@@ -80,18 +80,18 @@ When Sonar SDK behavior contradicts the spec or plan, the SDK source (`node_modu
 ### Build philosophy: layered, not big-bang
 
 Implement strictly in this order:
-1. **Layer 1** — Skeleton + UX (2-color, structure, navigation)
-2. **Layer 2** — Functionality (Sonar + wallet + Server Actions, end-to-end)
-3. **Layer 3** — Design tokens (palette, typo, glassmorph)
-4. **Layer 4** — Voxel + illustrations (when designer delivers assets)
-5. **Layer 5** — Motion + polish
+1. **Layer 1** - Skeleton + UX (2-color, structure, navigation)
+2. **Layer 2** - Functionality (Sonar + wallet + Server Actions, end-to-end)
+3. **Layer 3** - Design tokens (palette, typo, glassmorph)
+4. **Layer 4** - Voxel + illustrations (when designer delivers assets)
+5. **Layer 5** - Motion + polish
 
-Each layer must ship a working Netlify preview deploy. **Never skip ahead** — Layer 4 voxel before Layer 2 functionality means you can't test the end-to-end flow.
+Each layer must ship a working Netlify preview deploy. **Never skip ahead** - Layer 4 voxel before Layer 2 functionality means you can't test the end-to-end flow.
 
 ### Design
 
 - **Dark theme only**. No light mode toggle. `prefers-color-scheme` ignored. `#0a0e2a` is the page background, period.
-- **English only** (no i18n yet — sale is launched in EN).
+- **English only** (no i18n yet - sale is launched in EN).
 - **Voxel dosage** = 3 levels (HERO, TEXTURE, ABSENT). See spec §6.1. Never decorative.
 - **Effects justified, not decorative**. No mouse trails, no scroll-hijack except Roadmap, no audio.
 - **Border-radius ≤ 8px** everywhere (voxel-modern feel, not soft 2018 marketing).
@@ -134,15 +134,15 @@ npm run db:studio               # Drizzle Studio
 ## Common pitfalls to avoid
 
 1. **Don't add an `client_secret` to OAuth config** unless Sonar explicitly confirms confidential-client mode. Default is PKCE public client.
-2. **Don't assume Netlify Blobs auto-expires entries** — check `metadata.expiresAt` on read and delete manually.
-3. **Don't import `server-only` modules into Client Components** — the `server-only` package will fail the build by design, but be mindful when adding new dependencies.
-4. **Don't bundle `@echoxyz/sonar-core` in the client** — it's server-only. `sonar-react` is the client-side companion.
-5. **Don't unpin `sonar-react` / `sonar-core`** — they're semver <1.0, breaking changes possible. Pin exact versions.
-6. **Don't add new wagmi chains** — Base mainnet (prod) and Base Sepolia (preview) only.
-7. **Don't add Storybook** — use `/dev/states` route + MSW for component state previews.
-8. **Don't hardcode copy** — edit `content/sections.md` and update the relevant component to read from it.
+2. **Don't assume Netlify Blobs auto-expires entries** - check `metadata.expiresAt` on read and delete manually.
+3. **Don't import `server-only` modules into Client Components** - the `server-only` package will fail the build by design, but be mindful when adding new dependencies.
+4. **Don't bundle `@echoxyz/sonar-core` in the client** - it's server-only. `sonar-react` is the client-side companion.
+5. **Don't unpin `sonar-react` / `sonar-core`** - they're semver <1.0, breaking changes possible. Pin exact versions.
+6. **Don't add new wagmi chains** - Base mainnet (prod) and Base Sepolia (preview) only.
+7. **Don't add Storybook** - use `/dev/states` route + MSW for component state previews.
+8. **Don't hardcode copy** - edit `content/sections.md` and update the relevant component to read from it.
 9. **Don't use `dangerouslySetInnerHTML`** anywhere. MDX/content parsing should produce React nodes, not raw HTML strings.
-10. **Don't disable CSP for convenience** — fix the underlying issue (e.g., add the domain to `connect-src` whitelist).
+10. **Don't disable CSP for convenience** - fix the underlying issue (e.g., add the domain to `connect-src` whitelist).
 
 ---
 
@@ -165,4 +165,4 @@ npm run db:studio               # Drizzle Studio
 
 ---
 
-*Last updated: 2026-05-19 — End of brainstorming, start of implementation.*
+*Last updated: 2026-05-19 - End of brainstorming, start of implementation.*

@@ -1,14 +1,14 @@
 # Requirements from external teams
 
 **Owner**: alexiscolin
-**Status**: Active — needed to unblock implementation
+**Status**: Active - needed to unblock implementation
 **Date**: 2026-05-19
 
 This document lists everything we need from **Sonar** and from the **gno.land marketing/legal team** to ship `sale.gno.land`. Items are tagged by **urgency** for the implementation timeline:
 
-- 🔴 **Blocker** — implementation cannot proceed without this
-- 🟠 **Pre-launch** — needed before mainnet go-live, but we can scaffold without it
-- 🟡 **Launch-window** — nice for launch day but post-MVP acceptable
+- 🔴 **Blocker** - implementation cannot proceed without this
+- 🟠 **Pre-launch** - needed before mainnet go-live, but we can scaffold without it
+- 🟡 **Launch-window** - nice for launch day but post-MVP acceptable
 
 ---
 
@@ -66,7 +66,7 @@ This document lists everything we need from **Sonar** and from the **gno.land ma
 
 | # | Item | Why | Tag |
 |---|---|---|---|
-| B11 | Terms of Service PDF (reviewed by Carolyn Pehrson) — final URL | Footer + click-through on Connect | 🟠 |
+| B11 | Terms of Service PDF (reviewed by Carolyn Pehrson) - final URL | Footer + click-through on Connect | 🟠 |
 | B12 | Token Disclosure / Risk Disclosure PDF | #4 Transparency card | 🟠 |
 | B13 | Privacy Policy PDF or URL | Footer | 🟠 |
 | B14 | MiCA whitepaper final version PDF | Required for EU compliance | 🟠 |
@@ -119,9 +119,9 @@ This document lists everything we need from **Sonar** and from the **gno.land ma
 |---|---|---|---|
 | B31 | gno.land logo SVG (multiple variants if available: light/dark, monochrome/color) | Header + footer | 🔴 |
 | B32 | OG image 1200×630px (or template we can populate) | Social sharing (Twitter, Discord, LinkedIn) | 🟠 |
-| B33 | Favicon set (16, 32, 192, 512) — already on gno.land probably | Browser tab | 🟠 |
+| B33 | Favicon set (16, 32, 192, 512) - already on gno.land probably | Browser tab | 🟠 |
 | B34 | Brand voice / tone guidelines (for #5 "How the Sale Works" copy we'll write) | Copy consistency | 🟡 |
-| B35 | OAuth consent screen logos (square + wide) — see A13 for specs from Sonar | Sonar consent UI | 🟠 |
+| B35 | OAuth consent screen logos (square + wide) - see A13 for specs from Sonar | Sonar consent UI | 🟠 |
 
 ### Copy approval
 
@@ -135,7 +135,7 @@ This document lists everything we need from **Sonar** and from the **gno.land ma
 
 | # | Item | Why | Tag |
 |---|---|---|---|
-| B39 | Press coverage links, podcast appearances, video features — as they appear | #15 Media section | 🟡 |
+| B39 | Press coverage links, podcast appearances, video features - as they appear | #15 Media section | 🟡 |
 
 ---
 
@@ -169,7 +169,7 @@ This document lists everything we need from **Sonar** and from the **gno.land ma
 - Sonar: A11, A19
 - Marketing: B17, B22, B23, B27, B28–B30, B34, B39
 
-### Internal hardening — deferred / withdrawn
+### Internal hardening - deferred / withdrawn
 
 Custom secretlint rules for ETH private keys, BIP-39 mnemonics, AWS keys, etc. were considered and explicitly **NOT scoped** for this project:
 
@@ -186,10 +186,10 @@ Discipline + `.gitignore` strict on `.env*` files is the chosen control. Revisit
 
 1. **Send section A** to Sonar team contact (whoever signed the partnership). Ask for ETA on each blocker.
 2. **Send section B** to your marketing + legal leads. Stagger by priority: 🔴 first, then 🟠 over the week.
-3. **Section C** is internal — coordinate with whoever manages the gno.land infrastructure.
+3. **Section C** is internal - coordinate with whoever manages the gno.land infrastructure.
 4. **Update this doc** as items come in. Strike through completed items. Track ETAs.
 5. **Anything unanswered by EOW** → escalate to the project owner so we don't block the deadline.
 
 ---
 
-*If anything in this list is unclear or unnecessary, flag it — better to remove a request than to over-burden the teams.*
+*If anything in this list is unclear or unnecessary, flag it - better to remove a request than to over-burden the teams.*

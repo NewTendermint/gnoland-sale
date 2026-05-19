@@ -4,7 +4,7 @@
  * Design tokens consumed by Tailwind v4 via the @theme block.
  * Tailwind generates utilities from these CSS variables (e.g. text-fg-muted,
  * bg-bg, border-border). Full palette and typography scale will be layered in
- * later via styles/tokens.css — keep this minimal.
+ * later via styles/tokens.css - keep this minimal.
  */
 @theme {
   --color-bg: #0a0e2a;

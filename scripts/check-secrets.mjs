@@ -46,7 +46,7 @@ function* walk(dir) {
 let failed = false
 for (const root of SCAN_ROOTS) {
   if (!existsSync(root)) {
-    console.error(`Build output missing: ${root} — run 'npm run build' first.`)
+    console.error(`Build output missing: ${root} - run 'npm run build' first.`)
     process.exit(2)
   }
   for (const file of walk(root)) {
@@ -62,7 +62,7 @@ for (const root of SCAN_ROOTS) {
 }
 
 if (failed) {
-  console.error("Bundle secret scan FAILED — see matches above.")
+  console.error("Bundle secret scan FAILED - see matches above.")
   process.exit(1)
 }
 console.info("No secret leaks detected in build output. ✓")

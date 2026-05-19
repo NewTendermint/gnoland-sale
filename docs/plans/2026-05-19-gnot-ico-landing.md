@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Ship `sale.gno.land` — a Next.js 15 landing page integrating the Sonar Uniform Price Auction for the GNOT token sale (target $2M+ raise), built in 5 deployable layers so the user can validate and iterate at each layer.
+**Goal:** Ship `sale.gno.land` - a Next.js 15 landing page integrating the Sonar Uniform Price Auction for the GNOT token sale (target $2M+ raise), built in 5 deployable layers so the user can validate and iterate at each layer.
 
 **Architecture:** Next.js 15 App Router on Netlify with Frontend-with-Backend Sonar integration (server-side OAuth + permit issuance, client-side wallet + contract calls). Layered build: skeleton+UX first (deployable wireframe), then functionality (Sonar+wallet end-to-end), then design tokens, then voxel illustrations, then motion polish. Each layer ships a working preview on Netlify.
 
@@ -51,9 +51,9 @@ ico/
 
 ---
 
-# LAYER 1 — Skeleton + UX (deployable wireframe, 2 colors max)
+# LAYER 1 - Skeleton + UX (deployable wireframe, 2 colors max)
 
-**Layer goal:** A deployed Netlify preview showing the full page structure with all 16 sections, navigation, sticky bid panel placeholder, responsive layout, and basic typography — all in grayscale + 1 accent color. No real data, no Sonar, no WebGL. Mobile + desktop work.
+**Layer goal:** A deployed Netlify preview showing the full page structure with all 16 sections, navigation, sticky bid panel placeholder, responsive layout, and basic typography - all in grayscale + 1 accent color. No real data, no Sonar, no WebGL. Mobile + desktop work.
 
 **Definition of done:** `https://<preview>.netlify.app` loads, all sections render with placeholder copy, navigation scrolls smoothly to anchors, bid panel placeholder appears in sticky position, Lighthouse a11y >90.
 
@@ -94,7 +94,7 @@ test-results
 
 - [ ] **Step 3: Create `package.json`**
 
-Note: `next` is pinned to `15.5.18` (latest stable 15.x at plan revision time — fixes CVE-2025-66478 present in earlier 15.0.x). The `prepare` script is intentionally NOT included here; it's added in Task 1.2 alongside the husky dev dependency to avoid a broken `npm install` on fresh clones.
+Note: `next` is pinned to `15.5.18` (latest stable 15.x at plan revision time - fixes CVE-2025-66478 present in earlier 15.0.x). The `prepare` script is intentionally NOT included here; it's added in Task 1.2 alongside the husky dev dependency to avoid a broken `npm install` on fresh clones.
 
 ```json
 {
@@ -182,8 +182,8 @@ import "./globals.css"
 import type { ReactNode } from "react"
 
 export const metadata = {
-  title: "GNOT Public Token Sale — gno.land",
-  description: "The native token for gno.land — Layer 1 smart contract platform.",
+  title: "GNOT Public Token Sale - gno.land",
+  description: "The native token for gno.land - Layer 1 smart contract platform.",
 }
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -199,7 +199,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 
 ```tsx
 export default function Home() {
-  return <main>GNOT Token Sale — skeleton</main>
+  return <main>GNOT Token Sale - skeleton</main>
 }
 ```
 
@@ -231,7 +231,7 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3000
 NEXT_PUBLIC_SALE_PHASE=pre
 NEXT_PUBLIC_SENTRY_DSN_CLIENT=
 
-# Server-only — NEVER prefix with NEXT_PUBLIC
+# Server-only - NEVER prefix with NEXT_PUBLIC
 SONAR_CLIENT_UUID=
 SONAR_REDIRECT_URI=
 SONAR_SALE_UUID=
@@ -255,7 +255,7 @@ npm install
 npm run dev
 ```
 
-Expected: dev server starts on `http://localhost:3000`, shows "GNOT Token Sale — skeleton" on dark navy bg.
+Expected: dev server starts on `http://localhost:3000`, shows "GNOT Token Sale - skeleton" on dark navy bg.
 
 - [ ] **Step 11: Commit**
 
@@ -436,7 +436,7 @@ Update `app/page.tsx` to test classes:
 export default function Home() {
   return (
     <main className="min-h-screen p-8">
-      <h1 className="text-4xl font-bold">GNOT Token Sale — skeleton</h1>
+      <h1 className="text-4xl font-bold">GNOT Token Sale - skeleton</h1>
       <p className="text-fg-muted mt-4">Tailwind v4 active</p>
     </main>
   )
@@ -772,7 +772,7 @@ export function Footer() {
           <div>
             <p className="font-bold mb-4">gno.land</p>
             <p className="text-sm text-fg-muted">
-              The native token for gno.land — Layer 1 smart contract platform.
+              The native token for gno.land - Layer 1 smart contract platform.
             </p>
           </div>
           <div>
@@ -800,7 +800,7 @@ export function Footer() {
           </div>
         </div>
         <p className="mt-12 text-xs text-fg-faint text-center">
-          © 2026 gno.land — All rights reserved.
+          © 2026 gno.land - All rights reserved.
         </p>
       </div>
     </footer>
@@ -828,10 +828,10 @@ export function BidPanel() {
         <p className="text-3xl font-bold tabular-nums">$0.00</p>
       </div>
       <dl className="space-y-2 text-sm border-t border-border pt-4">
-        <div className="flex justify-between"><dt className="text-fg-muted">Committed</dt><dd className="tabular-nums">—</dd></div>
-        <div className="flex justify-between"><dt className="text-fg-muted">Filled</dt><dd className="tabular-nums">—</dd></div>
-        <div className="flex justify-between"><dt className="text-fg-muted">Bidders</dt><dd className="tabular-nums">—</dd></div>
-        <div className="flex justify-between"><dt className="text-fg-muted">Closes in</dt><dd className="tabular-nums">—</dd></div>
+        <div className="flex justify-between"><dt className="text-fg-muted">Committed</dt><dd className="tabular-nums">-</dd></div>
+        <div className="flex justify-between"><dt className="text-fg-muted">Filled</dt><dd className="tabular-nums">-</dd></div>
+        <div className="flex justify-between"><dt className="text-fg-muted">Bidders</dt><dd className="tabular-nums">-</dd></div>
+        <div className="flex justify-between"><dt className="text-fg-muted">Closes in</dt><dd className="tabular-nums">-</dd></div>
       </dl>
       <button
         type="button"
@@ -854,8 +854,8 @@ import { Header } from "./(chrome)/Header"
 import { Footer } from "./(chrome)/Footer"
 
 export const metadata = {
-  title: "GNOT Public Token Sale — gno.land",
-  description: "The native token for gno.land — Layer 1 smart contract platform.",
+  title: "GNOT Public Token Sale - gno.land",
+  description: "The native token for gno.land - Layer 1 smart contract platform.",
 }
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -901,7 +901,7 @@ export function Hero() {
           aria-hidden="true"
           className="aspect-square lg:aspect-auto min-h-[400px] bg-fg/5 rounded-sm flex items-center justify-center text-fg-faint text-sm"
         >
-          [WebGL voxel scene — Layer 4]
+          [WebGL voxel scene - Layer 4]
         </div>
         <div className="flex flex-col gap-8">
           <div>
@@ -913,7 +913,7 @@ export function Hero() {
               GNOT Public<br />Token Sale
             </h1>
             <p className="mt-6 text-fg-muted text-lg max-w-md">
-              The native token for gno.land — a Layer 1 smart contract platform.
+              The native token for gno.land - a Layer 1 smart contract platform.
             </p>
           </div>
           <BidPanel />
@@ -937,7 +937,7 @@ export function SaleMetrics() {
           {["Committed", "Filled", "Participants", "Closes in"].map((label) => (
             <div key={label}>
               <dt className="text-sm text-fg-muted mb-1">{label}</dt>
-              <dd className="text-3xl font-bold tabular-nums">—</dd>
+              <dd className="text-3xl font-bold tabular-nums">-</dd>
             </div>
           ))}
         </dl>
@@ -1058,7 +1058,7 @@ export function Narrative() {
           aria-hidden="true"
           className="aspect-video bg-fg/5 rounded-sm flex items-center justify-center text-fg-faint text-sm"
         >
-          [Voxel illustration — Layer 4]
+          [Voxel illustration - Layer 4]
         </div>
         <div>
           <p className="text-xs uppercase tracking-wide text-fg-muted mb-2">Vision</p>
@@ -1080,10 +1080,10 @@ export function Narrative() {
 ```tsx
 const FEATURES = [
   { title: "Gno Programming Language", body: "Derived from Go, used by millions of developers worldwide. Immediate access to a large developer community, accelerating adoption." },
-  { title: "Deterministic Execution", body: "Programs behave identically across all networks — every node produces the same results for trustless consensus." },
+  { title: "Deterministic Execution", body: "Programs behave identically across all networks - every node produces the same results for trustless consensus." },
   { title: "Native Persistent State", body: "Applications persist by default. No external databases needed, eliminating state-management complexity." },
   { title: "Multi-User Concurrency", body: "Shared state, parallel execution, and long-lived processes built in. Scalable interactive applications." },
-  { title: "OS-like Composability", body: "Applications interoperate as processes instead of isolated contracts — reusable, richer ecosystem." },
+  { title: "OS-like Composability", body: "Applications interoperate as processes instead of isolated contracts - reusable, richer ecosystem." },
 ]
 
 export function Features() {
@@ -1137,7 +1137,7 @@ export function GnotUtility() {
           aria-hidden="true"
           className="aspect-square bg-fg/5 rounded-sm flex items-center justify-center text-fg-faint text-sm"
         >
-          [GNOT flow voxel — Layer 4]
+          [GNOT flow voxel - Layer 4]
         </div>
       </div>
     </section>
@@ -1190,7 +1190,7 @@ const MILESTONES = [
   { year: "Q1 2026", body: "Beta Mainnet launch. Token distribution. Functional network released.", highlight: true },
   { year: "Q2 2026", body: "Bridging AtomOne and Gno.land for security and interoperability." },
   { year: "Q3 2026", body: "Mainnet launch. Protocol-level transfers enabled." },
-  { year: "Q4 2026+", body: "Ecosystem growth — killer apps and tooling on Gno.land." },
+  { year: "Q4 2026+", body: "Ecosystem growth - killer apps and tooling on Gno.land." },
 ]
 
 export function Roadmap() {
@@ -1216,19 +1216,19 @@ export function Roadmap() {
 }
 ```
 
-- [ ] **Step 11: Create `Ecosystem.tsx` (#12) — abbreviated for plan; full descriptions from `content/sections.md`**
+- [ ] **Step 11: Create `Ecosystem.tsx` (#12) - abbreviated for plan; full descriptions from `content/sections.md`**
 
 ```tsx
 const PROJECTS = [
   { name: "Gnoscan", body: "Official blockchain explorer by Onbloc. Search wallets, transactions, blocks, contracts." },
   { name: "Adena", body: "Open-source, non-custodial wallet for Gno.land by Onbloc." },
   { name: "Gnoswap", body: "First decentralized exchange (DEX) on Gno.land, written in Gno." },
-  { name: "Boards", body: "On-chain forum application — decentralized, censorship-resistant discussion." },
+  { name: "Boards", body: "On-chain forum application - decentralized, censorship-resistant discussion." },
   { name: "Akkadia", body: "On-chain world-building game inspired by the Library of Alexandria." },
   { name: "Gno Playground", body: "Browser-based environment for writing, testing, and deploying Gno code." },
   { name: "Gno Studio Connect", body: "Direct access to Gno.land smart contracts through function calls." },
   { name: "CommonDAO", body: "Modular on-chain governance framework with parent/sub-DAO hierarchy." },
-  { name: "Tendermint2", body: "Evolved consensus engine — simplicity, security, performance." },
+  { name: "Tendermint2", body: "Evolved consensus engine - simplicity, security, performance." },
   { name: "Gnokey", body: "Secure key management and transaction signing." },
   { name: "Gnodev", body: "Local development environment with hot reload." },
   { name: "Gnoweb", body: "Official web interface for browsing Gno.land realms." },
@@ -1266,7 +1266,7 @@ export function Team() {
       <div className="mx-auto max-w-[1280px] px-6">
         <p className="text-xs uppercase tracking-wide text-fg-muted mb-2">Team</p>
         <h2 className="text-3xl font-bold mb-12">The people behind gno.land</h2>
-        <p className="text-fg-muted">Team grid placeholder — TBD list from team.</p>
+        <p className="text-fg-muted">Team grid placeholder - TBD list from team.</p>
       </div>
     </section>
   )
@@ -1282,7 +1282,7 @@ export function Investors() {
       <div className="mx-auto max-w-[1280px] px-6">
         <p className="text-xs uppercase tracking-wide text-fg-muted mb-2">Investors</p>
         <h2 className="text-3xl font-bold mb-12">Backed by</h2>
-        <p className="text-fg-muted">Investors logos — TBD (section may be removed).</p>
+        <p className="text-fg-muted">Investors logos - TBD (section may be removed).</p>
       </div>
     </section>
   )
@@ -1328,7 +1328,7 @@ export function Media() {
       <div className="mx-auto max-w-[1280px] px-6">
         <p className="text-xs uppercase tracking-wide text-fg-muted mb-2">Media</p>
         <h2 className="text-3xl font-bold mb-12">Press coverage</h2>
-        <p className="text-fg-muted">Press logos and articles — to be populated during launch campaign.</p>
+        <p className="text-fg-muted">Press logos and articles - to be populated during launch campaign.</p>
       </div>
     </section>
   )
@@ -1346,7 +1346,7 @@ export function PreFooterCta() {
         className="absolute inset-0 bg-fg/5"
       >
         <div className="h-full w-full flex items-center justify-center text-fg-faint text-sm">
-          [Full-width voxel background — Layer 4]
+          [Full-width voxel background - Layer 4]
         </div>
       </div>
       <div className="relative mx-auto max-w-[1280px] px-6 text-center">
@@ -1534,7 +1534,7 @@ git pull
 
 ---
 
-# LAYER 2 — Functionality (Sonar + wallet, end-to-end)
+# LAYER 2 - Functionality (Sonar + wallet, end-to-end)
 
 **Layer goal:** A deployed preview where a user can: connect with Sonar (OAuth sandbox), connect a wallet (Base Sepolia), see real sale metrics from the Sonar API, place a bid via `replaceBidWithPermit()`, and see the resulting tx on Base Sepolia.
 
@@ -1609,8 +1609,8 @@ const schema = z.object({
   SONAR_REDIRECT_URI: z.string().url(),
   SONAR_SALE_UUID: z.string().min(1),
   SONAR_API_BASE_URL: z.string().url(),
-  ENCRYPTION_KEY: z.string().length(64), // 32 bytes hex — rotates per spec §4.7
-  IP_HMAC_PEPPER: z.string().length(64), // 32 bytes hex — rotates per spec §4.7 (3 months)
+  ENCRYPTION_KEY: z.string().length(64), // 32 bytes hex - rotates per spec §4.7
+  IP_HMAC_PEPPER: z.string().length(64), // 32 bytes hex - rotates per spec §4.7 (3 months)
   SESSION_PASSWORD: z.string().min(32),
   DATABASE_URL: z.string().url(),
   SALE_PAUSED: z.enum(["true", "false"]).default("false"),
@@ -1779,7 +1779,7 @@ npm install -D drizzle-kit
 
 - [ ] **Step 2: Create `lib/db/schema.ts`**
 
-Per spec §4.7: we store already-public data in clear (wallets, entity IDs, amounts — all visible on-chain anyway), HMAC the IP with a server-side PEPPER, bucket the user-agent, and constrain `metadata` to a strict whitelist via zod. No fake-anonymizing hash truncation.
+Per spec §4.7: we store already-public data in clear (wallets, entity IDs, amounts - all visible on-chain anyway), HMAC the IP with a server-side PEPPER, bucket the user-agent, and constrain `metadata` to a strict whitelist via zod. No fake-anonymizing hash truncation.
 
 ```ts
 import { pgTable, text, timestamp, bigint, uuid, jsonb, index } from "drizzle-orm/pg-core"
@@ -1800,10 +1800,10 @@ export const oauthTokens = pgTable("oauth_tokens", {
  * Forensic + compliance audit log.
  *
  * Stored fields are deliberately either:
- *   - already public on-chain (wallet, entity_id, amount) — no privacy gain from hashing
- *   - HMAC'd with a server-only PEPPER (ip_hmac) — irreversible without the secret
- *   - bucket-categorized (user_agent_class) — no fingerprinting surface
- *   - schema-restricted (metadata) — see whitelist below
+ *   - already public on-chain (wallet, entity_id, amount) - no privacy gain from hashing
+ *   - HMAC'd with a server-only PEPPER (ip_hmac) - irreversible without the secret
+ *   - bucket-categorized (user_agent_class) - no fingerprinting surface
+ *   - schema-restricted (metadata) - see whitelist below
  *
  * Forbidden in `metadata`: email, name, address, phone, DOB, full UA, full IP,
  * OAuth codes/tokens, full permit signatures, any string > 256 chars.
@@ -1811,13 +1811,13 @@ export const oauthTokens = pgTable("oauth_tokens", {
 export const auditLog = pgTable("audit_log", {
   id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
   event: text("event").notNull(),
-  /** Sonar entity UUID — public via Sonar SDK + on-chain `entityStatesByIDs()`. */
+  /** Sonar entity UUID - public via Sonar SDK + on-chain `entityStatesByIDs()`. */
   entityId: uuid("entity_id"),
-  /** Full wallet address (0x…40) — public on Base mainnet via SettlementSale events. */
+  /** Full wallet address (0x…40) - public on Base mainnet via SettlementSale events. */
   wallet: text("wallet"),
   /** Bid amount in payment-token minor units (USDC has 6 decimals). */
   amountMinor: bigint("amount_minor", { mode: "number" }),
-  /** HMAC-SHA256(ip, IP_HMAC_PEPPER) — irreversible without the PEPPER. */
+  /** HMAC-SHA256(ip, IP_HMAC_PEPPER) - irreversible without the PEPPER. */
   ipHmac: text("ip_hmac"),
   /** Coarse UA bucket: "chrome-mobile" | "firefox-desktop" | etc. Never the raw UA. */
   userAgentClass: text("user_agent_class"),
@@ -2201,7 +2201,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "session mismatch" }, { status: 400 })
   }
 
-  // Exchange code (Sonar SDK API — verify exact method name on day 1)
+  // Exchange code (Sonar SDK API - verify exact method name on day 1)
   const exchanged = await sonarCore.exchangeAuthorizationCode({
     clientUUID: env.SONAR_CLIENT_UUID,
     code,
@@ -2460,7 +2460,7 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 import "server-only"
 import { env } from "@/lib/env"
 
-// Public API call — no per-user auth needed for read-commitment-data
+// Public API call - no per-user auth needed for read-commitment-data
 // Per Sonar docs: returns total, count, last 100, and current clearing price for auctions.
 export async function readCommitmentData() {
   const res = await fetch(`${env.SONAR_API_BASE_URL}/v1/sales/${env.SONAR_SALE_UUID}/commitments`, {
@@ -2544,7 +2544,7 @@ export const wagmiConfig = getDefaultConfig({
 })
 ```
 
-- [ ] **Step 3: Create `lib/wagmi/abis.ts` (skeleton — fill from Sonar on day 1)**
+- [ ] **Step 3: Create `lib/wagmi/abis.ts` (skeleton - fill from Sonar on day 1)**
 
 ```ts
 // TODO(Sonar A7): replace with actual ABI extracted from sonar-core or
@@ -2668,7 +2668,7 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 
 ---
 
-## Task 2.11: BidPanel — real states (connect, KYC, simulate, bid)
+## Task 2.11: BidPanel - real states (connect, KYC, simulate, bid)
 
 **Files:**
 - Modify: `app/(chrome)/BidPanel.tsx`
@@ -2826,12 +2826,12 @@ export function BidPanel() {
       <div className="mb-6">
         <p className="text-xs text-fg-muted mb-1">Clearing price</p>
         <p className="text-3xl font-bold tabular-nums">
-          {commitments.data?.currentClearingPrice ? formatUsd(commitments.data.currentClearingPrice) : "—"}
+          {commitments.data?.currentClearingPrice ? formatUsd(commitments.data.currentClearingPrice) : "-"}
         </p>
       </div>
       <dl className="space-y-2 text-sm border-t border-border pt-4 mb-6">
-        <div className="flex justify-between"><dt className="text-fg-muted">Committed</dt><dd className="tabular-nums">{commitments.data ? formatUsd(commitments.data.totalCommitted) : "—"}</dd></div>
-        <div className="flex justify-between"><dt className="text-fg-muted">Bidders</dt><dd className="tabular-nums">{commitments.data?.uniqueCommitments ?? "—"}</dd></div>
+        <div className="flex justify-between"><dt className="text-fg-muted">Committed</dt><dd className="tabular-nums">{commitments.data ? formatUsd(commitments.data.totalCommitted) : "-"}</dd></div>
+        <div className="flex justify-between"><dt className="text-fg-muted">Bidders</dt><dd className="tabular-nums">{commitments.data?.uniqueCommitments ?? "-"}</dd></div>
       </dl>
       {cta}
     </aside>
@@ -3363,7 +3363,7 @@ gh pr merge --squash
 
 ---
 
-# LAYER 3 — Design tokens (palette, typo, glassmorph)
+# LAYER 3 - Design tokens (palette, typo, glassmorph)
 
 **Layer goal:** Full design tokens applied across all components. Typography refined with Geist Sans. Mint accent for CTAs and live indicators. Glassmorph sticky panel. Section dividers in voxel-staircase pattern. Page is "designed" (not just structured) but no illustrations yet.
 
@@ -3379,7 +3379,7 @@ gh pr merge --squash
 
 - [ ] **Step 1: Create `styles/tokens.css`**
 
-(Full token spec from spec §8, expanded into CSS variables — copy verbatim from `docs/specs/2026-05-19-gnot-ico-landing-design.md` §8.)
+(Full token spec from spec §8, expanded into CSS variables - copy verbatim from `docs/specs/2026-05-19-gnot-ico-landing-design.md` §8.)
 
 - [ ] **Step 2: Import in `app/globals.css`**
 
@@ -3457,7 +3457,7 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 
 ---
 
-## Task 3.3: Component pass — apply design tokens
+## Task 3.3: Component pass - apply design tokens
 
 **Files:**
 - Modify: all components in `app/(sections)/*`, `app/(chrome)/*`
@@ -3633,7 +3633,7 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 
 ---
 
-# LAYER 4 — Voxel + illustrations
+# LAYER 4 - Voxel + illustrations
 
 **Layer goal:** WebGL hero scene live, .vox → .glb pipeline working, illustrations placed in #6 / #8 / pre-footer / roadmap.
 
@@ -3654,7 +3654,7 @@ npm install -D vox-saver vox-reader gltf-pipeline
 
 - [ ] **Step 2: Write build script**
 
-`scripts/build-assets.mjs` — reads `assets/voxel/*.vox`, converts to `.glb` with Draco compression, outputs to `public/models/`. (Exact tooling depends on chosen library; verify on day 1.)
+`scripts/build-assets.mjs` - reads `assets/voxel/*.vox`, converts to `.glb` with Draco compression, outputs to `public/models/`. (Exact tooling depends on chosen library; verify on day 1.)
 
 - [ ] **Step 3: Add npm script**
 
@@ -3664,7 +3664,7 @@ npm install -D vox-saver vox-reader gltf-pipeline
 
 - [ ] **Step 4: Add to CI build**
 
-Modify `.github/workflows/ci.yml` — add `npm run build:assets` before `npm run build`.
+Modify `.github/workflows/ci.yml` - add `npm run build:assets` before `npm run build`.
 
 - [ ] **Step 5: Commit**
 
@@ -3776,7 +3776,7 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 
 - [ ] **Step 1: Replace placeholder divs with `<Image>`**
 
-For each, swap the `[Voxel illustration — Layer 4]` placeholder with:
+For each, swap the `[Voxel illustration - Layer 4]` placeholder with:
 
 ```tsx
 import Image from "next/image"
@@ -3813,7 +3813,7 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 
 ---
 
-# LAYER 5 — Motion + polish
+# LAYER 5 - Motion + polish
 
 **Layer goal:** All scroll-driven effects per spec §7. Page feels alive, accessible, performant.
 
@@ -3930,7 +3930,7 @@ export function SmoothScroll({ children }: { children: ReactNode }) {
 
 ## Task 5.9: Pre-launch checklist execution
 
-Per spec §9.5 — execute all items, sign off in `docs/PRE_LAUNCH_CHECKLIST.md`.
+Per spec §9.5 - execute all items, sign off in `docs/PRE_LAUNCH_CHECKLIST.md`.
 
 **End of Layer 5. Ready for mainnet launch.**
 
@@ -3940,16 +3940,16 @@ Per spec §9.5 — execute all items, sign off in `docs/PRE_LAUNCH_CHECKLIST.md`
 
 These are created as part of Layer 2 (operational maturity), not as separate tasks:
 
-- [ ] `docs/RUNBOOK.md` — incident response, kill switch procedure, on-call contacts
-- [ ] `docs/PRE_LAUNCH_CHECKLIST.md` — 2-human signoff items from spec §9.5
-- [ ] `docs/INCIDENT_LOG.md` — rolling log (empty at launch)
-- [ ] `CODEOWNERS` — `lib/sonar/*` and `lib/security/*` require explicit review
+- [ ] `docs/RUNBOOK.md` - incident response, kill switch procedure, on-call contacts
+- [ ] `docs/PRE_LAUNCH_CHECKLIST.md` - 2-human signoff items from spec §9.5
+- [ ] `docs/INCIDENT_LOG.md` - rolling log (empty at launch)
+- [ ] `CODEOWNERS` - `lib/sonar/*` and `lib/security/*` require explicit review
 
 ---
 
 ## Self-review notes
 
-**Spec coverage check** — every spec section maps to one or more tasks:
+**Spec coverage check** - every spec section maps to one or more tasks:
 - §3 Architecture → Layer 2 tasks 2.5–2.11
 - §4 Security → Layer 2 tasks 2.1–2.4, 2.14–2.16
 - §5 Content → Layer 1 task 1.8 (all 16 sections scaffolded)
@@ -3960,8 +3960,8 @@ These are created as part of Layer 2 (operational maturity), not as separate tas
 - §10 Deployment → Tasks 1.5 (netlify.toml), 1.6 (CI), 2.18 (Layer 2 gate)
 - §11 Process safeguards → Task 1.2 (Husky + secretlint), 1.6 (CI), CODEOWNERS (Layer 2)
 
-**Placeholder scan** — Tasks 2.5 (Sonar client), 2.10 (ABI), 4.1 (asset pipeline) contain "verify on day 1" notes for items that depend on Sonar deliverables not yet available. These are unavoidable until Sonar provides credentials/ABI/etc. (tracked in `docs/REQUIREMENTS_FROM_TEAMS.md`).
+**Placeholder scan** - Tasks 2.5 (Sonar client), 2.10 (ABI), 4.1 (asset pipeline) contain "verify on day 1" notes for items that depend on Sonar deliverables not yet available. These are unavoidable until Sonar provides credentials/ABI/etc. (tracked in `docs/REQUIREMENTS_FROM_TEAMS.md`).
 
-**Type consistency** — `sessionId`, `entityId`, `wallet` (lowercase `0x...`), `amount` (bigint as string in API), `replaceBidWithPermit` named consistently across tasks 2.7, 2.8, 2.10, 2.11.
+**Type consistency** - `sessionId`, `entityId`, `wallet` (lowercase `0x...`), `amount` (bigint as string in API), `replaceBidWithPermit` named consistently across tasks 2.7, 2.8, 2.10, 2.11.
 
-**Layered deployability** — each Layer ends with a deploy preview gate that produces a publicly viewable preview URL for stakeholder review.
+**Layered deployability** - each Layer ends with a deploy preview gate that produces a publicly viewable preview URL for stakeholder review.

@@ -1,4 +1,4 @@
-# GNOT Token Sale — Landing Page Content
+# GNOT Token Sale - Landing Page Content
 
 **Source**: `GNOT Token Sale Website.xlsx` (provided 2026-05-19)
 **Status legend**: ✅ Ready · ⚠️ TBD (waiting on input) · 🟡 Partial (some fields ready, some TBD)
@@ -9,13 +9,13 @@
 
 ## How to edit this file
 
-This is the **source of truth** for all copy on `sale.gno.land`. Edit text here, commit, and the site rebuilds (MDX pipeline reads from here at build time). Do NOT edit copy directly in React components — it gets out of sync.
+This is the **source of truth** for all copy on `sale.gno.land`. Edit text here, commit, and the site rebuilds (MDX pipeline reads from here at build time). Do NOT edit copy directly in React components - it gets out of sync.
 
-When a section is `⚠️ TBD`, please replace the `[TBD: ...]` placeholders with real content. The build will warn (not fail) if TBDs ship to production — so we can iterate, but they're visible.
+When a section is `⚠️ TBD`, please replace the `[TBD: ...]` placeholders with real content. The build will warn (not fail) if TBDs ship to production - so we can iterate, but they're visible.
 
 ---
 
-## #1 — Header  ✅
+## #1 - Header  ✅
 
 **Status**: Ready
 
@@ -29,9 +29,9 @@ When a section is `⚠️ TBD`, please replace the `[TBD: ...]` placeholders wit
 
 ---
 
-## #2 — Sale Metrics (live data)  ✅
+## #2 - Sale Metrics (live data)  ✅
 
-**Status**: Ready (content) — values are pulled live from Sonar API
+**Status**: Ready (content) - values are pulled live from Sonar API
 
 **Title**: `GNOT Token Sale: The native token for gno.land`
 
@@ -47,9 +47,9 @@ When a section is `⚠️ TBD`, please replace the `[TBD: ...]` placeholders wit
 
 ---
 
-## #3 — Token Sale Details  ⚠️ TBD
+## #3 - Token Sale Details  ⚠️ TBD
 
-**Status**: TBD — values need to be confirmed by team
+**Status**: TBD - values need to be confirmed by team
 
 **Source xls note**: "Need token sale details"
 
@@ -61,7 +61,7 @@ When a section is `⚠️ TBD`, please replace the `[TBD: ...]` placeholders wit
 | Minimum price | [TBD: $X.XX per GNOT] | ⚠️ |
 | Total raise | [TBD: starting $2M, expand based on demand] | ⚠️ |
 | Min commitment | [TBD: $XXX per entity] | ⚠️ |
-| Max commitment | [TBD: $XXX per entity — whale cap] | ⚠️ |
+| Max commitment | [TBD: $XXX per entity - whale cap] | ⚠️ |
 | FDV (when raise met) | [TBD: $XXM Fully Diluted Valuation] | ⚠️ |
 | Unlock schedule | [TBD: e.g. cliff X months + linear vest Y months] | ⚠️ |
 | Allocation | [TBD: X% of total token supply for this sale] | ⚠️ |
@@ -72,40 +72,40 @@ When a section is `⚠️ TBD`, please replace the `[TBD: ...]` placeholders wit
 
 ---
 
-## #4 — Transparency Report  ⚠️ TBD
+## #4 - Transparency Report  ⚠️ TBD
 
-**Status**: TBD — needs tokenomics finalized + legal/audit PDFs
+**Status**: TBD - needs tokenomics finalized + legal/audit PDFs
 
 **Source xls note**: "Need final tokenomics. Need links to legal structure and audit. See https://cdn.fluent.xyz/docs/token-disclosure.pdf"
 
 **Elements**:
-- **Tokenomics pie chart**: [TBD: allocation breakdown — sale %, team %, ecosystem %, treasury %, advisors %, etc.]
-- **Legal structure**: [TBD: link to legal disclosure PDF — see Fluent's as reference]
+- **Tokenomics pie chart**: [TBD: allocation breakdown - sale %, team %, ecosystem %, treasury %, advisors %, etc.]
+- **Legal structure**: [TBD: link to legal disclosure PDF - see Fluent's as reference]
 - **Audit details**: [TBD: link to audit report PDF]
 
 **Design note**: 3 cards side-by-side, each with icon + title + link. The pie chart card has a small inline preview (Recharts or vanilla SVG).
 
 ---
 
-## #5 — How the Sale Works  ⚠️ TBD
+## #5 - How the Sale Works  ⚠️ TBD
 
-**Status**: Text needs to be written — only "Steps to participate in token sale" was provided
+**Status**: Text needs to be written - only "Steps to participate in token sale" was provided
 
 **Source xls note**: "Need more info"
 
 **Proposed 5-step copy** (to be reviewed):
 
-1. **Connect your wallet** — MetaMask, Coinbase Wallet, WalletConnect or Rainbow. We use wagmi standard, any EVM wallet on Base works.
-2. **Verify with Sonar (one-click for existing users)** — Sonar handles KYC/KYB. ~100k users already verified can participate in one click. New users complete identity verification (typical: 5-15 min).
-3. **Place your bid** — Set the price you're willing to pay (up to your max) and the commitment amount in USDC/USDT. Bids can only be increased, never decreased.
-4. **Wait for the auction to close** — A single clearing price is determined when the sale ends. Everyone who bid at or above the clearing price pays the same final price.
-5. **Receive tokens** — Excess funds are auto-refunded. GNOT tokens are distributed after mainnet launch per the unlock schedule.
+1. **Connect your wallet** - MetaMask, Coinbase Wallet, WalletConnect or Rainbow. We use wagmi standard, any EVM wallet on Base works.
+2. **Verify with Sonar (one-click for existing users)** - Sonar handles KYC/KYB. ~100k users already verified can participate in one click. New users complete identity verification (typical: 5-15 min).
+3. **Place your bid** - Set the price you're willing to pay (up to your max) and the commitment amount in USDC/USDT. Bids can only be increased, never decreased.
+4. **Wait for the auction to close** - A single clearing price is determined when the sale ends. Everyone who bid at or above the clearing price pays the same final price.
+5. **Receive tokens** - Excess funds are auto-refunded. GNOT tokens are distributed after mainnet launch per the unlock schedule.
 
 **Validation required**: confirm dates, refund timing, distribution mechanism.
 
 ---
 
-## #6 — The Open Knowledge Base for the New Millennium  ✅
+## #6 - The Open Knowledge Base for the New Millennium  ✅
 
 **Status**: Ready
 
@@ -117,7 +117,7 @@ When a section is `⚠️ TBD`, please replace the `[TBD: ...]` placeholders wit
 
 ---
 
-## #7 — Built for Developers, Designed for Eternity  ✅
+## #7 - Built for Developers, Designed for Eternity  ✅
 
 **Status**: Ready
 
@@ -142,9 +142,9 @@ Applications interoperate as processes instead of isolated contracts. This inter
 
 ---
 
-## #8 — GNOT is the native utility token for all economic activity  ✅
+## #8 - GNOT is the native utility token for all economic activity  ✅
 
-**Status**: Ready — needs graphic asset
+**Status**: Ready - needs graphic asset
 
 **Source xls note**: "NEED GRAPHIC"
 
@@ -152,18 +152,18 @@ Applications interoperate as processes instead of isolated contracts. This inter
 
 **4 use cases**:
 
-- **Transaction fees** — GNOT is the fuel that enables each and every transaction.
-- **Storage deposits** — Owning GNOT means reserving ownership of storage on Gno.land.
-- **IBC/ICS interactions** — GNOT is used to pay for all cross-chain interactions.
-- **Contract execution** — GNOT functions as the gas token that powers smart contract execution.
+- **Transaction fees** - GNOT is the fuel that enables each and every transaction.
+- **Storage deposits** - Owning GNOT means reserving ownership of storage on Gno.land.
+- **IBC/ICS interactions** - GNOT is used to pay for all cross-chain interactions.
+- **Contract execution** - GNOT functions as the gas token that powers smart contract execution.
 
 **Asset TBD**: [Need voxel illustration of "GNOT in motion" or a circular flow diagram]
 
 ---
 
-## #9 — The ecosystem in numbers  ✅
+## #9 - The ecosystem in numbers  ✅
 
-**Status**: Ready — testnet13 data to add when available
+**Status**: Ready - testnet13 data to add when available
 
 **Stats (current)**:
 - 5 years building
@@ -183,9 +183,9 @@ Applications interoperate as processes instead of isolated contracts. This inter
 
 ---
 
-## #10 — Team (& Advisors)  ⚠️ TBD
+## #10 - Team (& Advisors)  ⚠️ TBD
 
-**Status**: TBD — list to be provided
+**Status**: TBD - list to be provided
 
 **Source xls note**: "Need updated list of team and advisors"
 
@@ -195,35 +195,35 @@ Applications interoperate as processes instead of isolated contracts. This inter
 
 ---
 
-## #11 — Roadmap  ✅
+## #11 - Roadmap  ✅
 
 **Status**: Ready
 
-**2021** — Jae Kwon bootstraps Gno Virtual Machine (GnoVM) and Tendermint node. Foundational VM, state persistence, first Boards realm, and functional chain.
+**2021** - Jae Kwon bootstraps Gno Virtual Machine (GnoVM) and Tendermint node. Foundational VM, state persistence, first Boards realm, and functional chain.
 
-**2022** — Test1 to Test3 with improved usability and example realms. GnoVM safety, initial community workshops.
+**2022** - Test1 to Test3 with improved usability and example realms. GnoVM safety, initial community workshops.
 
-**2023** — Introduced tools like gnodev, Playground, and GnoChess. Released official docs and Gno Network Public License.
+**2023** - Introduced tools like gnodev, Playground, and GnoChess. Released official docs and Gno Network Public License.
 
-**2024** — Permanent multi-node Test4 (with GovDAO) and Test5 with expanded validators. Major VM fixes, performance upgrades, and stability improvements.
+**2024** - Permanent multi-node Test4 (with GovDAO) and Test5 with expanded validators. Major VM fixes, performance upgrades, and stability improvements.
 
-**2025** — Stabilization with Test6 to Test8, GovDAO V3, token mechanics, and major GnoVM upgrades. Governance testing, dev updates, community events, and validator tooling improvements.
+**2025** - Stabilization with Test6 to Test8, GovDAO V3, token mechanics, and major GnoVM upgrades. Governance testing, dev updates, community events, and validator tooling improvements.
 
-**Q1 2026 — Gno.land Beta Mainnet Launch** — Token distribution. Release of functional network and initial operating system.
+**Q1 2026 - Gno.land Beta Mainnet Launch** - Token distribution. Release of functional network and initial operating system.
 
-**Q2 2026 — Expanding the network** — Bridging AtomOne and Gno.land for security and interoperability. Advancing Gno's functionality and features.
+**Q2 2026 - Expanding the network** - Bridging AtomOne and Gno.land for security and interoperability. Advancing Gno's functionality and features.
 
-**Q3 2026 — Mainnet Launch** — Protocol-level transfers enabled. Fully interoperable, security-hardened network.
+**Q3 2026 - Mainnet Launch** - Protocol-level transfers enabled. Fully interoperable, security-hardened network.
 
-**Q4 2026 — Beyond — Ecosystem Growth** — Major focus on building killer apps on Gno.land. Develop tooling.
+**Q4 2026 - Beyond - Ecosystem Growth** - Major focus on building killer apps on Gno.land. Develop tooling.
 
 **Design note**: horizontal scroll-pin timeline. Each year is a "station" with icon + bullet points. Active year highlighted on scroll.
 
 ---
 
-## #12 — Ecosystem  ✅
+## #12 - Ecosystem  ✅
 
-**Status**: Ready — re-use descriptions from newtendermint.org
+**Status**: Ready - re-use descriptions from newtendermint.org
 
 **Source xls note**: "Use the same description from newtendermint.org"
 
@@ -272,9 +272,9 @@ A community-led GitHub organization for builders in the Gno.land ecosystem. A ho
 
 ---
 
-## #13 — Investors  ⚠️ TBD
+## #13 - Investors  ⚠️ TBD
 
-**Status**: TBD — placeholder, may be removed
+**Status**: TBD - placeholder, may be removed
 
 **Source xls note**: "If we get investors, list their logos here"
 
@@ -282,7 +282,7 @@ A community-led GitHub organization for builders in the Gno.land ecosystem. A ho
 
 ---
 
-## #14 — Partners  ✅
+## #14 - Partners  ✅
 
 **Status**: Ready
 
@@ -304,9 +304,9 @@ A community-driven, constitutionally governed blockchain designed to prioritize 
 
 ---
 
-## #15 — Media  ⚠️ TBD
+## #15 - Media  ⚠️ TBD
 
-**Status**: TBD — will populate as campaign progresses
+**Status**: TBD - will populate as campaign progresses
 
 **Source xls**: "News articles, video links"
 
@@ -316,7 +316,7 @@ A community-driven, constitutionally governed blockchain designed to prioritize 
 
 ---
 
-## #16 — Footer  🟡
+## #16 - Footer  🟡
 
 **Status**: Partial (socials ready, legal pending)
 
@@ -328,10 +328,10 @@ A community-driven, constitutionally governed blockchain designed to prioritize 
 **Documentation**: `https://docs.gno.land` (verify)
 
 **Legal / Disclaimers**:
-- [TBD: Terms of Service link — reviewed by Carolyn Pehrson]
+- [TBD: Terms of Service link - reviewed by Carolyn Pehrson]
 - [TBD: Privacy Policy link]
 - [TBD: Risk Disclosure link]
-- [TBD: Restricted jurisdictions notice — copy to coordinate with Sonar compliance]
+- [TBD: Restricted jurisdictions notice - copy to coordinate with Sonar compliance]
 - [TBD: MiCA whitepaper link]
 
 **Required disclaimers**:
@@ -350,7 +350,7 @@ To finalize before launch, we need from the team:
 2. **Dates** (#3): exact sale start + end timestamps
 3. **Tokenomics pie chart** (#4): final allocation breakdown
 4. **Legal PDF** (#4, #16): ToS + token disclosure + risk disclosure
-5. **Audit PDF** (#4): smart contract audit (Sonar's contract — request from them)
+5. **Audit PDF** (#4): smart contract audit (Sonar's contract - request from them)
 6. **MiCA whitepaper** (#16): final version
 7. **Team list** (#10): names, photos, bios, socials
 8. **Investor logos** (#13): if section kept
