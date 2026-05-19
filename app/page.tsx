@@ -19,19 +19,19 @@ export default function Home() {
   return (
     <main>
       <Hero />
+      <Narrative />
       <SaleMetrics />
       <HowItWorks />
       <TokenDetails />
       <Transparency />
-      <Narrative />
       <Features />
       <GnotUtility />
       <Stats />
       <Roadmap />
       <Ecosystem />
+      <Partners />
       <Team />
       <Investors />
-      <Partners />
       <Media />
       <PreFooterCta />
     </main>
