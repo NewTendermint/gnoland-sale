@@ -1,0 +1,31 @@
+# Build configuration for the GNOT public token sale landing page.
+# Netlify Next.js Runtime handles SSR/RSC/Server Actions automatically.
+
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# Global security headers applied to every response.
+# CSP is intentionally NOT defined here — it is generated per-request with a
+# nonce by the Next.js middleware (added in Layer 2). Static CSP in a header
+# table would be incompatible with nonce-based script policy.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    Strict-Transport-Security = "max-age=63072000; includeSubDomains; preload"
+
+# Deploy-context-scoped environment variables.
+# Production targets sale.gno.land and Sonar prod + Base mainnet.
+# Preview deploys hit Sonar sandbox + Base Sepolia (set per Netlify dashboard).
+[context.production.environment]
+  NEXT_PUBLIC_SITE_URL = "https://sale.gno.land"
+
+[context.deploy-preview.environment]
+  NEXT_PUBLIC_SITE_URL = "https://deploy-preview.netlify.app"

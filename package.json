@@ -25,6 +25,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
+    "@netlify/plugin-nextjs": "^5.15.11",
     "@playwright/test": "^1.60.0",
     "@secretlint/secretlint-rule-preset-recommend": "^13.0.2",
     "@tailwindcss/postcss": "^4.3.0",
