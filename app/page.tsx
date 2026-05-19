@@ -1,8 +1,39 @@
+import { Ecosystem } from "./(sections)/ecosystem/Ecosystem"
+import { Features } from "./(sections)/features/Features"
+import { GnotUtility } from "./(sections)/gnot-utility/GnotUtility"
+import { Hero } from "./(sections)/hero/Hero"
+import { HowItWorks } from "./(sections)/how-it-works/HowItWorks"
+import { Investors } from "./(sections)/investors/Investors"
+import { Media } from "./(sections)/media/Media"
+import { Narrative } from "./(sections)/narrative/Narrative"
+import { Partners } from "./(sections)/partners/Partners"
+import { PreFooterCta } from "./(sections)/pre-footer-cta/PreFooterCta"
+import { Roadmap } from "./(sections)/roadmap/Roadmap"
+import { SaleMetrics } from "./(sections)/sale-metrics/SaleMetrics"
+import { Stats } from "./(sections)/stats/Stats"
+import { Team } from "./(sections)/team/Team"
+import { TokenDetails } from "./(sections)/token-details/TokenDetails"
+import { Transparency } from "./(sections)/transparency/Transparency"
+
 export default function Home() {
   return (
-    <main className="min-h-screen p-8">
-      <h1 className="text-4xl font-bold">GNOT Token Sale - skeleton</h1>
-      <p className="text-fg-muted mt-4">Tailwind v4 active</p>
+    <main>
+      <Hero />
+      <SaleMetrics />
+      <HowItWorks />
+      <TokenDetails />
+      <Transparency />
+      <Narrative />
+      <Features />
+      <GnotUtility />
+      <Stats />
+      <Roadmap />
+      <Ecosystem />
+      <Team />
+      <Investors />
+      <Partners />
+      <Media />
+      <PreFooterCta />
     </main>
   )
 }
