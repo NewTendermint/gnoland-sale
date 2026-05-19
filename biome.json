@@ -28,6 +28,15 @@
     }
   },
   "files": {
-    "ignore": ["node_modules", ".next", "build", "dist", "coverage", "*.md"]
+    "ignore": [
+      "node_modules",
+      ".next",
+      "build",
+      "dist",
+      "coverage",
+      "playwright-report",
+      "test-results",
+      "*.md"
+    ]
   }
 }
