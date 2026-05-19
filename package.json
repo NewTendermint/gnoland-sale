@@ -12,11 +12,10 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test",
-    "prepare": "husky"
+    "test:e2e": "playwright test"
   },
   "dependencies": {
-    "next": "15.0.3",
+    "next": "15.5.18",
     "react": "19.0.0",
     "react-dom": "19.0.0"
   },

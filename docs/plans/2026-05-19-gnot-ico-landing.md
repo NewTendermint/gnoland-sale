@@ -94,6 +94,8 @@ test-results
 
 - [ ] **Step 3: Create `package.json`**
 
+Note: `next` is pinned to `15.5.18` (latest stable 15.x at plan revision time — fixes CVE-2025-66478 present in earlier 15.0.x). The `prepare` script is intentionally NOT included here; it's added in Task 1.2 alongside the husky dev dependency to avoid a broken `npm install` on fresh clones.
+
 ```json
 {
   "name": "gnot-ico-landing",
@@ -109,11 +111,10 @@ test-results
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test",
-    "prepare": "husky"
+    "test:e2e": "playwright test"
   },
   "dependencies": {
-    "next": "15.0.3",
+    "next": "15.5.18",
     "react": "19.0.0",
     "react-dom": "19.0.0"
   },
@@ -235,7 +236,11 @@ SONAR_CLIENT_UUID=
 SONAR_REDIRECT_URI=
 SONAR_SALE_UUID=
 SONAR_API_BASE_URL=
+# 32-byte hex (libsodium AES-256). Rotates every 6 months per spec §4.7
 ENCRYPTION_KEY=
+# 32-byte hex (HMAC-SHA256 of IPs). Rotates every 3 months per spec §4.7
+IP_HMAC_PEPPER=
+# 32+ char string for iron-session cookie encryption
 SESSION_PASSWORD=
 SENTRY_DSN_SERVER=
 SALE_PAUSED=false
@@ -329,17 +334,22 @@ npx lint-staged
 npx secretlint "**/*"
 ```
 
-- [ ] **Step 5: Add lint-staged + secretlint config to `package.json`**
+- [ ] **Step 5: Add lint-staged config + `prepare` script to `package.json`**
 
 Add to `package.json`:
 
 ```json
 {
+  "scripts": {
+    "prepare": "husky"
+  },
   "lint-staged": {
     "*.{ts,tsx,js,jsx,json}": ["biome check --apply"]
   }
 }
 ```
+
+(The `prepare` script is added here, NOT in Task 1.1, so `npm install` doesn't fail on fresh clones before husky is in `devDependencies`.)
 
 - [ ] **Step 6: Create `.secretlintrc.json`**
 
