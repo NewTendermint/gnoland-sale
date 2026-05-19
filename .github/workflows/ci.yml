@@ -1,0 +1,49 @@
+# Continuous Integration pipeline.
+# Runs on every pull request and on pushes to main.
+# Pipeline shape: validate (lint, typecheck, unit tests, build, secret scan, audit).
+# An e2e job will be added later once a preview URL is available.
+name: CI
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      # Pull the repo at the commit under test.
+      - uses: actions/checkout@v4
+
+      # Pin Node to the project's runtime and cache npm downloads.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # Reproducible install from the lockfile.
+      - run: npm ci
+
+      # Static analysis: Biome lint covers JS/TS/JSON sources.
+      - name: Biome lint
+        run: npm run lint
+
+      # TypeScript strict mode — fail on any type error.
+      - name: Typecheck
+        run: npm run typecheck
+
+      # Unit tests under Vitest.
+      - name: Unit tests
+        run: npm run test
+
+      # Produce the production build that the secret scanner inspects.
+      - name: Build
+        run: npm run build
+
+      # Guard against any server-only secret name leaking into the client bundle.
+      - name: Scan bundle for secrets
+        run: node scripts/check-secrets.mjs
+
+      # Fail the build on high-or-critical vulnerabilities in dependencies.
+      - name: Audit dependencies
+        run: npm audit --audit-level=high
