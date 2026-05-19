@@ -97,11 +97,11 @@ When a section is `⚠️ TBD`, please replace the `[TBD: ...]` placeholders wit
 
 1. **Connect your wallet** - MetaMask, Coinbase Wallet, WalletConnect or Rainbow. We use wagmi standard, any EVM wallet on Base works.
 2. **Verify with Sonar (one-click for existing users)** - Sonar handles KYC/KYB. ~100k users already verified can participate in one click. New users complete identity verification (typical: 5-15 min).
-3. **Place your bid** - Set the price you're willing to pay (up to your max) and the commitment amount in USDC/USDT. Bids can only be increased, never decreased.
-4. **Wait for the auction to close** - A single clearing price is determined when the sale ends. Everyone who bid at or above the clearing price pays the same final price.
-5. **Receive tokens** - Excess funds are auto-refunded. GNOT tokens are distributed after mainnet launch per the unlock schedule.
+3. **Place your bid in USDC on Base** - Set the maximum price you are willing to pay and the commitment amount. Bids can be increased during the sale, never reduced.
+4. **Wait for the auction to close** - A single clearing price is determined when the sale ends. Everyone who bid at or above the clearing price pays the same final price. Excess USDC is refunded automatically on Base.
+5. **Receive GNOT post-mainnet** - GNOT tokens are distributed after the gno.land mainnet launch (Q3 2026) via the gno.land to Base IBC bridge, per the unlock schedule. Distribution mechanism (direct per-bidder vs aggregated) is being finalized by the team.
 
-**Validation required**: confirm dates, refund timing, distribution mechanism.
+**Validation required**: confirm dates, refund timing. Distribution mechanism is an open internal question (direct IBC per user vs aggregate-then-distribute via a Base account); the copy stays vague until the decision is made.
 
 ---
 
