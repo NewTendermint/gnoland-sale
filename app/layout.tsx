@@ -1,5 +1,7 @@
 import "./globals.css"
 import type { ReactNode } from "react"
+import { Footer } from "./(chrome)/Footer"
+import { Header } from "./(chrome)/Header"
 
 export const metadata = {
   title: "GNOT Public Token Sale - gno.land",
@@ -9,7 +11,11 @@ export const metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <Header />
+        {children}
+        <Footer />
+      </body>
     </html>
   )
 }
