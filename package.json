@@ -12,7 +12,11 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx,json}": ["biome check --apply"]
   },
   "dependencies": {
     "next": "15.5.18",
@@ -21,9 +25,13 @@
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
+    "@secretlint/secretlint-rule-preset-recommend": "^13.0.2",
     "@types/node": "22.9.0",
     "@types/react": "19.0.1",
     "@types/react-dom": "19.0.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
+    "secretlint": "^13.0.2",
     "typescript": "5.7.2"
   }
 }

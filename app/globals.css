@@ -3,7 +3,8 @@
   --fg: #ffffff;
 }
 
-html, body {
+html,
+body {
   margin: 0;
   padding: 0;
   background: var(--bg);
@@ -12,4 +13,6 @@ html, body {
   line-height: 1.5;
 }
 
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+}
