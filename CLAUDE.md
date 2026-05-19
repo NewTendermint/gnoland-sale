@@ -55,7 +55,7 @@ When Sonar SDK behavior contradicts the spec or plan, the SDK source (`node_modu
 - **Chain**: Base mainnet (prod), Base Sepolia (preview/sandbox) - **pinned**, do not add other chains
 - **3D**: `@react-three/fiber` + `@react-three/drei` (escape to raw three.js only if R3F perf insufficient)
 - **Animation**: `motion` (ex-Framer) + GSAP ScrollTrigger (only for Roadmap pin)
-- **Smooth scroll**: Lenis
+- **Scroll motion**: native browser only. NO Lenis, NO `scroll-behavior: smooth`. Scroll-triggered animations (parallax, fade-up, reveal) are allowed via IntersectionObserver + transform.
 - **Tests**: Vitest (unit) + Playwright (E2E sandbox) + MSW v2 (mocks)
 - **Errors**: Sentry with PII scrubber (mandatory)
 - **Analytics**: Simple Analytics (privacy-friendly, cookieless)
@@ -103,6 +103,11 @@ Each layer must ship a working Netlify preview deploy. **Never skip ahead** - La
 - **TDD where it makes sense** (utility functions, encryption, parsers). UI components are visually reviewed on preview deploys.
 - **Commits**: one logical change per commit, conventional commit prefixes (`feat:`, `fix:`, `chore:`, `test:`, `design:`).
 - **Co-author Claude**: every Claude-authored commit ends with `Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>`.
+
+### Writing style (docs, comments, commit messages, chat)
+
+- **No em-dash character** (Unicode U+2014, the long horizontal bar). It is an AI-tell. Use the ASCII hyphen-minus or restructure the sentence with colons, parentheses, or two separate sentences.
+- **No en-dash** (U+2013) either. ASCII hyphen-minus is the only horizontal-bar punctuation allowed.
 
 ---
 

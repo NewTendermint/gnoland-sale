@@ -44,7 +44,7 @@ Build `sale.gno.land` as a **Next.js 15 (App Router) site on Netlify**, integrat
 2. **Layer 2 - Functionality**: Sonar OAuth, wallet connect, bid flow, Server Actions, DB, security headers. End-to-end testable sur sandbox.
 3. **Layer 3 - Design tokens**: Palette complète injectée (mint, blue, amber, red, glassmorph), typographie finalisée, dark backgrounds finaux.
 4. **Layer 4 - Voxel + illustrations**: Hero WebGL scene + illustrations sections (au fur et à mesure que les assets arrivent du designer).
-5. **Layer 5 - Motion + polish**: Lenis, fade-ups, magnetic cursor, counter-up, scroll-pin roadmap, parallax.
+5. **Layer 5 - Motion + polish**: fade-ups, magnetic cursor, counter-up, scroll-pin roadmap, parallax. Native scroll motion preserved.
 
 **Why this order**:
 - Skeleton tôt = UX validable avant d'investir dans le visuel
@@ -103,7 +103,7 @@ Browser ─────────►│  │ - SSG/RSC marketing      │   �
 | Data fetch | TanStack Query | Polling clearing price, dédup auto |
 | 3D | `@react-three/fiber` + `@react-three/drei` (escape hatch raw three.js) | Mature R3F, R3F simplifie le DX |
 | Animation | `motion` (ex-Framer) + GSAP ScrollTrigger (roadmap pin only) | Standard awwwards |
-| Smooth scroll | Lenis | Inertia pro, accessibility-friendly |
+| Scroll motion | Native browser only (no smooth-scroll library, no `scroll-behavior: smooth`). Scroll-triggered animations via IntersectionObserver + transform. | Project rule: avoid JS-driven scroll smoothing; preserve native scroll responsiveness while keeping reveal animations. |
 | Styling | Tailwind v4 + CSS variables | Design tokens centralisés |
 | Content | MD/MDX + `gray-matter`, source `content/sections.md` | Edit hors-code, iterations rapides |
 | Mocks | MSW v2 | Intercept Server Actions en dev |
@@ -498,7 +498,7 @@ The text and bid panel are **never** dependent on canvas success. Canvas crash =
 
 | Effect | Where | Implementation |
 |---|---|---|
-| Lenis smooth scroll | Global page | `lerp: 0.1`, off under reduced-motion |
+| Native scroll motion | Global page | No JS smooth-scroll library, no `scroll-behavior: smooth`. Browser default only. Scroll-triggered animations remain. |
 | Fade-up reveal | All `.animate-on-scroll` (text, cards) | IntersectionObserver, 500ms ease-out-quart, 1-shot |
 | Custom cursor | Desktop only | Dot + ring, magnetic on CTAs, label states |
 | Magnetic cursor | CTAs only (`Place a bid`, `Connect`, `View docs`) | translate(distX*0.3, distY*0.3), 300ms |
@@ -512,7 +512,7 @@ The text and bid panel are **never** dependent on canvas success. Canvas crash =
 
 ### Accessibility (mandatory)
 
-`prefers-reduced-motion: reduce` disables: Lenis, fade-ups, cursor effects, hero orbit/parallax, counter-up, roadmap pin. Sale must remain fully completable with zero motion.
+`prefers-reduced-motion: reduce` disables: fade-ups, cursor effects, hero orbit/parallax, counter-up, roadmap pin. Sale must remain fully completable with zero motion. Native scroll is already accessible by default.
 
 ### Performance discipline
 

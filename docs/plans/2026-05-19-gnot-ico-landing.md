@@ -6,7 +6,7 @@
 
 **Architecture:** Next.js 15 App Router on Netlify with Frontend-with-Backend Sonar integration (server-side OAuth + permit issuance, client-side wallet + contract calls). Layered build: skeleton+UX first (deployable wireframe), then functionality (Sonar+wallet end-to-end), then design tokens, then voxel illustrations, then motion polish. Each layer ships a working preview on Netlify.
 
-**Tech Stack:** Next.js 15 · TypeScript · Tailwind v4 · Biome · Drizzle ORM · Netlify DB/Blobs · `@echoxyz/sonar-react@0.14.0` + `@echoxyz/sonar-core@0.15.0` · wagmi v2 · RainbowKit · viem · `@react-three/fiber` + `drei` · `motion` + GSAP ScrollTrigger · Lenis · iron-session · libsodium · TanStack Query · MSW v2 · Vitest · Playwright
+**Tech Stack:** Next.js 15 · TypeScript · Tailwind v4 · Biome · Drizzle ORM · Netlify DB/Blobs · `@echoxyz/sonar-react@0.14.0` + `@echoxyz/sonar-core@0.15.0` · wagmi v2 · RainbowKit · viem · `@react-three/fiber` + `drei` · `motion` + GSAP ScrollTrigger (Roadmap pin only) · IntersectionObserver for reveals · iron-session · libsodium · TanStack Query · MSW v2 · Vitest · Playwright
 
 **Spec reference:** `docs/specs/2026-05-19-gnot-ico-landing-design.md`
 **Content reference:** `content/sections.md`
@@ -1460,21 +1460,22 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 
 ---
 
-## Task 1.9: Smooth anchor scroll + sticky header behavior
+## Task 1.9: Anchor scroll-margin (native scroll, no smooth-scroll)
+
+Per project convention (see CLAUDE.md): native browser scroll only. No `scroll-behavior: smooth`. We only add `scroll-margin-top` so anchor clicks land below the sticky header.
 
 **Files:**
 - Modify: `app/globals.css`
 
-- [ ] **Step 1: Add smooth scroll CSS**
+- [ ] **Step 1: Add scroll-margin CSS**
 
 Append to `app/globals.css`:
 
 ```css
-@media (prefers-reduced-motion: no-preference) {
-  html { scroll-behavior: smooth; }
+/* Offset anchor jumps below the sticky header. Native scroll, no smoothing. */
+main > section {
+  scroll-margin-top: 80px;
 }
-
-main > section { scroll-margin-top: 80px; }
 ```
 
 - [ ] **Step 2: Verify in browser**
@@ -1483,13 +1484,13 @@ main > section { scroll-margin-top: 80px; }
 npm run dev
 ```
 
-Click nav links, confirm smooth scrolling, sections land below sticky header.
+Click a nav link; confirm the target section lands below the sticky header (jump is instant by design).
 
 - [ ] **Step 3: Commit**
 
 ```bash
 git add .
-git commit -m "feat: add CSS-based smooth scroll with reduced-motion guard
+git commit -m "feat: add scroll-margin so anchor jumps clear the sticky header
 
 Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ```
@@ -3819,36 +3820,66 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 
 ---
 
-## Task 5.1: Lenis smooth scroll
+## Task 5.1: Scroll-driven reveal infrastructure (no smooth-scroll lib)
+
+Per project convention: native scroll motion only. This task sets up the IntersectionObserver-based reveal infrastructure that subsequent motion tasks (fade-up, parallax, counter-up) will use. Lenis is intentionally NOT installed.
 
 **Files:**
-- Create: `app/(chrome)/SmoothScroll.tsx`
-- Modify: `app/layout.tsx`
+- Create: `lib/motion/use-in-view.ts`
 
-- [ ] **Step 1: Install Lenis**
+- [ ] **Step 1: Write the failing test**
 
-```bash
-npm install lenis
+`tests/unit/use-in-view.test.ts`:
+```ts
+import { renderHook, act } from "@testing-library/react"
+import { describe, it, expect, vi } from "vitest"
+import { useInView } from "@/lib/motion/use-in-view"
+
+describe("useInView", () => {
+  it("returns false before any intersection", () => {
+    const observe = vi.fn()
+    const disconnect = vi.fn()
+    globalThis.IntersectionObserver = vi.fn(() => ({
+      observe,
+      disconnect,
+      unobserve: vi.fn(),
+    })) as unknown as typeof IntersectionObserver
+    const { result } = renderHook(() => useInView<HTMLDivElement>())
+    expect(result.current.inView).toBe(false)
+  })
+})
 ```
 
-- [ ] **Step 2: Implement provider**
+- [ ] **Step 2: Implement `lib/motion/use-in-view.ts`**
 
-```tsx
+```ts
 "use client"
-import { useEffect, type ReactNode } from "react"
-import Lenis from "lenis"
+import { useEffect, useRef, useState } from "react"
 
-export function SmoothScroll({ children }: { children: ReactNode }) {
+/** Returns a ref + a one-shot inView flag flipped when the element enters the viewport. */
+export function useInView<T extends Element>(threshold = 0.1) {
+  const ref = useRef<T | null>(null)
+  const [inView, setInView] = useState(false)
   useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return
-    const lenis = new Lenis({ lerp: 0.1, wheelMultiplier: 1 })
-    function raf(time: number) { lenis.raf(time); requestAnimationFrame(raf) }
-    requestAnimationFrame(raf)
-    return () => lenis.destroy()
-  }, [])
-  return <>{children}</>
+    const node = ref.current
+    if (!node) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          setInView(true)
+          observer.disconnect()
+        }
+      },
+      { threshold },
+    )
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [threshold])
+  return { ref, inView }
 }
 ```
+
+- [ ] **Step 3: Run test + commit**
 
 - [ ] **Step 3: Wrap layout, commit**
 
@@ -3886,7 +3917,7 @@ export function SmoothScroll({ children }: { children: ReactNode }) {
   npm install gsap
   ```
 - [ ] **Step 2:** Implement ScrollTrigger pin on Roadmap section
-- [ ] **Step 3:** Lenis-GSAP integration via `ScrollTrigger.scrollerProxy`
+- [ ] **Step 3:** GSAP ScrollTrigger reads native `window` scroll directly (no smooth-scroll lib to integrate with)
 - [ ] **Step 4:** Mobile fallback (native horizontal touch scroll, no pin)
 - [ ] **Step 5:** Disable under `prefers-reduced-motion`
 - [ ] **Step 6:** Commit
