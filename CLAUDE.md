@@ -21,6 +21,23 @@ When you start a session, read these in order. They override anything you think 
 3. **`content/sections.md`** — the canonical copy for all 16 page sections, including TBDs and notes. Edit content here, not in components.
 4. **`docs/REQUIREMENTS_FROM_TEAMS.md`** — pending asks to Sonar / marketing / infra teams. If you're blocked on missing input, check here first.
 
+### Sonar external documentation (READ FIRST when touching Sonar/OAuth/permit/bid code)
+
+Authoritative reference for the integration — verify SDK behavior and API surfaces against these before implementing:
+
+- **Frontend-with-Backend pattern (our architecture)**: https://docs.echo.xyz/sonar/integration-guides/frontend-with-backend.md
+- **OAuth + PKCE flow**: https://docs.echo.xyz/sonar/core-features/authentication.md
+- **Purchase permits (signing, expiry, struct)**: https://docs.echo.xyz/sonar/core-features/purchase-permits.md
+- **Entities (KYC verification objects)**: https://docs.echo.xyz/sonar/core-features/entities.md
+- **SettlementSale contract (`replaceBidWithPermit`)**: https://docs.echo.xyz/sonar/reference/contracts/settlement-sale.md
+- **Smart contract operations (frontend perspective)**: https://docs.echo.xyz/sonar/operations/smart-contract-operations.md
+- **Reading commitment data (live clearing price)**: https://docs.echo.xyz/sonar/integration-guides/reading-commitment-data.md
+- **SDK reference**: https://docs.echo.xyz/sonar/reference/sonar-core.md and https://docs.echo.xyz/sonar/reference/sonar-react.md
+- **OpenAPI spec**: https://docs.echo.xyz/openapi/sonar.json
+- **Complete index**: https://docs.echo.xyz/llms.txt
+
+When Sonar SDK behavior contradicts the spec or plan, the SDK source (`node_modules/@echoxyz/sonar-core/dist/*.d.ts`) is authoritative. Update the spec if needed.
+
 ---
 
 ## Stack (locked in)

@@ -145,12 +145,14 @@ Browser ─────────►│  │ - SSG/RSC marketing      │   �
 
 Server-only items:
 - `accessToken` / `refreshToken` per user (encrypted at-rest via envelope encryption)
-- Encryption master key (`ENCRYPTION_KEY`, 32-byte random, env var only)
+- Encryption master key (`ENCRYPTION_KEY`, 32-byte hex, env var only)
+- IP HMAC pepper (`IP_HMAC_PEPPER`, 32-byte hex, env var only — see §4.7)
+- Session signing/encryption secret (`SESSION_PASSWORD`, 32+ chars, env var only)
 - `codeVerifier` (PKCE, in Netlify Blobs with `expiresAt` metadata, deleted post-exchange)
 - All Sonar API calls: `listAvailableEntities`, `prePurchaseCheck`, `generatePurchasePermit`
 - Token refresh logic + promise coalescing
 - Audit log writes
-- RPC provider API key (Alchemy/QuickNode for Base)
+- RPC provider API key (if/when upgraded from public Base RPC)
 - Sentry DSN (server-side; client uses public DSN with PII scrubbing)
 - Webhook HMAC secret (if Sonar offers webhooks)
 
@@ -269,7 +271,105 @@ Server-only items:
 - **Don't log**: full permits, raw OAuth codes, codeVerifier, access tokens (ever, anywhere)
 - **Do log**: anonymized correlation IDs, response times, status codes, redacted permit IDs (first 8 chars)
 - **Alert thresholds**: error rate >1% over 5min, OAuth callback failure rate >5%, p95 API latency >1s
-- **Audit log retention**: 90 days minimum (regulatory), then archive (S3 cold or Netlify DB archive table)
+
+### 4.7 Data minimization & non-reconstructability guarantees
+
+This section formalizes what data crosses our system boundaries and proves that, even in a worst-case breach (full DB read + `ENCRYPTION_KEY` + `IP_HMAC_PEPPER` all compromised), **no PII can be reconstructed from our data**.
+
+#### Principle: store only what's already public, HMAC the rest, encrypt secrets
+
+Three categories of data live in our DB:
+
+1. **Already-public data** (wallet addresses, entity UUIDs, bid amounts, timestamps): stored in clear. Hashing/truncating provides false anonymization — ~250M EVM wallets are rainbow-table-able and UUIDs are too. Storing in clear is more useful for forensics and provides equivalent security to a poorly hashed form.
+
+2. **Secrets** (OAuth access/refresh tokens): encrypted via libsodium AES-256-GCM, master key in env `ENCRYPTION_KEY`, NEVER stored in DB.
+
+3. **Operational fingerprints** (IPs, user-agents): protected via HMAC with a secret PEPPER (`IP_HMAC_PEPPER`), or category-bucketed (UA → `chrome-mobile`) to prevent fingerprinting.
+
+#### Exhaustive whitelist of stored fields
+
+**`oauth_tokens` table:**
+| Field | Type | Sensitivity |
+|---|---|---|
+| `session_id` | UUID v4 | Opaque, no PII linkage |
+| `encrypted_tokens` | text (libsodium ciphertext) | Requires `ENCRYPTION_KEY` to decrypt |
+| `expires_at`, `created_at`, `updated_at` | timestamptz | Harmless |
+
+**`audit_log` table:**
+| Field | Type | Sensitivity |
+|---|---|---|
+| `id` | bigint identity | None |
+| `event` | text enum | Operational |
+| `entity_id` | uuid | Public via Sonar SDK + contract `entityStatesByIDs()` |
+| `wallet` | text (`0x…`, 42 chars) | Public on Base mainnet via tx events |
+| `amount_minor` | bigint | Public on-chain |
+| `ip_hmac` | text (HMAC-SHA256 hex) | Irreversible without `IP_HMAC_PEPPER` |
+| `user_agent_class` | text enum (`chrome-mobile`, `firefox-desktop`, …) | Generic category, not fingerprintable |
+| `metadata` | jsonb | Schema-validated whitelist only |
+| `created_at` | timestamptz | Harmless |
+
+**`metadata` JSONB schema (zod-enforced, whitelist):**
+
+Allowed keys:
+- `permit_id_prefix`: string, first 8 chars of permit ID
+- `error_code`: enumerated Sonar / contract error code
+- `chain_id`: numeric (e.g., 8453 for Base mainnet)
+- `payment_token`: address of USDC or USDT contract
+
+**Forbidden in `metadata`** (build-fails the type checker, runtime-rejected by zod):
+- email, name, address, phone, date of birth
+- full user-agent string
+- full IP address
+- OAuth codes, tokens, refresh tokens
+- full permit signatures
+- any string > 256 chars (heuristic guard against accidental dumps)
+
+#### Reconstruction matrix — what an attacker with full access can extract
+
+Worst case: attacker has full DB + `ENCRYPTION_KEY` + `IP_HMAC_PEPPER`.
+
+| Sensitive data | Reconstructable? | Why |
+|---|---|---|
+| Bidder identity (name/email/DOB/docs) | ❌ NO | We never receive it — Sonar holds it exclusively |
+| Wallet ↔ identity linkage | ❌ NO | Same — Sonar's database is the only source |
+| KYC verification details | ❌ NO | Sonar's data, never ours |
+| Wallets that participated | ✅ Yes | But already public on Base via `SettlementSale` events |
+| Bid amounts and timestamps | ✅ Yes | Already public on-chain |
+| IPs of bidders | ❌ NO | HMAC with PEPPER; brute-force requires the PEPPER (server-only env var), and even with PEPPER would test 4B IPs per user — impractical at scale |
+| User-agents | ❌ NO | Only category retained; original lost at intake |
+| Sonar OAuth tokens | ✅ With `ENCRYPTION_KEY` | Useless without user's wallet private key for any financial action; Sonar can revoke; ~1h access token lifetime |
+
+**Worst-case impact**: data already public on-chain becomes consolidated in one place. No new private information leaked. **No fund loss possible** under any breach scenario (smart contract requires user wallet signature for every bid).
+
+#### Key rotation procedures
+
+| Secret | Rotation cadence | Procedure |
+|---|---|---|
+| `ENCRYPTION_KEY` | Every 6 months OR immediately on suspected compromise | Re-encrypt all `oauth_tokens` rows in single transaction (decrypt with old key, encrypt with new), then promote new key in env |
+| `IP_HMAC_PEPPER` | Every 3 months | Old `ip_hmac` entries become unverifiable (acceptable — only matters for live abuse detection windows, not long-term audit) |
+| `SESSION_PASSWORD` | Every 6 months | Forces all sessions to expire (acceptable inconvenience) |
+
+All three secrets stored in Netlify env vars, scoped to `production` deploy context (preview deploys use different values).
+
+#### Retention & cleanup
+
+- **`oauth_tokens`**: TTL = `expires_at + 7 days grace period`. Daily cleanup via Netlify Scheduled Function:
+  ```sql
+  DELETE FROM oauth_tokens WHERE expires_at < now() - interval '7 days';
+  ```
+  Full table wipe scheduled for **30 days post-sale-close** (no operational need to retain tokens once sale is settled).
+- **`audit_log`**: 5 years retention (financial compliance default — confirm with legal counsel). After 5 years, archive to cold storage or hard-delete per regulator stance. No automated cleanup before that.
+- **PKCE state (Netlify Blobs)**: TTL 10 min via metadata; deleted on use (single-use); residual entries cleaned by daily sweep.
+
+#### GDPR / "right to be forgotten" stance
+
+A user requesting their data: we respond honestly — **we have no personal data**. The only items keyed to a user are:
+- Their wallet address (publicly visible on Base mainnet — we cannot un-publish blockchain data)
+- An `ip_hmac` (irreversible)
+
+We will, as a courtesy, delete their `audit_log` rows on request by wallet match. This is not a legal requirement under GDPR (the stored data isn't "personal data" by GDPR definition — wallet addresses + irreversible HMACs).
+
+**No procedure exists for "deleting identity" because we never had it.**
 
 ---
 

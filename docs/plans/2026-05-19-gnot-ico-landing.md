@@ -1562,6 +1562,7 @@ describe("env validation", () => {
       SONAR_SALE_UUID: "test-sale",
       SONAR_API_BASE_URL: "https://sandbox.api.echo.xyz",
       ENCRYPTION_KEY: "0".repeat(64),
+      IP_HMAC_PEPPER: "1".repeat(64),
       SESSION_PASSWORD: "x".repeat(32),
       DATABASE_URL: "postgres://localhost/test",
     }
@@ -1598,7 +1599,8 @@ const schema = z.object({
   SONAR_REDIRECT_URI: z.string().url(),
   SONAR_SALE_UUID: z.string().min(1),
   SONAR_API_BASE_URL: z.string().url(),
-  ENCRYPTION_KEY: z.string().length(64), // 32 bytes hex
+  ENCRYPTION_KEY: z.string().length(64), // 32 bytes hex — rotates per spec §4.7
+  IP_HMAC_PEPPER: z.string().length(64), // 32 bytes hex — rotates per spec §4.7 (3 months)
   SESSION_PASSWORD: z.string().min(32),
   DATABASE_URL: z.string().url(),
   SALE_PAUSED: z.enum(["true", "false"]).default("false"),
@@ -1767,12 +1769,16 @@ npm install -D drizzle-kit
 
 - [ ] **Step 2: Create `lib/db/schema.ts`**
 
-```ts
-import { pgTable, text, timestamp, bigint, integer, index } from "drizzle-orm/pg-core"
+Per spec §4.7: we store already-public data in clear (wallets, entity IDs, amounts — all visible on-chain anyway), HMAC the IP with a server-side PEPPER, bucket the user-agent, and constrain `metadata` to a strict whitelist via zod. No fake-anonymizing hash truncation.
 
+```ts
+import { pgTable, text, timestamp, bigint, uuid, jsonb, index } from "drizzle-orm/pg-core"
+
+/** Encrypted OAuth tokens, keyed by opaque session id. */
 export const oauthTokens = pgTable("oauth_tokens", {
   sessionId: text("session_id").primaryKey(),
-  encryptedTokens: text("encrypted_tokens").notNull(), // libsodium-encrypted JSON
+  /** libsodium AES-256-GCM ciphertext of {accessToken, refreshToken}. */
+  encryptedTokens: text("encrypted_tokens").notNull(),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
@@ -1780,19 +1786,56 @@ export const oauthTokens = pgTable("oauth_tokens", {
   expiresIdx: index("oauth_tokens_expires_idx").on(t.expiresAt),
 }))
 
+/**
+ * Forensic + compliance audit log.
+ *
+ * Stored fields are deliberately either:
+ *   - already public on-chain (wallet, entity_id, amount) — no privacy gain from hashing
+ *   - HMAC'd with a server-only PEPPER (ip_hmac) — irreversible without the secret
+ *   - bucket-categorized (user_agent_class) — no fingerprinting surface
+ *   - schema-restricted (metadata) — see whitelist below
+ *
+ * Forbidden in `metadata`: email, name, address, phone, DOB, full UA, full IP,
+ * OAuth codes/tokens, full permit signatures, any string > 256 chars.
+ */
 export const auditLog = pgTable("audit_log", {
   id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
-  event: text("event").notNull(), // e.g., "permit_issued", "oauth_callback"
-  entityIdHash: text("entity_id_hash"), // first 16 chars of SHA-256
-  walletHash: text("wallet_hash"), // first 10 chars of address
-  amountMinor: bigint("amount_minor", { mode: "number" }), // micro-units (USDC has 6 decimals)
-  ipHash: text("ip_hash"),
-  metadata: text("metadata"), // JSON-stringified non-PII details
+  event: text("event").notNull(),
+  /** Sonar entity UUID — public via Sonar SDK + on-chain `entityStatesByIDs()`. */
+  entityId: uuid("entity_id"),
+  /** Full wallet address (0x…40) — public on Base mainnet via SettlementSale events. */
+  wallet: text("wallet"),
+  /** Bid amount in payment-token minor units (USDC has 6 decimals). */
+  amountMinor: bigint("amount_minor", { mode: "number" }),
+  /** HMAC-SHA256(ip, IP_HMAC_PEPPER) — irreversible without the PEPPER. */
+  ipHmac: text("ip_hmac"),
+  /** Coarse UA bucket: "chrome-mobile" | "firefox-desktop" | etc. Never the raw UA. */
+  userAgentClass: text("user_agent_class"),
+  metadata: jsonb("metadata"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => ({
   eventIdx: index("audit_log_event_idx").on(t.event),
   createdAtIdx: index("audit_log_created_at_idx").on(t.createdAt),
+  walletIdx: index("audit_log_wallet_idx").on(t.wallet),
 }))
+```
+
+Add zod schema for `metadata` whitelist enforcement in `lib/db/schema.ts`:
+
+```ts
+import { z } from "zod"
+
+/** Whitelist of allowed keys in audit_log.metadata. Reject anything else at write time. */
+export const auditMetadataSchema = z
+  .object({
+    permit_id_prefix: z.string().max(16).optional(),
+    error_code: z.string().max(64).optional(),
+    chain_id: z.number().int().optional(),
+    payment_token: z.string().regex(/^0x[a-fA-F0-9]{40}$/).optional(),
+  })
+  .strict()
+
+export type AuditMetadata = z.infer<typeof auditMetadataSchema>
 ```
 
 - [ ] **Step 3: Create `lib/db/client.ts`**
@@ -2191,8 +2234,8 @@ import { createSonarClient } from "./client"
 import { sonarCore } from "./server-only"
 import { env } from "@/lib/env"
 import { db } from "@/lib/db/client"
-import { auditLog } from "@/lib/db/schema"
-import { createHash } from "node:crypto"
+import { auditLog, auditMetadataSchema, type AuditMetadata } from "@/lib/db/schema"
+import { createHmac } from "node:crypto"
 
 const REFRESH_THRESHOLD_MS = 5 * 60 * 1000
 
@@ -2228,8 +2271,34 @@ export async function prePurchaseCheck(args: {
   })
 }
 
-function shortHash(input: string, length: number) {
-  return createHash("sha256").update(input).digest("hex").slice(0, length)
+/** HMAC-SHA256 of an IP using the server-only PEPPER. Irreversible without the PEPPER. */
+export function ipHmac(ip: string): string {
+  return createHmac("sha256", env.IP_HMAC_PEPPER).update(ip).digest("hex")
+}
+
+/**
+ * Insert an audit_log row. Validates `metadata` against the whitelist schema before write
+ * to guarantee no PII leaks into the database.
+ */
+async function recordAudit(args: {
+  event: string
+  entityId: string | null
+  wallet: `0x${string}` | null
+  amountMinor: number | null
+  ipHmac: string | null
+  userAgentClass: string | null
+  metadata: AuditMetadata
+}) {
+  const metadata = auditMetadataSchema.parse(args.metadata)
+  await db.insert(auditLog).values({
+    event: args.event,
+    entityId: args.entityId,
+    wallet: args.wallet,
+    amountMinor: args.amountMinor,
+    ipHmac: args.ipHmac,
+    userAgentClass: args.userAgentClass,
+    metadata,
+  })
 }
 
 export async function generatePurchasePermit(args: {
@@ -2237,7 +2306,8 @@ export async function generatePurchasePermit(args: {
   entityId: string
   wallet: `0x${string}`
   amount: bigint
-  ipHash: string
+  ipHmacValue: string
+  userAgentClass: string
 }) {
   const tokens = await ensureFreshTokens(args.sessionId)
   const client = createSonarClient(tokens.accessToken)
@@ -2247,15 +2317,35 @@ export async function generatePurchasePermit(args: {
     walletAddress: args.wallet,
     amount: args.amount.toString(),
   })
-  await db.insert(auditLog).values({
+  await recordAudit({
     event: "permit_issued",
-    entityIdHash: shortHash(args.entityId, 16),
-    walletHash: shortHash(args.wallet, 10),
+    entityId: args.entityId,
+    wallet: args.wallet,
     amountMinor: Number(args.amount),
-    ipHash: args.ipHash,
-    metadata: JSON.stringify({ permitIdPrefix: result.permit.id?.slice(0, 8) ?? null }),
+    ipHmac: args.ipHmacValue,
+    userAgentClass: args.userAgentClass,
+    metadata: {
+      permit_id_prefix: result.permit.id?.slice(0, 8),
+      chain_id: 8453,
+    },
   })
   return result
+}
+```
+
+Add a small utility `lib/security/user-agent.ts` to bucket the UA:
+
+```ts
+/** Bucket the user-agent string into a coarse, non-fingerprinting category. */
+export function classifyUserAgent(ua: string | null): string {
+  if (!ua) return "unknown"
+  const isMobile = /Mobile|Android|iPhone|iPad/i.test(ua)
+  const suffix = isMobile ? "-mobile" : "-desktop"
+  if (/Edg\//i.test(ua)) return `edge${suffix}`
+  if (/Chrome\//i.test(ua) && !/Edg\//i.test(ua)) return `chrome${suffix}`
+  if (/Firefox\//i.test(ua)) return `firefox${suffix}`
+  if (/Safari\//i.test(ua) && !/Chrome\//i.test(ua)) return `safari${suffix}`
+  return `other${suffix}`
 }
 ```
 
@@ -2300,14 +2390,14 @@ export async function POST(req: NextRequest) {
 import "server-only"
 import { NextResponse, type NextRequest } from "next/server"
 import { z } from "zod"
-import { createHash } from "node:crypto"
 import { getSession } from "@/lib/security/session"
-import { generatePurchasePermit } from "@/lib/sonar/permit"
+import { generatePurchasePermit, ipHmac } from "@/lib/sonar/permit"
+import { classifyUserAgent } from "@/lib/security/user-agent"
 
 const schema = z.object({
   entityId: z.string().uuid(),
   wallet: z.string().regex(/^0x[a-fA-F0-9]{40}$/),
-  amount: z.string().regex(/^\d+$/), // wei-like string
+  amount: z.string().regex(/^\d+$/),
 })
 
 export async function POST(req: NextRequest) {
@@ -2317,8 +2407,9 @@ export async function POST(req: NextRequest) {
   const parsed = schema.safeParse(await req.json())
   if (!parsed.success) return NextResponse.json({ error: "invalid input" }, { status: 400 })
 
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0] ?? "unknown"
-  const ipHash = createHash("sha256").update(ip).digest("hex").slice(0, 16)
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown"
+  const ipHmacValue = ipHmac(ip)
+  const userAgentClass = classifyUserAgent(req.headers.get("user-agent"))
 
   try {
     const result = await generatePurchasePermit({
@@ -2326,7 +2417,8 @@ export async function POST(req: NextRequest) {
       entityId: parsed.data.entityId,
       wallet: parsed.data.wallet as `0x${string}`,
       amount: BigInt(parsed.data.amount),
-      ipHash,
+      ipHmacValue,
+      userAgentClass,
     })
     return NextResponse.json(result)
   } catch (err) {
