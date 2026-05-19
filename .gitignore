@@ -13,3 +13,7 @@ playwright-report
 test-results
 .vercel
 *.tsbuildinfo
+
+# Project planning artifacts kept local only, never tracked
+/CLAUDE.md
+/docs/
