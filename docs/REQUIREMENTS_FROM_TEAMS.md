@@ -169,6 +169,14 @@ This document lists everything we need from **Sonar** and from the **gno.land ma
 - Sonar: A11, A19
 - Marketing: B17, B22, B23, B27, B28–B30, B34, B39
 
+### Internal hardening (pre-launch tasks, not blocking for MVP scaffolding)
+
+- [ ] **D1** — Custom secretlint rule for ETH private keys (`/0x[a-fA-F0-9]{64}/` not preceded by common transaction-hash context). 🔴 Highest priority — leak risk catastrophic for blockchain projects.
+- [ ] **D2** — Custom secretlint rule for BIP-39 mnemonics (12/24 word phrases with valid checksum). 🔴 Same risk as D1.
+- [ ] **D3** — Custom secretlint rule for Sonar API token format (once Sonar confirms what their tokens look like — currently opaque). 🟠
+- [ ] **D4** — Custom secretlint rule for Netlify Personal Access Tokens (`nfp_…` prefix). 🟠
+- [ ] **D5** — Enable AWS access-key detection (`enableIDScanRule: true`) only if any AWS service ever enters the stack. 🟡 Currently not needed.
+
 ---
 
 ## How to use this doc
