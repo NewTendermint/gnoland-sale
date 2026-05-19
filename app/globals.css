@@ -27,3 +27,8 @@ body {
 * {
   box-sizing: border-box;
 }
+
+/* Anchor jump targets sit below the sticky header without smoothing the scroll motion itself. */
+main > section {
+  scroll-margin-top: 80px;
+}
