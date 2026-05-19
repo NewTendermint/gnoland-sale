@@ -169,13 +169,16 @@ This document lists everything we need from **Sonar** and from the **gno.land ma
 - Sonar: A11, A19
 - Marketing: B17, B22, B23, B27, B28–B30, B34, B39
 
-### Internal hardening (pre-launch tasks, not blocking for MVP scaffolding)
+### Internal hardening — deferred / withdrawn
 
-- [ ] **D1** — Custom secretlint rule for ETH private keys (`/0x[a-fA-F0-9]{64}/` not preceded by common transaction-hash context). 🔴 Highest priority — leak risk catastrophic for blockchain projects.
-- [ ] **D2** — Custom secretlint rule for BIP-39 mnemonics (12/24 word phrases with valid checksum). 🔴 Same risk as D1.
-- [ ] **D3** — Custom secretlint rule for Sonar API token format (once Sonar confirms what their tokens look like — currently opaque). 🟠
-- [ ] **D4** — Custom secretlint rule for Netlify Personal Access Tokens (`nfp_…` prefix). 🟠
-- [ ] **D5** — Enable AWS access-key detection (`enableIDScanRule: true`) only if any AWS service ever enters the stack. 🟡 Currently not needed.
+Custom secretlint rules for ETH private keys, BIP-39 mnemonics, AWS keys, etc. were considered and explicitly **NOT scoped** for this project:
+
+- Single-developer workflow → no external commit pressure
+- Private repo → leak surface contained
+- Recommend preset already catches GitHub tokens, npm tokens, JWTs, PEM keys (the relevant generic vectors)
+- Project lifecycle is short (sale window ~3 weeks)
+
+Discipline + `.gitignore` strict on `.env*` files is the chosen control. Revisit only if the team grows or repo becomes public.
 
 ---
 
