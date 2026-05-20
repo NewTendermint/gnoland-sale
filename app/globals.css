@@ -1,25 +1,99 @@
 @import "tailwindcss";
+@import "../styles/tokens.css";
 
 /**
- * Design tokens consumed by Tailwind v4 via the @theme block.
- * Tailwind generates utilities from these CSS variables (e.g. text-fg-muted,
- * bg-bg, border-border). Full palette and typography scale will be layered in
- * later via styles/tokens.css - keep this minimal.
+ * Tailwind v4 @theme block. Maps CSS variables from styles/tokens.css
+ * into Tailwind utility classes. Reference:
+ * docs/specs/2026-05-20-design-tokens.md sections 3 to 5.
  */
 @theme {
-  --color-bg: #0a0e2a;
-  --color-fg: #ffffff;
-  --color-fg-muted: rgba(255, 255, 255, 0.7);
-  --color-fg-faint: rgba(255, 255, 255, 0.5);
-  --color-border: rgba(255, 255, 255, 0.1);
+  /* Colors */
+  --color-bg-base: var(--bg-base);
+  --color-bg-elevated: var(--bg-elevated);
+  --color-bg-overlay: var(--bg-overlay);
+
+  --color-fg-hi: var(--fg-hi);
+  --color-fg-body: var(--fg-body);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-faint: var(--fg-faint);
+
+  --color-mint: var(--mint);
+  --color-mint-soft: var(--mint-soft);
+  --color-mint-glow: var(--mint-glow);
+
+  --color-amber: var(--amber);
+  --color-amber-glow: var(--amber-glow);
+
+  --color-danger: var(--danger);
+  --color-danger-glow: var(--danger-glow);
+
+  --color-info: var(--info);
+  --color-info-glow: var(--info-glow);
+
+  --color-border-subtle: var(--border-subtle);
+  --color-border-default: var(--border-default);
+  --color-border-strong: var(--border-strong);
+
+  /* Fonts (wired by next/font/local in Task 5) */
+  --font-display: var(--font-display-var), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-mono-var), ui-monospace, monospace;
+
+  /* Spacing base unit: Tailwind auto-generates p-1 (4px), p-2 (8px), ..., p-40 (160px) */
+  --spacing: 4px;
+
+  /* Radius */
+  --radius-none: var(--radius-none);
+  --radius-xs: var(--radius-xs);
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-full: var(--radius-full);
+
+  /* Motion durations */
+  --duration-150: var(--motion-150);
+  --duration-300: var(--motion-300);
+  --duration-500: var(--motion-500);
+  --duration-800: var(--motion-800);
+  --duration-1500: var(--motion-1500);
+
+  /* Easing */
+  --ease-default: var(--ease-default);
 }
 
+/**
+ * Z-index utilities. Tailwind v4 does not auto-generate z-* utilities from
+ * a CSS variable namespace, so we define them explicitly via @utility so
+ * components can write `z-sticky`, `z-header`, etc. instead of arbitrary
+ * values. Values come from styles/tokens.css.
+ */
+@utility z-page {
+  z-index: var(--z-page);
+}
+@utility z-base {
+  z-index: var(--z-base);
+}
+@utility z-sticky {
+  z-index: var(--z-sticky);
+}
+@utility z-header {
+  z-index: var(--z-header);
+}
+@utility z-cursor {
+  z-index: var(--z-cursor);
+}
+@utility z-modal {
+  z-index: var(--z-modal);
+}
+
+/**
+ * Base layout. Body uses --bg-base. Grain texture is a fixed pseudo-element
+ * so it does not animate or shift on scroll. Respects prefers-reduced-transparency.
+ */
 html,
 body {
   margin: 0;
-  background: var(--color-bg);
-  color: var(--color-fg);
-  font-family: system-ui, -apple-system, sans-serif;
+  background: var(--bg-base);
+  color: var(--fg-body);
+  font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 }
@@ -28,7 +102,45 @@ body {
   box-sizing: border-box;
 }
 
-/* Anchor jump targets sit below the sticky header without smoothing the scroll motion itself. */
+/* Anchor jump targets sit below the sticky header without smoothing scroll motion. */
 main > section {
   scroll-margin-top: 80px;
+}
+
+/**
+ * BG grain texture (ADR section 6.1). Fixed full-viewport noise overlay at 3 percent
+ * opacity. Lives below all interactive content via z-index 0 on body itself.
+ * Disabled when the user prefers reduced transparency.
+ */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='5'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.5 0'/></filter><rect width='200' height='200' filter='url(%23n)' opacity='0.5'/></svg>");
+  opacity: 0.03;
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  body::before {
+    display: none;
+  }
+}
+
+/**
+ * Glassmorph utility. Applied to sticky chrome (header, sticky BidPanel,
+ * modal backdrop). Includes a fallback for browsers without backdrop-filter.
+ */
+.glass {
+  background: var(--bg-overlay);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid var(--border-default);
+}
+
+@supports not (backdrop-filter: blur(20px)) {
+  .glass {
+    background: rgba(19, 23, 52, 0.92);
+  }
 }
