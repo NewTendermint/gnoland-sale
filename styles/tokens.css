@@ -1,0 +1,67 @@
+/**
+ * sale.gno.land design tokens.
+ *
+ * Single source of truth. Tailwind v4 maps these variables into utility
+ * classes via the @theme block in app/globals.css. Never override these
+ * inline in components; if a new variant is needed, add it here first.
+ *
+ * Reference: docs/specs/2026-05-20-design-tokens.md
+ */
+
+:root {
+  /* Background layers */
+  --bg-base: #0a0e2a;
+  --bg-elevated: #131734;
+  --bg-overlay: rgba(19, 23, 52, 0.72);
+
+  /* Foreground (text on dark) */
+  --fg-hi: #ffffff;
+  --fg-body: rgba(255, 255, 255, 0.85);
+  --fg-muted: rgba(255, 255, 255, 0.6);
+  --fg-faint: rgba(255, 255, 255, 0.4);
+
+  /* Mint accent */
+  --mint: #8ec5b2;
+  --mint-soft: #a8d2c4;
+  --mint-glow: rgba(142, 197, 178, 0.25);
+
+  /* Amber warning */
+  --amber: #f4b942;
+  --amber-glow: rgba(244, 185, 66, 0.2);
+
+  /* Red danger */
+  --danger: #e8556a;
+  --danger-glow: rgba(232, 85, 106, 0.2);
+
+  /* Info blue */
+  --info: #8db4e8;
+  --info-glow: rgba(141, 180, 232, 0.18);
+
+  /* Borders */
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-default: rgba(255, 255, 255, 0.12);
+  --border-strong: rgba(255, 255, 255, 0.24);
+
+  /* Radius */
+  --radius-none: 0;
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-full: 9999px;
+
+  /* Motion */
+  --motion-150: 150ms;
+  --motion-300: 300ms;
+  --motion-500: 500ms;
+  --motion-800: 800ms;
+  --motion-1500: 1500ms;
+  --ease-default: cubic-bezier(0.25, 1, 0.5, 1);
+
+  /* Z-index scale */
+  --z-page: 0;
+  --z-base: 1;
+  --z-sticky: 100;
+  --z-header: 200;
+  --z-cursor: 9000;
+  --z-modal: 9200;
+}
