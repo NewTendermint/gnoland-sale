@@ -17,3 +17,4 @@ test-results
 # Project planning artifacts kept local only, never tracked
 /CLAUDE.md
 /docs/
+.superpowers/
