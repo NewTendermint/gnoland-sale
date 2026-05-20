@@ -34,6 +34,11 @@
   --color-border-default: var(--border-default);
   --color-border-strong: var(--border-strong);
 
+  /* Bridge aliases for Layer 1 components (bg-bg, bg-fg, border-border, text-bg, border-fg). */
+  --color-bg: var(--bg-base);
+  --color-fg: var(--fg-hi);
+  --color-border: var(--border-default);
+
   /* Fonts (wired by next/font/local in Task 5) */
   --font-display: var(--font-display-var), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-mono-var), ui-monospace, monospace;

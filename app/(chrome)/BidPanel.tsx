@@ -1,8 +1,7 @@
-"use client"
-
 /**
- * Live bid panel placeholder. Will be wired to wagmi + Sonar in Layer 2.
- * Layout and copy lock in here so design iterations do not block the integration work.
+ * Live bid panel placeholder. Will be wired to wagmi + Sonar in Layer 2,
+ * at which point it must become a client component (state, hooks, wagmi).
+ * For Layer 1 it is pure presentation, so it ships as a server component.
  */
 export function BidPanel() {
   return (
