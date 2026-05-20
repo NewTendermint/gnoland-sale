@@ -60,33 +60,10 @@
 }
 
 /**
- * Z-index utilities. Tailwind v4 does not auto-generate z-* utilities from
- * a CSS variable namespace, so we define them explicitly via @utility so
- * components can write `z-sticky`, `z-header`, etc. instead of arbitrary
- * values. Values come from styles/tokens.css.
- */
-@utility z-page {
-  z-index: var(--z-page);
-}
-@utility z-base {
-  z-index: var(--z-base);
-}
-@utility z-sticky {
-  z-index: var(--z-sticky);
-}
-@utility z-header {
-  z-index: var(--z-header);
-}
-@utility z-cursor {
-  z-index: var(--z-cursor);
-}
-@utility z-modal {
-  z-index: var(--z-modal);
-}
-
-/**
- * Base layout. Body uses --bg-base. Grain texture is a fixed pseudo-element
- * so it does not animate or shift on scroll. Respects prefers-reduced-transparency.
+ * Base layout. Body uses --bg-base + body font from the design tokens.
+ * Token utilities (text-mint, bg-bg-elevated, rounded-sm, etc.) are
+ * available to components via the @theme block above; no extra utilities
+ * are defined here.
  */
 html,
 body {
@@ -105,42 +82,4 @@ body {
 /* Anchor jump targets sit below the sticky header without smoothing scroll motion. */
 main > section {
   scroll-margin-top: 80px;
-}
-
-/**
- * BG grain texture (ADR section 6.1). Fixed full-viewport noise overlay at 3 percent
- * opacity. Lives below all interactive content via z-index 0 on body itself.
- * Disabled when the user prefers reduced transparency.
- */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: -1;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='5'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.5 0'/></filter><rect width='200' height='200' filter='url(%23n)' opacity='0.5'/></svg>");
-  opacity: 0.03;
-}
-
-@media (prefers-reduced-transparency: reduce) {
-  body::before {
-    display: none;
-  }
-}
-
-/**
- * Glassmorph utility. Applied to sticky chrome (header, sticky BidPanel,
- * modal backdrop). Includes a fallback for browsers without backdrop-filter.
- */
-.glass {
-  background: var(--bg-overlay);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid var(--border-default);
-}
-
-@supports not (backdrop-filter: blur(20px)) {
-  .glass {
-    background: rgba(19, 23, 52, 0.92);
-  }
 }
