@@ -1,7 +1,9 @@
 /**
- * Strategic partners grid. Cards stay text-only at this layer; logo SVGs
- * land with the design-token pass.
+ * Partners. Same compact grid pattern as Ecosystem.
  */
+
+const ACCENT_BLOCKS = ["var(--mint)", "var(--info)", "var(--amber)", "var(--mint-soft)"]
+
 export function Partners() {
   const partners = [
     {
@@ -22,15 +24,29 @@ export function Partners() {
     },
   ]
   return (
-    <section id="partners" className="border-b border-border py-20">
-      <div className="mx-auto max-w-[1280px] px-6">
-        <p className="mb-2 text-xs uppercase tracking-wide text-fg-muted">Partners</p>
-        <h2 className="mb-12 text-3xl font-bold">Working alongside</h2>
-        <ul className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          {partners.map((p) => (
-            <li key={p.name} className="rounded-sm border border-border p-6">
-              <h3 className="mb-2 font-semibold">{p.name}</h3>
-              <p className="text-sm text-fg-muted">{p.body}</p>
+    <section id="partners" className="bg-bg-base py-20 lg:py-24">
+      <div className="mx-auto max-w-[1280px] px-6 lg:px-8">
+        <div className="mb-12 flex max-w-3xl gap-6">
+          <div aria-hidden="true" className="w-0.5 shrink-0 bg-fg-hi/40" />
+          <div>
+            <p className="mb-3 font-mono text-xs uppercase tracking-widest text-fg-muted">
+              Partners
+            </p>
+            <h2 className="text-3xl font-bold uppercase leading-[1.05] tracking-tight text-fg-hi md:text-4xl lg:text-5xl">
+              Working alongside
+            </h2>
+          </div>
+        </div>
+        <ul className="grid grid-cols-2 gap-x-8 gap-y-10 md:grid-cols-4">
+          {partners.map((p, i) => (
+            <li key={p.name}>
+              <div
+                aria-hidden="true"
+                className="mb-4 size-10 rounded-md"
+                style={{ backgroundColor: ACCENT_BLOCKS[i % ACCENT_BLOCKS.length] }}
+              />
+              <h3 className="mb-1 text-base font-semibold tracking-tight text-fg-hi">{p.name}</h3>
+              <p className="line-clamp-3 text-sm text-fg-body">{p.body}</p>
             </li>
           ))}
         </ul>

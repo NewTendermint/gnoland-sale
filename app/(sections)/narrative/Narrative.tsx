@@ -1,15 +1,19 @@
 /**
- * Long-form positioning block. Two columns at lg: prose on the left,
- * supporting illustration placeholder on the right.
+ * Narrative. No card: title + 2 prose paragraphs + stats inline as text on
+ * the section bg. Mint CTA at the bottom.
  */
 export function Narrative() {
   return (
-    <section id="narrative" className="border-b border-border py-20">
-      <div className="mx-auto max-w-[1280px] px-6">
-        <p className="mb-2 text-xs uppercase tracking-wide text-fg-muted">About gno.land</p>
-        <h2 className="mb-12 text-3xl font-bold">The Open Knowledge Base for the New Millennium</h2>
-        <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:gap-16">
-          <div className="space-y-4 text-fg-muted">
+    <section id="narrative" className="bg-bg-base py-24 lg:py-32">
+      <div className="mx-auto max-w-[1280px] px-6 lg:px-8">
+        <h2 className="mb-16 max-w-4xl text-4xl font-bold uppercase leading-[1.05] tracking-tight text-fg-hi md:text-5xl lg:text-6xl">
+          The Open Knowledge Base
+          <br />
+          for the New Millennium
+        </h2>
+
+        <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:gap-16">
+          <div className="space-y-5 text-base text-fg-body lg:col-span-7 lg:text-lg">
             <p>
               Gno.land is a next-generation Layer 1 smart contract platform based on Gno, a
               deterministic, interpreted version of the Go programming language. Founded by Jae
@@ -27,13 +31,37 @@ export function Narrative() {
               Constitution, Gno.land is positioned to be the decentralized global knowledge base for
               the new millennium.
             </p>
+
+            <div className="pt-6">
+              <a
+                href="https://docs.gno.land"
+                className="inline-flex items-center gap-2 rounded-sm bg-mint px-5 py-3 text-sm font-semibold uppercase tracking-wider text-bg-base transition-colors hover:bg-mint-soft"
+              >
+                Discover gno.land
+              </a>
+            </div>
           </div>
-          <div
-            aria-hidden="true"
-            className="flex min-h-[320px] items-center justify-center rounded-sm bg-fg/5"
-          >
-            <p className="text-sm text-fg-faint">[Illustration, Layer 4]</p>
-          </div>
+
+          <dl className="grid grid-cols-3 gap-x-4 gap-y-6 lg:col-span-5">
+            <div className="border-t border-border-subtle pt-4">
+              <dd className="font-mono text-3xl font-bold tabular-nums text-fg-hi md:text-4xl">
+                5+
+              </dd>
+              <dt className="mt-2 text-xs uppercase tracking-widest text-fg-muted">Years</dt>
+            </div>
+            <div className="border-t border-border-subtle pt-4">
+              <dd className="font-mono text-3xl font-bold tabular-nums text-fg-hi md:text-4xl">
+                150+
+              </dd>
+              <dt className="mt-2 text-xs uppercase tracking-widest text-fg-muted">Contributors</dt>
+            </div>
+            <div className="border-t border-border-subtle pt-4">
+              <dd className="font-mono text-3xl font-bold tabular-nums text-fg-hi md:text-4xl">
+                100+
+              </dd>
+              <dt className="mt-2 text-xs uppercase tracking-widest text-fg-muted">Packages</dt>
+            </div>
+          </dl>
         </div>
       </div>
     </section>

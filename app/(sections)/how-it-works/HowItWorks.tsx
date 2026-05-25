@@ -1,43 +1,47 @@
 /**
- * Five-step explainer for the sale flow. Numbers act as anchors so readers
- * can scan the path without reading every line of body copy.
+ * How to Participate. 4 steps as plain text on section bg, with numbered
+ * eyebrow above each title.
  */
 export function HowItWorks() {
   const steps = [
     {
-      title: "Connect your wallet",
-      body: "MetaMask, Coinbase Wallet, WalletConnect or Rainbow. We use wagmi standard, any EVM wallet on Base works.",
+      title: "Registration",
+      body: "Complete identity verification with Sonar.",
     },
     {
-      title: "Verify with Sonar (one-click for existing users)",
-      body: "Sonar handles KYC/KYB. ~100k users already verified can participate in one click. New users complete identity verification (typical: 5-15 min).",
+      title: "Commitment",
+      body: "Connect your wallet and submit your bid.",
     },
     {
-      title: "Place your bid",
-      body: "Set the price you are willing to pay (up to your max) and the commitment amount in USDC/USDT. Bids can only be increased, never decreased.",
+      title: "Settlement",
+      body: "Pro-rate results are finalized once the auction is over.",
     },
     {
-      title: "Wait for the auction to close",
-      body: "A single clearing price is determined when the sale ends. Everyone who bid at or above the clearing price pays the same final price.",
-    },
-    {
-      title: "Receive tokens",
-      body: "Excess funds are auto-refunded. GNOT tokens are distributed after mainnet launch per the unlock schedule.",
+      title: "Distribution",
+      body: "Tokens are distributed to your address. Token lockup is applied according to schedule.",
     },
   ]
   return (
-    <section id="how-it-works" className="border-b border-border py-20">
-      <div className="mx-auto max-w-[1280px] px-6">
-        <p className="mb-2 text-xs uppercase tracking-wide text-fg-muted">How the sale works</p>
-        <h2 className="mb-12 text-3xl font-bold">Five steps to participate</h2>
-        <ol className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-5">
+    <section id="how-it-works" className="bg-bg-base py-24 lg:py-32">
+      <div className="mx-auto max-w-[1280px] px-6 lg:px-8">
+        <div className="mb-20 max-w-3xl">
+          <p className="mb-4 font-mono text-xs uppercase tracking-widest text-fg-muted">
+            How it works
+          </p>
+          <h2 className="text-4xl font-bold uppercase leading-[1.05] tracking-tight text-fg-hi md:text-5xl lg:text-6xl">
+            How to participate
+          </h2>
+        </div>
+        <ol className="grid grid-cols-1 gap-x-12 gap-y-16 md:grid-cols-2 lg:grid-cols-4">
           {steps.map((s, i) => (
-            <li key={s.title} className="rounded-sm border border-border p-5">
-              <p className="mb-3 text-3xl font-bold tabular-nums text-fg-muted">
+            <li key={s.title}>
+              <p className="font-mono text-xs uppercase tracking-widest text-fg-faint">
                 {String(i + 1).padStart(2, "0")}
               </p>
-              <h3 className="mb-2 font-semibold">{s.title}</h3>
-              <p className="text-sm text-fg-muted">{s.body}</p>
+              <h3 className="mt-4 text-xl font-semibold tracking-tight text-fg-hi md:text-2xl">
+                {s.title}
+              </h3>
+              <p className="mt-4 text-base text-fg-body">{s.body}</p>
             </li>
           ))}
         </ol>

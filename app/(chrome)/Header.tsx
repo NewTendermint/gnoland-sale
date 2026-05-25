@@ -4,7 +4,7 @@
  */
 export function Header() {
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border bg-bg/80 backdrop-blur-md">
+    <header className="sticky top-0 z-50 w-full bg-bg/80 backdrop-blur-md">
       <nav className="mx-auto flex max-w-[1280px] items-center justify-between px-6 py-4">
         <a href="/" className="font-bold text-lg">
           gno.land

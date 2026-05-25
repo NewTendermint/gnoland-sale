@@ -1,7 +1,5 @@
 /**
- * Three-card transparency surface: tokenomics breakdown, legal structure,
- * and smart contract audit. Each card is a stable target for the linked
- * PDFs once they are delivered.
+ * Transparency: 3 items as plain text with TBD badge inline. No cards.
  */
 export function Transparency() {
   const cards = [
@@ -22,19 +20,30 @@ export function Transparency() {
     },
   ]
   return (
-    <section id="transparency" className="border-b border-border py-20">
-      <div className="mx-auto max-w-[1280px] px-6">
-        <p className="mb-2 text-xs uppercase tracking-wide text-fg-muted">Transparency report</p>
-        <h2 className="mb-12 text-3xl font-bold">Verifiable, end-to-end</h2>
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          {cards.map((c) => (
-            <article key={c.title} className="rounded-sm border border-border p-6">
-              <p className="mb-3 text-xs uppercase tracking-wide text-fg-faint">{c.status}</p>
-              <h3 className="mb-2 font-semibold">{c.title}</h3>
-              <p className="text-sm text-fg-muted">{c.body}</p>
-            </article>
-          ))}
+    <section id="transparency" className="bg-bg-base py-24 lg:py-32">
+      <div className="mx-auto max-w-[1280px] px-6 lg:px-8">
+        <div className="mb-20 max-w-3xl">
+          <p className="mb-4 font-mono text-xs uppercase tracking-widest text-fg-muted">
+            Transparency report
+          </p>
+          <h2 className="text-4xl font-bold uppercase leading-[1.05] tracking-tight text-fg-hi md:text-5xl lg:text-6xl">
+            Verifiable, end-to-end
+          </h2>
         </div>
+        <ul className="grid grid-cols-1 gap-x-12 gap-y-16 md:grid-cols-3">
+          {cards.map((c, i) => (
+            <li key={c.title}>
+              <p className="font-mono text-xs uppercase tracking-widest text-fg-faint">
+                {String(i + 1).padStart(2, "0")}
+                <span className="ml-3 inline-block text-amber">{c.status}</span>
+              </p>
+              <h3 className="mt-4 text-xl font-semibold tracking-tight text-fg-hi md:text-2xl">
+                {c.title}
+              </h3>
+              <p className="mt-4 text-base text-fg-body">{c.body}</p>
+            </li>
+          ))}
+        </ul>
       </div>
     </section>
   )

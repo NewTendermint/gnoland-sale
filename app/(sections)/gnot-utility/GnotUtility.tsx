@@ -1,6 +1,5 @@
 /**
- * Utility section: explains what GNOT does on the network. Two-column layout
- * mirrors Narrative so readers register the pattern (text + illustration).
+ * GNOT utility: 4 use cases as plain text on the section bg.
  */
 export function GnotUtility() {
   const uses = [
@@ -22,31 +21,29 @@ export function GnotUtility() {
     },
   ]
   return (
-    <section id="gnot-utility" className="border-b border-border py-20">
-      <div className="mx-auto max-w-[1280px] px-6">
-        <p className="mb-2 text-xs uppercase tracking-wide text-fg-muted">GNOT utility</p>
-        <h2 className="mb-12 text-3xl font-bold">
-          GNOT is the native utility token for all economic activity
-        </h2>
-        <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:gap-16">
-          <div
-            aria-hidden="true"
-            className="order-last flex min-h-[320px] items-center justify-center rounded-sm bg-fg/5 lg:order-first"
-          >
-            <p className="text-sm text-fg-faint">[GNOT flow illustration, Layer 4]</p>
-          </div>
-          <div>
-            <p className="mb-6 text-fg-muted">GNOT is used for</p>
-            <ul className="space-y-4">
-              {uses.map((u) => (
-                <li key={u.title} className="border-b border-border pb-4 last:border-b-0">
-                  <h3 className="mb-1 font-semibold">{u.title}</h3>
-                  <p className="text-sm text-fg-muted">{u.body}</p>
-                </li>
-              ))}
-            </ul>
-          </div>
+    <section id="gnot-utility" className="bg-bg-base py-24 lg:py-32">
+      <div className="mx-auto max-w-[1280px] px-6 lg:px-8">
+        <div className="mb-20 max-w-4xl">
+          <p className="mb-4 font-mono text-xs uppercase tracking-widest text-fg-muted">
+            GNOT utility
+          </p>
+          <h2 className="text-4xl font-bold uppercase leading-[1.05] tracking-tight text-fg-hi md:text-5xl lg:text-6xl">
+            GNOT is the native utility token for all economic activity
+          </h2>
         </div>
+        <ul className="grid grid-cols-1 gap-x-12 gap-y-16 md:grid-cols-2">
+          {uses.map((u, i) => (
+            <li key={u.title}>
+              <p className="font-mono text-xs uppercase tracking-widest text-fg-faint">
+                {String(i + 1).padStart(2, "0")}
+              </p>
+              <h3 className="mt-4 text-xl font-semibold tracking-tight text-fg-hi md:text-2xl">
+                {u.title}
+              </h3>
+              <p className="mt-4 text-base text-fg-body">{u.body}</p>
+            </li>
+          ))}
+        </ul>
       </div>
     </section>
   )

@@ -1,17 +1,12 @@
 /**
- * Vertical roadmap timeline. The Q1 2026 Beta Mainnet item is intentionally
- * highlighted (full-opacity border) because it anchors the sale narrative;
- * it is the milestone the token is buying into.
+ * Roadmap. Grid 3x3 (not a list). Year eyebrow + title + body. Q1 2026 in
+ * mint to signal the launch the sale buys into.
  */
 export function Roadmap() {
   const items: Array<{ year: string; title?: string; body: string; highlight?: boolean }> = [
     {
       year: "2021",
       body: "Jae Kwon bootstraps Gno Virtual Machine (GnoVM) and Tendermint node. Foundational VM, state persistence, first Boards realm, and functional chain.",
-    },
-    {
-      year: "2022",
-      body: "Test1 to Test3 with improved usability and example realms. GnoVM safety, initial community workshops.",
     },
     {
       year: "2023",
@@ -48,19 +43,35 @@ export function Roadmap() {
     },
   ]
   return (
-    <section id="roadmap" className="border-b border-border py-20">
-      <div className="mx-auto max-w-[1280px] px-6">
-        <p className="mb-2 text-xs uppercase tracking-wide text-fg-muted">Roadmap</p>
-        <h2 className="mb-12 text-3xl font-bold">From bootstrap to mainnet</h2>
-        <ol className="space-y-6">
+    <section id="roadmap" className="bg-bg-base py-20 lg:py-24">
+      <div className="mx-auto max-w-[1280px] px-6 lg:px-8">
+        <div className="mb-12 flex max-w-3xl gap-6">
+          <div aria-hidden="true" className="w-0.5 shrink-0 bg-fg-hi/40" />
+          <div>
+            <p className="mb-3 font-mono text-xs uppercase tracking-widest text-fg-muted">
+              Roadmap
+            </p>
+            <h2 className="text-3xl font-bold uppercase leading-[1.05] tracking-tight text-fg-hi md:text-4xl lg:text-5xl">
+              From bootstrap to mainnet
+            </h2>
+          </div>
+        </div>
+        <ol className="grid grid-cols-1 gap-x-8 gap-y-10 md:grid-cols-2 lg:grid-cols-4">
           {items.map((item) => (
-            <li
-              key={item.year}
-              className={`rounded-sm border p-6 ${item.highlight ? "border-fg" : "border-border"}`}
-            >
-              <p className="mb-2 text-xs uppercase tracking-wide text-fg-muted">{item.year}</p>
-              {item.title ? <h3 className="mb-2 font-semibold">{item.title}</h3> : null}
-              <p className="text-sm text-fg-muted">{item.body}</p>
+            <li key={item.year}>
+              <p
+                className={`mb-3 font-mono text-xs uppercase tracking-widest ${
+                  item.highlight ? "text-mint" : "text-fg-muted"
+                }`}
+              >
+                {item.year}
+              </p>
+              {item.title ? (
+                <h3 className="mb-2 text-base font-semibold tracking-tight text-fg-hi md:text-lg">
+                  {item.title}
+                </h3>
+              ) : null}
+              <p className="line-clamp-4 text-sm text-fg-body">{item.body}</p>
             </li>
           ))}
         </ol>

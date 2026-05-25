@@ -1,7 +1,16 @@
 /**
- * Ecosystem showcase. Card descriptions are reused from newtendermint.org
- * so the messaging stays consistent across the Gno marketing surface.
+ * Ecosystem. Compact grid (no list, no cards): logo placeholder + name +
+ * short body. 13 projects in 2/3/4 cols. Body truncated to 2 lines.
  */
+
+const ACCENT_BLOCKS = [
+  "var(--mint)",
+  "var(--info)",
+  "var(--amber)",
+  "var(--mint-soft)",
+  "var(--danger)",
+]
+
 export function Ecosystem() {
   const projects = [
     {
@@ -18,11 +27,11 @@ export function Ecosystem() {
     },
     {
       name: "Boards",
-      body: "An on-chain forum application built natively on Gno.land. It enables structured, open dialogue and community-driven discussion, free from centralized moderation and external control.",
+      body: "An on-chain forum application built natively on Gno.land. It enables structured, open dialogue and community-driven discussion, free from centralized moderation and external control. Designed to become a flagship social application for the network, Boards offers a decentralized alternative to traditional online forums.",
     },
     {
       name: "Akkadia",
-      body: "An on-chain world-building game inspired by the Library of Alexandria. Users can create their own realms to build in their own style, and explore worlds created by others.",
+      body: "An on-chain world-building game inspired by the Library of Alexandria. Users can create their own realms to build in their own style, and explore worlds created by others. One of the earliest examples of a fully on-chain creative application on Gno.land.",
     },
     {
       name: "Gno Playground",
@@ -58,15 +67,29 @@ export function Ecosystem() {
     },
   ]
   return (
-    <section id="ecosystem" className="border-b border-border py-20">
-      <div className="mx-auto max-w-[1280px] px-6">
-        <p className="mb-2 text-xs uppercase tracking-wide text-fg-muted">Ecosystem</p>
-        <h2 className="mb-12 text-3xl font-bold">Apps, tools, and infrastructure</h2>
-        <ul className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {projects.map((p) => (
-            <li key={p.name} className="rounded-sm border border-border p-6">
-              <h3 className="mb-2 font-semibold">{p.name}</h3>
-              <p className="text-sm text-fg-muted">{p.body}</p>
+    <section id="ecosystem" className="bg-bg-base py-20 lg:py-24">
+      <div className="mx-auto max-w-[1280px] px-6 lg:px-8">
+        <div className="mb-12 flex max-w-3xl gap-6">
+          <div aria-hidden="true" className="w-0.5 shrink-0 bg-fg-hi/40" />
+          <div>
+            <p className="mb-3 font-mono text-xs uppercase tracking-widest text-fg-muted">
+              Ecosystem
+            </p>
+            <h2 className="text-3xl font-bold uppercase leading-[1.05] tracking-tight text-fg-hi md:text-4xl lg:text-5xl">
+              Apps, tools, and infrastructure
+            </h2>
+          </div>
+        </div>
+        <ul className="grid grid-cols-2 gap-x-8 gap-y-10 md:grid-cols-3 lg:grid-cols-4">
+          {projects.map((p, i) => (
+            <li key={p.name}>
+              <div
+                aria-hidden="true"
+                className="mb-4 size-10 rounded-md"
+                style={{ backgroundColor: ACCENT_BLOCKS[i % ACCENT_BLOCKS.length] }}
+              />
+              <h3 className="mb-1 text-base font-semibold tracking-tight text-fg-hi">{p.name}</h3>
+              <p className="line-clamp-3 text-sm text-fg-body">{p.body}</p>
             </li>
           ))}
         </ul>

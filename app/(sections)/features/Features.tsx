@@ -1,6 +1,6 @@
 /**
- * Five-pillar technical pitch. Each card maps to a differentiator that
- * Gno.land sells against generic EVM L1s.
+ * Five-pillar pitch. No cards: items live as text on the section bg with
+ * generous spacing. Numbered eyebrow ("01") above each title.
  */
 export function Features() {
   const features = [
@@ -26,21 +26,35 @@ export function Features() {
     },
   ]
   return (
-    <section id="features" className="border-b border-border py-20">
-      <div className="mx-auto max-w-[1280px] px-6">
-        <p className="mb-2 text-xs uppercase tracking-wide text-fg-muted">Why Gno.land</p>
-        <h2 className="mb-4 text-3xl font-bold">Built for Developers, Designed for Eternity</h2>
-        <p className="mb-12 max-w-2xl text-fg-muted">
-          Gno.land fundamentally changes the programming paradigm for blockchain.
-        </p>
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {features.map((f) => (
-            <article key={f.title} className="rounded-sm border border-border p-6">
-              <h3 className="mb-3 font-semibold">{f.title}</h3>
-              <p className="text-sm text-fg-muted">{f.body}</p>
-            </article>
-          ))}
+    <section id="features" className="bg-bg-base py-24 lg:py-32">
+      <div className="mx-auto max-w-[1280px] px-6 lg:px-8">
+        <div className="mb-20 flex max-w-3xl gap-6">
+          <div aria-hidden="true" className="w-0.5 shrink-0 bg-fg-hi/40" />
+          <div>
+            <p className="mb-4 font-mono text-xs uppercase tracking-widest text-fg-muted">
+              Why gno.land
+            </p>
+            <h2 className="text-4xl font-bold uppercase leading-[1.05] tracking-tight text-fg-hi md:text-5xl lg:text-6xl">
+              Built for developers, designed for eternity
+            </h2>
+            <p className="mt-6 text-lg text-fg-muted md:text-xl">
+              Gno.land fundamentally changes the programming paradigm for blockchain.
+            </p>
+          </div>
         </div>
+        <ul className="grid grid-cols-1 gap-x-12 gap-y-16 md:grid-cols-2 lg:grid-cols-3">
+          {features.map((f, i) => (
+            <li key={f.title}>
+              <p className="font-mono text-xs uppercase tracking-widest text-fg-faint">
+                {String(i + 1).padStart(2, "0")}
+              </p>
+              <h3 className="mt-4 text-xl font-semibold tracking-tight text-fg-hi md:text-2xl">
+                {f.title}
+              </h3>
+              <p className="mt-4 text-base text-fg-body">{f.body}</p>
+            </li>
+          ))}
+        </ul>
       </div>
     </section>
   )

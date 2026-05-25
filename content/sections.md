@@ -15,6 +15,45 @@ When a section is `⚠️ TBD`, please replace the `[TBD: ...]` placeholders wit
 
 ---
 
+## #0 - Hero  ✅
+
+**Status**: Ready (validated 2026-05-21 alongside redesign decisions draft)
+
+**Elements** (above the fold, centered monumental composition):
+
+- **Status pill** (top, centered): live-state badge with a dot indicator
+- **H1 title** (single full-width line, uppercase via CSS, letter-spaced)
+- **Sub-claim** (two lines, centered, muted foreground)
+- **Meta line** (one line, font-mono, faint foreground, countdown)
+- **Pixel-transition strip** (signature element, between text block and voxel scene)
+- **Voxel village scene** (full-width, overflows briefly downward into a short transition zone before the next narrative section)
+
+**Copy** (validated):
+
+- Title: `GNOT Public Sale`
+- Sub-claim: `The native token of gno.land, a multi-user OS written in Go.`
+- Meta line: dynamic, depends on auction state (see below).
+- Pill: dynamic, depends on auction state (see below).
+
+**State-dependent strings**:
+
+| State | Pill | Meta line |
+|---|---|---|
+| Pre-sale | `Opens [date]` | `Opens in [delta]` |
+| Live | `Auction live` | `Closes in [delta]` |
+| Post-sale | `Auction closed` | `Closed [date]` |
+
+`[delta]` is a live countdown formatted `XXd YYh` (drops to `YYh ZZm` under 24h, then `ZZm SSs` under 1h).
+
+**Design notes**:
+
+- Hero carries zero KPIs by design. KPIs live exclusively in the persistent sticky BidPanel tile (bottom-right, always visible, see section about the sticky tile). No separate "Sale Mechanics" section sits directly under the hero.
+- Auction format (`Uniform Price Auction`), accepted currencies, allocation %, unlock schedule, and other static facts belong to a "Sale Details" section further down the page.
+- Voxel scene occupies >=50% of the hero (lower half, full-width). It continues briefly into a short overflow zone below the hero, then the page returns to a solid background for the next narrative section. The voxel is NOT used as a continuous background under other sections.
+- Title uppercase tracking-wide at text-7xl/8xl full-width on desktop. Below 640px the title collapses to multiline.
+
+---
+
 ## #1 - Header  ✅
 
 **Status**: Ready
@@ -29,21 +68,34 @@ When a section is `⚠️ TBD`, please replace the `[TBD: ...]` placeholders wit
 
 ---
 
-## #2 - Sale Metrics (live data)  ✅
+## #2 + #3 - Sale (merged: live + terms)  ✅
 
-**Status**: Ready (content) - values are pulled live from Sonar API
+**Status**: Merged 2026-05-21 from xls #2 (Sale Metrics live) + xls #3 (Token Sale Details static). Single section with two visually distinct blocks separated by a strong hairline. Eliminates the duplicated "Unlock schedule" that appeared in both xls sections.
 
-**Title**: `GNOT Token Sale: The native token for gno.land`
+**Title**: `GNOT Token Sale`
+**Eyebrow**: `The sale`
+**Sub**: `The native token for gno.land. Live snapshot and full terms below.`
 
-**Live metrics displayed**:
-- Total committed (USDC/USDT)
-- Percent filled / "Oversubscribed by X" (when applicable)
-- Total number of participants
-- English auction threshold (current clearing price)
-- My auction ranking (if connected wallet has a bid)
-- Unlock schedule (link or summary)
+### Live block (top, monumental figures with live dot eyebrow)
 
-**API source**: `GET /v1/sales/{saleUUID}/commitments` (Sonar `read-commitment-data` endpoint, returns total + clearing price + unique count + last 100).
+- Clearing price (live)
+- Total committed
+- Filled / Oversubscribed
+- Participants
+- My auction ranking (depends on connected wallet)
+
+**API source**: `GET /v1/sales/{saleUUID}/commitments` (Sonar `read-commitment-data` endpoint).
+
+**Duplication note**: these KPIs also live in the persistent sticky BidPanel in the corner. Intentional: section gives a monumental at-a-glance snapshot, sticky keeps them always accessible during scroll.
+
+### Terms block (bottom, quieter key/value in 4 groups)
+
+| Group | Rows |
+|---|---|
+| Token | Token (GNOT) · Format · Currencies |
+| Numbers | Total raise · FDV (when met) · Allocation |
+| Bid range | Minimum price · Min commitment · Max commitment |
+| Schedule | Contribution window · Mainnet launch · Unlock schedule |
 
 ---
 
@@ -72,36 +124,33 @@ When a section is `⚠️ TBD`, please replace the `[TBD: ...]` placeholders wit
 
 ---
 
-## #4 - Transparency Report  ⚠️ TBD
+## #4 - Transparency Report  ✅ (merged into #2/#3)
 
-**Status**: TBD - needs tokenomics finalized + legal/audit PDFs
+**Status**: Merged 2026-05-21. The xls source confirms there is just one document (Token Disclosure PDF) that contains tokenomics + legal structure + audit. Single link is added at the bottom of the merged "Sale" section (#2/#3), not a standalone section.
 
 **Source xls note**: "Need final tokenomics. Need links to legal structure and audit. See https://cdn.fluent.xyz/docs/token-disclosure.pdf"
 
-**Elements**:
-- **Tokenomics pie chart**: [TBD: allocation breakdown - sale %, team %, ecosystem %, treasury %, advisors %, etc.]
-- **Legal structure**: [TBD: link to legal disclosure PDF - see Fluent's as reference]
-- **Audit details**: [TBD: link to audit report PDF]
-
-**Design note**: 3 cards side-by-side, each with icon + title + link. The pie chart card has a small inline preview (Recharts or vanilla SVG).
+**Link copy** (in TokenDetails footer): `Token Disclosure Document`
+**Description** (in TokenDetails footer): `Full tokenomics, legal structure, and smart contract audit in one PDF.`
+**Placeholder href**: `#token-disclosure` (to be replaced with the real PDF URL when delivered by the team).
 
 ---
 
-## #5 - How the Sale Works  ⚠️ TBD
+## #5 - How to Participate  ✅
 
-**Status**: Text needs to be written - only "Steps to participate in token sale" was provided
+**Status**: Updated 2026-05-21 (4 steps validated)
 
-**Source xls note**: "Need more info"
+**Title**: `How to participate`
+**Eyebrow**: `How it works`
 
-**Proposed 5-step copy** (to be reviewed):
+**4 steps** (horizontal grid):
 
-1. **Connect your wallet** - MetaMask, Coinbase Wallet, WalletConnect or Rainbow. We use wagmi standard, any EVM wallet on Base works.
-2. **Verify with Sonar (one-click for existing users)** - Sonar handles KYC/KYB. ~100k users already verified can participate in one click. New users complete identity verification (typical: 5-15 min).
-3. **Place your bid in USDC on Base** - Set the maximum price you are willing to pay and the commitment amount. Bids can be increased during the sale, never reduced.
-4. **Wait for the auction to close** - A single clearing price is determined when the sale ends. Everyone who bid at or above the clearing price pays the same final price. Excess USDC is refunded automatically on Base.
-5. **Receive GNOT post-mainnet** - GNOT tokens are distributed after the gno.land mainnet launch (Q3 2026) via the gno.land to Base IBC bridge, per the unlock schedule. Distribution mechanism (direct per-bidder vs aggregated) is being finalized by the team.
+1. **Registration** - Complete identity verification with Sonar.
+2. **Commitment** - Connect your wallet and submit your bid.
+3. **Settlement** - Pro-rate results are finalized once the auction is over.
+4. **Distribution** - Tokens are distributed to your address. Token lockup is applied according to schedule.
 
-**Validation required**: confirm dates, refund timing. Distribution mechanism is an open internal question (direct IBC per user vs aggregate-then-distribute via a Base account); the copy stays vague until the decision is made.
+**Design note**: Each step is a card in a 4-col grid (uniform widths, NOT Bento), with an icon-in-circle on top + title + body. Layer 4 swaps the placeholder numbered circle for a detoured voxel icon per step.
 
 ---
 
@@ -200,8 +249,6 @@ Applications interoperate as processes instead of isolated contracts. This inter
 **Status**: Ready
 
 **2021** - Jae Kwon bootstraps Gno Virtual Machine (GnoVM) and Tendermint node. Foundational VM, state persistence, first Boards realm, and functional chain.
-
-**2022** - Test1 to Test3 with improved usability and example realms. GnoVM safety, initial community workshops.
 
 **2023** - Introduced tools like gnodev, Playground, and GnoChess. Released official docs and Gno Network Public License.
 

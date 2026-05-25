@@ -3,8 +3,8 @@
  */
 export function Footer() {
   return (
-    <footer className="mt-32 border-t border-border py-12">
-      <div className="mx-auto max-w-[1280px] px-6">
+    <footer className="border-t border-border-subtle bg-bg-base py-16">
+      <div className="relative mx-auto max-w-[1280px] px-6">
         <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
           <div>
             <p className="mb-4 font-bold">gno.land</p>
