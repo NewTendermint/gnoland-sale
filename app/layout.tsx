@@ -1,8 +1,9 @@
 import "./globals.css"
 import localFont from "next/font/local"
 import type { ReactNode } from "react"
-import { Footer } from "./(chrome)/Footer"
-import { Header } from "./(chrome)/Header"
+import { Footer } from "./(layout)/Footer"
+import { Header } from "./(layout)/Header"
+import { ThemeProvider } from "./(layout)/ThemeProvider"
 
 const geist = localFont({
   src: "../public/fonts/Geist.woff2",
@@ -25,11 +26,18 @@ export const metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={`${geist.variable} ${geistMono.variable}`}>
+    <html lang="en" className={`${geist.variable} ${geistMono.variable}`} suppressHydrationWarning>
       <body>
-        <Header />
-        {children}
-        <Footer />
+        <ThemeProvider>
+          <a href="#main" className="skip-link">
+            Skip to content
+          </a>
+          <Header />
+          <div className="screen">
+            {children}
+            <Footer />
+          </div>
+        </ThemeProvider>
       </body>
     </html>
   )

@@ -1,46 +1,48 @@
 /**
  * sale.gno.land design tokens.
  *
- * Single source of truth. Tailwind v4 maps these variables into utility
- * classes via the @theme block in app/globals.css. Never override these
- * inline in components; if a new variant is needed, add it here first.
+ * Single source of truth. Defines semantic CSS variables for both light
+ * (default, :root) and dark (.dark class) themes. Tailwind v4 maps these
+ * variables into utility classes via the @theme inline block in
+ * app/globals.css. Never override these inline in components; if a new
+ * variant is needed, add it here first.
+ *
+ * Light/dark flip: next-themes toggles a `.dark` class on <html>.
+ * The @custom-variant dark directive in globals.css wires Tailwind dark:
+ * utilities to that class.
  *
  * Reference: docs/specs/2026-05-20-design-tokens.md
  */
 
 :root {
-  /* Background layers */
-  --bg-base: #0a0e2a;
-  --bg-elevated: #131734;
-  --bg-overlay: rgba(19, 23, 52, 0.72);
+  /* Surfaces / text - LIGHT (default) */
+  --background: #ffffff;
+  --foreground: #0a0a0a;
+  --fg-muted: rgba(10, 10, 10, 0.66);
+  --fg-faint: rgba(10, 10, 10, 0.5);
+  --label-color: rgba(10, 10, 10, 0.55);
+  --border: rgba(10, 10, 10, 0.12);
+  --border-strong: rgba(10, 10, 10, 0.24);
+  --surface-alt: #f5f5f5;
 
-  /* Foreground (text on dark) */
-  --fg-hi: #ffffff;
-  --fg-body: rgba(255, 255, 255, 0.85);
-  --fg-muted: rgba(255, 255, 255, 0.6);
-  --fg-faint: rgba(255, 255, 255, 0.4);
+  /* Contrast tile (inverts the page rhythm) - hard black on light */
+  --surface-contrast: #0a0a0a;
+  --on-contrast: #ffffff;
+  --on-contrast-muted: rgba(255, 255, 255, 0.66);
 
-  /* Mint accent */
+  /* Page frame (chrome around .screen) */
+  --frame: #0a0a0a;
+
+  /* Brand accents - constant across themes */
   --mint: #8ec5b2;
   --mint-soft: #a8d2c4;
   --mint-glow: rgba(142, 197, 178, 0.25);
-
-  /* Amber warning */
   --amber: #f4b942;
   --amber-glow: rgba(244, 185, 66, 0.2);
-
-  /* Red danger */
   --danger: #e8556a;
   --danger-glow: rgba(232, 85, 106, 0.2);
-
-  /* Info blue */
   --info: #8db4e8;
   --info-glow: rgba(141, 180, 232, 0.18);
-
-  /* Borders */
-  --border-subtle: rgba(255, 255, 255, 0.06);
-  --border-default: rgba(255, 255, 255, 0.12);
-  --border-strong: rgba(255, 255, 255, 0.24);
 
   /* Radius */
   --radius-none: 0;
@@ -48,6 +50,8 @@
   --radius-sm: 4px;
   --radius-md: 8px;
   --radius-full: 9999px;
+  --frame-radius: 20px;
+  --reveal-padding: 16px;
 
   /* Motion */
   --motion-150: 150ms;
@@ -64,4 +68,27 @@
   --z-header: 200;
   --z-cursor: 9000;
   --z-modal: 9200;
+}
+
+.dark {
+  --background: #0a0a0a;
+  --foreground: #ffffff;
+  --fg-muted: rgba(255, 255, 255, 0.7);
+  --fg-faint: rgba(255, 255, 255, 0.5);
+  --label-color: rgba(255, 255, 255, 0.55);
+  --border: rgba(255, 255, 255, 0.14);
+  --border-strong: rgba(255, 255, 255, 0.28);
+  --surface-alt: #1a1a1a;
+
+  /* Full inversion - hard white tile on the black page */
+  --surface-contrast: #ffffff;
+  --on-contrast: #0a0a0a;
+  --on-contrast-muted: rgba(10, 10, 10, 0.66);
+}
+
+@media (max-width: 640px) {
+  :root {
+    --frame-radius: 12px;
+    --reveal-padding: 8px;
+  }
 }

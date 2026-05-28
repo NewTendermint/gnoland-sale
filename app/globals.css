@@ -1,90 +1,132 @@
+/**
+ * Global styles for sale.gno.land.
+ *
+ * Import order: Tailwind base, then design tokens (CSS variables), then
+ * the @theme inline block that maps those variables into Tailwind utilities.
+ * Component-level styles live in their own files; only structural rules
+ * and accessibility baselines belong here.
+ */
 @import "tailwindcss";
 @import "../styles/tokens.css";
 
-/**
- * Tailwind v4 @theme block. Maps CSS variables from styles/tokens.css
- * into Tailwind utility classes. Reference:
- * docs/specs/2026-05-20-design-tokens.md sections 3 to 5.
- */
-@theme {
-  /* Colors */
-  --color-bg-base: var(--bg-base);
-  --color-bg-elevated: var(--bg-elevated);
-  --color-bg-overlay: var(--bg-overlay);
+@custom-variant dark (&:is(.dark *));
 
-  --color-fg-hi: var(--fg-hi);
-  --color-fg-body: var(--fg-body);
-  --color-fg-muted: var(--fg-muted);
-  --color-fg-faint: var(--fg-faint);
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--fg-muted);
+  --color-faint: var(--fg-faint);
+  --color-label: var(--label-color);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-surface-alt: var(--surface-alt);
+  --color-surface-contrast: var(--surface-contrast);
+  --color-on-contrast: var(--on-contrast);
+  --color-on-contrast-muted: var(--on-contrast-muted);
 
   --color-mint: var(--mint);
   --color-mint-soft: var(--mint-soft);
-  --color-mint-glow: var(--mint-glow);
-
   --color-amber: var(--amber);
-  --color-amber-glow: var(--amber-glow);
-
   --color-danger: var(--danger);
-  --color-danger-glow: var(--danger-glow);
-
   --color-info: var(--info);
-  --color-info-glow: var(--info-glow);
 
-  --color-border-subtle: var(--border-subtle);
-  --color-border-default: var(--border-default);
-  --color-border-strong: var(--border-strong);
-
-  /* Bridge aliases for Layer 1 components (bg-bg, bg-fg, border-border, text-bg, border-fg). */
-  --color-bg: var(--bg-base);
-  --color-fg: var(--fg-hi);
-  --color-border: var(--border-default);
-
-  /* Fonts (wired by next/font/local in Task 5) */
   --font-display: var(--font-display-var), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-mono-var), ui-monospace, monospace;
-
-  /* Spacing base unit: Tailwind auto-generates p-1 (4px), p-2 (8px), ..., p-40 (160px) */
   --spacing: 4px;
-
-  /* Radius */
-  --radius-none: var(--radius-none);
-  --radius-xs: var(--radius-xs);
+  --max-width-container: 1400px;
   --radius-sm: var(--radius-sm);
   --radius-md: var(--radius-md);
   --radius-full: var(--radius-full);
-
-  /* Motion durations */
-  --duration-150: var(--motion-150);
-  --duration-300: var(--motion-300);
-  --duration-500: var(--motion-500);
-  --duration-800: var(--motion-800);
-  --duration-1500: var(--motion-1500);
-
-  /* Easing */
   --ease-default: var(--ease-default);
 }
 
-/**
- * Base layout. Body uses --bg-base + body font from the design tokens.
- * Token utilities (text-mint, bg-bg-elevated, rounded-sm, etc.) are
- * available to components via the @theme block above; no extra utilities
- * are defined here.
- */
 html,
 body {
   margin: 0;
-  background: var(--bg-base);
-  color: var(--fg-body);
-  font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
-  line-height: 1.5;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--frame);
   -webkit-font-smoothing: antialiased;
+  line-height: 1.5;
+  font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+}
+
+body {
+  padding: var(--reveal-padding);
+}
+
+.screen {
+  background-color: var(--background);
+  color: var(--foreground);
+  height: calc(100vh - var(--reveal-padding) * 2);
+  border-radius: var(--frame-radius);
+  border: 1px solid var(--border);
+  position: relative;
+  z-index: 1;
+  overflow: hidden auto;
+  scrollbar-width: none;
+}
+
+.screen::-webkit-scrollbar {
+  display: none;
+}
+
+@supports (height: 100dvh) {
+  .screen {
+    height: calc(100dvh - var(--reveal-padding) * 2);
+  }
 }
 
 * {
   box-sizing: border-box;
 }
 
-/* Anchor jump targets sit below the sticky header without smoothing scroll motion. */
 main > section {
   scroll-margin-top: 80px;
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    border-color: var(--border);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--mint);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+}
+
+@layer utilities {
+  .section-label {
+    @apply font-mono text-xs uppercase tracking-[0.2em];
+    color: var(--label-color);
+  }
+
+  .skip-link {
+    position: absolute;
+    left: -9999px;
+    top: var(--reveal-padding);
+    z-index: var(--z-modal);
+  }
+
+  .skip-link:focus {
+    left: var(--reveal-padding);
+    background: var(--background);
+    color: var(--foreground);
+    padding: 8px 16px;
+    border-radius: var(--radius-md);
+  }
 }

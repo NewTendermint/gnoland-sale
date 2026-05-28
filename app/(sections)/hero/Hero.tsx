@@ -1,64 +1,53 @@
-import { PixelTransitionBand } from "./PixelTransitionBand"
-import { VoxelScenePlaceholder } from "./VoxelScenePlaceholder"
+import { navLinks } from "../../(layout)/nav.data"
+import { GridOverlay } from "./GridOverlay"
 
 /**
- * Hero composition: title block sits at ~1/3 of the viewport (pt-12vh).
- * Voxel scene + pixel-transition bands sit below with a margin gap, so the
- * voxel does not start at the top of the section but lower in the page.
- *
- * Placeholders: countdown is static "04d 12h" (Layer 2 wires the live
- * timer); voxel scene is a stand-in image (Layer 4 swaps in the real
- * render). The sticky BidPanel tile is rendered separately at page level.
+ * Hero v2 (editorial). Asymmetric composition on a 12-col grid: title cols 1-5
+ * text-right starting high, portrait image cols 6-7 starting lower, subtext +
+ * CTAs cols 8-12 left-aligned and bottom-aligned with the image. Colors come
+ * from semantic theme tokens so the section flips with the light/dark toggle.
  */
 export function Hero() {
   return (
-    <section id="hero" className="relative">
-      <div className="relative z-30 pt-[12vh]">
-        <div className="mx-auto max-w-[1440px] px-6">
-          <div className="flex flex-col items-center gap-6 text-center">
-            <h1 className="text-5xl font-bold leading-[1.05] tracking-tight text-fg-hi sm:text-6xl md:text-7xl lg:text-9xl">
-              GNOT Public Sale
-            </h1>
-            <p className="max-w-3xl text-xl text-fg-muted md:text-2xl lg:text-4xl">
-              The native token of gno.land,
-              <br className="hidden sm:inline" />
-              <span className="sm:hidden"> </span>a multi-user OS written in Go.
-            </p>
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-              <button
-                type="button"
-                className="inline-flex items-center rounded-sm bg-mint px-8 py-4 text-base font-semibold uppercase tracking-wider text-bg-base transition-colors hover:bg-mint-soft md:px-10 md:py-5 md:text-lg"
-              >
-                Place a bid
-              </button>
-              <a
-                href="#how-it-works"
-                className="inline-flex items-center rounded-sm border border-border-strong bg-transparent px-8 py-4 text-base font-semibold uppercase tracking-wider text-fg-hi transition-colors hover:bg-bg-base/40 md:px-10 md:py-5 md:text-lg"
-              >
-                How it works
-              </a>
+    <section
+      id="hero"
+      className="relative flex h-[calc(100vh-32px)] items-center bg-background text-foreground"
+    >
+      <div className="mx-auto w-full max-w-[var(--max-width-container)] px-6 lg:px-8">
+        <div className="grid grid-cols-12 gap-6">
+          <h1 className="col-span-12 text-left text-[clamp(2.5rem,6vw,6.5rem)] font-semibold leading-[0.92] tracking-[-0.04em] text-foreground lg:col-span-3 lg:col-start-2 lg:pt-[6vh] lg:text-right">
+            GNOT
+            <br />
+            Public
+            <br />
+            Sale
+          </h1>
+
+          <div className="col-span-12 grid grid-cols-1 gap-6 lg:col-span-8 lg:col-start-5 lg:-mt-[6vh] lg:grid-cols-8">
+            <div className="lg:col-span-4">
+              <div className="aspect-[2/3] w-full rounded-[var(--frame-radius)] bg-surface-alt" />
             </div>
-            <img
-              src="/gnocoin.png"
-              alt=""
-              aria-hidden="true"
-              className="relative z-30 mt-22 h-64 w-auto md:h-96 lg:h-[32rem]"
-            />
+
+            <div className="flex flex-col justify-end gap-6 lg:col-span-3 lg:col-start-5">
+              <ul className="flex flex-col gap-2 text-xl text-muted">
+                {navLinks.map((l) => (
+                  <li key={l.href}>
+                    <a href={l.href} className="transition-colors hover:text-foreground">
+                      {l.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+              <div aria-hidden="true" className="h-px w-full bg-border" />
+              <p className="max-w-md text-xl leading-snug text-muted lg:text-2xl">
+                The native token of gno.land. A Layer 1 by the makers of Cosmos and Tendermint.
+              </p>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="relative -mt-[70vh]">
-        <VoxelScenePlaceholder />
-
-        <div className="pointer-events-none absolute inset-x-0 top-0">
-          <PixelTransitionBand rows={8} concave />
-        </div>
-
-        <div className="pointer-events-none absolute inset-x-0 bottom-0">
-          <PixelTransitionBand rows={3} reverse />
-        </div>
-      </div>
+      <GridOverlay />
     </section>
   )
 }

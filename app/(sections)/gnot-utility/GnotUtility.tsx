@@ -1,50 +1,55 @@
 /**
- * GNOT utility: 4 use cases as plain text on the section bg.
+ * GNOT utility. Spec-sheet / glossary layout: editorial lead at top,
+ * then 7 entries as compact one-line rows with mono key on the left
+ * and plain-text definition on the right, separated by hairlines.
+ *   - First 4: operational uses (fees, storage, cross-chain, contracts)
+ *   - Last 3: economic mechanisms (staking, governance, slashing)
+ *
+ * This section owns the full demand-side narrative of the token (what
+ * GNOT does + how value accrues to holders). The Tokenomics section
+ * above is supply-side only (allocation, vesting, treasury).
+ *
+ * Bodies for the 3 economic mechanisms are Lorem placeholders pending
+ * team disclosure (B11 in docs/REQUIREMENTS_FROM_TEAMS.md).
  */
+import { Section } from "../../(ui)/Section"
+import { SectionHeading } from "../../(ui)/SectionHeading"
+import { uses } from "../../../content/sections/gnot-utility"
+
 export function GnotUtility() {
-  const uses = [
-    {
-      title: "Transaction fees",
-      body: "GNOT is the fuel that enables each and every transaction.",
-    },
-    {
-      title: "Storage deposits",
-      body: "Owning GNOT means reserving ownership of storage on Gno.land.",
-    },
-    {
-      title: "IBC/ICS interactions",
-      body: "GNOT is used to pay for all cross-chain interactions.",
-    },
-    {
-      title: "Contract execution",
-      body: "GNOT functions as the gas token that powers smart contract execution.",
-    },
-  ]
   return (
-    <section id="gnot-utility" className="bg-bg-base py-24 lg:py-32">
-      <div className="mx-auto max-w-[1280px] px-6 lg:px-8">
-        <div className="mb-20 max-w-4xl">
-          <p className="mb-4 font-mono text-xs uppercase tracking-widest text-fg-muted">
-            GNOT utility
-          </p>
-          <h2 className="text-4xl font-bold uppercase leading-[1.05] tracking-tight text-fg-hi md:text-5xl lg:text-6xl">
-            GNOT is the native utility token for all economic activity
-          </h2>
-        </div>
-        <ul className="grid grid-cols-1 gap-x-12 gap-y-16 md:grid-cols-2">
-          {uses.map((u, i) => (
-            <li key={u.title}>
-              <p className="font-mono text-xs uppercase tracking-widest text-fg-faint">
-                {String(i + 1).padStart(2, "0")}
-              </p>
-              <h3 className="mt-4 text-xl font-semibold tracking-tight text-fg-hi md:text-2xl">
-                {u.title}
-              </h3>
-              <p className="mt-4 text-base text-fg-body">{u.body}</p>
-            </li>
-          ))}
-        </ul>
+    <Section id="gnot-utility">
+      <div className="col-span-12 lg:col-span-7 lg:col-start-1">
+        <SectionHeading
+          eyebrow="GNOT utility"
+          title="The native utility token for all economic activity"
+        />
       </div>
-    </section>
+
+      <p className="col-span-12 mb-16 text-3xl leading-snug text-muted lg:text-4xl">
+        GNOT is the native gas token that makes the network usable. It pays the fees for every
+        transaction and smart contract execution, and is locked as a refundable deposit to reserve
+        on-chain storage. Demand for GNOT scales with demand for the network itself, tying the token
+        to the activity it enables on Gno.land.
+      </p>
+
+      <div className="col-span-12 lg:col-span-4 lg:col-start-4">
+        <div className="aspect-[2/3] w-full rounded-[var(--frame-radius)] bg-surface-alt" />
+      </div>
+
+      <dl className="col-span-12 mt-8 border-t border-border lg:col-span-5 lg:col-start-8 lg:mt-12">
+        {uses.map((u) => (
+          <div
+            key={u.title}
+            className="grid grid-cols-12 gap-6 border-b border-border py-3 lg:grid-cols-5"
+          >
+            <dt className="col-span-12 font-mono text-sm font-medium uppercase tracking-widest text-foreground lg:col-span-2">
+              {u.title}
+            </dt>
+            <dd className="col-span-12 text-sm text-muted lg:col-span-3">{u.body}</dd>
+          </div>
+        ))}
+      </dl>
+    </Section>
   )
 }

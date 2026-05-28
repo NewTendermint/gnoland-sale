@@ -1,4 +1,4 @@
-import { BidPanel } from "./(chrome)/BidPanel"
+import { BidPanel } from "./(layout)/BidPanel"
 import { Ecosystem } from "./(sections)/ecosystem/Ecosystem"
 import { Features } from "./(sections)/features/Features"
 import { GnotUtility } from "./(sections)/gnot-utility/GnotUtility"
@@ -11,13 +11,15 @@ import { Roadmap } from "./(sections)/roadmap/Roadmap"
 import { Stats } from "./(sections)/stats/Stats"
 import { Team } from "./(sections)/team/Team"
 import { TokenDetails } from "./(sections)/token-details/TokenDetails"
+import { Tokenomics } from "./(sections)/tokenomics/Tokenomics"
 
 export default function Home() {
   return (
     <>
-      <main>
+      <main id="main">
         <Hero />
         <TokenDetails />
+        <Tokenomics />
         <HowItWorks />
         <Narrative />
         <Features />
