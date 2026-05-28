@@ -12,6 +12,7 @@
  *   connected, no bids → values at 0/—, sub-line invites first bid
  *   connected, has bids → full values
  */
+import { Fragment } from "react"
 import { Icon } from "../../(ui)/Icon"
 import { Section } from "../../(ui)/Section"
 import { SectionHeading } from "../../(ui)/SectionHeading"
@@ -68,59 +69,24 @@ export function TokenDetails() {
         </div>
 
         <dl className="col-span-12 flex flex-wrap items-end justify-end gap-8 sm:gap-10 lg:col-span-7">
-          <div>
-            <div className="flex items-center gap-2">
-              <Icon name={positionMetrics[0].icon} className="h-[18px] w-[18px]" />
-              <dd className="font-mono text-2xl font-medium tracking-tight tabular-nums sm:text-3xl">
-                {positionMetrics[0].value}
-              </dd>
-            </div>
-            <dt className="mt-0.5 text-[10px] uppercase tracking-[0.2em] text-muted">
-              {positionMetrics[0].label}
-            </dt>
-          </div>
-
-          <div aria-hidden="true" className="hidden h-8 w-px bg-border sm:block" />
-
-          <div>
-            <div className="flex items-center gap-2">
-              <Icon name={positionMetrics[1].icon} className="h-[18px] w-[18px]" />
-              <dd className="font-mono text-2xl font-medium tracking-tight tabular-nums sm:text-3xl">
-                {positionMetrics[1].value}
-              </dd>
-            </div>
-            <dt className="mt-0.5 text-[10px] uppercase tracking-[0.2em] text-muted">
-              {positionMetrics[1].label}
-            </dt>
-          </div>
-
-          <div aria-hidden="true" className="hidden h-8 w-px bg-border sm:block" />
-
-          <div>
-            <div className="flex items-center gap-2">
-              <Icon name={positionMetrics[2].icon} className="h-[18px] w-[18px]" />
-              <dd className="font-mono text-2xl font-medium tracking-tight tabular-nums sm:text-3xl">
-                {positionMetrics[2].value}
-              </dd>
-            </div>
-            <dt className="mt-0.5 text-[10px] uppercase tracking-[0.2em] text-muted">
-              {positionMetrics[2].label}
-            </dt>
-          </div>
-
-          <div aria-hidden="true" className="hidden h-8 w-px bg-border sm:block" />
-
-          <div>
-            <div className="flex items-center gap-2">
-              <Icon name={positionMetrics[3].icon} className="h-[18px] w-[18px]" />
-              <dd className="font-mono text-2xl font-medium tracking-tight tabular-nums sm:text-3xl">
-                {positionMetrics[3].value}
-              </dd>
-            </div>
-            <dt className="mt-0.5 text-[10px] uppercase tracking-[0.2em] text-muted">
-              {positionMetrics[3].label}
-            </dt>
-          </div>
+          {positionMetrics.map((m, i) => (
+            <Fragment key={m.label}>
+              {i > 0 ? (
+                <div aria-hidden="true" className="hidden h-8 w-px bg-border sm:block" />
+              ) : null}
+              <div>
+                <div className="flex items-center gap-2">
+                  <Icon name={m.icon} className="h-[18px] w-[18px]" />
+                  <dd className="font-mono text-2xl font-medium tracking-tight tabular-nums sm:text-3xl">
+                    {m.value}
+                  </dd>
+                </div>
+                <dt className="mt-0.5 text-[10px] uppercase tracking-[0.2em] text-muted">
+                  {m.label}
+                </dt>
+              </div>
+            </Fragment>
+          ))}
         </dl>
       </div>
 

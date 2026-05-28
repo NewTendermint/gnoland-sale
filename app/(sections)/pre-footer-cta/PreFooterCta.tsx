@@ -1,7 +1,8 @@
 /**
- * Last-chance CTA. Wrapped in a contrast tile (same pattern as HowItWorks
- * and Stats) for visual emphasis right before the footer. Centered
- * headline + 2 CTAs (inverted pill primary + text link secondary).
+ * Last-chance CTA. Hand-rolls a manual contrast tile inside a default
+ * Section (rather than Section tone="contrast") to get a taller py rhythm
+ * for visual emphasis right before the footer. Centered headline + 2 CTAs
+ * (inverted pill primary + text link secondary).
  */
 import { Section } from "../../(ui)/Section"
 

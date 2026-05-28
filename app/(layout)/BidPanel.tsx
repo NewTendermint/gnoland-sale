@@ -17,7 +17,7 @@ export function BidPanel() {
     <aside
       aria-label="Live bid panel"
       data-component="bid-panel"
-      className="fixed bottom-[var(--reveal-padding)] left-[var(--reveal-padding)] right-[var(--reveal-padding)] z-50 rounded-[var(--frame-radius)] border border-border bg-background"
+      className="fixed bottom-[var(--reveal-padding)] left-[var(--reveal-padding)] right-[var(--reveal-padding)] z-[var(--z-sticky)] rounded-[var(--frame-radius)] border border-border bg-background"
     >
       <div className="mx-auto max-w-[var(--max-width-container)] px-6 lg:px-8">
         <div className="grid grid-cols-12 gap-6">

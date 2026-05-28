@@ -184,7 +184,7 @@ const PATHS: Record<string, ReactNode> = {
   ),
 }
 
-/** Single inline-SVG icon keyed by name. Extend PATHS as sections are migrated in Phase 3. */
+/** Single inline-SVG icon keyed by name. */
 export function Icon({ name, className = "h-5 w-5" }: { name: string; className?: string }) {
   return (
     <svg

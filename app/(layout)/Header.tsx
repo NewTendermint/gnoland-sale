@@ -6,7 +6,7 @@ import { ThemeToggle } from "./ThemeToggle"
 
 export function Header() {
   return (
-    <header className="fixed left-[var(--reveal-padding)] right-[var(--reveal-padding)] top-[var(--reveal-padding)] z-[60] bg-transparent">
+    <header className="fixed left-[var(--reveal-padding)] right-[var(--reveal-padding)] top-[var(--reveal-padding)] z-[var(--z-header)] bg-transparent">
       <nav className="relative mx-auto flex max-w-[var(--max-width-container)] items-center justify-center px-6 py-4">
         <a href="/" className="text-lg font-bold text-foreground">
           gno.land
