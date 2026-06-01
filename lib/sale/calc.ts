@@ -1,7 +1,8 @@
 /**
  * Pure sale math. percentFilled is a DERIVED metric (Sonar has no such field,
- * REQUIREMENTS A.13.1) - label it "estimated" in the UI until the formula is
- * confirmed. gnotEstimate is an upper estimate (pro-rata settlement may reduce it).
+ * REQUIREMENTS A.13.1). NOT currently wired in the UI (the live bar shows a
+ * "Time left" countdown instead of a Filled %); kept + tested for reuse. gnotEstimate
+ * is an upper estimate (pro-rata settlement may reduce it).
  */
 export function percentFilled(
   totalCommittedUsd: number,

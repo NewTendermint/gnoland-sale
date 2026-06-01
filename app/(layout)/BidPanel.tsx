@@ -2,39 +2,44 @@
 
 /**
  * Sticky bid bar. Collapsed it shows the live keynumber metrics (clearing,
- * filled, bidders, committed) plus a marketing "Place a bid" CTA. Clicking the CTA
- * EXPANDS the bar upward into a panel that hosts the BidFlow (connect -> KYC ->
- * price/amount/lockup form -> sign -> submitted). Escape or the backdrop closes
- * it (bottom-sheet / modal pattern, ADR §6.4). Phase-driven: pre-sale and ended
- * render their own compact bars. Data comes from useSale() (mock today, Sonar
- * proxy later behind the same shape).
+ * time-left, bidders, committed) plus a marketing "Place a bid" CTA. Clicking the
+ * CTA EXPANDS the bar upward into a panel hosting the BidFlow (connect -> verify ->
+ * bid form -> submit). Escape or the Close button collapses it. Phase-driven:
+ * pre-sale and ended render their own compact bars (BarShell). Data comes from
+ * useSale() (mock today, Sonar proxy later behind the same shape).
  */
+import dynamic from "next/dynamic"
 import { useEffect, useState } from "react"
-import { BidFlow, BidStatus, FunnelSteps } from "../(sections)/bid/BidFlow"
+import type { ReactNode } from "react"
+import { BidStatus, FunnelSteps } from "../(sections)/bid/FunnelSteps"
 import { Icon } from "../(ui)/Icon"
-import { percentFilled } from "../../lib/sale/calc"
-import { SALE_ECONOMICS } from "../../lib/sale/economics"
+import { gnotEstimate } from "../../lib/sale/calc"
+import { SALE_ECONOMICS, formatSaleDate } from "../../lib/sale/economics"
+import { fmtCompactUsd, fmtCount, fmtGnot, fmtPrice } from "../../lib/sale/format"
 import { bidCtaLabel } from "../../lib/sale/labels"
+import { Countdown } from "./Countdown"
 import { useSale } from "./SaleProvider"
 
-const fmtPrice = (n: number) =>
-  `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`
-const fmtCompact = (n: number) =>
-  n.toLocaleString("en-US", {
-    notation: "compact",
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 1,
-  })
-const fmtCount = (n: number) => n.toLocaleString("en-US")
+// Wallet stack lives in a lazily-loaded chunk: wagmi/WalletConnect only download
+// when the bid panel is opened, keeping them out of the initial page bundle.
+const ExpandedWalletPanel = dynamic(
+  () => import("./ExpandedWalletPanel").then((m) => m.ExpandedWalletPanel),
+  { ssr: false },
+)
 
 const SHELL =
   "fixed bottom-[var(--reveal-padding)] left-[var(--reveal-padding)] right-[var(--reveal-padding)] z-[var(--z-sticky)] overflow-hidden rounded-[var(--frame-radius)] border border-border bg-background"
 const INSET = "mx-auto max-w-[var(--max-width-container)] px-6 lg:px-8"
 
+type BarMetric = { icon: string; value: ReactNode; label: string }
+
 export function BidPanel() {
   const { phase, preSaleStage, journey, commitment, myBid } = useSale()
   const [expanded, setExpanded] = useState(false)
+  // Once opened, the wallet panel stays MOUNTED (just hidden when collapsed) so the
+  // wagmi provider is not torn down + re-created on each open - that remount re-runs
+  // EIP-6963 discovery and accumulates duplicate connectors.
+  const [hasOpened, setHasOpened] = useState(false)
 
   useEffect(() => {
     if (!expanded) return
@@ -46,52 +51,119 @@ export function BidPanel() {
   }, [expanded])
 
   if (phase === "pre-sale") {
-    const label = preSaleStage === "registration-open" ? "Register now" : "Get notified"
+    const registrationOpen = preSaleStage === "registration-open"
     return (
-      <CompactBar
-        lead="Public sale"
-        headline="Opens July 15, 2026"
-        cta={label}
-        sub={
-          preSaleStage === "registration-open"
-            ? "Registration is open"
-            : "Registration opens July 1"
-        }
-      />
+      <BarShell>
+        <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4 border-t border-border pb-6 pt-4 sm:pb-8 sm:pt-6">
+          <div className="flex items-center gap-3">
+            <Icon name="clock" className="h-[18px] w-[18px]" />
+            <div>
+              <p className="font-mono text-2xl font-medium tracking-tight tabular-nums sm:text-3xl">
+                <Countdown targetIso={SALE_ECONOMICS.saleOpensIso} />
+              </p>
+              <p className="mt-0.5 text-[10px] uppercase tracking-[0.2em] text-muted">
+                Opens {formatSaleDate(SALE_ECONOMICS.saleOpensIso)}
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+            <p className="text-sm text-muted">
+              {registrationOpen
+                ? "Registration is open"
+                : `Registration opens ${formatSaleDate(SALE_ECONOMICS.registrationOpensIso, false)}`}
+            </p>
+            <button
+              type="button"
+              className="group inline-flex items-center gap-2 rounded-full bg-surface-contrast px-7 py-3.5 text-xs font-bold uppercase tracking-[0.2em] text-on-contrast transition-colors hover:bg-surface-contrast/80"
+            >
+              <span>{registrationOpen ? "Register now" : "Get notified"}</span>
+              <svg
+                viewBox="0 0 12 12"
+                className="h-3 w-3 transition-transform duration-300 group-hover:translate-x-1"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                aria-hidden="true"
+              >
+                <path d="M2 6h8M7 3l3 3-3 3" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </BarShell>
     )
   }
 
   if (phase === "ended") {
+    const hasBid = myBid !== null
+    const clearingUsd = commitment.clearingPriceUsd ?? 0
+    const finalCells: BarMetric[] = [
+      { icon: "clearing", value: fmtPrice(clearingUsd), label: "Final price" },
+      { icon: "database", value: fmtCompactUsd(commitment.totalCommittedUsd), label: "Raised" },
+      { icon: "users-group", value: fmtCount(commitment.uniqueCommitmentCount), label: "Bidders" },
+    ]
+    if (hasBid && myBid) {
+      finalCells.push({
+        icon: "cube",
+        value: fmtGnot(gnotEstimate(myBid.committedUsd, clearingUsd)),
+        label: "Your allocation",
+      })
+    }
     return (
-      <CompactBar
-        lead="Public sale"
-        headline="Auction closed"
-        cta="View results"
-        sub={
-          commitment.clearingPriceUsd
-            ? `Final clearing ${fmtPrice(commitment.clearingPriceUsd)}`
-            : undefined
-        }
-      />
+      <BarShell>
+        <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4 border-t border-border pb-6 pt-4 sm:pb-8 sm:pt-6">
+          <div className="flex flex-wrap items-center gap-x-7 gap-y-3 sm:gap-x-9">
+            <span className="rounded-full border border-border px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-muted">
+              Closed
+            </span>
+            {finalCells.map((c) => (
+              <div key={c.label}>
+                <div className="flex items-center gap-2">
+                  <Icon name={c.icon} className="h-[18px] w-[18px]" />
+                  <p className="font-mono text-lg font-medium tracking-tight tabular-nums">
+                    {c.value}
+                  </p>
+                </div>
+                <p className="mt-0.5 text-[10px] uppercase tracking-[0.2em] text-muted">
+                  {c.label}
+                </p>
+              </div>
+            ))}
+          </div>
+          <button
+            type="button"
+            className="group inline-flex items-center gap-2 rounded-full bg-surface-contrast px-7 py-3.5 text-xs font-bold uppercase tracking-[0.2em] text-on-contrast transition-colors hover:bg-surface-contrast/80"
+          >
+            <span>{hasBid ? "Claim refund" : "View results"}</span>
+            <svg
+              viewBox="0 0 12 12"
+              className="h-3 w-3 transition-transform duration-300 group-hover:translate-x-1"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              aria-hidden="true"
+            >
+              <path d="M2 6h8M7 3l3 3-3 3" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+        </div>
+      </BarShell>
     )
   }
 
-  const filled = Math.round(
-    percentFilled(
-      commitment.totalCommittedUsd,
-      commitment.clearingPriceUsd,
-      SALE_ECONOMICS.saleSupplyGnot,
-    ) * 100,
-  )
-  const metrics = [
+  const metrics: BarMetric[] = [
     {
       icon: "clearing",
       value: commitment.clearingPriceUsd ? fmtPrice(commitment.clearingPriceUsd) : "TBD",
       label: "Clearing",
     },
-    { icon: "progress-ring", value: `${filled}%`, label: "Filled (est.)" },
+    {
+      icon: "clock",
+      value: <Countdown targetIso={SALE_ECONOMICS.saleClosesIso} />,
+      label: "Time left",
+    },
     { icon: "users-group", value: fmtCount(commitment.uniqueCommitmentCount), label: "Bidders" },
-    { icon: "database", value: fmtCompact(commitment.totalCommittedUsd), label: "Committed" },
+    { icon: "database", value: fmtCompactUsd(commitment.totalCommittedUsd), label: "Committed" },
   ]
 
   return (
@@ -160,7 +232,10 @@ export function BidPanel() {
                 ) : (
                   <button
                     type="button"
-                    onClick={() => setExpanded(true)}
+                    onClick={() => {
+                      setExpanded(true)
+                      setHasOpened(true)
+                    }}
                     aria-expanded={expanded}
                     className="group inline-flex items-center gap-2 rounded-full bg-surface-contrast px-7 py-3.5 text-xs font-bold uppercase tracking-[0.2em] text-on-contrast transition-colors hover:bg-surface-contrast/80"
                   >
@@ -183,18 +258,16 @@ export function BidPanel() {
         </div>
       </div>
 
-      {expanded ? (
-        <div className="border-t border-border-strong bg-surface-alt">
-          <div className={INSET}>
-            <div className="grid grid-cols-12 gap-6">
-              <div className="col-span-12 lg:col-span-10 lg:col-start-2">
-                <div className="max-h-[60vh] overflow-y-auto py-6">
-                  <BidFlow
-                    journey={journey}
-                    clearingPriceUsd={commitment.clearingPriceUsd}
-                    myBid={myBid}
-                  />
-                </div>
+      {hasOpened ? (
+        <div className={`${INSET} ${expanded ? "" : "hidden"}`}>
+          <div className="grid grid-cols-12 gap-6 pb-4 sm:pb-6">
+            <div className="col-span-12 lg:col-span-10 lg:col-start-2">
+              <div className="bid-capsule max-h-[60vh] overflow-y-auto px-6 py-5">
+                <ExpandedWalletPanel
+                  journey={journey}
+                  clearingPriceUsd={commitment.clearingPriceUsd}
+                  myBid={myBid}
+                />
               </div>
             </div>
           </div>
@@ -204,41 +277,13 @@ export function BidPanel() {
   )
 }
 
-/** Compact single-message bar for pre-sale / ended phases (no expand). */
-function CompactBar({
-  lead,
-  headline,
-  sub,
-  cta,
-}: {
-  lead: string
-  headline: string
-  sub?: string
-  cta: string
-}) {
+/** Shared bar shell: SHELL frame + inset + 12-col grid, content inset to cols 2-11. */
+function BarShell({ children }: { children: ReactNode }) {
   return (
     <aside aria-label="Bid panel" data-component="bid-panel" className={SHELL}>
       <div className={INSET}>
         <div className="grid grid-cols-12 gap-6">
-          <div className="col-span-12 lg:col-span-10 lg:col-start-2">
-            <div className="flex flex-wrap items-center justify-between gap-6 border-t border-border pb-6 pt-4 sm:pb-8 sm:pt-6">
-              <div>
-                <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted">
-                  {lead}
-                </p>
-                <p className="mt-1 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-                  {headline}
-                </p>
-                {sub ? <p className="mt-1 text-sm text-muted">{sub}</p> : null}
-              </div>
-              <button
-                type="button"
-                className="inline-flex items-center gap-2 rounded-full bg-surface-contrast px-7 py-3.5 text-xs font-bold uppercase tracking-[0.2em] text-on-contrast transition-colors hover:bg-surface-contrast/80"
-              >
-                {cta}
-              </button>
-            </div>
-          </div>
+          <div className="col-span-12 lg:col-span-10 lg:col-start-2">{children}</div>
         </div>
       </div>
     </aside>

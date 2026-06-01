@@ -5,8 +5,9 @@
  * stepper (Connect -> Verify -> Bid) sits on top so the user always sees where
  * they are; the per-state content sits below. The bid form uses real boxed
  * input fields (price / amount) with a label above + a read-only "you receive"
- * box. Pure: takes (journey, clearingPriceUsd, myBid) so /dev/states renders
- * every state without a wallet or Sonar. On-chain goes through MockBidSubmitter;
+ * box. Presentational: takes (journey, clearingPriceUsd, myBid); optional `actions`
+ * wire the connect/network gate buttons to the real wallet (omitted by /dev/states,
+ * which previews every state without a wallet). On-chain goes through MockBidSubmitter;
  * the real wagmi replaceBidWithPermit impl (ABI source-verified, REQUIREMENTS
  * A.12.1) drops in behind the same interface.
  *
@@ -14,27 +15,43 @@
  * to be validated/owned by the team. Flagged in the session report.
  */
 import { useState } from "react"
+import type { ReactNode } from "react"
+import { useConnect, useSwitchChain } from "wagmi"
+import { PRIMARY_CHAIN_ID } from "../../(layout)/web3"
 import { Icon } from "../../(ui)/Icon"
 import { gnotEstimate, validateBidAmount, validateBidPrice } from "../../../lib/sale/calc"
 import { SALE_ECONOMICS } from "../../../lib/sale/economics"
+import { fmtGnot, fmtPrice, fmtUsd } from "../../../lib/sale/format"
 import { MockBidSubmitter } from "../../../lib/sale/submitter"
 import type { JourneyState, MyBid } from "../../../lib/sale/types"
 
 const submitter = new MockBidSubmitter()
 
+// Inverted pill: on the .bid-capsule contrast surface, the CTA flips to a light
+// pill with dark text (bg-on-contrast / text-surface-contrast).
 const PILL =
-  "inline-flex items-center gap-2 rounded-full bg-surface-contrast px-6 py-3 text-xs font-bold uppercase tracking-[0.2em] text-on-contrast transition-colors hover:bg-surface-contrast/80 disabled:cursor-not-allowed disabled:opacity-40"
+  "inline-flex items-center gap-2 rounded-full bg-on-contrast px-6 py-3 text-xs font-bold uppercase tracking-[0.2em] text-surface-contrast transition-colors hover:bg-on-contrast/90 disabled:cursor-not-allowed disabled:opacity-40"
 
-const fmtPrice = (n: number) =>
-  `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`
-const fmtUsd = (n: number) => `$${n.toLocaleString("en-US", { maximumFractionDigits: 0 })}`
-const fmtGnot = (n: number) => n.toLocaleString("en-US", { maximumFractionDigits: 0 })
-
-const FUNNEL: { label: string; states: JourneyState[] }[] = [
-  { label: "Connect", states: ["disconnected", "wrong-network"] },
-  { label: "Verify", states: ["kyc-required", "kyc-pending", "kyc-failed", "not-eligible"] },
-  { label: "Bid", states: ["ready", "has-bid-winning", "has-bid-outbid"] },
-]
+// Brand logos for connectors that do not expose their own icon (keyed by connector id).
+// EIP-6963 wallets (MetaMask, Keplr, ...) supply connector.icon; these two do not.
+const BRAND_ICONS: Record<string, ReactNode> = {
+  coinbaseWalletSDK: (
+    <svg viewBox="0 0 32 32" className="h-6 w-6" aria-hidden="true">
+      <rect width="32" height="32" rx="7" fill="#0052FF" />
+      <circle cx="16" cy="16" r="8" fill="#fff" />
+      <rect x="13" y="13" width="6" height="6" rx="1.5" fill="#0052FF" />
+    </svg>
+  ),
+  walletConnect: (
+    <svg viewBox="0 0 32 32" className="h-6 w-6" aria-hidden="true">
+      <rect width="32" height="32" rx="7" fill="#3396FF" />
+      <path
+        fill="#fff"
+        d="M10.2 13.4c3.2-3.13 8.4-3.13 11.6 0l.39.38a.4.4 0 0 1 0 .57l-1.33 1.3a.21.21 0 0 1-.29 0l-.53-.52c-2.24-2.19-5.87-2.19-8.11 0l-.57.56a.21.21 0 0 1-.29 0l-1.33-1.3a.4.4 0 0 1 0-.57l.46-.42zm14.33 2.67 1.18 1.16a.4.4 0 0 1 0 .57l-5.33 5.22a.42.42 0 0 1-.58 0l-3.78-3.7a.1.1 0 0 0-.15 0l-3.78 3.7a.42.42 0 0 1-.58 0l-5.33-5.22a.4.4 0 0 1 0-.57l1.18-1.16a.42.42 0 0 1 .58 0l3.78 3.7a.1.1 0 0 0 .15 0l3.78-3.7a.42.42 0 0 1 .58 0l3.78 3.7a.1.1 0 0 0 .15 0l3.78-3.7a.42.42 0 0 1 .58 0z"
+      />
+    </svg>
+  ),
+}
 
 export function BidFlow({
   journey,
@@ -60,23 +77,9 @@ function StateContent({
 }) {
   switch (journey) {
     case "disconnected":
-      return (
-        <GateRow
-          icon="wallet"
-          title="Connect your wallet"
-          body="Check your eligibility and place a bid."
-          cta="Connect wallet"
-        />
-      )
+      return <ConnectChoices />
     case "wrong-network":
-      return (
-        <GateRow
-          icon="network"
-          title="Wrong network"
-          body="This sale runs on Base. Switch your wallet to continue."
-          cta="Switch to Base"
-        />
-      )
+      return <SwitchNetworkGate />
     case "kyc-required":
       return (
         <GateRow
@@ -122,46 +125,6 @@ function StateContent({
   }
 }
 
-/** Funnel position: Connect -> Verify -> Bid, current step highlighted.
- * Rendered in the bar's top (metrics) row, right side, when expanded. */
-export function FunnelSteps({ journey }: { journey: JourneyState }) {
-  const current = FUNNEL.findIndex((s) => s.states.includes(journey))
-  return (
-    <ol className="flex flex-wrap items-center gap-x-3 gap-y-2">
-      {FUNNEL.map((step, i) => {
-        const phase = i < current ? "done" : i === current ? "current" : "upcoming"
-        return (
-          <li key={step.label} className="flex items-center gap-3">
-            {i > 0 ? (
-              <span className={`h-px w-6 ${i <= current ? "bg-foreground" : "bg-border"}`} />
-            ) : null}
-            <span className="flex items-center gap-2">
-              <span
-                className={`flex h-5 w-5 items-center justify-center rounded-full border text-[10px] font-medium tabular-nums ${
-                  phase === "current"
-                    ? "border-foreground bg-foreground text-background"
-                    : phase === "done"
-                      ? "border-foreground text-foreground"
-                      : "border-border text-faint"
-                }`}
-              >
-                {i + 1}
-              </span>
-              <span
-                className={`text-[10px] font-medium uppercase tracking-[0.2em] ${
-                  phase === "upcoming" ? "text-faint" : "text-foreground"
-                }`}
-              >
-                {step.label}
-              </span>
-            </span>
-          </li>
-        )
-      })}
-    </ol>
-  )
-}
-
 /** Single-row gate: icon + message on the left, optional action on the right. */
 function GateRow({
   icon,
@@ -193,6 +156,87 @@ function GateRow({
           {cta}
         </button>
       ) : null}
+    </div>
+  )
+}
+
+/** Inline wallet picker for the disconnected gate. Extension wallets connect via
+ * their own extension prompt; WalletConnect opens its native QR modal (the single
+ * intentional popup). No app-level modal. */
+function ConnectChoices() {
+  const { connectors, connect, isPending, variables, error } = useConnect()
+  const pendingUid =
+    variables?.connector && "uid" in variables.connector ? variables.connector.uid : undefined
+  // Dedupe by name: EIP-6963 discovery can surface the same wallet more than once.
+  const seen = new Set<string>()
+  const uniqueConnectors = connectors.filter((c) => {
+    if (seen.has(c.name)) return false
+    seen.add(c.name)
+    return true
+  })
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="flex items-center gap-3">
+        <Icon name="wallet" className="h-5 w-5 shrink-0 text-foreground" />
+        <p className="text-sm">
+          <span className="font-medium text-foreground">Connect your wallet.</span>{" "}
+          <span className={error ? "text-danger" : "text-muted"}>
+            {error ? "Connection failed. Try again." : "Check your eligibility and place a bid."}
+          </span>
+        </p>
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        {uniqueConnectors.map((connector) => {
+          const pending = isPending && pendingUid === connector.uid
+          return (
+            <button
+              key={connector.uid}
+              type="button"
+              onClick={() => connect({ connector })}
+              disabled={isPending}
+              aria-label={`Connect ${connector.name}`}
+              title={connector.name}
+              className={`inline-flex h-11 w-11 items-center justify-center rounded-full border border-border bg-surface-alt transition-colors hover:border-border-strong ${
+                pending ? "animate-pulse" : isPending ? "opacity-40" : ""
+              }`}
+            >
+              {connector.icon ? (
+                <img src={connector.icon} alt="" className="h-6 w-6 rounded-md" />
+              ) : (
+                (BRAND_ICONS[connector.id] ?? <Icon name="wallet" className="h-5 w-5 text-muted" />)
+              )}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+/** Inline wrong-network gate: switches to the sale chain via wagmi (no popup). */
+function SwitchNetworkGate() {
+  const { switchChain, isPending, error } = useSwitchChain()
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="flex items-center gap-3">
+        <Icon name="network" className="h-5 w-5 shrink-0 text-foreground" />
+        <p className="text-sm">
+          <span className="font-medium text-foreground">Wrong network.</span>{" "}
+          <span className={error ? "text-danger" : "text-muted"}>
+            {error
+              ? "Could not switch. Try again."
+              : "This sale runs on Base. Switch your wallet to continue."}
+          </span>
+        </p>
+      </div>
+      <button
+        type="button"
+        onClick={() => switchChain({ chainId: PRIMARY_CHAIN_ID })}
+        disabled={isPending}
+        className={PILL}
+      >
+        {isPending ? "Switching..." : "Switch to Base"}
+      </button>
     </div>
   )
 }
@@ -312,26 +356,11 @@ function BidRow({
   )
 }
 
-/** Bid status chip for the top metrics row. Winning = bid clears (in allocation);
- * Outbid = below the clearing price. Replaces the old full-width banner so the
- * form stays a single line. The off-page outbid alert (email / Base app push)
- * is the deferred re-engagement channel (REQUIREMENTS A.13.2). */
-export function BidStatus({ journey }: { journey: JourneyState }) {
-  if (journey === "has-bid-winning") {
-    return (
-      <span className="rounded-full bg-mint-soft px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-mint">
-        Winning
-      </span>
-    )
-  }
-  if (journey === "has-bid-outbid") {
-    return (
-      <span className="rounded-full border border-amber px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-amber">
-        Outbid
-      </span>
-    )
-  }
-  return null
+/** Keep only decimal characters (one dot); blocks hex/scientific/whitespace in money inputs. */
+function sanitizeDecimal(v: string): string {
+  const cleaned = v.replace(/[^0-9.]/g, "")
+  const [head, ...rest] = cleaned.split(".")
+  return rest.length > 0 ? `${head}.${rest.join("")}` : head
 }
 
 function InputCell({

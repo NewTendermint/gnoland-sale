@@ -13,8 +13,22 @@ export const SALE_ECONOMICS = {
   maxCommitmentUsd: 100_000, // PROVISIONAL - sheet $100k; Sonar pending. A.12.2 / param #4.
   bidIncrementUsd: 0.005, // PROVISIONAL - proposed $0.005; NOT enforced on-chain (A.12.1). Param #7.
   multipleWalletsPerEntity: true, // confirmed (param #13); contract caps via MaxWalletsPerEntityExceeded
-  registrationOpensIso: "2026-07-01T00:00:00Z", // date confirmed
-  saleOpensIso: "2026-07-15T00:00:00Z", // DATE confirmed; TIME TBD (param #14) - midnight UTC placeholder
-  // saleClosesIso intentionally omitted: end date kept vague, may be extended (A.12.2 / Q&A #7).
-  // The live countdown reads the on-chain Stage, never a hardcoded close date.
+  // Dates are flags: override via env NEXT_PUBLIC_REGISTRATION_OPENS / NEXT_PUBLIC_SALE_OPENS /
+  // NEXT_PUBLIC_SALE_CLOSES (ISO).
+  registrationOpensIso: process.env.NEXT_PUBLIC_REGISTRATION_OPENS ?? "2026-07-01T00:00:00Z", // confirmed
+  saleOpensIso: process.env.NEXT_PUBLIC_SALE_OPENS ?? "2026-07-15T00:00:00Z", // TIME still TBD (param #14)
+  // PLACEHOLDER close date so the live bar can show a "Time left" countdown. NOT confirmed: the end
+  // date is kept vague and may be extended (A.12.2 / Q&A #7). When the on-chain Stage is wired it is
+  // the source of truth; this flag is the dev/fallback value. Flip via NEXT_PUBLIC_SALE_CLOSES.
+  saleClosesIso: process.env.NEXT_PUBLIC_SALE_CLOSES ?? "2026-07-29T00:00:00Z", // PLACEHOLDER
 } as const
+
+/** Display a sale ISO date, e.g. "July 15, 2026" (UTC-fixed so SSR and client agree). */
+export function formatSaleDate(iso: string, withYear = true): string {
+  return new Date(iso).toLocaleDateString("en-US", {
+    timeZone: "UTC",
+    month: "long",
+    day: "numeric",
+    ...(withYear ? { year: "numeric" } : {}),
+  })
+}

@@ -7,32 +7,15 @@ import { notFound } from "next/navigation"
  * production. The metrics / pill / compact-bar markup mirror BidPanel (dev replica).
  */
 import type { ReactNode } from "react"
-import { BidFlow, BidStatus, FunnelSteps } from "../../(sections)/bid/BidFlow"
+import { Web3Provider } from "../../(layout)/Web3Provider"
+import { BidFlow } from "../../(sections)/bid/BidFlow"
+import { BidStatus, FunnelSteps } from "../../(sections)/bid/FunnelSteps"
 import { Icon } from "../../(ui)/Icon"
-import { percentFilled } from "../../../lib/sale/calc"
-import { SALE_ECONOMICS } from "../../../lib/sale/economics"
+import { SALE_ECONOMICS, formatSaleDate } from "../../../lib/sale/economics"
+import { fmtCompactUsd, fmtCount, fmtPrice } from "../../../lib/sale/format"
 import { bidCtaLabel } from "../../../lib/sale/labels"
 import { MOCK_COMMITMENT_LIVE, MOCK_JOURNEY_INPUTS } from "../../../lib/sale/mock"
 import type { JourneyState } from "../../../lib/sale/types"
-
-const fmtPrice = (n: number) =>
-  `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`
-const fmtCompact = (n: number) =>
-  n.toLocaleString("en-US", {
-    notation: "compact",
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 1,
-  })
-const fmtCount = (n: number) => n.toLocaleString("en-US")
-
-const filledPct = Math.round(
-  percentFilled(
-    MOCK_COMMITMENT_LIVE.totalCommittedUsd,
-    MOCK_COMMITMENT_LIVE.clearingPriceUsd,
-    SALE_ECONOMICS.saleSupplyGnot,
-  ) * 100,
-)
 
 const METRICS = [
   {
@@ -42,7 +25,7 @@ const METRICS = [
       : "TBD",
     label: "Clearing",
   },
-  { icon: "progress-ring", value: `${filledPct}%`, label: "Filled (est.)" },
+  { icon: "clock", value: "5d 12h 30m", label: "Time left" },
   {
     icon: "users-group",
     value: fmtCount(MOCK_COMMITMENT_LIVE.uniqueCommitmentCount),
@@ -50,7 +33,7 @@ const METRICS = [
   },
   {
     icon: "database",
-    value: fmtCompact(MOCK_COMMITMENT_LIVE.totalCommittedUsd),
+    value: fmtCompactUsd(MOCK_COMMITMENT_LIVE.totalCommittedUsd),
     label: "Committed",
   },
 ]
@@ -144,8 +127,14 @@ function ExpandedBar({ journey }: { journey: JourneyState }) {
       <div className="px-6 lg:px-8">
         <MetricsRow journey={journey} dense={true} right={<FunnelSteps journey={journey} />} />
       </div>
-      <div className="border-t border-border-strong bg-surface-alt px-6 py-6 lg:px-8">
-        <BidFlow journey={journey} clearingPriceUsd={input.clearingPriceUsd} myBid={input.myBid} />
+      <div className="px-6 py-6 lg:px-8">
+        <div className="bid-capsule px-6 py-5">
+          <BidFlow
+            journey={journey}
+            clearingPriceUsd={input.clearingPriceUsd}
+            myBid={input.myBid}
+          />
+        </div>
       </div>
     </div>
   )
@@ -191,51 +180,53 @@ export default function DevStatesPage() {
   const states = Object.keys(MOCK_JOURNEY_INPUTS) as JourneyState[]
 
   return (
-    <main className="mx-auto max-w-[var(--max-width-container)] px-6 py-10 lg:px-8">
-      <header className="mb-8">
-        <p className="font-mono text-xs uppercase tracking-[0.2em] text-muted">Dev harness</p>
-        <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground">
-          Sticky bar - every state, collapsed + expanded
-        </h1>
-        <p className="mt-1 text-sm text-muted">
-          For each state: the collapsed bar (metrics + opening CTA) then the expanded bar (metrics +
-          stepper on top, flow below). Drive the real bar with{" "}
-          <code className="font-mono">?journey=&lt;state&gt;</code> /{" "}
-          <code className="font-mono">?phase=pre-sale|ended</code>.
-        </p>
-      </header>
-
-      <div className="flex flex-col gap-10">
-        {states.map((s) => (
-          <section key={s} className="flex flex-col gap-3 border-t border-border pt-6">
-            <p className="font-mono text-xs font-medium uppercase tracking-[0.2em] text-foreground">
-              {s}
-            </p>
-            <Caption>Collapsed</Caption>
-            <CollapsedBar journey={s} />
-            <Caption>Expanded</Caption>
-            <ExpandedBar journey={s} />
-          </section>
-        ))}
-
-        <section className="flex flex-col gap-3 border-t border-border pt-6">
-          <p className="font-mono text-xs font-medium uppercase tracking-[0.2em] text-foreground">
-            phase bars
+    <Web3Provider>
+      <main className="mx-auto max-w-[var(--max-width-container)] px-6 py-10 lg:px-8">
+        <header className="mb-8">
+          <p className="font-mono text-xs uppercase tracking-[0.2em] text-muted">Dev harness</p>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground">
+            Sticky bar - every state, collapsed + expanded
+          </h1>
+          <p className="mt-1 text-sm text-muted">
+            For each state: the collapsed bar (metrics + opening CTA) then the expanded bar (metrics
+            + stepper on top, flow below). Drive the real bar with{" "}
+            <code className="font-mono">?journey=&lt;state&gt;</code> /{" "}
+            <code className="font-mono">?phase=pre-sale|ended</code>.
           </p>
-          <CompactPreview
-            lead="Public sale"
-            headline="Opens July 15, 2026"
-            sub="Registration opens July 1"
-            cta="Register now"
-          />
-          <CompactPreview
-            lead="Public sale"
-            headline="Auction closed"
-            sub="Final clearing $0.12"
-            cta="View results"
-          />
-        </section>
-      </div>
-    </main>
+        </header>
+
+        <div className="flex flex-col gap-10">
+          {states.map((s) => (
+            <section key={s} className="flex flex-col gap-3 border-t border-border pt-6">
+              <p className="font-mono text-xs font-medium uppercase tracking-[0.2em] text-foreground">
+                {s}
+              </p>
+              <Caption>Collapsed</Caption>
+              <CollapsedBar journey={s} />
+              <Caption>Expanded</Caption>
+              <ExpandedBar journey={s} />
+            </section>
+          ))}
+
+          <section className="flex flex-col gap-3 border-t border-border pt-6">
+            <p className="font-mono text-xs font-medium uppercase tracking-[0.2em] text-foreground">
+              phase bars
+            </p>
+            <CompactPreview
+              lead="Public sale"
+              headline={`Opens ${formatSaleDate(SALE_ECONOMICS.saleOpensIso)}`}
+              sub={`Registration opens ${formatSaleDate(SALE_ECONOMICS.registrationOpensIso, false)}`}
+              cta="Register now"
+            />
+            <CompactPreview
+              lead="Public sale"
+              headline="Auction closed"
+              sub="Final clearing $0.12"
+              cta="View results"
+            />
+          </section>
+        </div>
+      </main>
+    </Web3Provider>
   )
 }

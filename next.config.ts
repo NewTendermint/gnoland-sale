@@ -9,6 +9,17 @@ const config: NextConfig = {
   images: {
     formats: ["image/avif", "image/webp"],
   },
+  // Silence benign "module not found" warnings for OPTIONAL deps the wallet libs
+  // reference but a web build never uses: MetaMask SDK's React Native storage and
+  // WalletConnect logger's pino-pretty.
+  webpack: (webpackConfig) => {
+    webpackConfig.externals.push("pino-pretty")
+    webpackConfig.resolve.fallback = {
+      ...webpackConfig.resolve.fallback,
+      "@react-native-async-storage/async-storage": false,
+    }
+    return webpackConfig
+  },
 }
 
 export default config

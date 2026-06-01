@@ -129,4 +129,21 @@ main > section {
     padding: 8px 16px;
     border-radius: var(--radius-md);
   }
+
+  /* Contrast capsule for the expanded bid panel: a black tile (light theme) /
+     white tile (dark). Re-scopes the semantic tokens so the bid flow's existing
+     utilities (text-foreground, text-muted, border-border, bg-surface-alt) render
+     correctly on the contrast surface - no per-component restyling needed. The CTA
+     pill inverts explicitly (bg-on-contrast / text-surface-contrast). */
+  .bid-capsule {
+    background-color: var(--surface-contrast);
+    color: var(--on-contrast);
+    border-radius: var(--frame-radius);
+    --foreground: var(--on-contrast);
+    --fg-muted: var(--on-contrast-muted);
+    --fg-faint: var(--on-contrast-muted);
+    --border: color-mix(in srgb, var(--on-contrast) 18%, transparent);
+    --border-strong: color-mix(in srgb, var(--on-contrast) 34%, transparent);
+    --surface-alt: color-mix(in srgb, var(--on-contrast) 8%, transparent);
+  }
 }
