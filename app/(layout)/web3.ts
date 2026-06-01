@@ -21,15 +21,17 @@ export const SUPPORTED_CHAIN_IDS: readonly number[] = [base.id, baseSepolia.id]
 // Chain the wrong-network gate switches to. Base mainnet in prod; preview can override.
 export const PRIMARY_CHAIN_ID = base.id
 
-// WalletConnect projectId is required. Placeholder until the real id is provisioned
-// (external blocker). Extension wallets work without it; only WalletConnect needs it.
-const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ?? "GNOT_ICO_DEV_PLACEHOLDER"
+// WalletConnect (mobile) is only wired when a real projectId is set. With the dev
+// placeholder its AppKit 403s against api.web3modal.org and adds a non-working option,
+// so the connector is omitted until NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID exists.
+// Extension wallets (MetaMask, Keplr, Coinbase) work without it.
+const wcProjectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID
 
 export const wagmiConfig = createConfig({
   chains: [base, baseSepolia],
   connectors: [
     coinbaseWallet({ appName: "GNOT Public Sale" }),
-    walletConnect({ projectId, showQrModal: true }),
+    ...(wcProjectId ? [walletConnect({ projectId: wcProjectId, showQrModal: true })] : []),
   ],
   transports: {
     [base.id]: http(),

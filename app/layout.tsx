@@ -4,6 +4,7 @@ import type { ReactNode } from "react"
 import { Footer } from "./(layout)/Footer"
 import { Header } from "./(layout)/Header"
 import { ThemeProvider } from "./(layout)/ThemeProvider"
+import { Web3Provider } from "./(layout)/Web3Provider"
 
 const geist = localFont({
   src: "../public/fonts/Geist.woff2",
@@ -29,14 +30,16 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="en" className={`${geist.variable} ${geistMono.variable}`} suppressHydrationWarning>
       <body>
         <ThemeProvider>
-          <a href="#main" className="skip-link">
-            Skip to content
-          </a>
-          <Header />
-          <div className="screen">
-            {children}
-            <Footer />
-          </div>
+          <Web3Provider>
+            <a href="#main" className="skip-link">
+              Skip to content
+            </a>
+            <Header />
+            <div className="screen">
+              {children}
+              <Footer />
+            </div>
+          </Web3Provider>
         </ThemeProvider>
       </body>
     </html>

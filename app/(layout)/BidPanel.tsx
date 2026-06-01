@@ -8,9 +8,9 @@
  * pre-sale and ended render their own compact bars (BarShell). Data comes from
  * useSale() (mock today, Sonar proxy later behind the same shape).
  */
-import dynamic from "next/dynamic"
 import { useEffect, useState } from "react"
 import type { ReactNode } from "react"
+import { BidFlow } from "../(sections)/bid/BidFlow"
 import { BidStatus, FunnelSteps } from "../(sections)/bid/FunnelSteps"
 import { Icon } from "../(ui)/Icon"
 import { gnotEstimate } from "../../lib/sale/calc"
@@ -19,13 +19,7 @@ import { fmtCompactUsd, fmtCount, fmtGnot, fmtPrice } from "../../lib/sale/forma
 import { bidCtaLabel } from "../../lib/sale/labels"
 import { Countdown } from "./Countdown"
 import { useSale } from "./SaleProvider"
-
-// Wallet stack lives in a lazily-loaded chunk: wagmi/WalletConnect only download
-// when the bid panel is opened, keeping them out of the initial page bundle.
-const ExpandedWalletPanel = dynamic(
-  () => import("./ExpandedWalletPanel").then((m) => m.ExpandedWalletPanel),
-  { ssr: false },
-)
+import { WalletButton } from "./WalletButton"
 
 const SHELL =
   "fixed bottom-[var(--reveal-padding)] left-[var(--reveal-padding)] right-[var(--reveal-padding)] z-[var(--z-sticky)] overflow-hidden rounded-[var(--frame-radius)] border border-border bg-background"
@@ -36,10 +30,6 @@ type BarMetric = { icon: string; value: ReactNode; label: string }
 export function BidPanel() {
   const { phase, preSaleStage, journey, commitment, myBid } = useSale()
   const [expanded, setExpanded] = useState(false)
-  // Once opened, the wallet panel stays MOUNTED (just hidden when collapsed) so the
-  // wagmi provider is not torn down + re-created on each open - that remount re-runs
-  // EIP-6963 discovery and accumulates duplicate connectors.
-  const [hasOpened, setHasOpened] = useState(false)
 
   useEffect(() => {
     if (!expanded) return
@@ -232,10 +222,7 @@ export function BidPanel() {
                 ) : (
                   <button
                     type="button"
-                    onClick={() => {
-                      setExpanded(true)
-                      setHasOpened(true)
-                    }}
+                    onClick={() => setExpanded(true)}
                     aria-expanded={expanded}
                     className="group inline-flex items-center gap-2 rounded-full bg-surface-contrast px-7 py-3.5 text-xs font-bold uppercase tracking-[0.2em] text-on-contrast transition-colors hover:bg-surface-contrast/80"
                   >
@@ -258,16 +245,21 @@ export function BidPanel() {
         </div>
       </div>
 
-      {hasOpened ? (
-        <div className={`${INSET} ${expanded ? "" : "hidden"}`}>
+      {expanded ? (
+        <div className={INSET}>
           <div className="grid grid-cols-12 gap-6 pb-4 sm:pb-6">
             <div className="col-span-12 lg:col-span-10 lg:col-start-2">
               <div className="bid-capsule max-h-[60vh] overflow-y-auto px-6 py-5">
-                <ExpandedWalletPanel
-                  journey={journey}
-                  clearingPriceUsd={commitment.clearingPriceUsd}
-                  myBid={myBid}
-                />
+                <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
+                  <div className="min-w-0 flex-1">
+                    <BidFlow
+                      journey={journey}
+                      clearingPriceUsd={commitment.clearingPriceUsd}
+                      myBid={myBid}
+                    />
+                  </div>
+                  <WalletButton />
+                </div>
               </div>
             </div>
           </div>

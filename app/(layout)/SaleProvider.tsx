@@ -3,16 +3,18 @@
 /**
  * Client context for the sale UI. Phase + per-user journey + commitment data,
  * read once and shared by the BidPanel and (later) the sections. commitment/myBid
- * come from lib/sale/mock.ts. The journey is "disconnected" until the bid panel
- * opens and the lazily-loaded WalletScope pushes real wagmi state up via
- * setWalletJourney - this keeps wagmi out of the initial bundle. KYC/eligibility +
- * commitment reads stay mock (swap in /api/sonar/* behind this same shape).
+ * come from lib/sale/mock.ts. The journey is wallet-derived (useAccount): connect +
+ * network gates only for now; the full journey (KYC, eligibility, bids) will come
+ * from deriveJourney(JourneyInput) once Sonar is wired - this provider must then
+ * DELEGATE to deriveJourney (lib/sale/journey.ts), not grow its own logic. KYC/
+ * eligibility + commitment reads stay mock (swap in /api/sonar/* behind this shape).
  *
  * Dev-only overrides (never in production): ?phase=pre-sale|live|ended and
  * ?journey=<state> let us preview any state without a wallet or Sonar.
  */
 import { createContext, useContext, useEffect, useState } from "react"
-import type { Dispatch, ReactNode, SetStateAction } from "react"
+import type { ReactNode } from "react"
+import { useAccount } from "wagmi"
 import { MOCK_COMMITMENT_LIVE, MOCK_JOURNEY_INPUTS } from "../../lib/sale/mock"
 import { resolvePreSaleStage, resolveSalePhase } from "../../lib/sale/phase"
 import type {
@@ -22,6 +24,7 @@ import type {
   PreSaleStage,
   SalePhase,
 } from "../../lib/sale/types"
+import { SUPPORTED_CHAIN_IDS } from "./web3"
 
 type SaleContextValue = {
   phase: SalePhase
@@ -29,25 +32,18 @@ type SaleContextValue = {
   journey: JourneyState
   commitment: CommitmentData
   myBid: MyBid
-  /** Set by the lazily-mounted WalletScope to push real wallet state into the bar. */
-  setWalletJourney: Dispatch<SetStateAction<JourneyState>>
 }
 
 const SaleContext = createContext<SaleContextValue | null>(null)
 
 export function SaleProvider({ children }: { children: ReactNode }) {
+  const { isConnected, chainId } = useAccount()
   const [phase, setPhase] = useState<SalePhase>(() =>
     resolveSalePhase({ override: process.env.NEXT_PUBLIC_SALE_PHASE }),
   )
   // Dev-only journey pin (?journey=); when unset the journey is wallet-derived.
   const [journeyOverride, setJourneyOverride] = useState<JourneyState | null>(null)
   const [preSaleStage, setPreSaleStage] = useState<PreSaleStage>("registration-closed")
-  // Real wallet-derived journey, pushed up by the lazily-loaded WalletScope (only once
-  // the bid panel opens, so wagmi stays out of the initial bundle). Connect + network
-  // gates only; the full journey (KYC, eligibility, bids) will come from
-  // deriveJourney(JourneyInput) once Sonar is wired - WalletScope must then DELEGATE
-  // to deriveJourney (lib/sale/journey.ts), not grow its own logic.
-  const [walletJourney, setWalletJourney] = useState<JourneyState>("disconnected")
 
   useEffect(() => {
     setPreSaleStage(resolvePreSaleStage(Date.now()))
@@ -59,6 +55,15 @@ export function SaleProvider({ children }: { children: ReactNode }) {
     if (j && j in MOCK_JOURNEY_INPUTS) setJourneyOverride(j as JourneyState)
   }, [])
 
+  // Connect + network gates only. Full journey (KYC, eligibility, bids) comes from
+  // deriveJourney(JourneyInput) once Sonar is wired - delegate to it here, don't
+  // grow logic in this provider.
+  const onSupportedChain = chainId !== undefined && SUPPORTED_CHAIN_IDS.includes(chainId)
+  const walletJourney: JourneyState = !isConnected
+    ? "disconnected"
+    : onSupportedChain
+      ? "kyc-required"
+      : "wrong-network"
   const journey = journeyOverride ?? walletJourney
 
   const value: SaleContextValue = {
@@ -67,7 +72,6 @@ export function SaleProvider({ children }: { children: ReactNode }) {
     journey,
     commitment: MOCK_COMMITMENT_LIVE,
     myBid: MOCK_JOURNEY_INPUTS[journey].myBid,
-    setWalletJourney,
   }
 
   return <SaleContext.Provider value={value}>{children}</SaleContext.Provider>
