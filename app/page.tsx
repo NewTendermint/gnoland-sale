@@ -1,4 +1,5 @@
 import { BidPanel } from "./(layout)/BidPanel"
+import { SaleProvider } from "./(layout)/SaleProvider"
 import { Ecosystem } from "./(sections)/ecosystem/Ecosystem"
 import { Features } from "./(sections)/features/Features"
 import { GnotUtility } from "./(sections)/gnot-utility/GnotUtility"
@@ -15,7 +16,7 @@ import { Tokenomics } from "./(sections)/tokenomics/Tokenomics"
 
 export default function Home() {
   return (
-    <>
+    <SaleProvider>
       <main id="main">
         <Hero />
         <TokenDetails />
@@ -32,6 +33,6 @@ export default function Home() {
         <PreFooterCta />
       </main>
       <BidPanel />
-    </>
+    </SaleProvider>
   )
 }

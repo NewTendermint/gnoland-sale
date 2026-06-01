@@ -5,7 +5,7 @@ Frontend for the GNOT public token sale on Sonar.
 ## Stack
 
 Next.js 15 (App Router), TypeScript, Tailwind v4, Biome.
-Wagmi + RainbowKit for wallets, `@echoxyz/sonar-react` for the Sonar SDK.
+Wagmi + RainbowKit for wallet connection and `@echoxyz/sonar-react` for the Sonar sale flow (wired in the functionality layer).
 Tests with Vitest (unit) and Playwright (e2e, chromium).
 
 ## Run locally
@@ -42,5 +42,5 @@ Production secrets live in the deploy provider's env, never in the repo.
 
 ## Sale architecture
 
-Bids, settlement and refunds happen in USDC on Base via Sonar's `SettlementSale` contract.
-GNOT distribution itself is post-mainnet, handled by the gno.land to Base IBC bridge, not by this site.
+Bids, settlement and refunds happen via Sonar's `SettlementSale` contract on an EVM chain (Base vs Ethereum L1 still under discussion), paid in USDC (USDT possibly accepted too).
+GNOT distribution itself is post-mainnet, handled by the gno.land bridge, not by this site.

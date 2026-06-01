@@ -1,0 +1,28 @@
+/**
+ * The on-chain boundary. The UI talks to this interface only; the real impl
+ * (wagmi useSimulateContract + writeContract against SettlementSale.replaceBidWithPermit,
+ * ABI source-verified in REQUIREMENTS A.12.1) drops in when Sonar provisions the sale
+ * (deployed address blocked, REQUIREMENTS A.1). Until then the mock simulates the tx.
+ */
+export type BidParams = { priceUsd: number; amountUsd: number; lockup: boolean }
+export type BidResult =
+  | { status: "submitted"; txHash: string }
+  | { status: "reverted"; reason: string }
+
+export interface BidSubmitter {
+  // mirrors the 1-tx EIP-2612 path; preflight() = useSimulateContract, submit() = writeContract
+  preflight(p: BidParams): Promise<{ ok: true } | { ok: false; reason: string }>
+  submit(p: BidParams): Promise<BidResult>
+}
+
+export class MockBidSubmitter implements BidSubmitter {
+  async preflight(p: BidParams) {
+    return p.amountUsd > 0 && p.priceUsd > 0
+      ? ({ ok: true } as const)
+      : ({ ok: false, reason: "Enter a price and amount" } as const)
+  }
+
+  async submit(_p: BidParams): Promise<BidResult> {
+    return { status: "submitted", txHash: "0xmock" }
+  }
+}
