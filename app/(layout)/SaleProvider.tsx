@@ -15,10 +15,13 @@
 import { createContext, useContext, useEffect, useState } from "react"
 import type { ReactNode } from "react"
 import { useAccount } from "wagmi"
-import { MOCK_COMMITMENT_LIVE, MOCK_JOURNEY_INPUTS } from "../../lib/sale/mock"
+import { useEntity, useSaleData } from "../../lib/sale/hooks"
+import { deriveJourney } from "../../lib/sale/journey"
+import { MOCK_JOURNEY_INPUTS } from "../../lib/sale/mock"
 import { resolvePreSaleStage, resolveSalePhase } from "../../lib/sale/phase"
 import type {
   CommitmentData,
+  JourneyInput,
   JourneyState,
   MyBid,
   PreSaleStage,
@@ -38,6 +41,12 @@ const SaleContext = createContext<SaleContextValue | null>(null)
 
 export function SaleProvider({ children }: { children: ReactNode }) {
   const { isConnected, chainId } = useAccount()
+  // Live auction metrics from /api/sonar/commitments (real fetch; fixture or
+  // real Sonar behind the route). initialData keeps `commitment` always defined.
+  const sale = useSaleData()
+  // The session's Sonar entity (KYC + eligibility); data is null until connected
+  // to Sonar. Feeds the journey below.
+  const entity = useEntity()
   const [phase, setPhase] = useState<SalePhase>(() =>
     resolveSalePhase({ override: process.env.NEXT_PUBLIC_SALE_PHASE }),
   )
@@ -55,23 +64,28 @@ export function SaleProvider({ children }: { children: ReactNode }) {
     if (j && j in MOCK_JOURNEY_INPUTS) setJourneyOverride(j as JourneyState)
   }, [])
 
-  // Connect + network gates only. Full journey (KYC, eligibility, bids) comes from
-  // deriveJourney(JourneyInput) once Sonar is wired - delegate to it here, don't
-  // grow logic in this provider.
+  // Real journey: delegate to deriveJourney (lib/sale/journey.ts) from the wallet
+  // + the session's Sonar entity (KYC/eligibility) + the clearing price. The
+  // ?journey= override (dev only) still wins for previewing any state.
   const onSupportedChain = chainId !== undefined && SUPPORTED_CHAIN_IDS.includes(chainId)
-  const walletJourney: JourneyState = !isConnected
-    ? "disconnected"
-    : onSupportedChain
-      ? "kyc-required"
-      : "wrong-network"
-  const journey = journeyOverride ?? walletJourney
+  const journeyInput: JourneyInput = {
+    isConnected,
+    isBaseChain: onSupportedChain,
+    setupState: entity.data?.setupState ?? null,
+    eligibility: entity.data?.eligibility ?? null,
+    myBid: null, // on-chain position is wired with the SettlementSale ABI (deferred)
+    clearingPriceUsd: sale.data.clearingPriceUsd,
+  }
+  const journey = journeyOverride ?? deriveJourney(journeyInput)
 
   const value: SaleContextValue = {
     phase,
     preSaleStage,
     journey,
-    commitment: MOCK_COMMITMENT_LIVE,
-    myBid: MOCK_JOURNEY_INPUTS[journey].myBid,
+    commitment: sale.data,
+    // The override (dev) shows the mock bid for has-bid states; the real
+    // on-chain position replaces `null` here once the contract ABI lands.
+    myBid: journeyOverride ? MOCK_JOURNEY_INPUTS[journeyOverride].myBid : journeyInput.myBid,
   }
 
   return <SaleContext.Provider value={value}>{children}</SaleContext.Provider>

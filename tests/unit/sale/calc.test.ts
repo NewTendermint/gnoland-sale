@@ -75,6 +75,10 @@ describe("validateBidAmount", () => {
   it("flags above max", () => {
     expect(validateBidAmount(100_001, 200, 100_000)).toBe("too-high")
   })
+  it("rejects non-finite amounts (NaN, Infinity) instead of accepting them", () => {
+    expect(validateBidAmount(Number.NaN, 200, 100_000)).not.toBe("ok")
+    expect(validateBidAmount(Number.POSITIVE_INFINITY, 200, 100_000)).not.toBe("ok")
+  })
 })
 
 describe("validateBidPrice", () => {
@@ -94,5 +98,9 @@ describe("validateBidPrice", () => {
   })
   it("reports below-min first when a price is below both min and previous", () => {
     expect(validateBidPrice(0.05, { minPriceUsd: 0.0645, prevPriceUsd: 0.12 })).toBe("below-min")
+  })
+  it("rejects non-finite prices (NaN, Infinity) instead of accepting them", () => {
+    expect(validateBidPrice(Number.NaN, { minPriceUsd: 0.0645 })).not.toBe("ok")
+    expect(validateBidPrice(Number.POSITIVE_INFINITY, { minPriceUsd: 0.0645 })).not.toBe("ok")
   })
 })

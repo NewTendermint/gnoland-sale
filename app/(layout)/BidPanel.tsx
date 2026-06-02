@@ -13,9 +13,11 @@ import type { ReactNode } from "react"
 import { BidFlow } from "../(sections)/bid/BidFlow"
 import { BidStatus, FunnelSteps } from "../(sections)/bid/FunnelSteps"
 import { Icon } from "../(ui)/Icon"
+import { startSonarLogin } from "../../lib/sale/api"
 import { gnotEstimate } from "../../lib/sale/calc"
 import { SALE_ECONOMICS, formatSaleDate } from "../../lib/sale/economics"
 import { fmtCompactUsd, fmtCount, fmtGnot, fmtPrice } from "../../lib/sale/format"
+import { useBid } from "../../lib/sale/hooks"
 import { bidCtaLabel } from "../../lib/sale/labels"
 import { Countdown } from "./Countdown"
 import { useSale } from "./SaleProvider"
@@ -29,7 +31,21 @@ type BarMetric = { icon: string; value: ReactNode; label: string }
 
 export function BidPanel() {
   const { phase, preSaleStage, journey, commitment, myBid } = useSale()
+  const bid = useBid()
   const [expanded, setExpanded] = useState(false)
+
+  // Start the Sonar OAuth login (the kyc-required gate's CTA). In mock this
+  // short-circuits to a logged-in session; in prod it redirects to Sonar's page.
+  function handleConnectSonar() {
+    startSonarLogin().then(
+      (url) => {
+        window.location.href = url
+      },
+      () => {
+        /* login start failed; the gate keeps offering "Verify with Sonar" */
+      },
+    )
+  }
 
   useEffect(() => {
     if (!expanded) return
@@ -256,6 +272,8 @@ export function BidPanel() {
                       journey={journey}
                       clearingPriceUsd={commitment.clearingPriceUsd}
                       myBid={myBid}
+                      onConnectSonar={handleConnectSonar}
+                      onBid={bid.submit}
                     />
                   </div>
                   <WalletButton />

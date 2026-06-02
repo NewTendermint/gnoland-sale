@@ -1,3 +1,10 @@
+/**
+ * Preview fixtures for the /dev/states design harness and the dev-only `?journey=` /
+ * `?phase=` overrides (SaleProvider, gated to non-production). This is a PERMANENT
+ * dev tool, NOT the swappable data mock. The mocks removed at launch are elsewhere:
+ * the Sonar data seam (lib/sonar/mock-*.ts) and the on-chain emulation
+ * (lib/sale/onchain.ts). Pure UI fixtures here, no secrets.
+ */
 import type { CommitmentData, JourneyInput, JourneyState } from "./types"
 
 export const MOCK_COMMITMENT_LIVE: CommitmentData = {

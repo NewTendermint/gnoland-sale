@@ -38,6 +38,13 @@ export type CommitmentData = {
   uniqueCommitmentCount: number
 }
 
+// The session's Sonar entity reduced to what the journey needs (KYC + eligibility).
+export type EntitySnapshot = {
+  entityId: string
+  setupState: EntitySetupState
+  eligibility: SaleEligibility
+}
+
 // Derived from filtering Commitments[] by my SaleSpecificEntityID
 export type MyBid = {
   priceUsd: number
@@ -80,3 +87,15 @@ export type PrePurchaseResult =
       failureReason: PrePurchaseFailureReason
       livenessCheckUrl?: string
     }
+
+/**
+ * The purchase permit from /api/sonar/generate-permit, forwarded as-is to the
+ * on-chain replaceBidWithPermit call (lib/sale/onchain.ts). PermitJSON is Sonar's
+ * BasicPermitV3; its exact mapping to the contract's PurchasePermitV3 tuple is wired
+ * when the contract lands (REQUIREMENTS A.1), so it stays `unknown` here. Signature
+ * is the purchasePermitSignature bytes the contract verifies.
+ */
+export type SalePermit = {
+  PermitJSON: unknown
+  Signature: string
+}

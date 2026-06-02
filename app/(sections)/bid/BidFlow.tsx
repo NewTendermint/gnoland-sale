@@ -22,7 +22,7 @@ import { Icon } from "../../(ui)/Icon"
 import { gnotEstimate, validateBidAmount, validateBidPrice } from "../../../lib/sale/calc"
 import { SALE_ECONOMICS } from "../../../lib/sale/economics"
 import { fmtGnot, fmtPrice, fmtUsd } from "../../../lib/sale/format"
-import { MockBidSubmitter } from "../../../lib/sale/submitter"
+import { type BidParams, type BidResult, MockBidSubmitter } from "../../../lib/sale/submitter"
 import type { JourneyState, MyBid } from "../../../lib/sale/types"
 
 const submitter = new MockBidSubmitter()
@@ -57,23 +57,39 @@ export function BidFlow({
   journey,
   clearingPriceUsd,
   myBid,
+  onConnectSonar,
+  onBid,
 }: {
   journey: JourneyState
   clearingPriceUsd: number | null
   myBid: MyBid
+  onConnectSonar?: () => void
+  onBid?: (p: BidParams) => Promise<BidResult>
 }) {
   // Content only. The funnel stepper is rendered by the bar's top (metrics) row.
-  return <StateContent journey={journey} clearingPriceUsd={clearingPriceUsd} myBid={myBid} />
+  return (
+    <StateContent
+      journey={journey}
+      clearingPriceUsd={clearingPriceUsd}
+      myBid={myBid}
+      onConnectSonar={onConnectSonar}
+      onBid={onBid}
+    />
+  )
 }
 
 function StateContent({
   journey,
   clearingPriceUsd,
   myBid,
+  onConnectSonar,
+  onBid,
 }: {
   journey: JourneyState
   clearingPriceUsd: number | null
   myBid: MyBid
+  onConnectSonar?: () => void
+  onBid?: (p: BidParams) => Promise<BidResult>
 }) {
   switch (journey) {
     case "disconnected":
@@ -87,6 +103,7 @@ function StateContent({
           title="Verify your identity"
           body="One-time verification with Sonar, about 3 minutes."
           cta="Verify with Sonar"
+          onCta={onConnectSonar}
         />
       )
     case "kyc-pending":
@@ -117,11 +134,11 @@ function StateContent({
         />
       )
     case "ready":
-      return <BidRow clearingPriceUsd={clearingPriceUsd} />
+      return <BidRow clearingPriceUsd={clearingPriceUsd} onBid={onBid} />
     case "has-bid-winning":
     case "has-bid-outbid":
       // Both are a raise form; the winning/outbid status shows in the top metrics row (BidStatus).
-      return <BidRow clearingPriceUsd={clearingPriceUsd} prevBid={myBid} />
+      return <BidRow clearingPriceUsd={clearingPriceUsd} prevBid={myBid} onBid={onBid} />
   }
 }
 
@@ -131,12 +148,14 @@ function GateRow({
   title,
   body,
   cta,
+  onCta,
   tone = "default",
 }: {
   icon: string
   title: string
   body: string
   cta?: string
+  onCta?: () => void
   tone?: "default" | "danger"
 }) {
   return (
@@ -152,7 +171,7 @@ function GateRow({
         </p>
       </div>
       {cta ? (
-        <button type="button" className={PILL}>
+        <button type="button" onClick={onCta} className={PILL}>
           {cta}
         </button>
       ) : null}
@@ -244,9 +263,11 @@ function SwitchNetworkGate() {
 function BidRow({
   clearingPriceUsd,
   prevBid,
+  onBid,
 }: {
   clearingPriceUsd: number | null
   prevBid?: MyBid
+  onBid?: (p: BidParams) => Promise<BidResult>
 }) {
   const minPrice = SALE_ECONOMICS.startingPriceUsd
   const suggested = Math.max(clearingPriceUsd ?? minPrice, prevBid?.priceUsd ?? 0, minPrice)
@@ -286,7 +307,14 @@ function BidRow({
 
   async function onSubmit() {
     setSubmitState("submitting")
-    const params = { priceUsd: priceNum, amountUsd: amountNum, lockup: false }
+    const params: BidParams = { priceUsd: priceNum, amountUsd: amountNum, lockup: false }
+    if (onBid) {
+      // Real flow: pre-purchase + permit (Sonar), then the on-chain seam.
+      const result = await onBid(params)
+      setSubmitState(result.status === "submitted" ? "submitted" : "idle")
+      return
+    }
+    // /dev/states preview (no real actions): the module mock simulates the tx.
     const pre = await submitter.preflight(params)
     if (!pre.ok) {
       setSubmitState("idle")
@@ -399,7 +427,7 @@ function InputCell({
           inputMode="decimal"
           value={value}
           placeholder={placeholder}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => onChange(sanitizeDecimal(e.target.value))}
           aria-invalid={invalid || undefined}
           className={`${className} bg-transparent font-mono text-lg tabular-nums text-foreground outline-none`}
         />

@@ -1,8 +1,12 @@
 /**
- * The on-chain boundary. The UI talks to this interface only; the real impl
- * (wagmi useSimulateContract + writeContract against SettlementSale.replaceBidWithPermit,
- * ABI source-verified in REQUIREMENTS A.12.1) drops in when Sonar provisions the sale
- * (deployed address blocked, REQUIREMENTS A.1). Until then the mock simulates the tx.
+ * Bid types + the /dev/states preview submitter.
+ *
+ * BidParams / BidResult are the shared shapes the bid UI uses. MockBidSubmitter is
+ * the preview-only impl behind /dev/states (no wallet, no Sonar) so every bid state
+ * can be viewed in isolation. The INTEGRATED on-chain step for a real wallet lives in
+ * lib/sale/onchain.ts (submitBidOnChain) - the single swap point for the real
+ * SettlementSale.replaceBidWithPermit call (ABI source-verified, REQUIREMENTS A.12.1;
+ * deployed address blocked, REQUIREMENTS A.1).
  */
 export type BidParams = { priceUsd: number; amountUsd: number; lockup: boolean }
 export type BidResult =
