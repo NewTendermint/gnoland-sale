@@ -1,5 +1,6 @@
 import { bigint, index, jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core"
 import { z } from "zod"
+import { evmAddress } from "../validation"
 
 // NB: no `import "server-only"` here. drizzle-kit imports this module from a
 // plain Node CLI (generate/migrate), where the server-only guard would throw.
@@ -66,10 +67,7 @@ export const auditMetadataSchema = z
     permit_id_prefix: z.string().max(16).optional(),
     error_code: z.string().max(64).optional(),
     chain_id: z.number().int().optional(),
-    payment_token: z
-      .string()
-      .regex(/^0x[a-fA-F0-9]{40}$/)
-      .optional(),
+    payment_token: evmAddress.optional(),
   })
   .strict()
 

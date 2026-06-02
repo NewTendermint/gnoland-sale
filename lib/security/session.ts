@@ -4,13 +4,12 @@ import { cookies } from "next/headers"
 import { env } from "../env"
 
 /**
- * Session payload. Deliberately minimal: an opaque session id (the foreign key
- * into oauth_tokens) and the connected wallet. No OAuth tokens and no PII live
- * in the cookie itself; the cookie only references server-held, encrypted data.
+ * Session payload. Deliberately minimal: just an opaque session id (the foreign
+ * key into oauth_tokens). No OAuth tokens and no PII live in the cookie itself;
+ * the cookie only references server-held, encrypted data.
  */
 export interface AppSession {
   sessionId?: string
-  walletAddress?: `0x${string}`
 }
 
 /**

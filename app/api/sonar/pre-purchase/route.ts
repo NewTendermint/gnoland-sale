@@ -2,6 +2,7 @@ import { env } from "@/lib/env"
 import { getSession } from "@/lib/security/session"
 import { getEntity } from "@/lib/sonar/entity"
 import { SonarAuthError, prePurchaseCheck } from "@/lib/sonar/permit"
+import { evmAddress } from "@/lib/validation"
 import { NextResponse } from "next/server"
 import { z } from "zod"
 
@@ -13,7 +14,7 @@ export const runtime = "nodejs"
 // session server-side (getEntity) - never trust a client-supplied entityId,
 // which would let a caller probe another user's KYC entity (IDOR).
 const bodySchema = z.object({
-  wallet: z.string().regex(/^0x[a-fA-F0-9]{40}$/),
+  wallet: evmAddress,
 })
 
 // POST /api/sonar/pre-purchase

@@ -103,6 +103,27 @@ describe("ensureFreshTokens refresh coalescing", () => {
     expect(refreshTokenMock).not.toHaveBeenCalled()
     expect(result.accessToken).toBe("still-good")
   })
+
+  it("keeps the existing refresh token when the refresh response omits one", async () => {
+    loadTokensMock.mockResolvedValue({
+      accessToken: "old",
+      refreshToken: "keep-me",
+      expiresAt: new Date(Date.now() + 60_000), // within skew -> needs refresh
+    })
+    // A non-rotating refresh: a fresh access token, but no new refresh token.
+    refreshTokenMock.mockResolvedValue({
+      access_token: "new",
+      token_type: "bearer",
+      expires_in: 3600,
+    })
+
+    const result = await ensureFreshTokens("session-z")
+
+    expect(result.accessToken).toBe("new")
+    expect(result.refreshToken).toBe("keep-me")
+    expect(storeTokensMock).toHaveBeenCalledTimes(1)
+    expect(storeTokensMock.mock.calls[0][1].refreshToken).toBe("keep-me")
+  })
 })
 
 describe("auditMetadataSchema (PII allow-list)", () => {

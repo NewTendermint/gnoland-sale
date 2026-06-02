@@ -2,7 +2,7 @@ import "server-only"
 import { env } from "../env"
 import type { EntitySetupState, EntitySnapshot, SaleEligibility } from "../sale/types"
 import { createSonarClient } from "./client"
-import { ensureFreshTokens } from "./permit"
+import { ensureFreshTokens, withSonarAuth } from "./permit"
 
 // Our union mirrors the sonar-core enum values 1:1 (see lib/sale/types.ts), but
 // the SDK field is typed `string`, so we validate at the boundary and default
@@ -41,9 +41,15 @@ function normalizeEligibility(value: string): SaleEligibility {
  */
 export async function getEntity(sessionId: string): Promise<EntitySnapshot | null> {
   const tokens = await ensureFreshTokens(sessionId)
-  const res = await createSonarClient(tokens.accessToken).listAvailableEntities({
-    saleUUID: env.SONAR_SALE_UUID,
-  })
+  // Wrap in withSonarAuth so a revoked-but-unexpired token (a 401 here, not at
+  // refresh time) clears the dead token and surfaces as SonarAuthError. The
+  // routes then emit 401 (the client re-auths) instead of a generic 502 that
+  // would strand the user with a dead session until the access token expires.
+  const res = await withSonarAuth(sessionId, () =>
+    createSonarClient(tokens.accessToken).listAvailableEntities({
+      saleUUID: env.SONAR_SALE_UUID,
+    }),
+  )
   const entity = res.Entities[0]
   if (!entity) {
     return null

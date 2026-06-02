@@ -1,5 +1,6 @@
 import { getSession } from "@/lib/security/session"
 import { getEntity } from "@/lib/sonar/entity"
+import { SonarAuthError } from "@/lib/sonar/permit"
 import { NextResponse } from "next/server"
 
 export const runtime = "nodejs"
@@ -19,7 +20,12 @@ export async function GET() {
       return NextResponse.json({ error: "no_entity" }, { status: 404 })
     }
     return NextResponse.json(entity)
-  } catch {
+  } catch (err) {
+    // A revoked/expired Sonar token (401) means the client must reconnect, not
+    // that the entity is unavailable; mirror the permit routes and emit 401.
+    if (err instanceof SonarAuthError) {
+      return NextResponse.json({ error: "unauthenticated" }, { status: 401 })
+    }
     return NextResponse.json({ error: "entity_unavailable" }, { status: 502 })
   }
 }

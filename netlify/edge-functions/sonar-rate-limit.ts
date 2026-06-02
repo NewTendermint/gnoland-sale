@@ -1,8 +1,9 @@
 import type { Config } from "@netlify/edge-functions"
 
 /**
- * Edge rate-limit for the abuse-sensitive Sonar permit routes (pre-purchase,
- * generate-permit) - the ones that burn Sonar quota and write audit rows. Netlify
+ * Edge rate-limit for the abuse-sensitive authenticated Sonar routes (pre-purchase,
+ * generate-permit, entity) - the ones that burn Sonar quota (the permit routes also
+ * write audit rows). Netlify
  * enforces the `rateLimit` config below AT THE EDGE, before this handler: past the
  * limit it returns HTTP 429 ("block", the default) and the request never reaches
  * Next.js; under the limit this empty handler returns nothing, so the request
@@ -17,7 +18,9 @@ import type { Config } from "@netlify/edge-functions"
  * DEVIATION FROM ADR 4.5 (flagged): the ADR wrote "/api/sonar/* = 10/min", which
  * would include /api/sonar/commitments. That route is public, cached, and polled
  * every ~10s (about 6 req/min per open tab), so a 10/min IP cap would throttle
- * legitimate multi-tab / shared-NAT reads. It is therefore EXCLUDED here. Confirm
+ * legitimate multi-tab / shared-NAT reads. It is therefore the one /api/sonar/*
+ * route EXCLUDED here; /api/sonar/entity (also authenticated, also burns Sonar
+ * quota) IS covered above. Confirm
  * this exclusion, or revert to the literal ADR scope. (The ADR also said to add the
  * block to netlify.toml; verified NOT possible - Netlify rate limits are
  * edge-function-only - hence this file.)
@@ -33,7 +36,7 @@ export default async () => {
 }
 
 export const config: Config = {
-  path: ["/api/sonar/pre-purchase", "/api/sonar/generate-permit"],
+  path: ["/api/sonar/pre-purchase", "/api/sonar/generate-permit", "/api/sonar/entity"],
   rateLimit: {
     windowLimit: 10,
     windowSize: 60,

@@ -90,7 +90,11 @@ async function resolveTokens(sessionId: string): Promise<StoredTokens> {
   )
   const fresh: StoredTokens = {
     accessToken: res.access_token,
-    refreshToken: res.refresh_token,
+    // OAuth refresh-token rotation is optional (RFC 6749 section 6); Sonar's
+    // frontend-with-backend reference keeps the existing token when a refresh
+    // response omits a new one. Mirror that, so a non-rotating refresh can't
+    // persist an undefined refresh token and brick the session.
+    refreshToken: res.refresh_token ?? current.refreshToken,
     expiresAt: new Date(Date.now() + res.expires_in * 1000),
   }
   await storeTokens(sessionId, fresh)

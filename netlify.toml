@@ -8,7 +8,10 @@
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
-# Global security headers applied to every response.
+# Global security headers applied to every response (including static assets,
+# which the middleware matcher skips). middleware.ts mirrors these same hard
+# headers for matcher routes (defense in depth); keep the two in sync - the
+# Permissions-Policy directive list below must match the one in middleware.ts.
 # CSP is intentionally NOT defined here - it is generated per-request with a
 # nonce by the Next.js middleware (added in Layer 2). Static CSP in a header
 # table would be incompatible with nonce-based script policy.
@@ -18,7 +21,7 @@
     X-Frame-Options = "DENY"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
-    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
     Strict-Transport-Security = "max-age=63072000; includeSubDomains; preload"
 
 # Deploy-context-scoped environment variables.
