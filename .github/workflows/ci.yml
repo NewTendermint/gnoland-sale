@@ -28,6 +28,13 @@ jobs:
       - name: Biome lint
         run: npm run lint
 
+      # Scan all committed source for secret patterns (cloud keys, API tokens,
+      # private keys). Backstops the local husky pre-commit hook, which a
+      # `git commit --no-verify` or a fresh clone without installed hooks would
+      # otherwise bypass - so a committed secret is still caught server-side.
+      - name: Secret scan (source)
+        run: npx secretlint "**/*"
+
       # TypeScript strict mode - fail on any type error.
       - name: Typecheck
         run: npm run typecheck

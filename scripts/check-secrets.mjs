@@ -30,10 +30,17 @@ const FORBIDDEN_PATTERNS = [
 ]
 
 /**
- * Directories under .next to scan. .next/static is shipped to the browser;
- * .next/server can still expose strings if a "use client" boundary is wrong.
+ * Client output only. .next/static is what ships to the browser, so a forbidden
+ * name here means client code is touching a server secret - the real leak this
+ * guards (spec §4.2, "client output").
+ *
+ * We deliberately do NOT scan .next/server: server code legitimately reads these
+ * env vars (the zod env-validation schema keys + `process.env.X` access compile
+ * to those names), so name-matching server chunks only yields false positives and
+ * adds no client-leak protection. A name reaching .next/static is the signal that
+ * matters; a wrong "use client" boundary lands the offending code there too.
  */
-const SCAN_ROOTS = [".next/static", ".next/server"]
+const SCAN_ROOTS = [".next/static"]
 
 function* walk(dir) {
   for (const entry of readdirSync(dir)) {

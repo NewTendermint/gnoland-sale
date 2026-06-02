@@ -1,3 +1,4 @@
+import { env } from "@/lib/env"
 import { readCommitments } from "@/lib/sonar/commitments"
 import { NextResponse } from "next/server"
 
@@ -10,7 +11,12 @@ export const revalidate = 0
 
 export async function GET() {
   try {
-    const data = await readCommitments()
+    const metrics = await readCommitments()
+    // Surface the kill-switch (SALE_PAUSED) on the already-polled public endpoint:
+    // single source of truth, no client/server flag drift. Note the CDN cache below
+    // means a pause shows in the UI within the 10s window; the mutating routes 503
+    // immediately, so bidding stops at once regardless.
+    const data = { ...metrics, paused: env.SALE_PAUSED === "true" }
     return NextResponse.json(data, {
       headers: { "Cache-Control": "public, max-age=10, stale-while-revalidate=30" },
     })

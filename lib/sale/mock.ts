@@ -11,6 +11,7 @@ export const MOCK_COMMITMENT_LIVE: CommitmentData = {
   totalCommittedUsd: 1_200_000,
   clearingPriceUsd: 0.12,
   uniqueCommitmentCount: 1247,
+  paused: false,
 }
 
 // One JourneyInput per JourneyState, so /dev/states can render the whole funnel.

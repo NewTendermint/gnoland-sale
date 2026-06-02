@@ -3,7 +3,7 @@ import { ipHmac, parseForwardedFor } from "@/lib/security/ip"
 import { getSession } from "@/lib/security/session"
 import { classifyUserAgent } from "@/lib/security/user-agent"
 import { getEntity } from "@/lib/sonar/entity"
-import { PermitDedupError, generatePurchasePermit } from "@/lib/sonar/permit"
+import { PermitDedupError, SonarAuthError, generatePurchasePermit } from "@/lib/sonar/permit"
 import { NextResponse } from "next/server"
 import { z } from "zod"
 
@@ -49,6 +49,9 @@ export async function POST(request: Request) {
     })
     return NextResponse.json(result)
   } catch (err) {
+    if (err instanceof SonarAuthError) {
+      return NextResponse.json({ error: "unauthenticated" }, { status: 401 })
+    }
     if (err instanceof PermitDedupError) {
       return NextResponse.json({ error: "rate_limited" }, { status: 429 })
     }

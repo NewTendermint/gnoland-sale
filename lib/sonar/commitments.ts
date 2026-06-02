@@ -1,7 +1,7 @@
 import "server-only"
 import type { ReadCommitmentDataResponse } from "@echoxyz/sonar-core"
 import { env } from "../env"
-import type { CommitmentData } from "../sale/types"
+import type { CommitmentMetrics } from "../sale/types"
 import { createSonarClient } from "./client"
 
 const MICRO_USD = 1_000_000
@@ -14,7 +14,7 @@ const MICRO_USD = 1_000_000
  *
  * Pure and exported so it can be unit-tested without a Sonar call.
  */
-export function mapCommitmentData(res: ReadCommitmentDataResponse): CommitmentData {
+export function mapCommitmentData(res: ReadCommitmentDataResponse): CommitmentMetrics {
   return {
     totalCommittedUsd: Number(res.TotalCommitmentAmount) / 10 ** res.PaymentTokenDecimals,
     clearingPriceUsd:
@@ -27,7 +27,7 @@ export function mapCommitmentData(res: ReadCommitmentDataResponse): CommitmentDa
  * Read live commitment metrics from Sonar. Public data: no auth, no token, so
  * an unauthenticated client is used.
  */
-export async function readCommitments(): Promise<CommitmentData> {
+export async function readCommitments(): Promise<CommitmentMetrics> {
   const res = await createSonarClient().readCommitmentData({ saleUUID: env.SONAR_SALE_UUID })
   return mapCommitmentData(res)
 }

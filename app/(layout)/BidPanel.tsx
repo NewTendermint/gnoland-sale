@@ -56,6 +56,23 @@ export function BidPanel() {
     return () => window.removeEventListener("keydown", onKey)
   }, [expanded])
 
+  // Emergency kill-switch (SALE_PAUSED, surfaced via the polled commitments feed):
+  // a global override shown regardless of phase. The mutating routes already 503.
+  // COPY: placeholder microcopy, flagged for team sign-off.
+  if (commitment.paused) {
+    return (
+      <BarShell>
+        <div className="flex flex-wrap items-center gap-3 border-t border-border pb-6 pt-4 sm:pb-8 sm:pt-6">
+          <Icon name="clock" className="h-5 w-5 shrink-0 text-foreground" />
+          <p className="text-sm">
+            <span className="font-medium text-foreground">Bidding is paused.</span>{" "}
+            <span className="text-muted">Please check back shortly.</span>
+          </p>
+        </div>
+      </BarShell>
+    )
+  }
+
   if (phase === "pre-sale") {
     const registrationOpen = preSaleStage === "registration-open"
     return (

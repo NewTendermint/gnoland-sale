@@ -260,6 +260,22 @@ function SwitchNetworkGate() {
   )
 }
 
+// COPY: placeholder error microcopy, flagged for team sign-off. Maps a reverted bid
+// reason (Sonar pre-purchase failure reasons + the client's own reasons) to a short
+// message shown under the bid form; an unrecognized reason is shown as-is.
+function reasonToMessage(reason: string): string {
+  const messages: Record<string, string> = {
+    "requires-liveness": "An identity check is needed before bidding.",
+    "wallet-risk": "This wallet can't be used for the sale.",
+    "max-wallets-used": "You've reached the wallet limit for this sale.",
+    "sale-not-active": "The sale isn't open right now.",
+    "wallet-not-linked": "Link this wallet to your Sonar account first.",
+    "outside-time-window": "Bidding is closed right now.",
+    unknown: "Could not place your bid. Please try again.",
+  }
+  return messages[reason] ?? reason
+}
+
 function BidRow({
   clearingPriceUsd,
   prevBid,
@@ -275,6 +291,7 @@ function BidRow({
   // Raises start from the current committed amount so the CTA is active; first bids start empty.
   const [amount, setAmount] = useState(prevBid ? String(prevBid.committedUsd) : "")
   const [submitState, setSubmitState] = useState<"idle" | "submitting" | "submitted">("idle")
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   const priceNum = Number(price)
   const amountNum = Number(amount)
@@ -307,11 +324,18 @@ function BidRow({
 
   async function onSubmit() {
     setSubmitState("submitting")
+    setSubmitError(null)
     const params: BidParams = { priceUsd: priceNum, amountUsd: amountNum, lockup: false }
     if (onBid) {
       // Real flow: pre-purchase + permit (Sonar), then the on-chain seam.
       const result = await onBid(params)
-      setSubmitState(result.status === "submitted" ? "submitted" : "idle")
+      if (result.status === "submitted") {
+        setSubmitState("submitted")
+      } else {
+        // Surface the reason instead of silently resetting (was a swallowed error).
+        setSubmitState("idle")
+        setSubmitError(reasonToMessage(result.reason))
+      }
       return
     }
     // /dev/states preview (no real actions): the module mock simulates the tx.
@@ -375,7 +399,9 @@ function BidRow({
       </div>
 
       <div className="ml-auto flex h-[42px] items-center gap-4">
-        {error ? <span className="max-w-[14rem] text-xs text-danger">{error}</span> : null}
+        {(error ?? submitError) ? (
+          <span className="max-w-[14rem] text-xs text-danger">{error ?? submitError}</span>
+        ) : null}
         <button type="button" onClick={onSubmit} disabled={!canSubmit} className={PILL}>
           {submitState === "submitting" ? "Signing..." : prevBid ? "Raise bid" : "Place bid"}
         </button>

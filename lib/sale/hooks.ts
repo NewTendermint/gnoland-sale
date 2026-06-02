@@ -19,6 +19,7 @@ const EMPTY_COMMITMENT: CommitmentData = {
   totalCommittedUsd: 0,
   clearingPriceUsd: null,
   uniqueCommitmentCount: 0,
+  paused: false,
 }
 
 /** Live auction metrics, polled every 10s (matches the route's cache window). */
@@ -56,12 +57,20 @@ export function useBid() {
     if (!address) {
       return { status: "reverted", reason: "Connect your wallet" }
     }
-    const pre = await postPrePurchase(address)
-    if (!pre.readyToPurchase) {
-      return { status: "reverted", reason: pre.failureReason }
+    try {
+      const pre = await postPrePurchase(address)
+      if (!pre.readyToPurchase) {
+        return { status: "reverted", reason: pre.failureReason }
+      }
+      const permit = await postGeneratePermit(address)
+      return submitBidOnChain({ params, permit, wallet: address })
+    } catch {
+      // A thrown fetcher error (a 401 re-auth, 502, or network failure) must not
+      // leave the CTA stuck "Signing...". Reset to a reverted result. Surfacing a
+      // 401-specific "reconnect with Sonar" prompt is a follow-on (needs the
+      // fetcher to expose status + BidFlow to render the reverted reason).
+      return { status: "reverted", reason: "Could not place bid" }
     }
-    const permit = await postGeneratePermit(address)
-    return submitBidOnChain({ params, permit, wallet: address })
   }
 
   return { submit }

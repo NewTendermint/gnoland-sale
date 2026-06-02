@@ -61,3 +61,12 @@ export async function loadTokens(sessionId: string): Promise<StoredTokens | null
   )
   return { accessToken, refreshToken, expiresAt: row.expiresAt }
 }
+
+/**
+ * Delete a session's stored tokens. Used when Sonar rejects them with a 401
+ * (revoked / expired beyond refresh), so the next request starts a fresh login
+ * instead of replaying a dead token.
+ */
+export async function deleteTokens(sessionId: string): Promise<void> {
+  await db.delete(oauthTokens).where(eq(oauthTokens.sessionId, sessionId))
+}

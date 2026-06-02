@@ -1,7 +1,7 @@
 import { env } from "@/lib/env"
 import { getSession } from "@/lib/security/session"
 import { getEntity } from "@/lib/sonar/entity"
-import { prePurchaseCheck } from "@/lib/sonar/permit"
+import { SonarAuthError, prePurchaseCheck } from "@/lib/sonar/permit"
 import { NextResponse } from "next/server"
 import { z } from "zod"
 
@@ -42,7 +42,10 @@ export async function POST(request: Request) {
       wallet: parsed.data.wallet,
     })
     return NextResponse.json(result)
-  } catch {
+  } catch (err) {
+    if (err instanceof SonarAuthError) {
+      return NextResponse.json({ error: "unauthenticated" }, { status: 401 })
+    }
     return NextResponse.json({ error: "pre_purchase_failed" }, { status: 502 })
   }
 }

@@ -32,10 +32,17 @@ export type PrePurchaseFailureReason =
   | "outside-time-window"
 
 // Subset of ReadCommitmentDataResponse we render, normalized to USD numbers
-export type CommitmentData = {
+export type CommitmentMetrics = {
   totalCommittedUsd: number
   clearingPriceUsd: number | null // null before any clears
   uniqueCommitmentCount: number
+}
+
+// The live metrics plus our own kill-switch flag. `paused` (from SALE_PAUSED, added
+// by the commitments route) true => the sale is emergency-paused: the bid UI shows a
+// paused state and the mutating routes already return 503.
+export type CommitmentData = CommitmentMetrics & {
+  paused: boolean
 }
 
 // The session's Sonar entity reduced to what the journey needs (KYC + eligibility).

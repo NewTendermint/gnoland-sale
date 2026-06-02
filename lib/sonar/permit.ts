@@ -1,5 +1,9 @@
 import "server-only"
-import type { GeneratePurchasePermitResponse, PrePurchaseCheckResponse } from "@echoxyz/sonar-core"
+import {
+  APIError,
+  type GeneratePurchasePermitResponse,
+  type PrePurchaseCheckResponse,
+} from "@echoxyz/sonar-core"
 import { base, baseSepolia } from "viem/chains"
 import { db } from "../db/client"
 import { type AuditMetadata, auditLog, auditMetadataSchema } from "../db/schema"
@@ -7,7 +11,7 @@ import { env } from "../env"
 import type { PrePurchaseFailureReason, PrePurchaseResult } from "../sale/types"
 import { createSonarClient } from "./client"
 import { sonarMockEnabled } from "./mock-config"
-import { type StoredTokens, loadTokens, storeTokens } from "./tokens"
+import { type StoredTokens, deleteTokens, loadTokens, storeTokens } from "./tokens"
 
 const REFRESH_SKEW_MS = 5 * 60 * 1000 // refresh when <5min of life remains
 const DEDUP_WINDOW_MS = 5 * 1000 // refuse repeat permits for a wallet inside 5s
@@ -52,6 +56,27 @@ export function checkPermitDedup(wallet: string, now: number = Date.now()): void
 // per-instance caveat as the dedup Map above.
 const ensureInFlight = new Map<string, Promise<StoredTokens>>()
 
+/** Thrown when Sonar rejects the token (401); the session must re-authenticate. */
+export class SonarAuthError extends Error {}
+
+/**
+ * Run a Sonar SDK call, converting a 401 (token revoked / expired beyond refresh)
+ * into a typed SonarAuthError after clearing the dead token, so route handlers can
+ * emit 401 -> the client re-auths, instead of masking it as a generic 502 (which
+ * makes the UI loop "try again" forever). Non-401 errors pass through untouched.
+ */
+export async function withSonarAuth<T>(sessionId: string, fn: () => Promise<T>): Promise<T> {
+  try {
+    return await fn()
+  } catch (err) {
+    if (err instanceof APIError && err.status === 401) {
+      await deleteTokens(sessionId)
+      throw new SonarAuthError("Sonar session expired; reconnect required")
+    }
+    throw err
+  }
+}
+
 async function resolveTokens(sessionId: string): Promise<StoredTokens> {
   const current = await loadTokens(sessionId)
   if (!current) {
@@ -60,7 +85,9 @@ async function resolveTokens(sessionId: string): Promise<StoredTokens> {
   if (!needsRefresh(current.expiresAt)) {
     return current
   }
-  const res = await createSonarClient().refreshToken({ refreshToken: current.refreshToken })
+  const res = await withSonarAuth(sessionId, () =>
+    createSonarClient().refreshToken({ refreshToken: current.refreshToken }),
+  )
   const fresh: StoredTokens = {
     accessToken: res.access_token,
     refreshToken: res.refresh_token,
@@ -162,11 +189,13 @@ export async function prePurchaseCheck(args: {
   wallet: string
 }): Promise<PrePurchaseResult> {
   const tokens = await ensureFreshTokens(args.sessionId)
-  const res = await createSonarClient(tokens.accessToken).prePurchaseCheck({
-    saleUUID: env.SONAR_SALE_UUID,
-    entityID: args.entityId,
-    walletAddress: args.wallet,
-  })
+  const res = await withSonarAuth(args.sessionId, () =>
+    createSonarClient(tokens.accessToken).prePurchaseCheck({
+      saleUUID: env.SONAR_SALE_UUID,
+      entityID: args.entityId,
+      walletAddress: args.wallet,
+    }),
+  )
   return mapPrePurchase(res)
 }
 
@@ -179,11 +208,13 @@ export async function generatePurchasePermit(args: {
 }): Promise<GeneratePurchasePermitResponse> {
   checkPermitDedup(args.wallet)
   const tokens = await ensureFreshTokens(args.sessionId)
-  const response = await createSonarClient(tokens.accessToken).generatePurchasePermit({
-    saleUUID: env.SONAR_SALE_UUID,
-    entityID: args.entityId,
-    walletAddress: args.wallet,
-  })
+  const response = await withSonarAuth(args.sessionId, () =>
+    createSonarClient(tokens.accessToken).generatePurchasePermit({
+      saleUUID: env.SONAR_SALE_UUID,
+      entityID: args.entityId,
+      walletAddress: args.wallet,
+    }),
+  )
   await recordAudit("permit_issued", {
     entityId: args.entityId,
     wallet: args.wallet,
