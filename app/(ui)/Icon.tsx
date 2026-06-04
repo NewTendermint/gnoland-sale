@@ -182,6 +182,14 @@ const PATHS: Record<string, ReactNode> = {
       <path d="M12 7v5l3 2" />
     </>
   ),
+  // Question mark in a circle, used for inline field hints (BidFlow).
+  help: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M9.6 9.3a2.4 2.4 0 1 1 3.6 2.1c-.9.6-1.2 1-1.2 1.9" />
+      <path d="M12 16.5h.01" />
+    </>
+  ),
 }
 
 /** Single inline-SVG icon keyed by name. */

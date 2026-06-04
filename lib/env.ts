@@ -32,7 +32,6 @@ export const envSchema = z.object({
   // than a public URL. Defaults to testnet so a misconfigured prod mislabels
   // toward sandbox, never falsely claims mainnet.
   SALE_CHAIN: z.enum(["base", "base-sepolia"]).default("base-sepolia"),
-  SENTRY_DSN_SERVER: z.string().optional(),
 })
 
 export type Env = z.infer<typeof envSchema>

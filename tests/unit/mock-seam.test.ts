@@ -18,12 +18,15 @@ afterAll(() => {
 // mapper, not a stub of our own code.
 describe("Sonar mock-fetch seam (real SDK + fixtures)", () => {
   it("readCommitments returns mapped fixture data via the SDK", async () => {
+    // Pin the clock so the throwaway "live" mock (time-based growth) sits at its base.
+    const now = vi.spyOn(Date, "now").mockReturnValue(0)
     const data = await readCommitments()
     expect(data).toEqual({
       totalCommittedUsd: 1_200_000,
       clearingPriceUsd: 0.12,
       uniqueCommitmentCount: 1247,
     })
+    now.mockRestore()
   })
 
   it("getEntity returns the mapped fixture entity via the SDK (dummy token in mock)", async () => {

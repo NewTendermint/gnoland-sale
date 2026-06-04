@@ -6,12 +6,19 @@
  * QueryClient via Web3Provider). Components consume these (or useSale) and never
  * see the transport; swapping mock <-> real Sonar changes nothing here.
  */
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useAccount } from "wagmi"
-import { getCommitments, getEntity, postGeneratePermit, postPrePurchase } from "./api"
+import {
+  HttpError,
+  getCommitments,
+  getEntity,
+  getMyPosition,
+  postGeneratePermit,
+  postPrePurchase,
+} from "./api"
 import { submitBidOnChain } from "./onchain"
 import type { BidParams, BidResult } from "./submitter"
-import type { CommitmentData } from "./types"
+import type { CommitmentData, MyBid } from "./types"
 
 // Neutral initial value (never fake numbers) shown until the first fetch
 // resolves; using initialData also makes `data` typed as always-defined.
@@ -44,6 +51,22 @@ export function useEntity() {
 }
 
 /**
+ * The session's current position (price + committed); `data` is null when the
+ * entity has no commitment or is not connected to Sonar. Feeds `myBid` in the
+ * journey + the position UI.
+ */
+export function useMyBid() {
+  return useQuery({
+    queryKey: ["sale", "my-bid"],
+    queryFn: getMyPosition,
+    // Don't clobber an optimistic post-bid position (set by useBid) on window focus;
+    // the mock has no server-side commitment to refetch. TODO(real-data): invalidate
+    // this after a real bid so readMyBid confirms the indexed commitment.
+    refetchOnWindowFocus: false,
+  })
+}
+
+/**
  * Bid submission. Runs the real Sonar gates (pre-purchase check -> generate
  * permit) for the connected wallet, then hands the permit to the on-chain step.
  * That on-chain step (EIP-2612 signature + replaceBidWithPermit) lives behind the
@@ -52,6 +75,7 @@ export function useEntity() {
  */
 export function useBid() {
   const { address } = useAccount()
+  const queryClient = useQueryClient()
 
   async function submit(params: BidParams): Promise<BidResult> {
     if (!address) {
@@ -60,15 +84,35 @@ export function useBid() {
     try {
       const pre = await postPrePurchase(address)
       if (!pre.readyToPurchase) {
+        // requires-liveness ships a hosted Sonar URL; send the user there to clear
+        // the identity check, then they return and retry the bid.
+        if (pre.failureReason === "requires-liveness" && pre.livenessCheckUrl) {
+          window.location.href = pre.livenessCheckUrl
+        }
         return { status: "reverted", reason: pre.failureReason }
       }
       const permit = await postGeneratePermit(address)
-      return submitBidOnChain({ params, permit, wallet: address })
-    } catch {
-      // A thrown fetcher error (a 401 re-auth, 502, or network failure) must not
-      // leave the CTA stuck "Signing...". Reset to a reverted result. Surfacing a
-      // 401-specific "reconnect with Sonar" prompt is a follow-on (needs the
-      // fetcher to expose status + BidFlow to render the reverted reason).
+      const result = await submitBidOnChain({ params, permit, wallet: address })
+      if (result.status === "submitted") {
+        // Optimistic: reflect the just-placed bid as the session's position so the UI
+        // moves to has-bid right away (no "winning" before a bid; no empty state after
+        // one). TODO(real-data): also invalidate ["sale","my-bid"] to refetch the
+        // confirmed commitment from Sonar once it indexes.
+        const optimistic: MyBid = {
+          priceUsd: params.priceUsd,
+          committedUsd: params.amountUsd,
+          lockup: params.lockup,
+        }
+        queryClient.setQueryData(["sale", "my-bid"], optimistic)
+      }
+      return result
+    } catch (err) {
+      // A 401 means the Sonar session is gone (revoked / expired beyond refresh):
+      // the user must reconnect, not retry. Other failures (502 / network) revert
+      // to a generic retry so the CTA never hangs on "Signing...".
+      if (err instanceof HttpError && err.status === 401) {
+        return { status: "reverted", reason: "session-expired" }
+      }
       return { status: "reverted", reason: "Could not place bid" }
     }
   }

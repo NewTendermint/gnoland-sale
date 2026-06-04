@@ -36,7 +36,12 @@ export default async () => {
 }
 
 export const config: Config = {
-  path: ["/api/sonar/pre-purchase", "/api/sonar/generate-permit", "/api/sonar/entity"],
+  path: [
+    "/api/sonar/pre-purchase",
+    "/api/sonar/generate-permit",
+    "/api/sonar/entity",
+    "/api/sonar/my-position",
+  ],
   rateLimit: {
     windowLimit: 10,
     windowSize: 60,

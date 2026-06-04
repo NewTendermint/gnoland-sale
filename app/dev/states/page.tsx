@@ -8,7 +8,8 @@ import { notFound } from "next/navigation"
  */
 import type { ReactNode } from "react"
 import { BidFlow } from "../../(sections)/bid/BidFlow"
-import { BidStatus, FunnelSteps } from "../../(sections)/bid/FunnelSteps"
+import { BidStatusTag, FunnelSteps } from "../../(sections)/bid/FunnelSteps"
+import { CtaArrow } from "../../(ui)/CtaArrow"
 import { Icon } from "../../(ui)/Icon"
 import { SALE_ECONOMICS, formatSaleDate } from "../../../lib/sale/economics"
 import { fmtCompactUsd, fmtCount, fmtPrice } from "../../../lib/sale/format"
@@ -37,30 +38,20 @@ const METRICS = [
   },
 ]
 
-function CtaPill({ label }: { label: string }) {
+function CtaPill({ journey }: { journey: JourneyState }) {
   return (
     <span className="inline-flex items-center gap-2 rounded-full bg-surface-contrast px-6 py-3 text-xs font-bold uppercase tracking-[0.2em] text-on-contrast">
-      {label}
-      <svg
-        viewBox="0 0 12 12"
-        className="h-3 w-3"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        aria-hidden="true"
-      >
-        <path d="M2 6h8M7 3l3 3-3 3" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
+      <BidStatusTag journey={journey} />
+      {bidCtaLabel(journey)}
+      <CtaArrow />
     </span>
   )
 }
 
 function MetricsRow({
-  journey,
   dense,
   right,
 }: {
-  journey: JourneyState
   dense: boolean
   right: ReactNode
 }) {
@@ -97,7 +88,6 @@ function MetricsRow({
               </div>
             </div>
           ))}
-          <BidStatus journey={journey} />
         </div>
         {right}
       </div>
@@ -109,11 +99,7 @@ function MetricsRow({
 function CollapsedBar({ journey }: { journey: JourneyState }) {
   return (
     <div className="rounded-[var(--frame-radius)] border border-border bg-background px-6 lg:px-8">
-      <MetricsRow
-        journey={journey}
-        dense={false}
-        right={<CtaPill label={bidCtaLabel(journey)} />}
-      />
+      <MetricsRow dense={false} right={<CtaPill journey={journey} />} />
     </div>
   )
 }
@@ -124,7 +110,7 @@ function ExpandedBar({ journey }: { journey: JourneyState }) {
   return (
     <div className="overflow-hidden rounded-[var(--frame-radius)] border border-border bg-background">
       <div className="px-6 lg:px-8">
-        <MetricsRow journey={journey} dense={true} right={<FunnelSteps journey={journey} />} />
+        <MetricsRow dense={true} right={<FunnelSteps journey={journey} />} />
       </div>
       <div className="px-6 py-6 lg:px-8">
         <div className="bid-capsule px-6 py-5">

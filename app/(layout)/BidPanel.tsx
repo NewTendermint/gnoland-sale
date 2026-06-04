@@ -8,10 +8,11 @@
  * pre-sale and ended render their own compact bars (BarShell). Data comes from
  * useSale() (mock today, Sonar proxy later behind the same shape).
  */
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import type { ReactNode } from "react"
 import { BidFlow } from "../(sections)/bid/BidFlow"
-import { BidStatus, FunnelSteps } from "../(sections)/bid/FunnelSteps"
+import { BidStatusTag, FunnelSteps } from "../(sections)/bid/FunnelSteps"
+import { CtaArrow } from "../(ui)/CtaArrow"
 import { Icon } from "../(ui)/Icon"
 import { startSonarLogin } from "../../lib/sale/api"
 import { gnotEstimate } from "../../lib/sale/calc"
@@ -24,15 +25,22 @@ import { useSale } from "./SaleProvider"
 import { WalletButton } from "./WalletButton"
 
 const SHELL =
-  "fixed bottom-[var(--reveal-padding)] left-[var(--reveal-padding)] right-[var(--reveal-padding)] z-[var(--z-sticky)] overflow-hidden rounded-[var(--frame-radius)] border border-border bg-background"
+  "fixed bottom-[var(--reveal-padding)] left-[var(--reveal-padding)] right-[var(--reveal-padding)] z-[var(--z-sticky)] overflow-hidden rounded-[var(--frame-radius)] bg-background"
 const INSET = "mx-auto max-w-[var(--max-width-container)] px-6 lg:px-8"
 
 type BarMetric = { icon: string; value: ReactNode; label: string }
 
 export function BidPanel() {
-  const { phase, preSaleStage, journey, commitment, myBid } = useSale()
+  const {
+    phase,
+    preSaleStage,
+    journey,
+    commitment,
+    myBid,
+    bidPanelOpen: expanded,
+    setBidPanelOpen: setExpanded,
+  } = useSale()
   const bid = useBid()
-  const [expanded, setExpanded] = useState(false)
 
   // Start the Sonar OAuth login (the kyc-required gate's CTA). In mock this
   // short-circuits to a logged-in session; in prod it redirects to Sonar's page.
@@ -54,7 +62,7 @@ export function BidPanel() {
     }
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
-  }, [expanded])
+  }, [expanded, setExpanded])
 
   // Emergency kill-switch (SALE_PAUSED, surfaced via the polled commitments feed):
   // a global override shown regardless of phase. The mutating routes already 503.
@@ -97,19 +105,11 @@ export function BidPanel() {
             </p>
             <button
               type="button"
+              onClick={registrationOpen ? handleConnectSonar : undefined}
               className="group inline-flex items-center gap-2 rounded-full bg-surface-contrast px-7 py-3.5 text-xs font-bold uppercase tracking-[0.2em] text-on-contrast transition-colors hover:bg-surface-contrast/80"
             >
               <span>{registrationOpen ? "Register now" : "Get notified"}</span>
-              <svg
-                viewBox="0 0 12 12"
-                className="h-3 w-3 transition-transform duration-300 group-hover:translate-x-1"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                aria-hidden="true"
-              >
-                <path d="M2 6h8M7 3l3 3-3 3" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
+              <CtaArrow />
             </button>
           </div>
         </div>
@@ -158,16 +158,7 @@ export function BidPanel() {
             className="group inline-flex items-center gap-2 rounded-full bg-surface-contrast px-7 py-3.5 text-xs font-bold uppercase tracking-[0.2em] text-on-contrast transition-colors hover:bg-surface-contrast/80"
           >
             <span>{hasBid ? "Claim refund" : "View results"}</span>
-            <svg
-              viewBox="0 0 12 12"
-              className="h-3 w-3 transition-transform duration-300 group-hover:translate-x-1"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              aria-hidden="true"
-            >
-              <path d="M2 6h8M7 3l3 3-3 3" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+            <CtaArrow />
           </button>
         </div>
       </BarShell>
@@ -228,50 +219,43 @@ export function BidPanel() {
                       </div>
                     </div>
                   ))}
-                  <BidStatus journey={journey} />
                 </div>
 
-                {expanded ? (
-                  <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-                    <FunnelSteps journey={journey} />
+                <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+                  {expanded ? (
+                    <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+                      <FunnelSteps journey={journey} />
+                      <button
+                        type="button"
+                        onClick={() => setExpanded(false)}
+                        aria-label="Close"
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border text-muted transition-colors hover:text-foreground"
+                      >
+                        <svg
+                          viewBox="0 0 16 16"
+                          className="h-3.5 w-3.5"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          aria-hidden="true"
+                        >
+                          <path d="M3 3l10 10M13 3L3 13" strokeLinecap="round" />
+                        </svg>
+                      </button>
+                    </div>
+                  ) : (
                     <button
                       type="button"
-                      onClick={() => setExpanded(false)}
-                      aria-label="Close"
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border text-muted transition-colors hover:text-foreground"
+                      onClick={() => setExpanded(true)}
+                      aria-expanded={expanded}
+                      className="group inline-flex items-center gap-2 rounded-full bg-surface-contrast px-7 py-3.5 text-xs font-bold uppercase tracking-[0.2em] text-on-contrast transition-colors hover:bg-surface-contrast/80"
                     >
-                      <svg
-                        viewBox="0 0 16 16"
-                        className="h-3.5 w-3.5"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                        aria-hidden="true"
-                      >
-                        <path d="M3 3l10 10M13 3L3 13" strokeLinecap="round" />
-                      </svg>
+                      <BidStatusTag journey={journey} />
+                      <span>{bidCtaLabel(journey)}</span>
+                      <CtaArrow />
                     </button>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setExpanded(true)}
-                    aria-expanded={expanded}
-                    className="group inline-flex items-center gap-2 rounded-full bg-surface-contrast px-7 py-3.5 text-xs font-bold uppercase tracking-[0.2em] text-on-contrast transition-colors hover:bg-surface-contrast/80"
-                  >
-                    <span>{bidCtaLabel(journey)}</span>
-                    <svg
-                      viewBox="0 0 12 12"
-                      className="h-3 w-3 transition-transform duration-300 group-hover:translate-x-1"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      aria-hidden="true"
-                    >
-                      <path d="M2 6h8M7 3l3 3-3 3" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </button>
-                )}
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -283,18 +267,14 @@ export function BidPanel() {
           <div className="grid grid-cols-12 gap-6 pb-4 sm:pb-6">
             <div className="col-span-12 lg:col-span-10 lg:col-start-2">
               <div className="bid-capsule max-h-[60vh] overflow-y-auto px-6 py-5">
-                <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
-                  <div className="min-w-0 flex-1">
-                    <BidFlow
-                      journey={journey}
-                      clearingPriceUsd={commitment.clearingPriceUsd}
-                      myBid={myBid}
-                      onConnectSonar={handleConnectSonar}
-                      onBid={bid.submit}
-                    />
-                  </div>
-                  <WalletButton />
-                </div>
+                <BidFlow
+                  journey={journey}
+                  clearingPriceUsd={commitment.clearingPriceUsd}
+                  myBid={myBid}
+                  onConnectSonar={handleConnectSonar}
+                  onBid={bid.submit}
+                  walletButton={<WalletButton />}
+                />
               </div>
             </div>
           </div>

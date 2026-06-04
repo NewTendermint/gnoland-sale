@@ -1,18 +1,74 @@
+"use client"
+
 /**
- * Site header with primary navigation and authentication entry points.
- * Sticky positioning ensures the bid CTA stays one click away during scroll.
+ * Site header. The gno.land wordmark stays centred at all times; the section nav
+ * links sit on either side of it and stay hidden until the visitor scrolls past the
+ * hero, then fade in. An IntersectionObserver on #hero (rooted to the .screen scroll
+ * container) flips the reveal. The links reserve their space even while hidden, so
+ * the wordmark never shifts - only opacity animates. Links align to the content's
+ * column span (cols 2-11) so they sit flush with the page content; the wordmark
+ * stays centred. Nav is desktop-only; mobile keeps just the wordmark (the theme
+ * toggle lives in the footer).
  */
-import { ThemeToggle } from "./ThemeToggle"
+import { useEffect, useState } from "react"
+import { navLinks } from "./nav.data"
 
 export function Header() {
+  const [pastHero, setPastHero] = useState(false)
+
+  useEffect(() => {
+    const hero = document.getElementById("hero")
+    if (!hero) return
+    const root = document.querySelector(".screen")
+    const io = new IntersectionObserver(([entry]) => setPastHero(!entry.isIntersecting), {
+      root: root ?? null,
+      threshold: 0,
+    })
+    io.observe(hero)
+    return () => io.disconnect()
+  }, [])
+
+  const mid = Math.ceil(navLinks.length / 2)
+  const sides = [navLinks.slice(0, mid), navLinks.slice(mid)]
+  const reveal = `transition-opacity duration-500 ${
+    pastHero ? "opacity-100" : "pointer-events-none opacity-0"
+  }`
+
   return (
     <header className="fixed left-[var(--reveal-padding)] right-[var(--reveal-padding)] top-[var(--reveal-padding)] z-[var(--z-header)] bg-transparent">
-      <nav className="relative mx-auto flex max-w-[var(--max-width-container)] items-center justify-center px-6 py-4">
-        <a href="/" className="text-lg font-bold text-foreground">
-          gno.land
-        </a>
-        <div className="absolute right-6 top-1/2 -translate-y-1/2">
-          <ThemeToggle />
+      <nav className="relative mx-auto grid max-w-[var(--max-width-container)] grid-cols-12 gap-6 px-6 py-4">
+        <div className="col-span-12 flex items-center justify-center lg:col-span-10 lg:col-start-2">
+          <ul
+            className={`hidden flex-1 items-center justify-start gap-6 text-sm lg:flex ${reveal}`}
+          >
+            {sides[0].map((l) => (
+              <li key={l.href}>
+                <a
+                  href={l.href}
+                  className="link-underline text-muted transition-colors hover:text-foreground"
+                >
+                  {l.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+
+          <a href="/" className="shrink-0 px-8 text-lg font-bold text-foreground">
+            gno.land
+          </a>
+
+          <ul className={`hidden flex-1 items-center justify-end gap-6 text-sm lg:flex ${reveal}`}>
+            {sides[1].map((l) => (
+              <li key={l.href}>
+                <a
+                  href={l.href}
+                  className="link-underline text-muted transition-colors hover:text-foreground"
+                >
+                  {l.label}
+                </a>
+              </li>
+            ))}
+          </ul>
         </div>
       </nav>
     </header>

@@ -36,8 +36,10 @@
   /* Brand accents - constant across themes */
   --mint: #8ec5b2;
   --mint-soft: #a8d2c4;
+  --on-mint: #0a0a0a; /* readable text on a mint fill; constant, like --mint */
   --mint-glow: rgba(142, 197, 178, 0.25);
   --amber: #f4b942;
+  --on-amber: #0a0a0a; /* readable text on an amber fill; constant, like --on-mint */
   --amber-glow: rgba(244, 185, 66, 0.2);
   --danger: #e8556a;
   --danger-glow: rgba(232, 85, 106, 0.2);

@@ -13,8 +13,8 @@ import { NextResponse } from "next/server"
  * to its own scripts, clearing the script-src reports).
  *
  * Chain RPC + WalletConnect/Coinbase endpoints are the moving parts of connect-src;
- * everything else is self. No analytics/Sentry wired yet (add their hosts here when
- * they are).
+ * everything else is self. No analytics wired yet (add its hosts here when
+ * it is).
  */
 export function middleware(request: NextRequest) {
   const nonce = btoa(crypto.randomUUID())

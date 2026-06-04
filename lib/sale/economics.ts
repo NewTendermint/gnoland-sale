@@ -9,6 +9,8 @@ export const SALE_ECONOMICS = {
   totalSupplyGnot: 1_333_000_000, // confirmed
   targetRaiseUsd: 2_000_000, // floor, may grow if oversubscribed (confirmed)
   fdvUsd: 86_000_000, // confirmed ($0.0645 x 1.333B)
+  // TODO(real-data): confirm the PROVISIONAL values below (min/max commitment, bid
+  // increment, sale dates) with the team / Sonar before launch.
   minCommitmentUsd: 200, // PROVISIONAL - sheet $200; Sonar pending (~$100 example). A.12.2 / param #3.
   maxCommitmentUsd: 100_000, // PROVISIONAL - sheet $100k; Sonar pending. A.12.2 / param #4.
   bidIncrementUsd: 0.005, // PROVISIONAL - proposed $0.005; NOT enforced on-chain (A.12.1). Param #7.

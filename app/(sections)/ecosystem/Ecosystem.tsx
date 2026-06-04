@@ -4,6 +4,7 @@
  * projects shown as compact half-size cards (icon + name + category
  * only) in a denser 6-col grid. Total = 13 projects visible at once.
  */
+import { CtaArrow } from "../../(ui)/CtaArrow"
 import { Icon } from "../../(ui)/Icon"
 import { Section } from "../../(ui)/Section"
 import { SectionHeading } from "../../(ui)/SectionHeading"
@@ -66,12 +67,10 @@ export function Ecosystem() {
           href="https://github.com/gnoverse"
           target="_blank"
           rel="noreferrer noopener"
-          className="group inline-flex items-baseline gap-2 text-sm font-bold uppercase tracking-[0.2em] text-foreground transition-colors hover:text-muted"
+          className="group inline-flex items-center gap-2 text-sm font-bold uppercase tracking-[0.2em] text-foreground transition-colors hover:text-muted"
         >
           <span>Find other ecosystem projects</span>
-          <span aria-hidden="true" className="transition-transform group-hover:translate-x-1">
-            →
-          </span>
+          <CtaArrow />
         </a>
       </div>
     </Section>

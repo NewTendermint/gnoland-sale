@@ -18,6 +18,7 @@ import { useState } from "react"
 import type { ReactNode } from "react"
 import { useConnect, useSwitchChain } from "wagmi"
 import { PRIMARY_CHAIN_ID } from "../../(layout)/web3"
+import { GnotCoin } from "../../(ui)/GnotCoin"
 import { Icon } from "../../(ui)/Icon"
 import { gnotEstimate, validateBidAmount, validateBidPrice } from "../../../lib/sale/calc"
 import { SALE_ECONOMICS } from "../../../lib/sale/economics"
@@ -59,12 +60,14 @@ export function BidFlow({
   myBid,
   onConnectSonar,
   onBid,
+  walletButton,
 }: {
   journey: JourneyState
   clearingPriceUsd: number | null
   myBid: MyBid
   onConnectSonar?: () => void
   onBid?: (p: BidParams) => Promise<BidResult>
+  walletButton?: ReactNode
 }) {
   // Content only. The funnel stepper is rendered by the bar's top (metrics) row.
   return (
@@ -74,6 +77,7 @@ export function BidFlow({
       myBid={myBid}
       onConnectSonar={onConnectSonar}
       onBid={onBid}
+      walletButton={walletButton}
     />
   )
 }
@@ -84,16 +88,50 @@ function StateContent({
   myBid,
   onConnectSonar,
   onBid,
+  walletButton,
 }: {
   journey: JourneyState
   clearingPriceUsd: number | null
   myBid: MyBid
   onConnectSonar?: () => void
   onBid?: (p: BidParams) => Promise<BidResult>
+  walletButton?: ReactNode
+}) {
+  // Bid-form states own their whole row (inputs + actions + wallet) so the live
+  // note can sit on its own line below without dropping the buttons. Gate states
+  // render their content with the wallet control aligned on the right.
+  if (journey === "ready") {
+    return <BidRow clearingPriceUsd={clearingPriceUsd} onBid={onBid} walletButton={walletButton} />
+  }
+  if (journey === "has-bid-winning" || journey === "has-bid-outbid") {
+    // Both are a raise form; winning vs outbid shows in the bar CTA's status tag and the live clearing note.
+    return (
+      <BidRow
+        clearingPriceUsd={clearingPriceUsd}
+        prevBid={myBid}
+        onBid={onBid}
+        walletButton={walletButton}
+      />
+    )
+  }
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4">
+      <div className="min-w-0 flex-1">
+        <GateContent journey={journey} onConnectSonar={onConnectSonar} />
+      </div>
+      {walletButton}
+    </div>
+  )
+}
+
+function GateContent({
+  journey,
+  onConnectSonar,
+}: {
+  journey: JourneyState
+  onConnectSonar?: () => void
 }) {
   switch (journey) {
-    case "disconnected":
-      return <ConnectChoices />
     case "wrong-network":
       return <SwitchNetworkGate />
     case "kyc-required":
@@ -133,12 +171,8 @@ function StateContent({
           body="This sale is not available in your region."
         />
       )
-    case "ready":
-      return <BidRow clearingPriceUsd={clearingPriceUsd} onBid={onBid} />
-    case "has-bid-winning":
-    case "has-bid-outbid":
-      // Both are a raise form; the winning/outbid status shows in the top metrics row (BidStatus).
-      return <BidRow clearingPriceUsd={clearingPriceUsd} prevBid={myBid} onBid={onBid} />
+    default:
+      return <ConnectChoices />
   }
 }
 
@@ -271,6 +305,7 @@ function reasonToMessage(reason: string): string {
     "sale-not-active": "The sale isn't open right now.",
     "wallet-not-linked": "Link this wallet to your Sonar account first.",
     "outside-time-window": "Bidding is closed right now.",
+    "session-expired": "Your Sonar session expired. Reconnect to continue.",
     unknown: "Could not place your bid. Please try again.",
   }
   return messages[reason] ?? reason
@@ -280,10 +315,12 @@ function BidRow({
   clearingPriceUsd,
   prevBid,
   onBid,
+  walletButton,
 }: {
   clearingPriceUsd: number | null
   prevBid?: MyBid
   onBid?: (p: BidParams) => Promise<BidResult>
+  walletButton?: ReactNode
 }) {
   const minPrice = SALE_ECONOMICS.startingPriceUsd
   const suggested = Math.max(clearingPriceUsd ?? minPrice, prevBid?.priceUsd ?? 0, minPrice)
@@ -322,9 +359,26 @@ function BidRow({
             ? `Max ${fmtUsd(SALE_ECONOMICS.maxCommitmentUsd)}.`
             : null
 
+  // Live status vs the (last-polled) clearing price so the user knows BEFORE
+  // submitting whether the bid is winning or outbid. The clearing price moves
+  // (only up), so this is a best estimate on the latest poll, confirmed at submit.
+  const clearingNote =
+    priceValid && clearingPriceUsd != null
+      ? priceNum < clearingPriceUsd
+        ? {
+            tone: "warn" as const,
+            text: `This price would be outbid (below ${fmtPrice(clearingPriceUsd)}).`,
+          }
+        : {
+            tone: "ok" as const,
+            text: `This price would be winning (clears ${fmtPrice(clearingPriceUsd)}).`,
+          }
+      : null
+
   async function onSubmit() {
     setSubmitState("submitting")
     setSubmitError(null)
+    // TODO(real-data): lockup is hardcoded false - expose a real lockup choice in the form.
     const params: BidParams = { priceUsd: priceNum, amountUsd: amountNum, lockup: false }
     if (onBid) {
       // Real flow: pre-purchase + permit (Sonar), then the on-chain seam.
@@ -350,62 +404,76 @@ function BidRow({
 
   if (submitState === "submitted") {
     return (
-      <div className="flex flex-wrap items-center gap-3">
-        <Icon name="shield-check" className="h-5 w-5 shrink-0 text-mint" />
-        <p className="text-sm text-foreground">
-          Bid submitted - {fmtUsd(amountNum)} at {fmtPrice(priceNum)} / GNOT.
-        </p>
-        <button
-          type="button"
-          onClick={() => setSubmitState("idle")}
-          className="text-xs font-bold uppercase tracking-[0.2em] text-muted underline-offset-4 hover:text-foreground hover:underline"
-        >
-          Place another
-        </button>
+      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <Icon name="shield-check" className="h-5 w-5 shrink-0 text-mint" />
+          <p className="text-sm text-foreground">
+            Bid submitted - {fmtUsd(amountNum)} at {fmtPrice(priceNum)} / GNOT.
+          </p>
+          <button
+            type="button"
+            onClick={() => setSubmitState("idle")}
+            className="text-xs font-bold uppercase tracking-[0.2em] text-muted underline-offset-4 hover:text-foreground hover:underline"
+          >
+            Raise your bid
+          </button>
+        </div>
+        {walletButton}
       </div>
     )
   }
 
   return (
-    <div className="flex flex-wrap items-end gap-x-8 gap-y-4">
-      <InputCell
-        id="bid-price"
-        label="Max price"
-        icon="clearing"
-        value={price}
-        onChange={setPrice}
-        invalid={priceShown && priceCheck !== "ok"}
-        className="w-24"
-      />
-      <InputCell
-        id="bid-amount"
-        label="Amount (USDC)"
-        icon="database"
-        value={amount}
-        onChange={setAmount}
-        invalid={amountShown && amountCheck !== "ok"}
-        placeholder={String(SALE_ECONOMICS.minCommitmentUsd)}
-        className="w-28"
-      />
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-wrap items-end gap-x-8 gap-y-4">
+        <InputCell
+          id="bid-price"
+          label="Max price"
+          value={price}
+          onChange={setPrice}
+          invalid={priceShown && priceCheck !== "ok"}
+          hint="The highest price you'll pay per GNOT. You win if it's at or above the final clearing price, and you pay the clearing price - not your max. Can only be raised, never lowered."
+          className="w-28"
+        />
+        <InputCell
+          id="bid-amount"
+          label="Amount (USDC)"
+          value={amount}
+          onChange={setAmount}
+          invalid={amountShown && amountCheck !== "ok"}
+          placeholder={String(SALE_ECONOMICS.minCommitmentUsd)}
+          hint={`How much USDC you commit. It sets your allocation: GNOT received = your amount divided by the clearing price. Min ${fmtUsd(SALE_ECONOMICS.minCommitmentUsd)}, max ${fmtUsd(SALE_ECONOMICS.maxCommitmentUsd)}.`}
+          className="w-32"
+        />
 
-      <div className="flex flex-col gap-1.5">
-        <span className="text-[10px] uppercase tracking-[0.2em] text-muted">You receive</span>
-        <div className="flex items-center gap-2 py-2">
-          <Icon name="cube" className="h-[18px] w-[18px] shrink-0 text-muted" />
-          <span className="font-mono text-lg tabular-nums text-foreground">
-            ~{fmtGnot(est)} <span className="text-muted">GNOT</span>
-          </span>
+        <div className="flex flex-col gap-1.5">
+          <span className="text-[10px] uppercase tracking-[0.2em] text-muted">You receive</span>
+          <div className="flex items-center gap-2 py-2">
+            <GnotCoin className="h-6 w-6 text-muted" />
+            <span className="font-mono text-lg tabular-nums text-foreground">
+              ~{fmtGnot(est)} <span className="text-muted">GNOT</span>
+            </span>
+          </div>
+        </div>
+
+        <div className="ml-auto flex items-end gap-4">
+          <button type="button" onClick={onSubmit} disabled={!canSubmit} className={PILL}>
+            {submitState === "submitting" ? "Signing..." : prevBid ? "Raise bid" : "Place bid"}
+          </button>
+          {walletButton}
         </div>
       </div>
-
-      <div className="ml-auto flex h-[42px] items-center gap-4">
-        {(error ?? submitError) ? (
-          <span className="max-w-[14rem] text-xs text-danger">{error ?? submitError}</span>
-        ) : null}
-        <button type="button" onClick={onSubmit} disabled={!canSubmit} className={PILL}>
-          {submitState === "submitting" ? "Signing..." : prevBid ? "Raise bid" : "Place bid"}
-        </button>
-      </div>
+      {(error ?? submitError) ? (
+        <p className="text-xs font-medium text-danger">{error ?? submitError}</p>
+      ) : clearingNote ? (
+        <p
+          className={`text-xs ${
+            clearingNote.tone === "warn" ? "font-medium text-amber" : "text-muted"
+          }`}
+        >
+          {clearingNote.text}
+        </p>
+      ) : null}
     </div>
   )
 }
@@ -424,7 +492,7 @@ function InputCell({
   onChange,
   invalid,
   placeholder,
-  icon,
+  hint,
   className = "",
 }: {
   id: string
@@ -433,20 +501,22 @@ function InputCell({
   onChange: (v: string) => void
   invalid: boolean
   placeholder?: string
-  icon: string
+  hint?: string
   className?: string
 }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={id} className="text-[10px] uppercase tracking-[0.2em] text-muted">
-        {label}
-      </label>
+      <div className="flex items-center gap-1.5">
+        <label htmlFor={id} className="text-[10px] uppercase tracking-[0.2em] text-muted">
+          {label}
+        </label>
+        {hint ? <FieldHint text={hint} /> : null}
+      </div>
       <div
-        className={`flex items-center gap-2 rounded-[var(--radius-md)] border bg-surface-alt px-3 py-2 transition-colors ${
+        className={`flex items-center rounded-[var(--radius-md)] border bg-surface-alt px-3.5 py-2.5 transition-colors ${
           invalid ? "border-danger" : "border-border focus-within:border-border-strong"
         }`}
       >
-        <Icon name={icon} className="h-[18px] w-[18px] shrink-0 text-muted" />
         <input
           id={id}
           type="text"
@@ -459,5 +529,30 @@ function InputCell({
         />
       </div>
     </div>
+  )
+}
+
+/** A "?" affordance next to a field label; reveals its hint on click/focus only (not
+ * on hover). Keying off focus means just one is ever open and a click elsewhere blurs
+ * it shut. The popover opens downward to stay inside the bid panel's scroll container,
+ * and inverts the capsule surface so it reads in both themes. The button's aria-label
+ * carries the text for assistive tech. */
+function FieldHint({ text }: { text: string }) {
+  return (
+    <span className="group/hint relative inline-flex">
+      <button
+        type="button"
+        aria-label={text}
+        className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full text-muted transition-colors hover:text-foreground focus-visible:text-foreground"
+      >
+        <Icon name="help" className="h-3.5 w-3.5" />
+      </button>
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute left-0 top-full z-[var(--z-modal)] mt-2 w-max max-w-[22rem] rounded-[var(--radius-md)] bg-on-contrast px-3 py-2 text-[11px] font-normal normal-case leading-snug tracking-normal text-surface-contrast opacity-0 shadow-lg transition-opacity duration-100 group-focus-within/hint:opacity-100"
+      >
+        {text}
+      </span>
+    </span>
   )
 }

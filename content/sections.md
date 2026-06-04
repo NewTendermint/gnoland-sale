@@ -143,19 +143,19 @@ Refined metric definitions (from the team xlsx, 2026-06-01), mapped to the Sonar
 
 ## #5 - How to Participate  ✅
 
-**Status**: Updated 2026-05-21 (4 steps validated)
+**Status**: Updated 2026-06-03 (relabeled steps 1-3 to Connect / Verify / Bid to match the bid funnel; 4th step Distribution kept)
 
 **Title**: `How to participate`
 **Eyebrow**: `How it works`
 
 **4 steps** (horizontal grid):
 
-1. **Registration** - Complete identity verification with Sonar.
-2. **Commitment** - Connect your wallet and submit your bid.
-3. **Settlement** - Pro-rate results are finalized once the auction is over.
+1. **Connect** - Connect your wallet to join the sale.
+2. **Verify** - Complete identity verification with Sonar.
+3. **Bid** - Set your max price and commit USDC or USDT.
 4. **Distribution** - Tokens are distributed to your address. Token lockup is applied according to schedule.
 
-**Source xls note (2026-06-01)**: "Add link to Sonar registration website." The step 1 Registration CTA links to the Sonar registration/OAuth URL (the `#register` anchor today is a placeholder; real URL comes with the `clientUUID` from the Founder Dashboard, REQUIREMENTS A.2). Registration opens **July 1, 2026**, two weeks before the sale opens (July 15) - the pre-sale phase should push registration during this window.
+**Source xls note (2026-06-01)**: "Add link to Sonar registration website." The Verify step's CTA links to the Sonar registration/OAuth URL (the `#register` anchor today is a placeholder; real URL comes with the `clientUUID` from the Founder Dashboard, REQUIREMENTS A.2). Registration opens **July 1, 2026**, two weeks before the sale opens (July 15) - the pre-sale phase should push registration during this window.
 
 **Design note**: Each step is a card in a 4-col grid (uniform widths, NOT Bento), with an icon-in-circle on top + title + body. Layer 4 swaps the placeholder numbered circle for a detoured voxel icon per step.
 

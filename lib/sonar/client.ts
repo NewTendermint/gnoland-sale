@@ -35,6 +35,9 @@ import { sonarCore } from "./server-only"
 export function createSonarClient(accessToken?: string): SonarClient {
   const client = sonarCore.createClient({
     apiURL: env.SONAR_API_BASE_URL,
+    // TODO(real-data): mock fixtures are injected HERE. Going live is config-only
+    // (drop SONAR_MOCK + set real Sonar creds) -> sonarMockEnabled() returns false
+    // and the SDK uses the real network. No code change at this seam.
     // undefined -> SDK falls back to globalThis.fetch (real network).
     fetch: sonarMockEnabled() ? mockSonarFetch : undefined,
   })

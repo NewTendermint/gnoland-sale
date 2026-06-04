@@ -41,6 +41,8 @@ export function Countdown({
   }, [targetIso])
 
   return (
-    <span className="tabular-nums">{remaining === null ? placeholder : format(remaining)}</span>
+    <span className="tabular-nums [word-spacing:-0.3em]">
+      {remaining === null ? placeholder : format(remaining)}
+    </span>
   )
 }

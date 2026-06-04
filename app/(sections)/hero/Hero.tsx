@@ -32,7 +32,10 @@ export function Hero() {
               <ul className="flex flex-col gap-2 text-xl text-muted">
                 {navLinks.map((l) => (
                   <li key={l.href}>
-                    <a href={l.href} className="transition-colors hover:text-foreground">
+                    <a
+                      href={l.href}
+                      className="link-underline inline-block transition-colors hover:text-foreground"
+                    >
                       {l.label}
                     </a>
                   </li>

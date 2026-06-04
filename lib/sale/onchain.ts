@@ -41,6 +41,8 @@ export type OnChainBidArgs = {
 
 export async function submitBidOnChain(args: OnChainBidArgs): Promise<BidResult> {
   // --- EMULATION (local dev only) - DELETE this block when the contract lands ---
+  // TODO(real-data): swap this emulation for the real wagmi replaceBidWithPermit
+  // (see the GOING LIVE steps in the file header) once SettlementSale is deployed.
   if (process.env.NODE_ENV !== "production") {
     // Require the Sonar permit the real call would submit, so the funnel exercises
     // the actual precondition rather than blindly succeeding. No transaction is sent.

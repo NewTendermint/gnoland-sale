@@ -15,7 +15,7 @@
 import { createContext, useContext, useEffect, useState } from "react"
 import type { ReactNode } from "react"
 import { useAccount } from "wagmi"
-import { useEntity, useSaleData } from "../../lib/sale/hooks"
+import { useEntity, useMyBid, useSaleData } from "../../lib/sale/hooks"
 import { deriveJourney } from "../../lib/sale/journey"
 import { MOCK_JOURNEY_INPUTS } from "../../lib/sale/mock"
 import { resolvePreSaleStage, resolveSalePhase } from "../../lib/sale/phase"
@@ -35,6 +35,8 @@ type SaleContextValue = {
   journey: JourneyState
   commitment: CommitmentData
   myBid: MyBid
+  bidPanelOpen: boolean
+  setBidPanelOpen: (open: boolean) => void
 }
 
 const SaleContext = createContext<SaleContextValue | null>(null)
@@ -47,12 +49,17 @@ export function SaleProvider({ children }: { children: ReactNode }) {
   // The session's Sonar entity (KYC + eligibility); data is null until connected
   // to Sonar. Feeds the journey below.
   const entity = useEntity()
+  // The session's current position (price + committed), filtered server-side from
+  // the commitment set by the entity. null until the entity has a commitment.
+  const position = useMyBid()
   const [phase, setPhase] = useState<SalePhase>(() =>
     resolveSalePhase({ override: process.env.NEXT_PUBLIC_SALE_PHASE }),
   )
   // Dev-only journey pin (?journey=); when unset the journey is wallet-derived.
   const [journeyOverride, setJourneyOverride] = useState<JourneyState | null>(null)
   const [preSaleStage, setPreSaleStage] = useState<PreSaleStage>("registration-closed")
+  // Sticky bid bar open/close (lifted from BidPanel so page CTAs can open it).
+  const [bidPanelOpen, setBidPanelOpen] = useState(false)
 
   useEffect(() => {
     setPreSaleStage(resolvePreSaleStage(Date.now()))
@@ -73,7 +80,7 @@ export function SaleProvider({ children }: { children: ReactNode }) {
     isBaseChain: onSupportedChain,
     setupState: entity.data?.setupState ?? null,
     eligibility: entity.data?.eligibility ?? null,
-    myBid: null, // on-chain position is wired with the SettlementSale ABI (deferred)
+    myBid: position.data ?? null,
     clearingPriceUsd: sale.data.clearingPriceUsd,
   }
   const journey = journeyOverride ?? deriveJourney(journeyInput)
@@ -83,9 +90,11 @@ export function SaleProvider({ children }: { children: ReactNode }) {
     preSaleStage,
     journey,
     commitment: sale.data,
-    // The override (dev) shows the mock bid for has-bid states; the real
-    // on-chain position replaces `null` here once the contract ABI lands.
+    // The dev override shows the mock bid for has-bid states; otherwise the real
+    // position (Sonar commitment, filtered by entity) drives it.
     myBid: journeyOverride ? MOCK_JOURNEY_INPUTS[journeyOverride].myBid : journeyInput.myBid,
+    bidPanelOpen,
+    setBidPanelOpen,
   }
 
   return <SaleContext.Provider value={value}>{children}</SaleContext.Provider>

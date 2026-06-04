@@ -7,12 +7,25 @@
  * the caller. Each fetcher returns one of the UI-facing types in ./types, so the
  * UI contract is identical mock vs real.
  */
-import type { CommitmentData, EntitySnapshot, PrePurchaseResult, SalePermit } from "./types"
+import type { CommitmentData, EntitySnapshot, MyBid, PrePurchaseResult, SalePermit } from "./types"
+
+/**
+ * Thrown by the JSON fetchers on a non-2xx response. Carries the HTTP status so
+ * callers can branch on it (e.g. 401 -> the Sonar session is gone, reconnect).
+ */
+export class HttpError extends Error {
+  readonly status: number
+  constructor(status: number, message: string) {
+    super(message)
+    this.name = "HttpError"
+    this.status = status
+  }
+}
 
 async function getJson<T>(path: string): Promise<T> {
   const res = await fetch(path, { headers: { accept: "application/json" } })
   if (!res.ok) {
-    throw new Error(`${path} responded ${res.status}`)
+    throw new HttpError(res.status, `${path} responded ${res.status}`)
   }
   return res.json() as Promise<T>
 }
@@ -39,6 +52,21 @@ export async function getEntity(): Promise<EntitySnapshot | null> {
 }
 
 /**
+ * The session's current position (price + committed), or null when it has no
+ * commitment yet or is not connected to Sonar (401/404) - both normal states.
+ */
+export async function getMyPosition(): Promise<MyBid> {
+  const res = await fetch("/api/sonar/my-position", { headers: { accept: "application/json" } })
+  if (res.status === 401 || res.status === 404) {
+    return null
+  }
+  if (!res.ok) {
+    throw new HttpError(res.status, `/api/sonar/my-position responded ${res.status}`)
+  }
+  return res.json() as Promise<MyBid>
+}
+
+/**
  * Begin the Sonar OAuth login. Returns the URL to send the browser to: the real
  * Sonar authorization page, or - in mock - straight back home already logged in.
  * The caller performs the redirect.
@@ -59,7 +87,7 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
     body: JSON.stringify(body),
   })
   if (!res.ok) {
-    throw new Error(`${path} responded ${res.status}`)
+    throw new HttpError(res.status, `${path} responded ${res.status}`)
   }
   return res.json() as Promise<T>
 }
