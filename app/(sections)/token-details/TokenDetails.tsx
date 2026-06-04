@@ -1,18 +1,17 @@
+"use client"
+
 /**
- * Sale section, two visually distinct blocks:
- *   - YOUR POSITION block at the top: 4 user-specific live metrics
- *     (commitment, filled, GNOT estimate, best bid). Sonar wires real
- *     values in Layer 2; placeholders here. Global market state lives in
- *     the sticky BidPanel to avoid duplication.
- *   - TERMS block below, separated by a strong hairline: 4 thematic groups
- *     (Token / Numbers / Bid range / Schedule) in a key/value grid.
+ * Sale section, two blocks:
+ *   - Your position: user-specific metrics (commitment, filled, GNOT estimate, best
+ *     bid) computed from the session's myBid + clearing price. Global market state
+ *     lives in the sticky BidPanel to avoid duplication.
+ *   - Terms: thematic key/value groups separated by a hairline.
  *
- * State variants for the position block (Layer 2 wires the switch):
- *   disconnected → CTA to connect wallet
- *   connected, no bids → values at 0/—, sub-line invites first bid
- *   connected, has bids → full values
+ * Position block has three states: disconnected (prompt to connect), connected with
+ * no bids (empty values, prompt to bid), and connected with bids (full values).
  */
 import { Fragment } from "react"
+import { useSale } from "../../(layout)/SaleProvider"
 import { Icon } from "../../(ui)/Icon"
 import { Section } from "../../(ui)/Section"
 import { SectionHeading } from "../../(ui)/SectionHeading"
@@ -21,18 +20,36 @@ import {
   positionMetricsEmpty,
   termGroups,
 } from "../../../content/sections/token-details"
+import { bidStatus, gnotEstimate } from "../../../lib/sale/calc"
+import { fmtGnot, fmtPrice, fmtUsd } from "../../../lib/sale/format"
 
 type PositionState = "disconnected" | "no-bids" | "active"
 
 export function TokenDetails() {
-  // Layer 2 derives this from wagmi (wallet connection) + Sonar (commitments).
-  const positionState = "active" as PositionState
+  // Derived from the sale context: disconnected until a wallet connects, active
+  // once the session has a bid (myBid), else no-bids.
+  const { journey, myBid, commitment } = useSale()
+  const positionState: PositionState =
+    journey === "disconnected" ? "disconnected" : myBid ? "active" : "no-bids"
 
   const positionMetrics: Array<{ icon: string; value: string; label: string }> = (() => {
-    if (positionState === "disconnected" || positionState === "no-bids") {
+    if (positionState !== "active" || !myBid) {
       return positionMetricsEmpty
     }
-    return positionMetricsActive
+    // Live values in the content's order (commitment, filled, best bid, GNOT est).
+    // Filled is binary on the clearing price: a bid at or above clearing clears in
+    // full; true pro-rata at the margin is a settlement detail, unknown pre-close.
+    // TODO(real-data): replace the binary filled with the real pro-rata fill once
+    // settlement data is available.
+    const filled =
+      bidStatus(myBid.priceUsd, commitment.clearingPriceUsd) === "winning" ? "100%" : "0%"
+    const values = [
+      fmtUsd(myBid.committedUsd),
+      filled,
+      fmtPrice(myBid.priceUsd),
+      fmtGnot(gnotEstimate(myBid.committedUsd, commitment.clearingPriceUsd)),
+    ]
+    return positionMetricsActive.map((m, i) => ({ ...m, value: values[i] }))
   })()
 
   return (

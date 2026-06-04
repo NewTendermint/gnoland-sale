@@ -1,15 +1,19 @@
+"use client"
+
 /**
  * How to Participate. Wrapped in a large dark tile with rounded corners.
  * The section is journey-aware: a `journeyState` drives the CTA (caption
  * + label + href) and the visual opacity of each step (done / current /
- * pending). Layer 2 wires journeyState from wagmi (wallet connection) +
- * Sonar (KYC SetupState + Commitments).
+ * pending). The journey comes from `useSale()` (wallet + Sonar entity),
+ * mapped onto this section's 6-state funnel vocabulary by `funnelState`.
  */
+import { useSale } from "../../(layout)/SaleProvider"
 import { ArrowLink } from "../../(ui)/ArrowLink"
 import { Icon } from "../../(ui)/Icon"
 import { Section } from "../../(ui)/Section"
 import { SectionHeading } from "../../(ui)/SectionHeading"
 import { steps } from "../../../content/sections/how-it-works"
+import type { JourneyState as SaleJourney, SalePhase } from "../../../lib/sale/types"
 
 type JourneyState =
   | "disconnected"
@@ -19,36 +23,30 @@ type JourneyState =
   | "bidding"
   | "ended"
 
-const CTA_BY_STATE: Record<JourneyState, { caption: string; label: string; href: string }> = {
+const CTA_BY_STATE: Record<JourneyState, { caption: string; label: string }> = {
   disconnected: {
-    caption: "Start by verifying your identity.",
-    label: "Register with Sonar",
-    href: "#register",
+    caption: "Start by connecting your wallet.",
+    label: "Connect your wallet",
   },
   "kyc-pending": {
-    caption: "Your verification is in progress.",
-    label: "Continue verification",
-    href: "#register",
+    caption: "Verify your identity with Sonar.",
+    label: "Verify with Sonar",
   },
   "kyc-complete": {
     caption: "Identity verified.",
     label: "Connect your wallet",
-    href: "#bid",
   },
   "wallet-ready": {
     caption: "Wallet connected.",
     label: "Place your bid",
-    href: "#bid",
   },
   bidding: {
     caption: "You have an active bid.",
     label: "Update your bid",
-    href: "#bid",
   },
   ended: {
     caption: "Auction closed.",
     label: "View your results",
-    href: "#results",
   },
 }
 
@@ -64,32 +62,54 @@ function getStepStatus(stepIndex: number, journey: JourneyState): StepStatus {
     "ended",
   ]
   const j = order.indexOf(journey)
-  if (stepIndex === 0) return j <= 1 ? "current" : "done"
-  if (stepIndex === 1) return j <= 1 ? "pending" : j <= 3 ? "current" : "done"
-  if (stepIndex === 2) return j <= 4 ? "pending" : "done"
+  // Step order: 0 Connect, 1 Verify, 2 Bid, 3 Distribution.
+  if (stepIndex === 0) return j === 0 ? "current" : "done"
+  if (stepIndex === 1) return j === 0 ? "pending" : j === 1 ? "current" : "done"
+  if (stepIndex === 2) return j < 3 ? "pending" : j === 5 ? "done" : "current"
   if (stepIndex === 3) return j === 5 ? "current" : "pending"
   return "pending"
 }
 
 const STATUS_OPACITY: Record<StepStatus, string> = {
-  done: "opacity-50",
+  done: "opacity-70",
   current: "opacity-100",
-  pending: "opacity-70",
+  pending: "opacity-50",
+}
+
+// Map the canonical sale journey (9 states) + phase onto this section's 6-state
+// funnel vocabulary, choosing which step is current and which CTA shows.
+function funnelState(journey: SaleJourney, phase: SalePhase): JourneyState {
+  if (phase === "ended") return "ended"
+  switch (journey) {
+    case "ready":
+      return "wallet-ready"
+    case "has-bid-winning":
+    case "has-bid-outbid":
+      return "bidding"
+    case "kyc-required":
+    case "kyc-pending":
+    case "kyc-failed":
+    case "not-eligible":
+      return "kyc-pending"
+    default:
+      // disconnected, wrong-network: no wallet connected yet
+      return "disconnected"
+  }
 }
 
 export function HowItWorks() {
-  // Layer 2 derives journeyState from wagmi + Sonar API responses.
-  const journeyState: JourneyState = "disconnected"
+  const { journey, phase, setBidPanelOpen } = useSale()
+  const journeyState = funnelState(journey, phase)
   const cta = CTA_BY_STATE[journeyState]
 
   return (
     <Section id="how-it-works" tone="contrast">
       <div className="col-span-12 lg:col-span-6 lg:col-start-2">
         <SectionHeading tone="contrast" eyebrow="How it works" title="How to participate" />
-        <div className="mt-8 mb-16">
+        <div className="mt-8 mb-10">
           <p className="mb-2 text-base text-on-contrast-muted">{cta.caption}</p>
           <ArrowLink
-            href={cta.href}
+            onClick={() => setBidPanelOpen(true)}
             label={cta.label}
             className="text-sm text-on-contrast transition-colors hover:text-on-contrast-muted"
           />
@@ -103,7 +123,7 @@ export function HowItWorks() {
             <li
               key={s.title}
               className={`${STATUS_OPACITY[status]} transition-opacity ${
-                i > 0 ? "lg:border-l lg:border-on-contrast/15 lg:pl-6" : "lg:pr-6"
+                i > 0 ? "lg:border-l lg:border-on-contrast/15 lg:px-6" : "lg:pr-6"
               }`}
             >
               <div className="flex items-center gap-3">

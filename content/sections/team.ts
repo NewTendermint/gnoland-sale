@@ -10,7 +10,6 @@ export const team: Array<{ name: string; bio: string }> = [
   { name: "Manfred Touron", bio: "Co-founded Scaleway and Berty" },
   { name: "Morgan Bazalgette", bio: "Senior Go engineer" },
   { name: "Alexis Colin", bio: "Senior frontend engineer, 10+ years" },
-  { name: "Jerónimo Albi", bio: "Full-stack systems engineer" },
   // Names spelled per best-guess French/English normalization,
   // bios Lorem pending team confirmation.
   { name: "Guilhem Fanton", bio: "Lorem ipsum dolor sit amet" },

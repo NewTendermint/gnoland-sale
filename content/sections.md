@@ -78,13 +78,17 @@ When a section is `⚠️ TBD`, please replace the `[TBD: ...]` placeholders wit
 
 ### Live block (top, monumental figures with live dot eyebrow)
 
-- Clearing price (live)
-- Total committed
-- Filled / Oversubscribed
-- Participants
-- My auction ranking (depends on connected wallet)
+Refined metric definitions (from the team xlsx, 2026-06-01), mapped to the Sonar `readCommitmentData` fields (see `docs/specs/2026-06-01-sonar-feasibility-and-sale-states.md` §2):
 
-**API source**: `GET /v1/sales/{saleUUID}/commitments` (Sonar `read-commitment-data` endpoint).
+- **Total Committed** - the $ amount committed so far. Worked example from the team: if the price rises to $0.20 (which means 100% filled), total committed = $0.20 x 31,000,000 = $6,200,000. (SDK: `TotalCommitmentAmount`.)
+- **Percent Filled** - the % of the 31M GNOT allocation that is filled. (NOT a direct SDK field - derived, see feasibility doc G1.)
+- **Total Number of Participants** - live count of people who have placed a bid. (SDK: `UniqueCommitmentCount`.)
+- **Cutoff Price** - the minimum price a participant can bid and still get an allocation. NOTE: this is the same number the SDK calls the **clearing price** (`ClearingPriceMicroUSD`); the page must use ONE label for it, not present cutoff and clearing as two metrics.
+- **My Bids** - my bid price and the amount I contributed. Team-provided outbid copy (verbatim): "You've been outbid! Place another bid above the current auction price." (SDK: filter `Commitments[]` by my `SaleSpecificEntityID`, compare my price to the clearing price.)
+
+> Copy-accuracy flag (do not silently rewrite): the verbatim outbid line above implies "claim then re-bid", but the contract increases a bid via a monotonic raise during the live auction (`replaceBidWithPermit`) and only refunds at settlement (`claimRefund`). The two actions should not be collapsed into one during the live phase. Owner decides the final wording.
+
+**API source**: Sonar `readCommitmentData({ saleUUID })`, proxied server-side per ADR §4.3.
 
 **Duplication note**: these KPIs also live in the persistent sticky BidPanel in the corner. Intentional: section gives a monumental at-a-glance snapshot, sticky keeps them always accessible during scroll.
 
@@ -99,26 +103,27 @@ When a section is `⚠️ TBD`, please replace the `[TBD: ...]` placeholders wit
 
 ---
 
-## #3 - Token Sale Details  ⚠️ TBD
+## #3 - Token Sale Details  🟡 Partial (numbers in, some provisional)
 
-**Status**: TBD - values need to be confirmed by team
+**Status**: Updated 2026-06-01 from the team xlsx + the 2026-05-30 Sonar call recap (see `docs/REQUIREMENTS_FROM_TEAMS.md` A.12.2). Values marked 🟡 were filled from Friday's meeting and still need Dongwon to finalize. The contribution-window end date is deliberately left vague because the sale may be extended (A.12.2).
 
-**Source xls note**: "Need token sale details"
+**Source xls note**: "I filled out the numbers based on our meeting on Friday, but I will need to talk to Dongwon to finalize some numbers."
 
-**Fields to populate**:
+**Fields**:
 
 | Field | Value | Status |
 |---|---|---|
 | Token | GNOT | ✅ |
-| Minimum price | [TBD: $X.XX per GNOT] | ⚠️ |
-| Total raise | [TBD: starting $2M, expand based on demand] | ⚠️ |
-| Min commitment | [TBD: $XXX per entity] | ⚠️ |
-| Max commitment | [TBD: $XXX per entity - whale cap] | ⚠️ |
-| FDV (when raise met) | [TBD: $XXM Fully Diluted Valuation] | ⚠️ |
-| Unlock schedule | [TBD: e.g. cliff X months + linear vest Y months] | ⚠️ |
-| Allocation | [TBD: X% of total token supply for this sale] | ⚠️ |
-| Contribution window | [TBD: Late May - Early June 2026, exact dates] | ⚠️ |
-| Accepted currencies | USDC, USDT (on Base) | ✅ tentative |
+| Starting price (= minimum price) | $0.0645 per GNOT | ✅ |
+| Total raise | $2,000,000 at starting price (may grow if oversubscribed) | ✅ |
+| Minimum commitment | $200 per entity | 🟡 provisional |
+| Maximum commitment | $100,000 per entity (whale cap) | 🟡 provisional |
+| FDV when total raise is met | $86,000,000 ($0.0645 x 1.333B total supply) | ✅ |
+| Unlock schedule | 7% released on mainnet launch (the day GNOT becomes transferable), 7% released each subsequent month, and 9% in the final month - fully vested 13 months after mainnet launch | ✅ |
+| Allocation (% of total supply) | 31,000,000 GNOT (2.32% of the 1.333B total supply) | ✅ |
+| Registration opens | July 1, 2026 | ✅ |
+| Contribution window | Opens July 15, 2026; end date TBD (kept vague, may be extended) | 🟡 end TBD |
+| Accepted currency | USDC (USDT technically supported by the contract; default USDC) | 🟡 |
 | Mainnet launch | Q1 2026 Beta · Q3 2026 Mainnet (transferable) | ✅ from roadmap |
 | Auction format | Uniform Price Auction (English Auction) | ✅ |
 
@@ -138,17 +143,19 @@ When a section is `⚠️ TBD`, please replace the `[TBD: ...]` placeholders wit
 
 ## #5 - How to Participate  ✅
 
-**Status**: Updated 2026-05-21 (4 steps validated)
+**Status**: Updated 2026-06-03 (relabeled steps 1-3 to Connect / Verify / Bid to match the bid funnel; 4th step Distribution kept)
 
 **Title**: `How to participate`
 **Eyebrow**: `How it works`
 
 **4 steps** (horizontal grid):
 
-1. **Registration** - Complete identity verification with Sonar.
-2. **Commitment** - Connect your wallet and submit your bid.
-3. **Settlement** - Pro-rate results are finalized once the auction is over.
+1. **Connect** - Connect your wallet to join the sale.
+2. **Verify** - Complete identity verification with Sonar.
+3. **Bid** - Set your max price and commit USDC or USDT.
 4. **Distribution** - Tokens are distributed to your address. Token lockup is applied according to schedule.
+
+**Source xls note (2026-06-01)**: "Add link to Sonar registration website." The Verify step's CTA links to the Sonar registration/OAuth URL (the `#register` anchor today is a placeholder; real URL comes with the `clientUUID` from the Founder Dashboard, REQUIREMENTS A.2). Registration opens **July 1, 2026**, two weeks before the sale opens (July 15) - the pre-sale phase should push registration during this window.
 
 **Design note**: Each step is a card in a 4-col grid (uniform widths, NOT Bento), with an icon-in-circle on top + title + body. Layer 4 swaps the placeholder numbered circle for a detoured voxel icon per step.
 
@@ -160,7 +167,7 @@ When a section is `⚠️ TBD`, please replace the `[TBD: ...]` placeholders wit
 
 **Body**:
 
-> Gno.land is a next-generation Layer 1 smart contract platform based on Gno, a deterministic, interpreted version of the Go programming language. Founded by Jae Kwon, co-founder of Cosmos and Tendermint, Gno.land represents a paradigm shift in multi-user programming. Our technology empowers developer communities to iteratively and interactively build a single shared program, enabling Gno.land to serve as the "GitHub" of the blockchain ecosystem.
+> Gno.land, developed by NewTendermint, is a next-generation Layer 1 smart contract platform based on Gno, a deterministic, interpreted version of the Go programming language. Founded by Jae Kwon, co-founder of Cosmos and Tendermint, Gno.land represents a paradigm shift in multi-user programming. Our technology empowers developer communities to iteratively and interactively build a single shared program, enabling Gno.land to serve as the "GitHub" of the blockchain ecosystem.
 >
 > With its familiar language and intuitive building processes, Gno.land reduces barriers for millions of Go developers, making Web3 more accessible while supporting applications that anyone can trust and use. In addition to its developer-friendliness, Gno.land is built with decentralization and censorship-resistance at its core. Under the leadership of GovDAO, the main decentralized governing body, and adhering to its Constitution, Gno.land is positioned to be the decentralized global knowledge base for the new millennium.
 
@@ -188,6 +195,19 @@ Shared state, parallel execution, and long-lived processes are built in. These f
 
 ### OS-like Composability
 Applications interoperate as processes instead of isolated contracts. This interoperability allows them to work together seamlessly, similar to programs in an operating system, enabling greater reusability and a richer ecosystem.
+
+---
+
+**Alternative feature set (team-provided 2026-06-01, DECISION PENDING - do not ship both).** The team xlsx now offers a second framing of this section under the lead "Gno.land fundamentally changes the smart contract programming paradigm". Recorded here as Option B; the owner picks A (above) or B (below) before we wire copy.
+
+#### Option B - 6 features
+
+- **Human-Readable Smart Contracts** - Gno.land executes smart contracts as human-readable source code instead of opaque bytecode, allowing anyone to read, audit, fork, and improve on-chain applications with full transparency.
+- **World's First Language-Based Multi-User OS** - Gno.land is not just another smart contract platform. It is designed as a multi-user operating system that lets large developer communities collaboratively build and interact with a single shared program.
+- **Go-Powered Developer Experience** - Gno.land is powered by Gno, a programming language ~99% identical to Go. Millions of existing Go developers can start building with almost zero learning curve using familiar tools and syntax.
+- **Native Composability and Type Safety** - Gno.land supports type-checked interactions between contracts using Go-style packages, making it safer, more reliable, and more powerful to build complex interconnected applications than most other platforms.
+- **Fully Deterministic Execution** - Gno.land guarantees that smart contracts behave identically across the entire network, ensuring predictable, trustless consensus while keeping code simple, transparent, and easy to audit.
+- **Simpler, More Maintainable Code** - Gno.land automatically saves and manages data for developers. This eliminates repetitive and error-prone work, letting developers build applications faster with cleaner code and fewer bugs.
 
 ---
 
@@ -249,6 +269,8 @@ Applications interoperate as processes instead of isolated contracts. This inter
 **Status**: Ready
 
 **2021** - Jae Kwon bootstraps Gno Virtual Machine (GnoVM) and Tendermint node. Foundational VM, state persistence, first Boards realm, and functional chain.
+
+**2022** - Test1 to Test3 with improved usability and example realms. GnoVM safety work and initial community workshops.
 
 **2023** - Introduced tools like gnodev, Playground, and GnoChess. Released official docs and Gno Network Public License.
 
@@ -393,8 +415,8 @@ A community-driven, constitutionally governed blockchain designed to prioritize 
 
 To finalize before launch, we need from the team:
 
-1. **Token economics** (#3): min price, raise target, commitment limits, FDV, unlock schedule, allocation %
-2. **Dates** (#3): exact sale start + end timestamps
+1. **Token economics** (#3): mostly IN as of 2026-06-01 (price $0.0645, raise $2M, FDV $86M, unlock schedule, allocation 31M / 2.32%). Still provisional: min/max commitment ($200 / $100k, await Dongwon).
+2. **Dates** (#3): registration opens July 1, sale opens July 15, 2026. End date intentionally vague (sale may be extended - REQUIREMENTS A.12.2).
 3. **Tokenomics pie chart** (#4): final allocation breakdown
 4. **Legal PDF** (#4, #16): ToS + token disclosure + risk disclosure
 5. **Audit PDF** (#4): smart contract audit (Sonar's contract - request from them)

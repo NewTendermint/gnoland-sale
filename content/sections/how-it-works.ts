@@ -7,18 +7,18 @@
 
 export const steps: Array<{ title: string; body: string; icon: string }> = [
   {
-    title: "Registration",
+    title: "Connect",
+    body: "Connect your wallet to join the sale.",
+    icon: "wallet",
+  },
+  {
+    title: "Verify",
     body: "Complete identity verification with Sonar.",
     icon: "shield-check",
   },
   {
-    title: "Commitment",
-    body: "Connect your wallet and submit a bid amount.",
-    icon: "wallet",
-  },
-  {
-    title: "Settlement",
-    body: "Pro-rate results are finalized at auction close.",
+    title: "Bid",
+    body: "Set your max price and commit USDC or USDT.",
     icon: "scale",
   },
   {

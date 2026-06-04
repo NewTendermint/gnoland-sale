@@ -1,0 +1,51 @@
+import { env } from "@/lib/env"
+import { getSession } from "@/lib/security/session"
+import { createSonarClient } from "@/lib/sonar/client"
+import { consumePkceState } from "@/lib/sonar/oauth"
+import { storeTokens } from "@/lib/sonar/tokens"
+import { NextResponse } from "next/server"
+
+export const runtime = "nodejs"
+
+// GET /api/auth/sonar/callback?code=...&state=...
+// Sonar redirects the browser here after authorization. We validate the PKCE
+// state (single-use, unexpired, bound to this session), exchange the code for
+// tokens, persist them encrypted, and bounce back to the hero.
+export async function GET(request: Request) {
+  const url = new URL(request.url)
+  const code = url.searchParams.get("code")
+  const state = url.searchParams.get("state")
+  const home = new URL("/", request.url)
+
+  if (!code || !state) {
+    home.searchParams.set("auth", "error")
+    return NextResponse.redirect(home)
+  }
+
+  try {
+    const session = await getSession()
+    const pkce = await consumePkceState(state)
+    // Bind the OAuth state to the session that initiated it: a callback whose
+    // state was minted under a different session is rejected (CSRF defense).
+    if (!session.sessionId || session.sessionId !== pkce.sessionId) {
+      throw new Error("Session/state mismatch")
+    }
+    const tokens = await createSonarClient().exchangeAuthorizationCode({
+      code,
+      codeVerifier: pkce.codeVerifier,
+      redirectURI: env.SONAR_REDIRECT_URI,
+    })
+    await storeTokens(session.sessionId, {
+      accessToken: tokens.access_token,
+      refreshToken: tokens.refresh_token,
+      expiresAt: new Date(Date.now() + tokens.expires_in * 1000),
+    })
+    home.searchParams.set("auth", "ok")
+    return NextResponse.redirect(home)
+  } catch {
+    // Never leak the failure reason to the URL; the client shows a generic
+    // "could not connect" state on auth=error.
+    home.searchParams.set("auth", "error")
+    return NextResponse.redirect(home)
+  }
+}

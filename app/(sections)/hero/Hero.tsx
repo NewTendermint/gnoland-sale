@@ -2,10 +2,10 @@ import { navLinks } from "../../(layout)/nav.data"
 import { GridOverlay } from "./GridOverlay"
 
 /**
- * Hero v2 (editorial). Asymmetric composition on a 12-col grid: title cols 1-5
- * text-right starting high, portrait image cols 6-7 starting lower, subtext +
- * CTAs cols 8-12 left-aligned and bottom-aligned with the image. Colors come
- * from semantic theme tokens so the section flips with the light/dark toggle.
+ * Hero. Asymmetric composition on a 12-col grid: title cols 1-5 text-right starting
+ * high, portrait image cols 6-7 starting lower, subtext + nav links cols 8-12
+ * left-aligned and bottom-aligned with the image. Colors come from semantic theme
+ * tokens so the section flips with the light/dark toggle.
  */
 export function Hero() {
   return (
@@ -32,7 +32,10 @@ export function Hero() {
               <ul className="flex flex-col gap-2 text-xl text-muted">
                 {navLinks.map((l) => (
                   <li key={l.href}>
-                    <a href={l.href} className="transition-colors hover:text-foreground">
+                    <a
+                      href={l.href}
+                      className="link-underline inline-block transition-colors hover:text-foreground"
+                    >
                       {l.label}
                     </a>
                   </li>
