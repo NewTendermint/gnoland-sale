@@ -1,6 +1,6 @@
 /**
  * Shared USD / number formatters for the sale UI. Single source so a formatting
- * change is one edit (previously duplicated across BidPanel / BidFlow / dev harness).
+ * change is one edit.
  */
 
 /** Price with 2-4 decimals, e.g. "$0.12" / "$0.0645". */
@@ -13,7 +13,7 @@ export const fmtUsd = (n: number) => `$${n.toLocaleString("en-US", { maximumFrac
 /**
  * Compact USD, e.g. "$1.2M". Hand-rolled because Intl `notation: "compact"` is
  * not deterministic across JS engines. One decimal; a rounding carry promotes to
- * the next unit (e.g. 999_960 -> "$1M").
+ * the next unit (e.g. 999_960 becomes "$1M").
  */
 export const fmtCompactUsd = (n: number) => {
   const sign = n < 0 ? "-" : ""

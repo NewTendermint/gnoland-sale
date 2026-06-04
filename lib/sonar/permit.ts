@@ -24,14 +24,12 @@ export function needsRefresh(expiresAt: Date, now: number = Date.now()): boolean
 /** Thrown when a wallet requests permits faster than the dedup window allows. */
 export class PermitDedupError extends Error {}
 
-// Server-side replay guard (ADR threat model). The SDK's generatePurchasePermit
-// no longer takes an amount, so the dedup key is the wallet alone.
-//
-// Operational caveat: this Map is per server instance. On Netlify (Lambda,
-// horizontal scaling) it is a best-effort fast-path, NOT a cluster-wide
-// guarantee. The authoritative replay controls are on chain (permit single-use
-// + expiry + ECDSA); a durable cross-instance limiter (Blobs/DB) plus the Edge
-// rate-limit (netlify.toml, ADR 4.5) are tracked for the pre-launch hardening.
+// Server-side replay guard (ADR threat model). generatePurchasePermit takes no
+// amount, so the dedup key is the wallet alone. This Map is per server instance,
+// so on Netlify (Lambda, horizontal scaling) it is a best-effort fast-path, not a
+// cluster-wide guarantee; the authoritative replay controls are on chain (permit
+// single-use + expiry + ECDSA). A durable cross-instance limiter plus the Edge
+// rate-limit (ADR 4.5) are tracked for pre-launch hardening.
 const lastPermitAt = new Map<string, number>()
 export function checkPermitDedup(wallet: string, now: number = Date.now()): void {
   // Opportunistic eviction so the Map cannot grow unbounded over a long sale.
@@ -51,9 +49,9 @@ export function checkPermitDedup(wallet: string, now: number = Date.now()): void
 
 // Coalesce the whole load-and-maybe-refresh per session. A refresh rotates the
 // refresh token, so two parallel refreshes would invalidate each other (ADR
-// threat: "race condition on token refresh"); coalescing the entire resolve
-// also avoids redundant loads/decrypts during a burst on one session. Same
-// per-instance caveat as the dedup Map above.
+// threat: "race condition on token refresh"); coalescing the resolve also avoids
+// redundant loads/decrypts during a burst. Same per-instance caveat as the dedup
+// Map above.
 const ensureInFlight = new Map<string, Promise<StoredTokens>>()
 
 /** Thrown when Sonar rejects the token (401); the session must re-authenticate. */
@@ -62,8 +60,8 @@ export class SonarAuthError extends Error {}
 /**
  * Run a Sonar SDK call, converting a 401 (token revoked / expired beyond refresh)
  * into a typed SonarAuthError after clearing the dead token, so route handlers can
- * emit 401 -> the client re-auths, instead of masking it as a generic 502 (which
- * makes the UI loop "try again" forever). Non-401 errors pass through untouched.
+ * emit 401 and the client re-auths, instead of masking it as a generic 502 that
+ * traps the UI in a retry loop. Non-401 errors pass through untouched.
  */
 export async function withSonarAuth<T>(sessionId: string, fn: () => Promise<T>): Promise<T> {
   try {

@@ -1,14 +1,13 @@
 "use client"
 
 /**
- * Sticky bid bar. Collapsed it shows the live keynumber metrics (clearing,
- * time-left, bidders, committed) plus a marketing "Place a bid" CTA. Clicking the
- * CTA EXPANDS the bar upward into a panel hosting the BidFlow (connect -> verify ->
- * bid form -> submit). Escape or the Close button collapses it. Phase-driven:
- * pre-sale and ended render their own compact bars (BarShell). Data comes from
- * useSale() (mock today, Sonar proxy later behind the same shape).
+ * Sticky bid bar. Collapsed it shows the live metrics (clearing, time-left, bidders,
+ * committed) plus the "Place a bid" CTA; clicking it expands the bar upward into a
+ * panel hosting the BidFlow (connect -> verify -> bid form -> submit). Escape or Close
+ * collapses it. Phase-driven: pre-sale and ended render their own compact bars
+ * (BarShell). Data comes from useSale().
  */
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import type { ReactNode } from "react"
 import { BidFlow } from "../(sections)/bid/BidFlow"
 import { BidStatusTag, FunnelSteps } from "../(sections)/bid/FunnelSteps"
@@ -41,6 +40,9 @@ export function BidPanel() {
     setBidPanelOpen: setExpanded,
   } = useSale()
   const bid = useBid()
+  const panelRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const wasExpanded = useRef(false)
 
   // Start the Sonar OAuth login (the kyc-required gate's CTA). In mock this
   // short-circuits to a logged-in session; in prod it redirects to Sonar's page.
@@ -55,7 +57,16 @@ export function BidPanel() {
     )
   }
 
+  // The expanded panel behaves like a disclosure/bottom-sheet: move focus into it on
+  // open, return focus to the trigger on close, and let Escape close it, so keyboard
+  // users are never stranded at the top of the document.
   useEffect(() => {
+    if (expanded) {
+      panelRef.current?.focus()
+    } else if (wasExpanded.current) {
+      triggerRef.current?.focus()
+    }
+    wasExpanded.current = expanded
     if (!expanded) return
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setExpanded(false)
@@ -64,9 +75,9 @@ export function BidPanel() {
     return () => window.removeEventListener("keydown", onKey)
   }, [expanded, setExpanded])
 
-  // Emergency kill-switch (SALE_PAUSED, surfaced via the polled commitments feed):
-  // a global override shown regardless of phase. The mutating routes already 503.
-  // COPY: placeholder microcopy, flagged for team sign-off.
+  // Kill-switch (SALE_PAUSED, surfaced via the polled commitments feed): a global
+  // override shown regardless of phase. The mutating routes already 503. Placeholder
+  // copy, pending final wording.
   if (commitment.paused) {
     return (
       <BarShell>
@@ -246,6 +257,7 @@ export function BidPanel() {
                   ) : (
                     <button
                       type="button"
+                      ref={triggerRef}
                       onClick={() => setExpanded(true)}
                       aria-expanded={expanded}
                       className="group inline-flex items-center gap-2 rounded-full bg-surface-contrast px-7 py-3.5 text-xs font-bold uppercase tracking-[0.2em] text-on-contrast transition-colors hover:bg-surface-contrast/80"
@@ -266,7 +278,11 @@ export function BidPanel() {
         <div className={INSET}>
           <div className="grid grid-cols-12 gap-6 pb-4 sm:pb-6">
             <div className="col-span-12 lg:col-span-10 lg:col-start-2">
-              <div className="bid-capsule max-h-[60vh] overflow-y-auto px-6 py-5">
+              <div
+                ref={panelRef}
+                tabIndex={-1}
+                className="bid-capsule max-h-[60vh] overflow-y-auto px-6 py-5 focus:outline-none"
+              >
                 <BidFlow
                   journey={journey}
                   clearingPriceUsd={commitment.clearingPriceUsd}

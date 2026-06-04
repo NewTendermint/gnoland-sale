@@ -2,35 +2,9 @@ import { describe, expect, it } from "vitest"
 import {
   bidStatus,
   gnotEstimate,
-  percentFilled,
   validateBidAmount,
   validateBidPrice,
 } from "../../../lib/sale/calc"
-
-describe("percentFilled", () => {
-  // Marketing worked example: clearing $0.20, supply 31M -> 100% at $6.2M committed.
-  it("is 1 when committed fills supply at the clearing price", () => {
-    expect(percentFilled(6_200_000, 0.2, 31_000_000)).toBeCloseTo(1)
-  })
-  it("is 0.5 at half fill", () => {
-    expect(percentFilled(3_100_000, 0.2, 31_000_000)).toBeCloseTo(0.5)
-  })
-  it("clamps the upper bound to 1 when oversubscribed", () => {
-    expect(percentFilled(9_999_999, 0.2, 31_000_000)).toBe(1)
-  })
-  it("clamps the lower bound to 0 for zero or negative committed", () => {
-    expect(percentFilled(0, 0.2, 31_000_000)).toBe(0)
-    expect(percentFilled(-100, 0.2, 31_000_000)).toBe(0)
-  })
-  it("returns 0 when clearing price is 0 or null", () => {
-    expect(percentFilled(100, 0, 31_000_000)).toBe(0)
-    expect(percentFilled(100, null, 31_000_000)).toBe(0)
-  })
-  it("returns 0 when supply is 0 or negative (guard)", () => {
-    expect(percentFilled(100, 0.2, 0)).toBe(0)
-    expect(percentFilled(100, 0.2, -1)).toBe(0)
-  })
-})
 
 describe("gnotEstimate", () => {
   it("is commitment / clearing price", () => {

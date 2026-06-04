@@ -2,10 +2,10 @@ import "server-only"
 import type { FetchLike, ReadCommitmentDataResponse } from "@echoxyz/sonar-core"
 import { mockFixtures } from "./mock-fixtures"
 
-// TODO(real-data): DEMO-only, throwaway. Ramps the mock auction's totals over time
-// so the live metrics visibly move on each poll. Fully self-contained - to go real,
-// return mockFixtures.commitmentData directly and delete this. The per-entity
-// Commitments stay fixed (your own bid does not move; the market around it does).
+// TODO(real-data): demo-only, throwaway. Ramps the mock auction's totals over time
+// so the live metrics visibly move on each poll. To go real, return
+// mockFixtures.commitmentData directly and delete this. The per-entity Commitments
+// stay fixed (your own bid does not move; the market around it does).
 function liveCommitmentData(): ReadCommitmentDataResponse {
   const base = mockFixtures.commitmentData
   const unit = 10 ** base.PaymentTokenDecimals

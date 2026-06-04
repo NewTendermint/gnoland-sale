@@ -1,18 +1,13 @@
 "use client"
 
 /**
- * Presentational bid funnel shown inside the expanded sticky bar. A funnel
- * stepper (Connect -> Verify -> Bid) sits on top so the user always sees where
- * they are; the per-state content sits below. The bid form uses real boxed
- * input fields (price / amount) with a label above + a read-only "you receive"
- * box. Presentational: takes (journey, clearingPriceUsd, myBid); optional `actions`
- * wire the connect/network gate buttons to the real wallet (omitted by /dev/states,
- * which previews every state without a wallet). On-chain goes through MockBidSubmitter;
- * the real wagmi replaceBidWithPermit impl (ABI source-verified, REQUIREMENTS
- * A.12.1) drops in behind the same interface.
- *
- * NOTE (copy): every visitor-facing string here is NEW placeholder microcopy,
- * to be validated/owned by the team. Flagged in the session report.
+ * Presentational bid funnel for the expanded sticky bar. Takes (journey,
+ * clearingPriceUsd, myBid); optional actions wire the connect/network gate buttons
+ * to the real wallet (omitted by /dev/states, which previews every state without a
+ * wallet). The /dev/states preview submits through MockBidSubmitter; the real path
+ * calls onBid (useBid -> submitBidOnChain), where the wagmi replaceBidWithPermit
+ * lands later (ABI source-verified, REQUIREMENTS A.12.1).
+ * Visitor-facing copy here is placeholder, pending final wording.
  */
 import { useState } from "react"
 import type { ReactNode } from "react"
@@ -294,9 +289,10 @@ function SwitchNetworkGate() {
   )
 }
 
-// COPY: placeholder error microcopy, flagged for team sign-off. Maps a reverted bid
-// reason (Sonar pre-purchase failure reasons + the client's own reasons) to a short
-// message shown under the bid form; an unrecognized reason is shown as-is.
+// Maps a reverted bid reason (Sonar pre-purchase failures + the client's own) to a
+// short message shown under the bid form; an unrecognized reason falls back to the
+// generic message rather than surfacing a raw upstream string. Placeholder copy,
+// pending final wording.
 function reasonToMessage(reason: string): string {
   const messages: Record<string, string> = {
     "requires-liveness": "An identity check is needed before bidding.",
@@ -308,7 +304,7 @@ function reasonToMessage(reason: string): string {
     "session-expired": "Your Sonar session expired. Reconnect to continue.",
     unknown: "Could not place your bid. Please try again.",
   }
-  return messages[reason] ?? reason
+  return messages[reason] ?? messages.unknown
 }
 
 function BidRow({
@@ -386,7 +382,7 @@ function BidRow({
       if (result.status === "submitted") {
         setSubmitState("submitted")
       } else {
-        // Surface the reason instead of silently resetting (was a swallowed error).
+        // Surface the reason instead of silently resetting to idle.
         setSubmitState("idle")
         setSubmitError(reasonToMessage(result.reason))
       }
@@ -532,11 +528,10 @@ function InputCell({
   )
 }
 
-/** A "?" affordance next to a field label; reveals its hint on click/focus only (not
- * on hover). Keying off focus means just one is ever open and a click elsewhere blurs
- * it shut. The popover opens downward to stay inside the bid panel's scroll container,
- * and inverts the capsule surface so it reads in both themes. The button's aria-label
- * carries the text for assistive tech. */
+/** A "?" next to a field label; reveals its hint on focus only (not hover), so just one
+ * is ever open and a click elsewhere blurs it shut. Opens downward to stay inside the
+ * bid panel's scroll container. The button's aria-label carries the text for assistive
+ * tech. */
 function FieldHint({ text }: { text: string }) {
   return (
     <span className="group/hint relative inline-flex">

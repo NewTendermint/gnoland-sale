@@ -1,14 +1,12 @@
 "use client"
 
 /**
- * Site header. The gno.land wordmark stays centred at all times; the section nav
- * links sit on either side of it and stay hidden until the visitor scrolls past the
- * hero, then fade in. An IntersectionObserver on #hero (rooted to the .screen scroll
- * container) flips the reveal. The links reserve their space even while hidden, so
- * the wordmark never shifts - only opacity animates. Links align to the content's
- * column span (cols 2-11) so they sit flush with the page content; the wordmark
- * stays centred. Nav is desktop-only; mobile keeps just the wordmark (the theme
- * toggle lives in the footer).
+ * Site header. The gno.land wordmark stays centred; the nav links sit on either side
+ * and stay hidden until the visitor scrolls past the hero, then fade in (an
+ * IntersectionObserver on #hero, rooted to the .screen scroll container, flips the
+ * reveal). Links reserve their space while hidden so the wordmark never shifts; only
+ * opacity animates. Desktop-only; mobile keeps just the wordmark (theme toggle lives
+ * in the footer).
  */
 import { useEffect, useState } from "react"
 import { navLinks } from "./nav.data"

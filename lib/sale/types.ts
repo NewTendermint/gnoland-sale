@@ -1,7 +1,7 @@
 /**
- * UI-facing shapes. They mirror the fields we consume from Sonar so the UI
- * binds to these and swapping mocks for the real server proxy is a transport
- * change. Source: @echoxyz/sonar-core@0.15.0 dist/index.d.ts
+ * UI-facing shapes. They mirror the fields we consume from Sonar so the UI binds
+ * to these and swapping mocks for the real server proxy is a transport change.
+ * Source: @echoxyz/sonar-core@0.15.0 dist/index.d.ts
  * (see docs/specs/2026-06-01-sonar-feasibility-and-sale-states.md).
  */
 export type SalePhase = "pre-sale" | "live" | "ended"
@@ -38,8 +38,8 @@ export type CommitmentMetrics = {
   uniqueCommitmentCount: number
 }
 
-// The live metrics plus our own kill-switch flag. `paused` (from SALE_PAUSED, added
-// by the commitments route) true => the sale is emergency-paused: the bid UI shows a
+// Live metrics plus our kill-switch flag. `paused` (from SALE_PAUSED, added by the
+// commitments route) true means the sale is emergency-paused: the bid UI shows a
 // paused state and the mutating routes already return 503.
 export type CommitmentData = CommitmentMetrics & {
   paused: boolean
@@ -70,9 +70,9 @@ export type JourneyState =
   | "has-bid-winning"
   | "has-bid-outbid"
 
-// Inputs the journey deriver needs. Deliberately NO readyToPurchase: the
-// per-attempt pre-purchase gating lives in the bid step (PreflightGates),
-// mirroring Sonar's useSonarPurchase. See journey.ts + spec §7.2.
+// Inputs the journey deriver needs. No readyToPurchase here: the per-attempt
+// pre-purchase gating lives in the bid step (PreflightGates), mirroring Sonar's
+// useSonarPurchase. See journey.ts + spec §7.2.
 export type JourneyInput = {
   isConnected: boolean
   isBaseChain: boolean

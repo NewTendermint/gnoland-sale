@@ -1,8 +1,7 @@
 /**
- * Site footer. Locomotive-inspired layout: one wide block on the left
- * (brand tagline + Resources links in 2 sub-cols under a single long
- * border-top), then Community + Disclaimer as narrower blocks each with
- * their own column-width border. Copyright row at the bottom.
+ * Site footer. One wide block on the left (brand tagline + Resources links in 2
+ * sub-cols under a single border-top), then Community + External as narrower blocks
+ * each with their own column-width border. Copyright row at the bottom.
  */
 import { ThemeToggle } from "./ThemeToggle"
 import { communityLinks, externalLinks } from "./nav.data"

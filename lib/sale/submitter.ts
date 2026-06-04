@@ -3,8 +3,8 @@
  *
  * BidParams / BidResult are the shared shapes the bid UI uses. MockBidSubmitter is
  * the preview-only impl behind /dev/states (no wallet, no Sonar) so every bid state
- * can be viewed in isolation. The INTEGRATED on-chain step for a real wallet lives in
- * lib/sale/onchain.ts (submitBidOnChain) - the single swap point for the real
+ * can be viewed in isolation. The integrated on-chain step for a real wallet lives in
+ * lib/sale/onchain.ts (submitBidOnChain), the single swap point for the real
  * SettlementSale.replaceBidWithPermit call (ABI source-verified, REQUIREMENTS A.12.1;
  * deployed address blocked, REQUIREMENTS A.1).
  */
@@ -13,13 +13,11 @@ export type BidResult =
   | { status: "submitted"; txHash: string }
   | { status: "reverted"; reason: string }
 
-export interface BidSubmitter {
-  // mirrors the 1-tx EIP-2612 path; preflight() = useSimulateContract, submit() = writeContract
-  preflight(p: BidParams): Promise<{ ok: true } | { ok: false; reason: string }>
-  submit(p: BidParams): Promise<BidResult>
-}
-
-export class MockBidSubmitter implements BidSubmitter {
+// Preview-only submitter for /dev/states. Not an interface-backed seam: the real
+// on-chain path is the plain function submitBidOnChain (lib/sale/onchain.ts) that
+// useBid calls directly, so a shared interface would have one implementor and no
+// polymorphic use. preflight() mirrors useSimulateContract; submit() the tx.
+export class MockBidSubmitter {
   async preflight(p: BidParams) {
     return p.amountUsd > 0 && p.priceUsd > 0
       ? ({ ok: true } as const)

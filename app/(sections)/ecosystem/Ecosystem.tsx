@@ -1,8 +1,7 @@
 /**
- * Ecosystem. Two-tier showcase: 6 flagship projects shown as full cards
- * with icon + name + category + body description, then the 7 remaining
- * projects shown as compact half-size cards (icon + name + category
- * only) in a denser 6-col grid. Total = 13 projects visible at once.
+ * Ecosystem. Two-tier showcase: flagship projects as full cards (icon + name +
+ * category + body), then the rest as compact half-size cards (icon + name + category)
+ * in a denser 6-col grid.
  */
 import { CtaArrow } from "../../(ui)/CtaArrow"
 import { Icon } from "../../(ui)/Icon"

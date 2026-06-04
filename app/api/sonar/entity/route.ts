@@ -14,6 +14,8 @@ export async function GET() {
   if (!session.sessionId) {
     return NextResponse.json({ error: "unauthenticated" }, { status: 401 })
   }
+  // Rolling: re-stamp the 2h cookie window on each authenticated read.
+  await session.save()
   try {
     const entity = await getEntity(session.sessionId)
     if (!entity) {

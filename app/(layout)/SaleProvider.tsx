@@ -1,16 +1,13 @@
 "use client"
 
 /**
- * Client context for the sale UI. Phase + per-user journey + commitment data,
- * read once and shared by the BidPanel and (later) the sections. commitment/myBid
- * come from lib/sale/mock.ts. The journey is wallet-derived (useAccount): connect +
- * network gates only for now; the full journey (KYC, eligibility, bids) will come
- * from deriveJourney(JourneyInput) once Sonar is wired - this provider must then
- * DELEGATE to deriveJourney (lib/sale/journey.ts), not grow its own logic. KYC/
- * eligibility + commitment reads stay mock (swap in /api/sonar/* behind this shape).
+ * Client context for the sale UI: phase + per-user journey + commitment data, read
+ * once and shared by the BidPanel and the sections. The journey is derived by
+ * deriveJourney (lib/sale/journey.ts) from the wallet + the session's Sonar entity;
+ * this provider delegates to it rather than growing its own logic.
  *
  * Dev-only overrides (never in production): ?phase=pre-sale|live|ended and
- * ?journey=<state> let us preview any state without a wallet or Sonar.
+ * ?journey=<state> preview any state without a wallet or Sonar.
  */
 import { createContext, useContext, useEffect, useState } from "react"
 import type { ReactNode } from "react"

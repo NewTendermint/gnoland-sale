@@ -29,8 +29,10 @@ export async function getSession(): Promise<IronSession<AppSession>> {
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       path: "/",
-      // 2 hours, rolling: iron-session re-stamps Max-Age on every save(), so an
-      // active session slides forward while an idle one expires after 2h.
+      // 2 hours, rolling: re-stamped on every save(). The authenticated routes
+      // (entity, my-position, and the bid routes via resolveBidRequest) re-save on
+      // each request, so an active session slides forward while an idle one expires
+      // 2h after its last request.
       maxAge: 60 * 60 * 2,
     },
   }

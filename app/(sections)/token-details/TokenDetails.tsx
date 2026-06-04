@@ -1,18 +1,14 @@
 "use client"
 
 /**
- * Sale section, two visually distinct blocks:
- *   - YOUR POSITION block at the top: 4 user-specific metrics (commitment,
- *     filled, GNOT estimate, best bid) computed from the session's myBid +
- *     clearing price. Global market state lives in the sticky BidPanel to
- *     avoid duplication.
- *   - TERMS block below, separated by a strong hairline: 4 thematic groups
- *     (Token / Numbers / Bid range / Schedule) in a key/value grid.
+ * Sale section, two blocks:
+ *   - Your position: user-specific metrics (commitment, filled, GNOT estimate, best
+ *     bid) computed from the session's myBid + clearing price. Global market state
+ *     lives in the sticky BidPanel to avoid duplication.
+ *   - Terms: thematic key/value groups separated by a hairline.
  *
- * State variants for the position block (Layer 2 wires the switch):
- *   disconnected → CTA to connect wallet
- *   connected, no bids → values at 0/—, sub-line invites first bid
- *   connected, has bids → full values
+ * Position block has three states: disconnected (prompt to connect), connected with
+ * no bids (empty values, prompt to bid), and connected with bids (full values).
  */
 import { Fragment } from "react"
 import { useSale } from "../../(layout)/SaleProvider"

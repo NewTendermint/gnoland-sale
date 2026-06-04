@@ -2,10 +2,10 @@ import { bigint, index, jsonb, pgTable, text, timestamp, uuid } from "drizzle-or
 import { z } from "zod"
 import { evmAddress } from "../validation"
 
-// NB: no `import "server-only"` here. drizzle-kit imports this module from a
-// plain Node CLI (generate/migrate), where the server-only guard would throw.
-// The connection itself (lib/db/client.ts) carries the guard instead. This
-// file holds only table metadata and a validation schema, no secret access.
+// No `import "server-only"` here: drizzle-kit imports this from a plain Node CLI
+// (generate/migrate), where the guard would throw. The connection itself
+// (lib/db/client.ts) carries it. This file holds only table metadata and a
+// validation schema, no secret access.
 
 /**
  * Encrypted OAuth token store, keyed by an opaque session id.
@@ -30,11 +30,11 @@ export const oauthTokens = pgTable(
  * Append-only audit trail for permit issuance and other sensitive events.
  *
  * Privacy model (ADR 4.7): wallet and entity id are stored in clear because
- * they are already public on chain, so hashing them would be false
- * anonymization (trivially reversible by rainbow table). The one field that is
- * NOT public, the client IP, is stored only as an irreversible HMAC. The user
- * agent is reduced to a coarse class. `metadata` is constrained to a strict
- * allow-list (auditMetadataSchema) so no PII can slip into the jsonb column.
+ * they are already public on chain; hashing them would be false anonymization
+ * (reversible by rainbow table). The client IP, the one non-public field, is
+ * stored only as an irreversible HMAC, and the user agent is reduced to a
+ * coarse class. `metadata` is held to a strict allow-list (auditMetadataSchema)
+ * so no PII can slip into the jsonb column.
  */
 export const auditLog = pgTable(
   "audit_log",
@@ -57,10 +57,9 @@ export const auditLog = pgTable(
 )
 
 /**
- * Strict allow-list for the audit_log.metadata jsonb column. Validated at write
- * time (lib/sonar/permit.ts). Anything not listed here, in particular email,
- * name, full IP, full user agent, or raw permit signatures, is rejected before
- * it can be persisted.
+ * Strict allow-list for the audit_log.metadata jsonb column, validated at write
+ * time (lib/sonar/permit.ts). Anything not listed (email, name, full IP, full
+ * user agent, raw permit signatures) is rejected before it can be persisted.
  */
 export const auditMetadataSchema = z
   .object({

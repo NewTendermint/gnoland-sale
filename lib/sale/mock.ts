@@ -1,9 +1,9 @@
 /**
  * Preview fixtures for the /dev/states design harness and the dev-only `?journey=` /
- * `?phase=` overrides (SaleProvider, gated to non-production). This is a PERMANENT
- * dev tool, NOT the swappable data mock. The mocks removed at launch are elsewhere:
- * the Sonar data seam (lib/sonar/mock-*.ts) and the on-chain emulation
- * (lib/sale/onchain.ts). Pure UI fixtures here, no secrets.
+ * `?phase=` overrides (SaleProvider, gated to non-production). PERMANENT dev tool,
+ * not the swappable data mock: the mocks removed at launch live elsewhere (the Sonar
+ * data seam lib/sonar/mock-*.ts and the on-chain emulation lib/sale/onchain.ts).
+ * Pure UI fixtures, no secrets.
  */
 import type { CommitmentData, JourneyInput, JourneyState } from "./types"
 
@@ -14,8 +14,8 @@ export const MOCK_COMMITMENT_LIVE: CommitmentData = {
   paused: false,
 }
 
-// One JourneyInput per JourneyState, so /dev/states can render the whole funnel.
-// Each entry is constructed to derive back to its own key (see journey.test.ts round-trip).
+// One JourneyInput per JourneyState so /dev/states can render the whole funnel.
+// Each entry derives back to its own key (see journey.test.ts round-trip).
 export const MOCK_JOURNEY_INPUTS: Record<JourneyState, JourneyInput> = {
   disconnected: {
     isConnected: false,

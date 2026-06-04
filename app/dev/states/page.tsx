@@ -1,10 +1,9 @@
 import { notFound } from "next/navigation"
 /**
- * Dev-only state harness: for every state, renders the sticky bar BOTH collapsed
- * (metrics + opening CTA) and expanded (metrics + stepper [+ bid CTA] on top,
- * flow content below on surface-alt), full width, so the whole funnel and the
- * open/close affordance are reviewable without a wallet or Sonar. Gated out of
- * production. The metrics / pill / compact-bar markup mirror BidPanel (dev replica).
+ * Dev-only state harness: for every state, renders the sticky bar both collapsed
+ * (metrics + opening CTA) and expanded (metrics + stepper on top, flow below), so the
+ * whole funnel is reviewable without a wallet or Sonar. Gated out of production. The
+ * metrics / pill / compact-bar markup are a dev replica of BidPanel.
  */
 import type { ReactNode } from "react"
 import { BidFlow } from "../../(sections)/bid/BidFlow"

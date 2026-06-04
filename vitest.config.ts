@@ -7,11 +7,9 @@ export default defineConfig({
     globals: true,
     setupFiles: ["./tests/setup.ts"],
     include: ["tests/unit/**/*.{test,spec}.{ts,tsx}"],
-    // Server-only modules (lib/env, lib/security/*) validate these at import
-    // time. Provide well-formed throwaway values so any server unit test can
-    // import them under jsdom without tripping the startup guard. These are
-    // not real secrets; they are built with .repeat() so no literal secret
-    // pattern lands in the file.
+    // Server-only modules (lib/env, lib/security/*) validate these at import time.
+    // Throwaway non-secret values (built with .repeat() so no literal secret pattern
+    // lands here) let server unit tests import them under jsdom.
     env: {
       SONAR_CLIENT_UUID: "test-client-uuid",
       SONAR_REDIRECT_URI: "https://example.test/api/auth/sonar/callback",
@@ -26,9 +24,8 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./"),
-      // `import "server-only"` throws outside an RSC bundle, and `client-only`
-      // throws inside one; neither condition exists in the test runner, so map
-      // both to an empty module.
+      // `import "server-only"` throws outside an RSC bundle (and `client-only`
+      // inside one); the test runner is neither, so stub both to an empty module.
       "server-only": path.resolve(__dirname, "./tests/stubs/empty.ts"),
       "client-only": path.resolve(__dirname, "./tests/stubs/empty.ts"),
     },

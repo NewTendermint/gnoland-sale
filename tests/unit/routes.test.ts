@@ -1,18 +1,40 @@
 import { GET as callbackGET } from "@/app/api/auth/sonar/callback/route"
 import { POST as initPOST } from "@/app/api/auth/sonar/init/route"
+import { GET as entityGET } from "@/app/api/sonar/entity/route"
+import { POST as generatePermitPOST } from "@/app/api/sonar/generate-permit/route"
+import { GET as myPositionGET } from "@/app/api/sonar/my-position/route"
 import { POST as prePurchasePOST } from "@/app/api/sonar/pre-purchase/route"
+import { env } from "@/lib/env"
+import type { EntitySnapshot } from "@/lib/sale/types"
 import { getSession } from "@/lib/security/session"
 import { createSonarClient } from "@/lib/sonar/client"
+import { readMyBid } from "@/lib/sonar/commitments"
 import { getEntity } from "@/lib/sonar/entity"
 import { sonarMockEnabled } from "@/lib/sonar/mock-config"
 import { consumePkceState, generatePkceAndStore } from "@/lib/sonar/oauth"
-import { prePurchaseCheck } from "@/lib/sonar/permit"
+import {
+  PermitDedupError,
+  SonarAuthError,
+  generatePurchasePermit,
+  prePurchaseCheck,
+} from "@/lib/sonar/permit"
 import { storeTokens } from "@/lib/sonar/tokens"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
 // Mock the request-scoped + heavy server deps so each test exercises ONLY the route
 // handler's own logic (auth gating, the mock-login branch, entity derivation, the
-// OAuth state<->session binding).
+// OAuth state<->session binding, and the error-status mapping). env is a mutable
+// stub so the SALE_PAUSED kill-switch is testable; the Sonar error classes stay REAL
+// (importOriginal) so the routes' instanceof checks resolve.
+vi.mock("@/lib/env", () => ({
+  env: {
+    SALE_PAUSED: "false",
+    SALE_CHAIN: "base-sepolia",
+    SONAR_REDIRECT_URI: "https://app.example/callback",
+    SONAR_SALE_UUID: "test-sale",
+    IP_HMAC_PEPPER: "0".repeat(64),
+  },
+}))
 vi.mock("@/lib/security/session", () => ({ getSession: vi.fn() }))
 vi.mock("@/lib/sonar/mock-config", () => ({ sonarMockEnabled: vi.fn() }))
 vi.mock("@/lib/sonar/oauth", () => ({
@@ -20,7 +42,11 @@ vi.mock("@/lib/sonar/oauth", () => ({
   consumePkceState: vi.fn(),
 }))
 vi.mock("@/lib/sonar/entity", () => ({ getEntity: vi.fn() }))
-vi.mock("@/lib/sonar/permit", () => ({ prePurchaseCheck: vi.fn() }))
+vi.mock("@/lib/sonar/commitments", () => ({ readMyBid: vi.fn() }))
+vi.mock("@/lib/sonar/permit", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/sonar/permit")>()
+  return { ...actual, prePurchaseCheck: vi.fn(), generatePurchasePermit: vi.fn() }
+})
 vi.mock("@/lib/sonar/client", () => ({ createSonarClient: vi.fn() }))
 vi.mock("@/lib/sonar/tokens", () => ({ storeTokens: vi.fn() }))
 
@@ -29,7 +55,9 @@ const mockedSonarMock = vi.mocked(sonarMockEnabled)
 const mockedGenPkce = vi.mocked(generatePkceAndStore)
 const mockedConsumePkce = vi.mocked(consumePkceState)
 const mockedGetEntity = vi.mocked(getEntity)
+const mockedReadMyBid = vi.mocked(readMyBid)
 const mockedPrePurchase = vi.mocked(prePurchaseCheck)
+const mockedGeneratePermit = vi.mocked(generatePurchasePermit)
 const mockedCreateSonarClient = vi.mocked(createSonarClient)
 const mockedStoreTokens = vi.mocked(storeTokens)
 
@@ -38,8 +66,16 @@ function sessionStub(sessionId?: string): SessionLike {
   return { sessionId, save: async () => {} } as unknown as SessionLike
 }
 
+const wallet = `0x${"a".repeat(40)}`
+const entitySnap: EntitySnapshot = {
+  entityId: "server-entity",
+  setupState: "complete",
+  eligibility: "eligible",
+}
+
 afterEach(() => {
   vi.clearAllMocks()
+  ;(env as { SALE_PAUSED: string }).SALE_PAUSED = "false"
 })
 
 describe("POST /api/auth/sonar/init", () => {
@@ -82,13 +118,8 @@ describe("POST /api/sonar/pre-purchase", () => {
 
   it("ignores a client-supplied entityId and derives the entity from the session (IDOR guard)", async () => {
     mockedGetSession.mockResolvedValue(sessionStub("sess-1"))
-    mockedGetEntity.mockResolvedValue({
-      entityId: "server-entity",
-      setupState: "complete",
-      eligibility: "eligible",
-    })
+    mockedGetEntity.mockResolvedValue(entitySnap)
     mockedPrePurchase.mockResolvedValue({ readyToPurchase: true })
-    const wallet = `0x${"a".repeat(40)}`
 
     const res = await prePurchasePOST(req({ wallet, entityId: "attacker-entity" }))
 
@@ -100,6 +131,159 @@ describe("POST /api/sonar/pre-purchase", () => {
       entityId: "server-entity",
       wallet,
     })
+  })
+
+  it("maps a revoked token (SonarAuthError) to 401", async () => {
+    mockedGetSession.mockResolvedValue(sessionStub("sess-1"))
+    mockedGetEntity.mockResolvedValue(entitySnap)
+    mockedPrePurchase.mockRejectedValue(new SonarAuthError("expired"))
+    const res = await prePurchasePOST(req({ wallet }))
+    expect(res.status).toBe(401)
+  })
+})
+
+describe("POST /api/sonar/generate-permit", () => {
+  function req(body: unknown): Request {
+    return new Request("http://test/api/sonar/generate-permit", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    })
+  }
+
+  it("returns 503 when the sale is paused, before any auth or Sonar work", async () => {
+    ;(env as { SALE_PAUSED: string }).SALE_PAUSED = "true"
+    const res = await generatePermitPOST(req({ wallet }))
+    expect(res.status).toBe(503)
+    expect(await res.json()).toEqual({ error: "sale_paused" })
+    expect(mockedGetSession).not.toHaveBeenCalled()
+    expect(mockedGeneratePermit).not.toHaveBeenCalled()
+  })
+
+  it("returns 401 when the caller has no session", async () => {
+    mockedGetSession.mockResolvedValue(sessionStub(undefined))
+    const res = await generatePermitPOST(req({ wallet }))
+    expect(res.status).toBe(401)
+    expect(mockedGeneratePermit).not.toHaveBeenCalled()
+  })
+
+  it("returns 400 on a malformed wallet", async () => {
+    mockedGetSession.mockResolvedValue(sessionStub("sess-1"))
+    const res = await generatePermitPOST(req({ wallet: "not-an-address" }))
+    expect(res.status).toBe(400)
+    expect(mockedGetEntity).not.toHaveBeenCalled()
+  })
+
+  it("returns 409 when the session has no entity", async () => {
+    mockedGetSession.mockResolvedValue(sessionStub("sess-1"))
+    mockedGetEntity.mockResolvedValue(null)
+    const res = await generatePermitPOST(req({ wallet }))
+    expect(res.status).toBe(409)
+    expect(mockedGeneratePermit).not.toHaveBeenCalled()
+  })
+
+  it("derives the entity from the session and issues the permit (IDOR guard)", async () => {
+    mockedGetSession.mockResolvedValue(sessionStub("sess-1"))
+    mockedGetEntity.mockResolvedValue(entitySnap)
+    mockedGeneratePermit.mockResolvedValue({ PermitJSON: {}, Signature: "0xsig" } as never)
+    const res = await generatePermitPOST(req({ wallet, entityId: "attacker-entity" }))
+    expect(res.status).toBe(200)
+    expect(mockedGeneratePermit).toHaveBeenCalledWith(
+      expect.objectContaining({ sessionId: "sess-1", entityId: "server-entity", wallet }),
+    )
+  })
+
+  it("maps a revoked token (SonarAuthError) to 401 so the client re-auths", async () => {
+    mockedGetSession.mockResolvedValue(sessionStub("sess-1"))
+    mockedGetEntity.mockResolvedValue(entitySnap)
+    mockedGeneratePermit.mockRejectedValue(new SonarAuthError("expired"))
+    const res = await generatePermitPOST(req({ wallet }))
+    expect(res.status).toBe(401)
+  })
+
+  it("maps a permit dedup hit (PermitDedupError) to 429", async () => {
+    mockedGetSession.mockResolvedValue(sessionStub("sess-1"))
+    mockedGetEntity.mockResolvedValue(entitySnap)
+    mockedGeneratePermit.mockRejectedValue(new PermitDedupError("too soon"))
+    const res = await generatePermitPOST(req({ wallet }))
+    expect(res.status).toBe(429)
+  })
+
+  it("maps an unknown Sonar failure to 502", async () => {
+    mockedGetSession.mockResolvedValue(sessionStub("sess-1"))
+    mockedGetEntity.mockResolvedValue(entitySnap)
+    mockedGeneratePermit.mockRejectedValue(new Error("boom"))
+    const res = await generatePermitPOST(req({ wallet }))
+    expect(res.status).toBe(502)
+  })
+})
+
+describe("GET /api/sonar/entity", () => {
+  it("returns 401 when the caller has no session", async () => {
+    mockedGetSession.mockResolvedValue(sessionStub(undefined))
+    const res = await entityGET()
+    expect(res.status).toBe(401)
+    expect(mockedGetEntity).not.toHaveBeenCalled()
+  })
+
+  it("returns 404 when the session has no entity", async () => {
+    mockedGetSession.mockResolvedValue(sessionStub("sess-1"))
+    mockedGetEntity.mockResolvedValue(null)
+    const res = await entityGET()
+    expect(res.status).toBe(404)
+  })
+
+  it("returns the entity snapshot for an authenticated session", async () => {
+    mockedGetSession.mockResolvedValue(sessionStub("sess-1"))
+    mockedGetEntity.mockResolvedValue(entitySnap)
+    const res = await entityGET()
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual(entitySnap)
+  })
+
+  it("maps a revoked token (SonarAuthError) to 401, not 502", async () => {
+    mockedGetSession.mockResolvedValue(sessionStub("sess-1"))
+    mockedGetEntity.mockRejectedValue(new SonarAuthError("expired"))
+    const res = await entityGET()
+    expect(res.status).toBe(401)
+  })
+
+  it("maps an unknown failure to 502", async () => {
+    mockedGetSession.mockResolvedValue(sessionStub("sess-1"))
+    mockedGetEntity.mockRejectedValue(new Error("boom"))
+    const res = await entityGET()
+    expect(res.status).toBe(502)
+  })
+})
+
+describe("GET /api/sonar/my-position", () => {
+  it("returns 401 when the caller has no session", async () => {
+    mockedGetSession.mockResolvedValue(sessionStub(undefined))
+    const res = await myPositionGET()
+    expect(res.status).toBe(401)
+    expect(mockedReadMyBid).not.toHaveBeenCalled()
+  })
+
+  it("returns the position for an authenticated session", async () => {
+    mockedGetSession.mockResolvedValue(sessionStub("sess-1"))
+    mockedReadMyBid.mockResolvedValue({ priceUsd: 0.2, committedUsd: 1000, lockup: false })
+    const res = await myPositionGET()
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual({ priceUsd: 0.2, committedUsd: 1000, lockup: false })
+  })
+
+  it("maps a revoked token (SonarAuthError) to 401", async () => {
+    mockedGetSession.mockResolvedValue(sessionStub("sess-1"))
+    mockedReadMyBid.mockRejectedValue(new SonarAuthError("expired"))
+    const res = await myPositionGET()
+    expect(res.status).toBe(401)
+  })
+
+  it("maps an unknown failure to 502", async () => {
+    mockedGetSession.mockResolvedValue(sessionStub("sess-1"))
+    mockedReadMyBid.mockRejectedValue(new Error("boom"))
+    const res = await myPositionGET()
+    expect(res.status).toBe(502)
   })
 })
 

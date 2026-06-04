@@ -56,7 +56,9 @@ for (const root of SCAN_ROOTS) {
     process.exit(2)
   }
   for (const file of walk(root)) {
-    if (!/\.(js|mjs|html)$/.test(file)) continue
+    // Include .json: app-router can emit RSC/manifest JSON into static output, and
+    // a secret name serialized there must not slip past this gate.
+    if (!/\.(js|mjs|json|html)$/.test(file)) continue
     const content = readFileSync(file, "utf8")
     for (const pat of FORBIDDEN_PATTERNS) {
       if (pat.test(content)) {

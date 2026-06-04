@@ -19,9 +19,9 @@ export const SALE_ECONOMICS = {
   // NEXT_PUBLIC_SALE_CLOSES (ISO).
   registrationOpensIso: process.env.NEXT_PUBLIC_REGISTRATION_OPENS ?? "2026-07-01T00:00:00Z", // confirmed
   saleOpensIso: process.env.NEXT_PUBLIC_SALE_OPENS ?? "2026-07-15T00:00:00Z", // TIME still TBD (param #14)
-  // PLACEHOLDER close date so the live bar can show a "Time left" countdown. NOT confirmed: the end
-  // date is kept vague and may be extended (A.12.2 / Q&A #7). When the on-chain Stage is wired it is
-  // the source of truth; this flag is the dev/fallback value. Flip via NEXT_PUBLIC_SALE_CLOSES.
+  // PLACEHOLDER close date so the live bar can show a "Time left" countdown. Not confirmed; the end
+  // date may be extended (A.12.2 / Q&A #7). The on-chain Stage is the source of truth once wired;
+  // this is the dev/fallback value. Flip via NEXT_PUBLIC_SALE_CLOSES.
   saleClosesIso: process.env.NEXT_PUBLIC_SALE_CLOSES ?? "2026-07-29T00:00:00Z", // PLACEHOLDER
 } as const
 

@@ -39,7 +39,7 @@ export async function readCommitments(): Promise<CommitmentMetrics> {
  * micro-USD field (same convention as the clearing price), falling back to the
  * numerator/denominator ratio; the committed amount sums the entity's wallet
  * amounts in payment-token minor units. lockup is not part of the Sonar commitment
- * shape, so it defaults to false. Pure and exported for unit testing.
+ * shape, so it defaults to false. Pure, exported for unit testing.
  *
  * TODO(real-data): confirm against real Sonar - the lockup source, the price field
  * (PriceMicroUSD vs numerator/denominator), and whether an entity can hold multiple

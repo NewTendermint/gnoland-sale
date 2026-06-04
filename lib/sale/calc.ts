@@ -1,19 +1,7 @@
 /**
- * Pure sale math. percentFilled is a DERIVED metric (Sonar has no such field,
- * REQUIREMENTS A.13.1). NOT currently wired in the UI (the live bar shows a
- * "Time left" countdown instead of a Filled %); kept + tested for reuse. gnotEstimate
- * is an upper estimate (pro-rata settlement may reduce it).
+ * Pure sale math. gnotEstimate is an upper estimate (pro-rata settlement may
+ * reduce it). The validators reject non-finite input (NaN/Infinity from Number()).
  */
-export function percentFilled(
-  totalCommittedUsd: number,
-  clearingPriceUsd: number | null,
-  supplyGnot: number,
-): number {
-  if (!clearingPriceUsd || clearingPriceUsd <= 0 || supplyGnot <= 0) return 0
-  const ratio = totalCommittedUsd / (clearingPriceUsd * supplyGnot)
-  return Math.max(0, Math.min(1, ratio))
-}
-
 export function gnotEstimate(commitmentUsd: number, clearingPriceUsd: number | null): number {
   if (!clearingPriceUsd || clearingPriceUsd <= 0) return 0
   return commitmentUsd / clearingPriceUsd

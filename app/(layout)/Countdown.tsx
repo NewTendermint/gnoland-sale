@@ -1,12 +1,10 @@
 "use client"
 
 /**
- * Live countdown to a target ISO timestamp. Mount-safe: renders a placeholder
- * until the first client tick so server and client markup match (no hydration
- * mismatch). Granularity coarsens with distance: "Dd Hh" while days remain (no
- * minutes), "Hh Mm" under a day, "Mm Ss" under an hour. Seconds appear only in the
- * final hour, where the tick conveys urgency. The interval adapts to match: 1s in
- * the final hour, 60s before, so far out it stays calm without needless re-renders.
+ * Live countdown to a target ISO timestamp. Renders a placeholder until the first
+ * client tick so server and client markup match (no hydration mismatch). Granularity
+ * coarsens with distance: "Dd Hh", then "Hh Mm" under a day, then "Mm Ss" under an
+ * hour. The tick interval matches: 1s in the final hour (seconds shown), 60s before.
  */
 import { useEffect, useState } from "react"
 

@@ -2,19 +2,16 @@ import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
 
 /**
- * Security headers + Content-Security-Policy (ADR security model; see memory
- * security-csp-headers-pending).
+ * Security headers + Content-Security-Policy (ADR security model).
  *
- * The hard headers are ENFORCED (no breakage risk). The nonce-based CSP ships
- * Report-Only FIRST so it logs violations without blocking the wallet stack
- * (WalletConnect relays over wss, the Base RPC, wasm in crypto libs). Validate the
- * allowlist against real wallet-connect reports, then flip the header name to
- * "Content-Security-Policy" to enforce (at which point Next auto-applies the nonce
- * to its own scripts, clearing the script-src reports).
+ * The hard headers are enforced. The nonce-based CSP ships Report-Only first so it
+ * logs violations without blocking the wallet stack (WalletConnect relays over wss,
+ * the Base RPC, wasm in crypto libs). Validate the allowlist against real reports,
+ * then rename the header to "Content-Security-Policy" to enforce (at which point
+ * Next auto-applies the nonce to its own scripts, clearing the script-src reports).
  *
  * Chain RPC + WalletConnect/Coinbase endpoints are the moving parts of connect-src;
- * everything else is self. No analytics wired yet (add its hosts here when
- * it is).
+ * everything else is self. No analytics wired yet (add its hosts here when it is).
  */
 export function middleware(request: NextRequest) {
   const nonce = btoa(crypto.randomUUID())
