@@ -12,7 +12,11 @@ import type { ReactNode } from "react"
 import { BidFlow } from "../(sections)/bid/BidFlow"
 import { BidStatusTag, FunnelSteps } from "../(sections)/bid/FunnelSteps"
 import { CtaArrow } from "../(ui)/CtaArrow"
+import { DrawLine } from "../(ui)/DrawLine"
+import { Entrance } from "../(ui)/Entrance"
 import { Icon } from "../(ui)/Icon"
+import { Stagger } from "../(ui)/Stagger"
+import { useCtaEntrance } from "../../lib/motion/use-motion"
 import { startSonarLogin } from "../../lib/sale/api"
 import { gnotEstimate } from "../../lib/sale/calc"
 import { SALE_ECONOMICS, formatSaleDate } from "../../lib/sale/economics"
@@ -43,6 +47,10 @@ export function BidPanel() {
   const panelRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const wasExpanded = useRef(false)
+  // CTA page-load entrance: the pill scales in, then its label fades in. Lands on
+  // a wrapping <span> (not the button itself) because the button already carries
+  // triggerRef for focus management - one DOM node can hold only one ref.
+  const ctaRef = useCtaEntrance<HTMLSpanElement>({ delayMs: 1250 })
 
   // Start the Sonar OAuth login (the kyc-required gate's CTA). In mock this
   // short-circuits to a logged-in session; in prod it redirects to Sonar's page.
@@ -81,8 +89,9 @@ export function BidPanel() {
   if (commitment.paused) {
     return (
       <BarShell>
-        <div className="flex flex-wrap items-center gap-3 border-t border-border pb-6 pt-4 sm:pb-8 sm:pt-6">
-          <Icon name="clock" className="h-5 w-5 shrink-0 text-foreground" />
+        <DrawLine immediate />
+        <div className="flex flex-wrap items-center gap-3 pb-6 pt-4 sm:pb-8 sm:pt-6">
+          <Icon name="clock" draw={false} className="h-5 w-5 shrink-0 text-foreground" />
           <p className="text-sm">
             <span className="font-medium text-foreground">Bidding is paused.</span>{" "}
             <span className="text-muted">Please check back shortly.</span>
@@ -96,9 +105,10 @@ export function BidPanel() {
     const registrationOpen = preSaleStage === "registration-open"
     return (
       <BarShell>
-        <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4 border-t border-border pb-6 pt-4 sm:pb-8 sm:pt-6">
+        <DrawLine immediate />
+        <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4 pb-6 pt-4 sm:pb-8 sm:pt-6">
           <div className="flex items-center gap-3">
-            <Icon name="clock" className="h-[18px] w-[18px]" />
+            <Icon name="clock" draw={false} className="h-[18px] w-[18px]" />
             <div>
               <p className="font-mono text-2xl font-medium tracking-tight tabular-nums sm:text-3xl">
                 <Countdown targetIso={SALE_ECONOMICS.saleOpensIso} />
@@ -145,7 +155,8 @@ export function BidPanel() {
     }
     return (
       <BarShell>
-        <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4 border-t border-border pb-6 pt-4 sm:pb-8 sm:pt-6">
+        <DrawLine immediate />
+        <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4 pb-6 pt-4 sm:pb-8 sm:pt-6">
           <div className="flex flex-wrap items-center gap-x-7 gap-y-3 sm:gap-x-9">
             <span className="rounded-full border border-border px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-muted">
               Closed
@@ -153,7 +164,7 @@ export function BidPanel() {
             {finalCells.map((c) => (
               <div key={c.label}>
                 <div className="flex items-center gap-2">
-                  <Icon name={c.icon} className="h-[18px] w-[18px]" />
+                  <Icon name={c.icon} draw={false} className="h-[18px] w-[18px]" />
                   <p className="font-mono text-lg font-medium tracking-tight tabular-nums">
                     {c.value}
                   </p>
@@ -195,10 +206,14 @@ export function BidPanel() {
     <aside aria-label="Bid panel" data-component="bid-panel" className={SHELL}>
       <div className={INSET}>
         <div className="grid grid-cols-12 gap-6">
-          <div className="col-span-12 lg:col-span-10 lg:col-start-2">
-            <div className="border-t border-border pb-6 pt-4 sm:pb-8 sm:pt-6">
+          <Entrance className="col-span-12 lg:col-span-10 lg:col-start-2">
+            <DrawLine immediate delayMs={200} />
+            <div className="pb-6 pt-4 sm:pb-8 sm:pt-6">
               <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4">
-                <div
+                <Stagger
+                  as="div"
+                  immediate
+                  delayMs={900}
                   className={`flex flex-wrap items-center ${
                     expanded ? "gap-x-5 gap-y-2 sm:gap-x-7" : "gap-8 sm:gap-10"
                   }`}
@@ -215,7 +230,7 @@ export function BidPanel() {
                       ) : null}
                       <div>
                         <div className="flex items-center gap-2">
-                          <Icon name={m.icon} className="h-[18px] w-[18px]" />
+                          <Icon name={m.icon} draw={false} className="h-[18px] w-[18px]" />
                           <p
                             className={`font-mono font-medium tracking-tight tabular-nums ${
                               expanded ? "text-lg" : "text-2xl sm:text-3xl"
@@ -230,7 +245,7 @@ export function BidPanel() {
                       </div>
                     </div>
                   ))}
-                </div>
+                </Stagger>
 
                 <div className="flex flex-wrap items-center gap-3 sm:gap-4">
                   {expanded ? (
@@ -255,22 +270,26 @@ export function BidPanel() {
                       </button>
                     </div>
                   ) : (
-                    <button
-                      type="button"
-                      ref={triggerRef}
-                      onClick={() => setExpanded(true)}
-                      aria-expanded={expanded}
-                      className="group inline-flex items-center gap-2 rounded-full bg-surface-contrast px-7 py-3.5 text-xs font-bold uppercase tracking-[0.2em] text-on-contrast transition-colors hover:bg-surface-contrast/80"
-                    >
-                      <BidStatusTag journey={journey} />
-                      <span>{bidCtaLabel(journey)}</span>
-                      <CtaArrow />
-                    </button>
+                    <span ref={ctaRef} className="inline-flex">
+                      <button
+                        type="button"
+                        ref={triggerRef}
+                        onClick={() => setExpanded(true)}
+                        aria-expanded={expanded}
+                        className="group inline-flex items-center gap-2 rounded-full bg-surface-contrast px-7 py-3.5 text-xs font-bold uppercase tracking-[0.2em] text-on-contrast transition-colors hover:bg-surface-contrast/80"
+                      >
+                        <span data-cta-label className="inline-flex items-center gap-2">
+                          <BidStatusTag journey={journey} />
+                          <span>{bidCtaLabel(journey)}</span>
+                          <CtaArrow />
+                        </span>
+                      </button>
+                    </span>
                   )}
                 </div>
               </div>
             </div>
-          </div>
+          </Entrance>
         </div>
       </div>
 

@@ -21,7 +21,7 @@ export const positionMetricsActive: Array<{ icon: string; value: string; label: 
 
 export const termGroups: Array<{
   eyebrow: string
-  rows: Array<{ label: string; value: string; tbd?: boolean }>
+  rows: Array<{ label: string; value: string; tbd?: boolean; href?: string }>
 }> = [
   {
     eyebrow: "Token",
@@ -34,34 +34,40 @@ export const termGroups: Array<{
   {
     eyebrow: "Supply",
     rows: [
-      { label: "Max supply", value: "TBD", tbd: true },
-      { label: "Circulating at TGE", value: "TBD", tbd: true },
-      { label: "Target raise", value: "TBD", tbd: true },
-      { label: "FDV at clearing", value: "TBD", tbd: true },
+      { label: "Max supply", value: "1,333,000,000 GNOT" },
+      { label: "Circulating at TGE", value: "93,310,000 GNOT (7%)" },
+      { label: "Target raise", value: "$2,000,000" },
+      { label: "FDV at clearing", value: "After auction close", tbd: true },
     ],
   },
   {
     eyebrow: "Bid range",
     rows: [
-      { label: "Minimum price", value: "TBD", tbd: true },
-      { label: "Min commitment", value: "TBD", tbd: true },
-      { label: "Max commitment", value: "TBD", tbd: true },
+      { label: "Minimum price", value: "$0.0645 per GNOT" },
+      { label: "Min commitment", value: "$200 per entity" },
+      { label: "Max commitment", value: "$100,000 per entity" },
     ],
   },
   {
     eyebrow: "Schedule",
     rows: [
-      { label: "Contribution window", value: "TBD", tbd: true },
+      { label: "Contribution window", value: "Opens July 15, 2026 · end TBD" },
       { label: "Mainnet launch", value: "Q1 2026 Beta · Q3 2026 Mainnet" },
     ],
   },
   {
-    eyebrow: "Security",
+    eyebrow: "Documents",
     rows: [
-      { label: "Sale contract", value: "TBD", tbd: true },
-      { label: "Audit", value: "TBD", tbd: true },
-      { label: "Multisig", value: "TBD", tbd: true },
-      { label: "Treasury custody", value: "TBD", tbd: true },
+      {
+        label: "Audit",
+        value: "GnoVM · Oak Security",
+        href: "https://github.com/oak-security/audit-reports/tree/main/Gno",
+      },
+      {
+        label: "Disclosure",
+        value: "Token Disclosure Document",
+        href: "#token-disclosure",
+      },
     ],
   },
 ]
