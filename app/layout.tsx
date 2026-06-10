@@ -28,6 +28,11 @@ export const metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className={`${geist.variable} ${geistMono.variable}`} suppressHydrationWarning>
+      <head>
+        <noscript>
+          <style>{"[data-entrance]{visibility:visible!important}"}</style>
+        </noscript>
+      </head>
       <body>
         <ThemeProvider>
           <Web3Provider>

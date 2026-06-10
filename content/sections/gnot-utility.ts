@@ -22,16 +22,4 @@ export const uses: Array<{ title: string; body: string }> = [
     title: "Contract execution",
     body: "GNOT functions as the gas token that powers smart contract execution.",
   },
-  {
-    title: "Staking",
-    body: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
-  },
-  {
-    title: "Governance",
-    body: "Sed do eiusmod tempor incididunt ut labore et dolore magna.",
-  },
-  {
-    title: "Slashing",
-    body: "Excepteur sint occaecat cupidatat non proident sunt in culpa.",
-  },
 ]

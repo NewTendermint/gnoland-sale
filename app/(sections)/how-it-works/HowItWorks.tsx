@@ -9,7 +9,10 @@
  */
 import { useSale } from "../../(layout)/SaleProvider"
 import { ArrowLink } from "../../(ui)/ArrowLink"
+import { FadeIn } from "../../(ui)/FadeIn"
 import { Icon } from "../../(ui)/Icon"
+import { Reveal } from "../../(ui)/Reveal"
+import { RevealGroup } from "../../(ui)/RevealGroup"
 import { Section } from "../../(ui)/Section"
 import { SectionHeading } from "../../(ui)/SectionHeading"
 import { steps } from "../../../content/sections/how-it-works"
@@ -103,40 +106,55 @@ export function HowItWorks() {
   const cta = CTA_BY_STATE[journeyState]
 
   return (
-    <Section id="how-it-works" tone="contrast">
-      <div className="col-span-12 lg:col-span-6 lg:col-start-2">
+    <Section id="how-it-works" tone="contrast" clip>
+      <RevealGroup as="div" className="col-span-12 lg:col-span-6 lg:col-start-2">
         <SectionHeading tone="contrast" eyebrow="How it works" title="How to participate" />
-        <div className="mt-8 mb-10">
+        <FadeIn as="div" className="mt-8 mb-10">
           <p className="mb-2 text-base text-on-contrast-muted">{cta.caption}</p>
           <ArrowLink
             onClick={() => setBidPanelOpen(true)}
             label={cta.label}
             className="text-sm text-on-contrast transition-colors hover:text-on-contrast-muted"
           />
-        </div>
-      </div>
+        </FadeIn>
+      </RevealGroup>
 
       <ol className="col-span-12 grid grid-cols-1 gap-x-0 gap-y-12 md:grid-cols-2 lg:col-span-7 lg:col-start-5 lg:grid-cols-4 lg:self-end">
         {steps.map((s, i) => {
           const status = getStepStatus(i, journeyState)
           return (
-            <li
+            <RevealGroup
+              as="li"
               key={s.title}
               className={`${STATUS_OPACITY[status]} transition-opacity ${
                 i > 0 ? "lg:border-l lg:border-on-contrast/15 lg:px-6" : "lg:pr-6"
               }`}
             >
+              {/* Fixed slots (3/4/5) shared by every step, so the four columns start
+                  TOGETHER (after the title block, which cascades from the slots above)
+                  while each step still reveals its own rows top to bottom. The whole
+                  thing starts at half the clip's growth (the panel lead). */}
               <div className="flex items-center gap-3">
-                <Icon name={s.icon} className="h-6 w-6 text-on-contrast-muted" />
-                <p className="font-mono text-lg font-medium text-on-contrast tabular-nums">
+                <Icon name={s.icon} index={3} className="h-6 w-6 text-on-contrast-muted" />
+                <FadeIn
+                  as="p"
+                  index={3}
+                  className="font-mono text-lg font-medium text-on-contrast tabular-nums"
+                >
                   {String(i + 1).padStart(2, "0")}
-                </p>
+                </FadeIn>
               </div>
-              <h3 className="mt-4 font-mono text-lg font-medium uppercase tracking-tight text-on-contrast lg:text-xl">
+              <Reveal
+                as="h3"
+                index={4}
+                className="mt-4 font-mono text-lg font-medium uppercase tracking-tight text-on-contrast lg:text-xl"
+              >
                 {s.title}
-              </h3>
-              <p className="mt-3 text-base text-on-contrast-muted">{s.body}</p>
-            </li>
+              </Reveal>
+              <Reveal as="p" index={5} className="mt-3 text-base text-on-contrast-muted">
+                {s.body}
+              </Reveal>
+            </RevealGroup>
           )
         })}
       </ol>

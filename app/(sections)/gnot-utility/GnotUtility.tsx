@@ -1,3 +1,9 @@
+import { Fragment } from "react"
+import { DrawLine } from "../../(ui)/DrawLine"
+import { FadeIn } from "../../(ui)/FadeIn"
+import { ParallaxBox } from "../../(ui)/ParallaxBox"
+import { Reveal } from "../../(ui)/Reveal"
+import { RevealGroup } from "../../(ui)/RevealGroup"
 /**
  * GNOT utility. Spec-sheet / glossary layout: editorial lead at top,
  * then 7 entries as compact one-line rows with mono key on the left
@@ -19,35 +25,38 @@ import { uses } from "../../../content/sections/gnot-utility"
 export function GnotUtility() {
   return (
     <Section id="gnot-utility">
-      <div className="col-span-12 lg:col-span-7 lg:col-start-1">
-        <SectionHeading
-          eyebrow="GNOT utility"
-          title="The native utility token for all economic activity"
-        />
-      </div>
+      <RevealGroup inline>
+        <div className="col-span-12 lg:col-span-7 lg:col-start-1">
+          <SectionHeading
+            eyebrow="GNOT utility"
+            title="The native utility token for all economic activity"
+          />
+        </div>
 
-      <p className="col-span-12 mb-16 text-3xl leading-snug text-muted lg:text-4xl">
-        GNOT is the native gas token that makes the network usable. It pays the fees for every
-        transaction and smart contract execution, and is locked as a refundable deposit to reserve
-        on-chain storage. Demand for GNOT scales with demand for the network itself, tying the token
-        to the activity it enables on Gno.land.
-      </p>
+        <Reveal as="p" className="col-span-12 mb-16 text-3xl leading-snug text-muted lg:text-4xl">
+          GNOT is the native gas token that makes the network usable. It pays the fees for every
+          transaction and smart contract execution, and is locked as a refundable deposit to reserve
+          on-chain storage. Demand for GNOT scales with demand for the network itself, tying the
+          token to the activity it enables on Gno.land.
+        </Reveal>
+      </RevealGroup>
 
       <div className="col-span-12 lg:col-span-4 lg:col-start-4">
-        <div className="aspect-[2/3] w-full rounded-[var(--frame-radius)] bg-surface-alt" />
+        <ParallaxBox className="aspect-[2/3]" strength={280} />
       </div>
 
-      <dl className="col-span-12 mt-8 border-t border-border lg:col-span-5 lg:col-start-8 lg:mt-12">
+      <dl className="col-span-12 mt-8 lg:col-span-5 lg:col-start-8 lg:mt-32">
+        <DrawLine />
         {uses.map((u) => (
-          <div
-            key={u.title}
-            className="grid grid-cols-12 gap-6 border-b border-border py-3 lg:grid-cols-5"
-          >
-            <dt className="col-span-12 font-mono text-sm font-medium uppercase tracking-widest text-foreground lg:col-span-2">
-              {u.title}
-            </dt>
-            <dd className="col-span-12 text-sm text-muted lg:col-span-3">{u.body}</dd>
-          </div>
+          <Fragment key={u.title}>
+            <FadeIn as="div" className="grid grid-cols-12 gap-6 py-3 lg:grid-cols-5">
+              <dt className="col-span-12 font-mono text-sm font-medium uppercase tracking-widest text-foreground lg:col-span-2">
+                {u.title}
+              </dt>
+              <dd className="col-span-12 text-sm text-muted lg:col-span-3">{u.body}</dd>
+            </FadeIn>
+            <DrawLine />
+          </Fragment>
         ))}
       </dl>
     </Section>

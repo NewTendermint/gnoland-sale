@@ -1,4 +1,7 @@
+"use client"
+
 import type { ReactNode } from "react"
+import { useDrawIcon } from "../../lib/motion/use-motion"
 
 const PATHS: Record<string, ReactNode> = {
   // Registration / identity verification step (HowItWorks).
@@ -192,10 +195,25 @@ const PATHS: Record<string, ReactNode> = {
   ),
 }
 
-/** Single inline-SVG icon keyed by name. */
-export function Icon({ name, className = "h-5 w-5" }: { name: string; className?: string }) {
+/** Single inline-SVG icon keyed by name. Its strokes draw themselves on scroll
+ * (newtendermint-style); pass `draw={false}` to keep it static (e.g. in the
+ * interactive bid UI). */
+export function Icon({
+  name,
+  className = "h-5 w-5",
+  draw = true,
+  index,
+}: {
+  name: string
+  className?: string
+  draw?: boolean
+  /** Cascade slot when inside a RevealGroup (e.g. a card with icon + title). */
+  index?: number
+}) {
+  const ref = useDrawIcon<SVGSVGElement>({ index })
   return (
     <svg
+      ref={draw ? ref : undefined}
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"

@@ -79,6 +79,21 @@ body {
   }
 }
 
+/* Anti-FOUC gate for the coordinated page-load entrance: a subtree rendered
+   data-entrance="pending" is hidden from first paint until <Entrance> lifts it
+   on mount, so the cascade starts at frame 0 instead of flashing the laid-out
+   page. Must be opacity (NOT visibility:hidden): a visibility:hidden subtree is
+   not painted, so a CSS transition armed on it under the gate has no painted
+   before-change frame and SNAPS to its end value the instant the gate lifts
+   (the image clip-open and sticky bar did exactly this). opacity:0 keeps the
+   subtree composited/painted, so the same transition arms and animates normally.
+   pointer-events:none stops clicks landing on the invisible content pre-lift.
+   opacity keeps layout/height stable too, so nothing reflows when it lifts. */
+[data-entrance="pending"] {
+  opacity: 0;
+  pointer-events: none;
+}
+
 * {
   box-sizing: border-box;
 }

@@ -3,6 +3,8 @@
  * sub-cols under a single border-top), then Community + External as narrower blocks
  * each with their own column-width border. Copyright row at the bottom.
  */
+import { DrawLine } from "../(ui)/DrawLine"
+import { Stagger } from "../(ui)/Stagger"
 import { ThemeToggle } from "./ThemeToggle"
 import { communityLinks, externalLinks } from "./nav.data"
 
@@ -13,8 +15,9 @@ export function Footer() {
         <div className="grid grid-cols-12 gap-6">
           <div className="col-span-12 lg:col-span-6 lg:col-start-2">
             <p className="mb-4 text-xl font-semibold">gno.land</p>
-            <div className="grid grid-cols-1 gap-6 border-t border-border pt-4 lg:grid-cols-6">
-              <ul className="space-y-2 text-xl text-muted lg:col-span-2">
+            <DrawLine />
+            <div className="grid grid-cols-1 gap-6 pt-4 lg:grid-cols-6">
+              <Stagger as="ul" className="space-y-2 text-xl text-muted lg:col-span-2">
                 <li>
                   <a
                     href="#token-details"
@@ -47,8 +50,11 @@ export function Footer() {
                     Roadmap
                   </a>
                 </li>
-              </ul>
-              <ul className="space-y-2 text-xl text-muted lg:col-span-2 lg:col-start-5">
+              </Stagger>
+              <Stagger
+                as="ul"
+                className="space-y-2 text-xl text-muted lg:col-span-2 lg:col-start-5"
+              >
                 <li>
                   <a
                     href="https://docs.gno.land"
@@ -76,13 +82,14 @@ export function Footer() {
                     Risk Disclosure
                   </a>
                 </li>
-              </ul>
+              </Stagger>
             </div>
           </div>
 
           <div className="col-span-6 sm:col-span-4 lg:col-span-2 lg:col-start-8">
             <p className="mb-4 text-xl font-semibold">Community</p>
-            <ul className="space-y-2 border-t border-border pt-4 text-xl text-muted">
+            <DrawLine />
+            <Stagger as="ul" className="space-y-2 pt-4 text-xl text-muted">
               {communityLinks.map((link) => (
                 <li key={link.href}>
                   <a
@@ -93,12 +100,13 @@ export function Footer() {
                   </a>
                 </li>
               ))}
-            </ul>
+            </Stagger>
           </div>
 
           <div className="col-span-6 sm:col-span-4 lg:col-span-2 lg:col-start-10">
             <p className="mb-4 text-xl font-semibold">External</p>
-            <ul className="space-y-2 border-t border-border pt-4 text-xl text-muted">
+            <DrawLine />
+            <Stagger as="ul" className="space-y-2 pt-4 text-xl text-muted">
               {externalLinks.map((link) => (
                 <li key={link.href}>
                   <a
@@ -109,7 +117,7 @@ export function Footer() {
                   </a>
                 </li>
               ))}
-            </ul>
+            </Stagger>
           </div>
 
           <div className="col-span-12 mt-16 flex flex-wrap items-center justify-between gap-4 lg:col-span-10 lg:col-start-2">

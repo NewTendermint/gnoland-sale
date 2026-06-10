@@ -127,6 +127,10 @@ Refined metric definitions (from the team xlsx, 2026-06-01), mapped to the Sonar
 | Mainnet launch | Q1 2026 Beta · Q3 2026 Mainnet (transferable) | ✅ from roadmap |
 | Auction format | Uniform Price Auction (English Auction) | ✅ |
 
+**Sonar dashboard intel (2026-06-10, NOT published yet - the dashboard is on Sepolia/testnet, treated as test config):** offered tokens this sale **77,499,999** (token decimals 6); price cap **$0.129**; bid increment **$0.00645**; commitment window **July 15 -> July 20, 2026** (00:00 UTC); registration opens July 1, 2026; chain Sepolia; payment USDC; English auction. Proceeds-receiver + contract-admin addresses still empty.
+
+> ⚠️ **Unresolved discrepancy (team to confirm):** the dashboard's offered amount **77,499,999** (~5.81% of supply, => ~$5M at $0.0645 / ~$10M at the $0.129 cap) contradicts the figure currently on the page, **31,000,000 / 2.32% / $2M raise**. Because the dashboard is on Sepolia (test), the page keeps the recorded **31M / $2M** until the team confirms the mainnet config. Min price $0.0645 is the one dashboard value cross-confirmed and used on the page. Min/max commitment ($200 / $100,000) and the contribution-window open date are filled on the page but remain 🟡 provisional.
+
 ---
 
 ## #4 - Transparency Report  ✅ (merged into #2/#3)
@@ -138,6 +142,32 @@ Refined metric definitions (from the team xlsx, 2026-06-01), mapped to the Sonar
 **Link copy** (in TokenDetails footer): `Token Disclosure Document`
 **Description** (in TokenDetails footer): `Full tokenomics, legal structure, and smart contract audit in one PDF.`
 **Placeholder href**: `#token-disclosure` (to be replaced with the real PDF URL when delivered by the team).
+
+---
+
+## #4b - Tokenomics (allocation + vesting)  ✅ (real numbers in)
+
+**Status**: Filled 2026-06-10 from the team "$GNOT Vesting Schedule - Allocation & Distribution" sheet + pie chart. These are the real, as-of-today figures (the prior tile values were placeholders). Mirrored into `content/sections/tokenomics.ts`. Verified: the seven quantities sum to 1,333,000,000 GNOT and each percent = quantity / total.
+
+**Title**: `How GNOT is distributed`
+**Subtitle**: `Genesis allocation and unlock schedule. Total supply 1,333,000,000 GNOT.`
+
+**Genesis allocation (Allocation tile, ordered largest -> smallest):**
+
+| Category | % of supply | GNOT | Purpose (verbatim from sheet) |
+|---|---|---|---|
+| Airdrop1 - Cosmos | 26.26% | 350,000,000 | From partial Cosmos governance snapshot 3 years ago |
+| NT,LLC | 24.91% | 332,000,000 | For use at NT,LLC discretion |
+| Investors | 22.51% | 300,000,000 | For past and future investors |
+| Airdrop2 - AtomOne | 17.33% | 231,000,000 | From recent AtomOne snapshot prior to launch |
+| Ecosystem Treasury | 4.50% | 60,000,000 | For prior and future Gno.land ecosystem development |
+| Core Treasury | 3.00% | 40,000,000 | For paying for core development |
+| Validator Treasury | 1.50% | 20,000,000 | For paying validators |
+| **Total** | **100%** | **1,333,000,000** | |
+
+**Unlock schedule (Vesting tile, identical for every allocation):** 7% at mainnet launch (TGE), 7% each subsequent month, 9% in the final month. 13 x 7% + 9% = 100%, fully vested 13 months after mainnet (distribution runs months 1-14). No cliff. Circulating at TGE = 93,310,000 GNOT (7%). Matches #3 above.
+
+**Note**: category labels (`Airdrop1 - Cosmos`, `NT,LLC`, ...) and purpose text are kept verbatim from the source sheet; the public-sale 31M / 2.32% figure from #3 is NOT a separate row here (the sheet does not break it out). The sheet's hypothetical price -> marketcap projections ($0.025 -> $10.00) are deliberately NOT published.
 
 ---
 
