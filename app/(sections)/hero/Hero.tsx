@@ -4,7 +4,6 @@ import { Entrance } from "../../(ui)/Entrance"
 import { ParallaxBox } from "../../(ui)/ParallaxBox"
 import { Reveal } from "../../(ui)/Reveal"
 import { Stagger } from "../../(ui)/Stagger"
-import { HeroScene } from "../../(webgl)/HeroScene"
 import { GridOverlay } from "./GridOverlay"
 
 /**
@@ -37,9 +36,10 @@ export function Hero() {
 
           <div className="col-span-12 grid grid-cols-1 gap-6 lg:col-span-8 lg:col-start-5 lg:-mt-[6vh] lg:grid-cols-8">
             <div className="lg:col-span-4">
-              <ParallaxBox className="aspect-[2/3]" immediate direction="up">
-                <HeroScene />
-              </ParallaxBox>
+              {/* WebGL HeroScene temporarily removed - the empty ParallaxBox renders
+                  the grey surface-alt placeholder. Re-add <HeroScene /> as the child
+                  (and its import) to restore the voxel scene. */}
+              <ParallaxBox className="aspect-[2/3]" immediate direction="up" />
             </div>
 
             <div className="flex flex-col justify-end gap-6 lg:col-span-3 lg:col-start-5">
@@ -65,7 +65,7 @@ export function Hero() {
                 as="p"
                 immediate
                 delayMs={650}
-                className="max-w-md text-xl leading-snug text-muted lg:text-2xl"
+                className="max-w-md text-xl font-bold leading-snug text-foreground lg:text-2xl"
               >
                 The native token of gno.land. A Layer 1 by the makers of Cosmos and Tendermint.
               </Reveal>

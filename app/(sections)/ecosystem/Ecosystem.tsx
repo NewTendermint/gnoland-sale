@@ -1,14 +1,18 @@
 /**
- * Ecosystem. Two-tier showcase: flagship projects as full cards (icon + name +
- * category + body), then the rest as compact half-size cards (icon + name + category)
- * in a denser 6-col grid.
+ * Ecosystem. Editorial "statement" disposition for the flagship projects
+ * (matching Features / GNOT utility): a full-width 12-col image banner on top,
+ * a left-aligned title in a 10-col band, a full-width animated rule, then the
+ * featured projects as table rows (icon above the name + category on the left,
+ * body offset to the right with a hairline above each paragraph). Below the
+ * band, the remaining projects stay a dense compact grid, then a CTA.
  */
-import { CtaArrow } from "../../(ui)/CtaArrow"
+import { ArrowLink } from "../../(ui)/ArrowLink"
 import { DrawLine } from "../../(ui)/DrawLine"
 import { FadeIn } from "../../(ui)/FadeIn"
 import { Icon } from "../../(ui)/Icon"
+import { ItemDivider } from "../../(ui)/ItemDivider"
 import { Reveal } from "../../(ui)/Reveal"
-import { RevealGroup } from "../../(ui)/RevealGroup"
+import { RevealBoundary, RevealGroup } from "../../(ui)/RevealGroup"
 import { Section } from "../../(ui)/Section"
 import { SectionHeading } from "../../(ui)/SectionHeading"
 import { featured, others } from "../../../content/sections/ecosystem"
@@ -16,103 +20,118 @@ import { featured, others } from "../../../content/sections/ecosystem"
 export function Ecosystem() {
   return (
     <Section id="ecosystem">
-      {/* Coordinated entrance: the title triggers, then the cards reveal LINE BY LINE
-          across all cards at once (every icon together, then every name, then every
-          body) - not card by card. The index is the line's position inside a card,
-          shared by every card. One trigger off the title (first visible member). */}
-      <RevealGroup inline staggerMs={250}>
-        <div className="col-span-12 mb-16 flex flex-col items-center text-center lg:col-span-6 lg:col-start-4">
-          <SectionHeading eyebrow="Ecosystem" title="Built by a growing community" index={0} />
+      {/* Title + rule reveal together (title group). Everything below LEAVES that
+          group via RevealBoundary so it reveals on its own scroll trigger, one at a
+          time as you reach it: each featured row, the mid rule, each compact card, the
+          CTA. Per item: divider draws (slot 0), icon draws + name rises (1), category
+          fades + body rises (2), the Explore CTA fades (3). */}
+      <RevealGroup inline staggerMs={150}>
+        {/* 10-col band: title left, animated rule, featured projects as rows. */}
+        <div className="col-span-12 grid grid-cols-10 gap-x-6 gap-y-0 lg:col-span-10 lg:col-start-2">
+          <div className="col-span-10 lg:col-span-7">
+            <SectionHeading eyebrow="Ecosystem" title="Built by a growing community" index={0} />
+          </div>
+
+          <DrawLine className="col-span-10 mt-16" index={1} />
+
+          <ul className="col-span-10 mt-6">
+            {featured.map((p, i) => (
+              <RevealBoundary key={p.name}>
+                <RevealGroup as="li" className="group flex flex-col gap-6 py-6">
+                  {i > 0 ? <ItemDivider /> : null}
+                  <div className="grid grid-cols-1 gap-2 md:grid-cols-10 md:gap-6">
+                    {/* Title cell: icon + name, category as a borderless subtitle. */}
+                    <div className="md:col-span-3 md:self-start md:pr-4 md:pt-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="shrink-0 text-faint transition-colors group-hover:text-foreground">
+                          <Icon name={p.icon} index={1} className="h-12 w-12" />
+                        </span>
+                        <Reveal
+                          as="h3"
+                          index={1}
+                          className="text-right text-lg font-semibold leading-tight tracking-tight text-foreground"
+                        >
+                          {p.name}
+                        </Reveal>
+                      </div>
+                      <FadeIn
+                        as="p"
+                        index={2}
+                        className="mt-1 text-right font-mono text-[10px] uppercase tracking-[0.2em] text-faint"
+                      >
+                        {p.category}
+                      </FadeIn>
+                    </div>
+                    {/* Body cell offset to cols 4-10: paragraph, then a ghost CTA. */}
+                    <div className="md:col-span-7 md:col-start-4 md:pt-6">
+                      <Reveal as="p" index={2} className="text-2xl text-foreground">
+                        {p.body}
+                      </Reveal>
+                      <FadeIn as="div" index={3} className="mt-5 flex justify-start">
+                        <ArrowLink
+                          href={p.href ?? "https://github.com/gnoverse"}
+                          external
+                          arrow="diagonal"
+                          label="Explore"
+                          ariaLabel={`Explore ${p.name}`}
+                          variant="ghost"
+                        />
+                      </FadeIn>
+                    </div>
+                  </div>
+                </RevealGroup>
+              </RevealBoundary>
+            ))}
+          </ul>
         </div>
 
-        <ul className="col-span-12 grid grid-cols-1 gap-x-6 gap-y-12 sm:grid-cols-2 lg:col-span-10 lg:col-start-2 lg:grid-cols-3">
-          {featured.map((p) => {
-            const inner = (
-              <RevealGroup>
-                <span className="block text-faint transition-colors group-hover:text-foreground">
-                  <Icon name={p.icon} index={2} className="h-8 w-8" />
-                </span>
-                <div className="mt-6 flex items-baseline gap-3">
-                  <Reveal
-                    as="h3"
-                    index={3}
-                    className="text-lg font-semibold tracking-tight text-foreground"
-                  >
-                    {p.name}
-                  </Reveal>
-                  <FadeIn
-                    as="span"
-                    index={3}
-                    className="font-mono text-[10px] uppercase tracking-[0.2em] text-faint"
-                  >
-                    {p.category}
-                  </FadeIn>
-                </div>
-                <Reveal as="p" index={4} className="mt-3 text-base text-muted">
-                  {p.body}
-                </Reveal>
-              </RevealGroup>
-            )
-            return (
-              <li key={p.name} className="group">
-                {p.href ? (
-                  <a href={p.href} target="_blank" rel="noreferrer noopener" className="block">
-                    {inner}
-                  </a>
-                ) : (
-                  <div>{inner}</div>
-                )}
-              </li>
-            )
-          })}
-        </ul>
+        {/* Mid rule between the featured rows and the compact grid - own trigger. */}
+        <RevealBoundary>
+          <DrawLine className="col-span-12 mt-12 lg:col-span-10 lg:col-start-2" />
+        </RevealBoundary>
 
-        <DrawLine index={2} className="col-span-12 mt-8 lg:col-span-10 lg:col-start-2" />
-
-        <ul className="col-span-12 grid grid-cols-2 gap-x-6 gap-y-8 pt-12 sm:grid-cols-3 md:grid-cols-6 lg:col-span-10 lg:col-start-2">
+        <ul className="col-span-12 grid grid-cols-1 gap-x-6 gap-y-10 pt-12 sm:grid-cols-2 lg:col-span-10 lg:col-start-2 lg:grid-cols-4">
           {others.map((p) => (
-            <RevealGroup as="li" key={p.name} className="group">
-              <span className="block text-faint transition-colors group-hover:text-foreground">
-                <Icon name={p.icon} index={2} className="h-5 w-5" />
-              </span>
-              <Reveal
-                as="h3"
-                index={3}
-                className="mt-3 text-sm font-semibold tracking-tight text-foreground"
-              >
-                {p.name}
-              </Reveal>
-              <FadeIn
-                as="p"
-                index={4}
-                className="mt-1 font-mono text-[10px] uppercase tracking-[0.2em] text-faint"
-              >
-                {p.category}
-              </FadeIn>
-              {p.body ? (
-                <Reveal as="p" index={5} className="mt-3 text-xs leading-snug text-muted">
-                  {p.body}
+            <RevealBoundary key={p.name}>
+              <RevealGroup as="li" className="group">
+                <span className="block text-faint transition-colors group-hover:text-foreground">
+                  <Icon name={p.icon} index={0} className="h-8 w-8" />
+                </span>
+                <Reveal
+                  as="h3"
+                  index={0}
+                  className="mt-4 text-lg font-semibold leading-tight tracking-tight text-foreground"
+                >
+                  {p.name}
                 </Reveal>
-              ) : null}
-            </RevealGroup>
+                <FadeIn
+                  as="p"
+                  index={1}
+                  className="mt-1 font-mono text-[10px] uppercase tracking-[0.2em] text-faint"
+                >
+                  {p.category}
+                </FadeIn>
+                {p.body ? (
+                  <Reveal as="p" index={1} className="mt-3 text-sm leading-snug text-muted">
+                    {p.body}
+                  </Reveal>
+                ) : null}
+              </RevealGroup>
+            </RevealBoundary>
           ))}
         </ul>
 
-        <FadeIn
-          as="div"
-          index={6}
-          className="col-span-12 mt-12 text-center lg:col-span-10 lg:col-start-2"
-        >
-          <a
-            href="https://github.com/gnoverse"
-            target="_blank"
-            rel="noreferrer noopener"
-            className="group inline-flex items-center gap-2 text-sm font-bold uppercase tracking-[0.2em] text-foreground transition-colors hover:text-muted"
-          >
-            <span>Find other ecosystem projects</span>
-            <CtaArrow />
-          </a>
-        </FadeIn>
+        {/* Closing CTA - own trigger, fades in when reached. */}
+        <RevealBoundary>
+          <FadeIn as="div" className="col-span-12 mt-12 text-center lg:col-span-10 lg:col-start-2">
+            <ArrowLink
+              href="https://github.com/gnoverse"
+              external
+              label="Find other ecosystem projects"
+              variant="ghost"
+            />
+          </FadeIn>
+        </RevealBoundary>
       </RevealGroup>
     </Section>
   )

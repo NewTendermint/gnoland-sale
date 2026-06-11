@@ -27,9 +27,15 @@ import { Countdown } from "./Countdown"
 import { useSale } from "./SaleProvider"
 import { WalletButton } from "./WalletButton"
 
+// Positioning shell: pinned above the page frame, capped to the container and
+// gutter-padded so the card inside lands exactly on the 12-col grid width.
 const SHELL =
-  "fixed bottom-[var(--reveal-padding)] left-[var(--reveal-padding)] right-[var(--reveal-padding)] z-[var(--z-sticky)] overflow-hidden rounded-[var(--frame-radius)] bg-background"
-const INSET = "mx-auto max-w-[var(--max-width-container)] px-6 lg:px-8"
+  "bar-enter fixed bottom-[var(--reveal-padding)] left-[var(--reveal-padding)] right-[var(--reveal-padding)] z-[var(--z-sticky)] mx-auto max-w-[var(--max-width-container)] px-6 lg:px-8"
+// Visible card: its edges align with the section grids (container minus gutters).
+const CARD = "overflow-hidden rounded-t-[var(--frame-radius)] bg-background"
+// Solid inverted CTA pill, shared across the bar's phase states (pre-sale / live / ended).
+const CTA_PILL =
+  "btn-pan group inline-flex cursor-pointer items-center justify-center rounded-full border border-faint bg-surface-contrast px-7 py-3.5 text-xs font-bold uppercase tracking-[0.2em] text-on-contrast before:bg-on-contrast hover:text-surface-contrast"
 
 type BarMetric = { icon: string; value: ReactNode; label: string }
 
@@ -127,10 +133,12 @@ export function BidPanel() {
             <button
               type="button"
               onClick={registrationOpen ? handleConnectSonar : undefined}
-              className="group inline-flex items-center gap-2 rounded-full bg-surface-contrast px-7 py-3.5 text-xs font-bold uppercase tracking-[0.2em] text-on-contrast transition-colors hover:bg-surface-contrast/80"
+              className={CTA_PILL}
             >
-              <span>{registrationOpen ? "Register now" : "Get notified"}</span>
-              <CtaArrow />
+              <span className="inline-flex items-center gap-2">
+                <span>{registrationOpen ? "Register now" : "Get notified"}</span>
+                <CtaArrow />
+              </span>
             </button>
           </div>
         </div>
@@ -175,12 +183,11 @@ export function BidPanel() {
               </div>
             ))}
           </div>
-          <button
-            type="button"
-            className="group inline-flex items-center gap-2 rounded-full bg-surface-contrast px-7 py-3.5 text-xs font-bold uppercase tracking-[0.2em] text-on-contrast transition-colors hover:bg-surface-contrast/80"
-          >
-            <span>{hasBid ? "Claim refund" : "View results"}</span>
-            <CtaArrow />
+          <button type="button" className={CTA_PILL}>
+            <span className="inline-flex items-center gap-2">
+              <span>{hasBid ? "Claim refund" : "View results"}</span>
+              <CtaArrow />
+            </span>
           </button>
         </div>
       </BarShell>
@@ -204,7 +211,7 @@ export function BidPanel() {
 
   return (
     <aside aria-label="Bid panel" data-component="bid-panel" className={SHELL}>
-      <div className={INSET}>
+      <div className={CARD}>
         <div className="grid grid-cols-12 gap-6">
           <Entrance className="col-span-12 lg:col-span-10 lg:col-start-2">
             <DrawLine immediate delayMs={200} />
@@ -255,7 +262,7 @@ export function BidPanel() {
                         type="button"
                         onClick={() => setExpanded(false)}
                         aria-label="Close"
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border text-muted transition-colors hover:text-foreground"
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border text-muted transition-colors duration-300 hover:border-surface-contrast hover:bg-surface-contrast hover:text-on-contrast"
                       >
                         <svg
                           viewBox="0 0 16 16"
@@ -276,7 +283,7 @@ export function BidPanel() {
                         ref={triggerRef}
                         onClick={() => setExpanded(true)}
                         aria-expanded={expanded}
-                        className="group inline-flex items-center gap-2 rounded-full bg-surface-contrast px-7 py-3.5 text-xs font-bold uppercase tracking-[0.2em] text-on-contrast transition-colors hover:bg-surface-contrast/80"
+                        className={CTA_PILL}
                       >
                         <span data-cta-label className="inline-flex items-center gap-2">
                           <BidStatusTag journey={journey} />
@@ -291,30 +298,45 @@ export function BidPanel() {
             </div>
           </Entrance>
         </div>
-      </div>
 
-      {expanded ? (
-        <div className={INSET}>
-          <div className="grid grid-cols-12 gap-6 pb-4 sm:pb-6">
-            <div className="col-span-12 lg:col-span-10 lg:col-start-2">
-              <div
-                ref={panelRef}
-                tabIndex={-1}
-                className="bid-capsule max-h-[60vh] overflow-y-auto px-6 py-5 focus:outline-none"
-              >
-                <BidFlow
-                  journey={journey}
-                  clearingPriceUsd={commitment.clearingPriceUsd}
-                  myBid={myBid}
-                  onConnectSonar={handleConnectSonar}
-                  onBid={bid.submit}
-                  walletButton={<WalletButton />}
-                />
+        {/* Expanding sheet: the height animates 0 -> auto via the grid-rows 0fr/1fr
+            trick (the panel is always mounted so it has a height to grow into; `inert`
+            when collapsed keeps the hidden form out of the tab order). BidFlow's wagmi
+            hooks are passive subscriptions (no network / no auto-connect), so mounting
+            it early is cheap. Same easeOutExpo as the page's other motion; no
+            transition under prefers-reduced-motion. */}
+        <div className="grid grid-cols-12 gap-6">
+          <div className="col-span-12 lg:col-span-10 lg:col-start-2">
+            <div
+              className={`grid transition-[grid-template-rows] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none ${
+                expanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+              }`}
+            >
+              <div className="overflow-hidden">
+                <div className="pb-4 sm:pb-6">
+                  <div
+                    ref={panelRef}
+                    tabIndex={-1}
+                    inert={!expanded}
+                    className={`bid-capsule max-h-[60vh] overflow-y-auto px-6 py-5 transition-opacity duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] focus:outline-none motion-reduce:transition-none ${
+                      expanded ? "opacity-100" : "opacity-0"
+                    }`}
+                  >
+                    <BidFlow
+                      journey={journey}
+                      clearingPriceUsd={commitment.clearingPriceUsd}
+                      myBid={myBid}
+                      onConnectSonar={handleConnectSonar}
+                      onBid={bid.submit}
+                      walletButton={<WalletButton />}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      ) : null}
+      </div>
     </aside>
   )
 }
@@ -323,7 +345,7 @@ export function BidPanel() {
 function BarShell({ children }: { children: ReactNode }) {
   return (
     <aside aria-label="Bid panel" data-component="bid-panel" className={SHELL}>
-      <div className={INSET}>
+      <div className={CARD}>
         <div className="grid grid-cols-12 gap-6">
           <div className="col-span-12 lg:col-span-10 lg:col-start-2">{children}</div>
         </div>

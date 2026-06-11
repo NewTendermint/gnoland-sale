@@ -21,7 +21,7 @@ export function RevealGroup({
   className = "",
   staggerMs = 120,
   baseDelayMs = 0,
-  fromBottomPct = 30,
+  fromBottomPct = 20,
   inline = false,
   children,
 }: {

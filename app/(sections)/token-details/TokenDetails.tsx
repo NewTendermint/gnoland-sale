@@ -12,14 +12,17 @@
  */
 import { Fragment } from "react"
 import { useSale } from "../../(layout)/SaleProvider"
+import { ArrowLink } from "../../(ui)/ArrowLink"
 import { DrawLine } from "../../(ui)/DrawLine"
 import { FadeIn } from "../../(ui)/FadeIn"
 import { Icon } from "../../(ui)/Icon"
 import { Reveal } from "../../(ui)/Reveal"
-import { RevealGroup } from "../../(ui)/RevealGroup"
+import { RevealBoundary, RevealGroup } from "../../(ui)/RevealGroup"
+import { Rise } from "../../(ui)/Rise"
 import { Section } from "../../(ui)/Section"
-import { SectionHeading } from "../../(ui)/SectionHeading"
+import { HEADING_TITLE } from "../../(ui)/SectionHeading"
 import {
+  documents,
   positionMetricsActive,
   positionMetricsEmpty,
   termGroups,
@@ -28,6 +31,11 @@ import { bidStatus, gnotEstimate } from "../../../lib/sale/calc"
 import { fmtGnot, fmtPrice, fmtUsd } from "../../../lib/sale/format"
 
 type PositionState = "disconnected" | "no-bids" | "active"
+
+/** Scroll-trigger line for the terms-table groups (and the documents): each reveals
+ * when its top reaches this % from the BOTTOM of the viewport. Lower = the trigger
+ * sits lower on screen, so a group animates only once you are nearly on it. */
+const TABLE_REVEAL_PCT = 10
 
 export function TokenDetails() {
   // Derived from the sale context: disconnected until a wallet connects, active
@@ -58,9 +66,11 @@ export function TokenDetails() {
 
   return (
     <Section id="token-details">
-      {/* One coordinated entrance: the title triggers, then the line, position, and
-          the whole terms table cascade just after - a single trigger instead of each
-          row scroll-appearing on its own. `inline` adds no box, the grid is intact. */}
+      {/* Title cascade: the title triggers, then the line and the position block
+          cascade just after - one trigger instead of each row scroll-appearing on its
+          own. `inline` adds no box, the grid is intact. The terms table + documents
+          break out below into their own trigger (see the RevealBoundary further down)
+          so they animate when the reader reaches THEM, not when the title does. */}
       <RevealGroup inline>
         <RevealGroup
           as="div"
@@ -77,11 +87,7 @@ export function TokenDetails() {
               Live auction
             </p>
           </FadeIn>
-          <Reveal
-            as="h2"
-            type="words"
-            className="text-4xl font-bold uppercase leading-[1.05] tracking-tight text-foreground md:text-5xl lg:text-6xl"
-          >
+          <Reveal as="h2" type="words" className={`${HEADING_TITLE} text-foreground`}>
             GNOT Token Sale
           </Reveal>
           <FadeIn as="p" className="mt-4 max-w-2xl text-base text-muted md:text-lg">
@@ -129,60 +135,100 @@ export function TokenDetails() {
 
         <DrawLine className="col-span-12 lg:col-span-10 lg:col-start-2" />
 
-        <div className="col-span-12 flex flex-col lg:col-span-10 lg:col-start-2">
-          {termGroups.map((g, gi) => (
-            <Fragment key={g.eyebrow}>
-              <FadeIn as="div" className="grid grid-cols-12 gap-6 py-5 lg:grid-cols-10 lg:py-6">
-                <div className="col-span-12 lg:col-span-3">
-                  <div className="flex items-baseline gap-3">
-                    <span className="font-mono text-xs text-faint tabular-nums">
-                      {String(gi + 1).padStart(2, "0")}
-                    </span>
-                    <h3 className="font-mono text-2xl font-medium uppercase tracking-tight text-foreground lg:text-3xl">
-                      {g.eyebrow}
-                    </h3>
+        {/* The terms table + documents leave the title cascade. RevealBoundary cuts
+            the outer group context, then EACH term group (and the documents) gets its
+            OWN inline RevealGroup = its own scroll trigger (TABLE_REVEAL_PCT), so every
+            group animates when YOU reach it, not all at once when the title does. */}
+        <RevealBoundary>
+          <div className="col-span-12 flex flex-col lg:col-span-10 lg:col-start-2">
+            {termGroups.map((g, gi) => (
+              <RevealGroup inline fromBottomPct={TABLE_REVEAL_PCT} key={g.eyebrow}>
+                {/* Plain layout grid (no group-level FadeIn): inside, the title
+                    reveals line-by-line like the tiles, the number fades, and each
+                    row rises from a mask - all members of this group's cascade, so
+                    they stagger in (number/title slot 0, rows 1..n, divider last)
+                    when the group is reached. */}
+                <div className="grid grid-cols-12 gap-6 py-5 lg:grid-cols-10 lg:py-6">
+                  <div className="col-span-12 lg:col-span-3">
+                    <div className="flex items-baseline gap-3">
+                      <FadeIn
+                        as="span"
+                        index={0}
+                        className="font-mono text-xs text-faint tabular-nums"
+                      >
+                        {String(gi + 1).padStart(2, "0")}
+                      </FadeIn>
+                      <Reveal
+                        as="h3"
+                        index={0}
+                        className="font-mono text-2xl font-medium uppercase tracking-tight text-foreground lg:text-3xl"
+                      >
+                        {g.eyebrow}
+                      </Reveal>
+                    </div>
                   </div>
-                </div>
-                <dl className="col-span-12 lg:col-span-7">
-                  {g.rows.map((row, ri) => (
-                    <div
-                      key={row.label}
-                      className={`flex items-baseline justify-between gap-6 py-1 ${
-                        ri > 0 ? "border-t border-foreground/5" : ""
-                      }`}
-                    >
-                      <dt className="font-mono text-xs uppercase tracking-widest text-muted">
-                        {row.label}
-                      </dt>
-                      <dd
-                        className={`text-right font-medium ${
-                          row.tbd
-                            ? "font-mono text-xs uppercase tracking-widest text-faint"
-                            : "text-base text-foreground"
+                  <dl className="col-span-12 lg:col-span-7">
+                    {g.rows.map((row, ri) => (
+                      <Rise
+                        key={row.label}
+                        index={ri + 1}
+                        className={`flex items-baseline justify-between gap-6 py-1 ${
+                          ri > 0 ? "border-t border-foreground/5" : ""
                         }`}
                       >
-                        {row.href ? (
-                          <a
-                            href={row.href}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-baseline gap-1 underline-offset-4 hover:underline"
-                          >
-                            {row.value}
-                            <span aria-hidden="true">↗</span>
-                          </a>
-                        ) : (
-                          row.value
-                        )}
-                      </dd>
-                    </div>
-                  ))}
-                </dl>
-              </FadeIn>
-              <DrawLine />
-            </Fragment>
-          ))}
-        </div>
+                        <dt className="font-mono text-xs uppercase tracking-widest text-muted">
+                          {row.label}
+                        </dt>
+                        <dd
+                          className={`text-right font-medium ${
+                            row.tbd
+                              ? "font-mono text-xs uppercase tracking-widest text-faint"
+                              : "text-base text-foreground"
+                          }`}
+                        >
+                          {row.href ? (
+                            <a
+                              href={row.href}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-baseline gap-1 underline-offset-4 hover:underline"
+                            >
+                              {row.value}
+                              <span aria-hidden="true">↗</span>
+                            </a>
+                          ) : (
+                            row.value
+                          )}
+                        </dd>
+                      </Rise>
+                    ))}
+                  </dl>
+                </div>
+                <DrawLine index={g.rows.length + 1} />
+              </RevealGroup>
+            ))}
+          </div>
+
+          {/* Documents: ghost-pill CTAs (matching the other ArrowLink CTAs),
+              right-aligned below the table, on their OWN trigger so they reveal
+              when reached, not with the last group. External audit opens a tab;
+              the disclosure is an in-page anchor. */}
+          <RevealGroup inline fromBottomPct={TABLE_REVEAL_PCT}>
+            <div className="col-span-12 mt-6 flex flex-wrap items-center justify-end gap-3 lg:col-span-10 lg:col-start-2">
+              {documents.map((d, di) => (
+                <FadeIn as="div" index={di} key={d.label}>
+                  <ArrowLink
+                    href={d.href}
+                    external={!d.href.startsWith("#")}
+                    arrow="diagonal"
+                    label={d.value}
+                    variant="ghost"
+                  />
+                </FadeIn>
+              ))}
+            </div>
+          </RevealGroup>
+        </RevealBoundary>
       </RevealGroup>
     </Section>
   )

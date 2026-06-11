@@ -16,6 +16,7 @@ export function ClipOpen({
   className = "",
   lead = false,
   index,
+  durationMs,
   children,
 }: {
   className?: string
@@ -24,9 +25,12 @@ export function ClipOpen({
   lead?: boolean
   /** Fixed cascade slot when inside a RevealGroup (same index = clip together). */
   index?: number
+  /** Override the clip-open duration (ms). A large content tile reads slower/heavier
+   * than a small image, so it can grow over a longer time. */
+  durationMs?: number
   children: ReactNode
 }) {
-  const ref = useClipOpen<HTMLDivElement>({ lead, index })
+  const ref = useClipOpen<HTMLDivElement>({ lead, index, durationMs })
   return (
     <div ref={ref as Ref<HTMLDivElement>} className={className}>
       {children}

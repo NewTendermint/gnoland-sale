@@ -63,12 +63,6 @@ export const others: Project[] = [
     icon: "plug",
   },
   {
-    name: "CommonDAO",
-    category: "Governance",
-    body: "A modular, on-chain governance framework with hierarchical parent DAOs and subDAOs for proposals, voting, and membership.",
-    icon: "network",
-  },
-  {
     name: "Tendermint2",
     category: "Consensus",
     body: "The evolved consensus engine, redesigned from the ground up for simplicity, security, and performance.",
@@ -79,12 +73,6 @@ export const others: Project[] = [
     category: "Key management",
     body: "Secure key management and transaction signing for interacting with Gno.land and related networks.",
     icon: "key",
-  },
-  {
-    name: "Gnodev",
-    category: "Local dev",
-    body: "A local development environment for building and testing Gno applications with hot reload.",
-    icon: "terminal",
   },
   {
     name: "Gnoweb",

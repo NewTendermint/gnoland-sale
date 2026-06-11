@@ -16,21 +16,24 @@ import { SectionHeading } from "../../(ui)/SectionHeading"
 
 export function Narrative() {
   return (
-    <Section id="narrative" gridClassName="mb-20 lg:mb-24">
-      {/* Coordinated entrance: ONLY the About title + the two images share this
-          timeline - the title reveals, then both images clip in 0.5s later (index 2 x
-          staggerMs 250). The prose, figures and link below sit in RevealBoundary, so
-          they keep their own scroll-in instead of joining this group. */}
+    <Section id="narrative">
+      {/* The About title reveals on this group's trigger. The two images are NOT in
+          the group: each sits in its own RevealBoundary so it clips open on its OWN
+          scroll trigger (when YOU reach it), instead of both firing together 0.5s after
+          the title - the lower image used to open far below the fold, unseen. The prose,
+          figures and link below also sit in RevealBoundary with their own scroll-in. */}
       <RevealGroup inline staggerMs={250}>
         <div className="col-span-12 lg:col-span-6 lg:col-start-1">
-          <ParallaxBox className="aspect-[4/5]" strength={60} index={2} />
+          <RevealBoundary>
+            <ParallaxBox className="aspect-[4/5]" strength={60} />
+          </RevealBoundary>
           {/* Paragraph + key figures share ONE trigger so the figures count up just
             after the paragraph reveals. The group staggerMs is the gap before the
             figures (≈ the paragraph's reveal time); the 3 figures share index 1 so
             they fire together once that gap has passed. */}
           <RevealBoundary>
             <RevealGroup staggerMs={1100}>
-              <Reveal as="p" className="mt-28 text-3xl leading-snug text-muted lg:text-4xl">
+              <Reveal as="p" className="mt-36 text-3xl leading-snug text-muted lg:text-4xl">
                 Gno.land is a next-generation Layer 1 smart contract platform based on Gno, a
                 deterministic, interpreted version of the Go programming language. Founded by Jae
                 Kwon, co-founder of Cosmos and Tendermint, Gno.land represents a paradigm shift in
@@ -79,19 +82,27 @@ export function Narrative() {
             </RevealGroup>
           </RevealBoundary>
         </div>
-        <div className="col-span-12 lg:col-span-4 lg:col-start-8 lg:pt-32">
+        <div className="col-span-12 lg:col-span-5 lg:col-start-8 lg:pt-32">
           <RevealGroup>
             <SectionHeading
               eyebrow="About"
               title="The Open Knowledge Base for the New Millennium"
               index={0}
             />
-            <ParallaxBox className="mt-48 aspect-[4/5]" strength={320} index={2} />
+            <RevealBoundary>
+              <ParallaxBox className="mt-48 aspect-[4/5] lg:w-4/5" strength={320} />
+            </RevealBoundary>
           </RevealGroup>
           <RevealBoundary>
-            <DrawLine className="mt-80" />
-            <RevealGroup>
-              <Reveal as="p" className="mt-6 text-2xl text-muted">
+            <DrawLine className="mt-64 lg:w-4/5" />
+            {/* staggerMs sets when the "Discover gno.land" link starts relative to the
+                paragraph above. The paragraph reveals over ~2s at desktop width (~15
+                lines x 85ms + 800ms); 1500 starts the link during its tail (last lines
+                still arriving) so it reads as following the text without the full wait.
+                Higher = clearly after with a gap; lower (down to ~1390) = finishes
+                together with the text. Feel value - tune freely. */}
+            <RevealGroup staggerMs={1500}>
+              <Reveal as="p" className="mt-6 text-2xl text-muted lg:w-4/5">
                 With its familiar language and intuitive building processes, Gno.land reduces
                 barriers for millions of Go developers, making Web3 more accessible while supporting
                 applications that anyone can trust and use. In addition to its
@@ -101,11 +112,7 @@ export function Narrative() {
                 positioned to be the decentralized global knowledge base for the new millennium.
               </Reveal>
               <FadeIn as="div" className="mt-8">
-                <ArrowLink
-                  href="https://docs.gno.land"
-                  label="Discover gno.land"
-                  className="text-sm text-foreground transition-colors hover:text-muted"
-                />
+                <ArrowLink href="https://docs.gno.land" label="Discover gno.land" variant="ghost" />
               </FadeIn>
             </RevealGroup>
           </RevealBoundary>

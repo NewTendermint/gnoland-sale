@@ -26,7 +26,7 @@ const submitter = new MockBidSubmitter()
 // Inverted pill: on the .bid-capsule contrast surface, the CTA flips to a light
 // pill with dark text (bg-on-contrast / text-surface-contrast).
 const PILL =
-  "inline-flex items-center gap-2 rounded-full bg-on-contrast px-6 py-3 text-xs font-bold uppercase tracking-[0.2em] text-surface-contrast transition-colors hover:bg-on-contrast/90 disabled:cursor-not-allowed disabled:opacity-40"
+  "btn-pan inline-flex cursor-pointer items-center justify-center rounded-full border border-faint bg-on-contrast px-6 py-3 text-xs font-bold uppercase tracking-[0.2em] text-surface-contrast before:bg-surface-contrast hover:text-on-contrast disabled:cursor-not-allowed disabled:opacity-40"
 
 // Brand logos for connectors that do not expose their own icon (keyed by connector id).
 // EIP-6963 wallets (MetaMask, Keplr, ...) supply connector.icon; these two do not.
@@ -192,6 +192,7 @@ function GateRow({
       <div className="flex items-center gap-3">
         <Icon
           name={icon}
+          draw={false}
           className={`h-5 w-5 shrink-0 ${tone === "danger" ? "text-danger" : "text-foreground"}`}
         />
         <p className="text-sm">
@@ -201,7 +202,7 @@ function GateRow({
       </div>
       {cta ? (
         <button type="button" onClick={onCta} className={PILL}>
-          {cta}
+          <span className="inline-flex items-center gap-2">{cta}</span>
         </button>
       ) : null}
     </div>
@@ -225,7 +226,7 @@ function ConnectChoices() {
   return (
     <div className="flex flex-wrap items-center justify-between gap-4">
       <div className="flex items-center gap-3">
-        <Icon name="wallet" className="h-5 w-5 shrink-0 text-foreground" />
+        <Icon name="wallet" draw={false} className="h-5 w-5 shrink-0 text-foreground" />
         <p className="text-sm">
           <span className="font-medium text-foreground">Connect your wallet.</span>{" "}
           <span className={error ? "text-danger" : "text-muted"}>
@@ -244,14 +245,16 @@ function ConnectChoices() {
               disabled={isPending}
               aria-label={`Connect ${connector.name}`}
               title={connector.name}
-              className={`inline-flex h-11 w-11 items-center justify-center rounded-full border border-border bg-surface-alt transition-colors hover:border-border-strong ${
+              className={`inline-flex h-11 w-11 items-center justify-center rounded-full border border-border bg-surface-alt transition-colors hover:border-faint ${
                 pending ? "animate-pulse" : isPending ? "opacity-40" : ""
               }`}
             >
               {connector.icon ? (
                 <img src={connector.icon} alt="" className="h-6 w-6 rounded-md" />
               ) : (
-                (BRAND_ICONS[connector.id] ?? <Icon name="wallet" className="h-5 w-5 text-muted" />)
+                (BRAND_ICONS[connector.id] ?? (
+                  <Icon name="wallet" draw={false} className="h-5 w-5 text-muted" />
+                ))
               )}
             </button>
           )
@@ -267,7 +270,7 @@ function SwitchNetworkGate() {
   return (
     <div className="flex flex-wrap items-center justify-between gap-4">
       <div className="flex items-center gap-3">
-        <Icon name="network" className="h-5 w-5 shrink-0 text-foreground" />
+        <Icon name="network" draw={false} className="h-5 w-5 shrink-0 text-foreground" />
         <p className="text-sm">
           <span className="font-medium text-foreground">Wrong network.</span>{" "}
           <span className={error ? "text-danger" : "text-muted"}>
@@ -402,7 +405,7 @@ function BidRow({
     return (
       <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4">
         <div className="flex flex-wrap items-center gap-3">
-          <Icon name="shield-check" className="h-5 w-5 shrink-0 text-mint" />
+          <Icon name="shield-check" draw={false} className="h-5 w-5 shrink-0 text-mint" />
           <p className="text-sm text-foreground">
             Bid submitted - {fmtUsd(amountNum)} at {fmtPrice(priceNum)} / GNOT.
           </p>
@@ -454,7 +457,9 @@ function BidRow({
 
         <div className="ml-auto flex items-end gap-4">
           <button type="button" onClick={onSubmit} disabled={!canSubmit} className={PILL}>
-            {submitState === "submitting" ? "Signing..." : prevBid ? "Raise bid" : "Place bid"}
+            <span className="inline-flex items-center gap-2">
+              {submitState === "submitting" ? "Signing..." : prevBid ? "Raise bid" : "Place bid"}
+            </span>
           </button>
           {walletButton}
         </div>
@@ -510,7 +515,7 @@ function InputCell({
       </div>
       <div
         className={`flex items-center rounded-[var(--radius-md)] border bg-surface-alt px-3.5 py-2.5 transition-colors ${
-          invalid ? "border-danger" : "border-border focus-within:border-border-strong"
+          invalid ? "border-danger" : "border-border focus-within:border-faint"
         }`}
       >
         <input
@@ -540,11 +545,11 @@ function FieldHint({ text }: { text: string }) {
         aria-label={text}
         className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full text-muted transition-colors hover:text-foreground focus-visible:text-foreground"
       >
-        <Icon name="help" className="h-3.5 w-3.5" />
+        <Icon name="help" draw={false} className="h-3.5 w-3.5" />
       </button>
       <span
         aria-hidden="true"
-        className="pointer-events-none absolute left-0 top-full z-[var(--z-modal)] mt-2 w-max max-w-[22rem] rounded-[var(--radius-md)] bg-on-contrast px-3 py-2 text-[11px] font-normal normal-case leading-snug tracking-normal text-surface-contrast opacity-0 shadow-lg transition-opacity duration-100 group-focus-within/hint:opacity-100"
+        className="pointer-events-none absolute left-0 top-full z-[var(--z-modal)] mt-2 w-max max-w-[22rem] rounded-[var(--radius-md)] bg-on-contrast px-3 py-2 text-xs font-normal normal-case leading-snug tracking-normal text-surface-contrast opacity-0 shadow-lg transition-opacity duration-100 group-focus-within/hint:opacity-100"
       >
         {text}
       </span>

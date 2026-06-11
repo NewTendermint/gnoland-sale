@@ -2,7 +2,7 @@
 
 import { useContext, useEffect, useRef } from "react"
 import { loadEngine } from "./engine"
-import { RevealGroupContext, observeReveal, wireReveal } from "./reveal-group"
+import { RevealGroupContext, doubleRaf, observeReveal, wireReveal } from "./reveal-group"
 import { shouldAnimate } from "./should-animate"
 
 /** Shared easings. One source so every reveal of the same genre moves identically.
@@ -105,8 +105,8 @@ export function useMotion<T extends HTMLElement>({
  * still triggers the draw. Touch / reduced-motion: shown full, no animation.
  */
 export function useDrawLine<T extends HTMLElement>({
-  durationMs = 1500,
-  fromBottomPct = 30,
+  durationMs = 2200,
+  fromBottomPct = 20,
   immediate = false,
   delayMs = 0,
   index,
@@ -129,8 +129,12 @@ export function useDrawLine<T extends HTMLElement>({
     line.style.transform = "scaleX(0)"
     // `extra` is the group's cascade offset (0 outside a group).
     const draw = (extra = 0) => {
+      // Re-park (scaleX 0) transition-free, commit it with a reflow, then enable the
+      // transition and draw - so the on-mount draw fires reliably instead of snapping.
+      line.style.transition = "none"
+      line.style.transform = "scaleX(0)"
+      void line.offsetWidth
       line.style.transition = `transform ${durationMs}ms ${EASE_REVEAL} ${delayMs + extra}ms`
-      void line.offsetWidth // commit the collapsed state as the transition start
       line.style.transform = "scaleX(1)"
     }
     const reset = () => {
@@ -147,6 +151,59 @@ export function useDrawLine<T extends HTMLElement>({
       duration: durationMs,
       fromBottomPct,
       decorative: true,
+    })
+  }, [durationMs, fromBottomPct, immediate, delayMs, group, index])
+  return ref
+}
+
+/**
+ * Element-level "mask rise": the same masked slide-up as the text Reveal, but for a
+ * WHOLE element (e.g. a table row) instead of split text lines. The ref goes on a
+ * full-box wrapper that clips its overflow; its single child is parked at
+ * translateY(110%) (fully below the mask) then slides to 0 on a CSS transition when
+ * scrolled in - browser-driven, ZERO rAF, idle GPU 0. Deliberately lighter than
+ * running SplitText on every list row (see useReveal's note): a transform on one box
+ * per row, not a per-line split. Inside a RevealGroup it joins the cascade like any
+ * other member. Touch / reduced-motion: shown in place, no animation.
+ */
+export function useRise<T extends HTMLElement>({
+  durationMs = 800,
+  fromBottomPct = 20,
+  immediate = false,
+  delayMs = 0,
+  index,
+}: {
+  durationMs?: number
+  fromBottomPct?: number
+  immediate?: boolean
+  delayMs?: number
+  /** Cascade slot when inside a RevealGroup (omit to rank by DOM order). */
+  index?: number
+} = {}) {
+  const group = useContext(RevealGroupContext)
+  const ref = useRef<T>(null)
+  useEffect(() => {
+    const wrap = ref.current
+    if (!wrap || !shouldAnimate()) return
+    const inner = wrap.firstElementChild as HTMLElement | null
+    if (!inner) return
+    inner.style.transform = "translateY(110%)"
+    // `extra` is the group's cascade offset (0 outside a group).
+    const reveal = (extra = 0) => {
+      inner.style.transition = `transform ${durationMs}ms ${EASE_REVEAL} ${delayMs + extra}ms`
+      void inner.offsetWidth // commit the parked state as the transition start
+      inner.style.transform = "translateY(0)"
+    }
+    const reset = () => {
+      inner.style.transition = ""
+      inner.style.transform = ""
+    }
+    return wireReveal(wrap, reveal, reset, {
+      immediate,
+      group,
+      index,
+      duration: durationMs,
+      fromBottomPct,
     })
   }, [durationMs, fromBottomPct, immediate, delayMs, group, index])
   return ref
@@ -182,7 +239,7 @@ export function useReveal<T extends HTMLElement>({
   immediate = false,
   staggerMs = 85,
   durationMs = 800,
-  fromBottomPct = 30,
+  fromBottomPct = 20,
   type = "lines",
   delayMs = 0,
   index,
@@ -273,7 +330,7 @@ export function useStagger<T extends HTMLElement>({
   staggerMs = 70,
   durationMs = 600,
   yPx = 24,
-  fromBottomPct = 30,
+  fromBottomPct = 20,
   delayMs = 0,
   immediate = false,
 }: {
@@ -290,18 +347,28 @@ export function useStagger<T extends HTMLElement>({
     if (!container || !shouldAnimate()) return
     const items = Array.from(container.children) as HTMLElement[]
     if (!items.length) return
-    items.forEach((item, i) => {
+    // Park the painted start state (the transition itself is (re)applied in show()).
+    for (const item of items) {
       item.style.opacity = "0"
       item.style.transform = `translateY(${yPx}px)`
-      item.style.transition = `opacity ${durationMs}ms ease, transform ${durationMs}ms ${EASE_REVEAL}`
-      item.style.transitionDelay = `${delayMs + i * staggerMs}ms`
-    })
+    }
     const show = () => {
-      void container.offsetWidth // commit the hidden state as the transition start
+      // Re-park as a transition-FREE baseline, force a reflow to commit it, then enable
+      // the transition and flip to the end value. Doing the baseline commit explicitly
+      // (not relying on a prior paint) makes on-mount / Entrance-gated reveals fire
+      // every time instead of snapping intermittently.
       for (const item of items) {
+        item.style.transition = "none"
+        item.style.opacity = "0"
+        item.style.transform = `translateY(${yPx}px)`
+      }
+      void container.offsetWidth
+      items.forEach((item, i) => {
+        const d = delayMs + i * staggerMs
+        item.style.transition = `opacity ${durationMs}ms ease ${d}ms, transform ${durationMs}ms ${EASE_REVEAL} ${d}ms`
         item.style.opacity = "1"
         item.style.transform = "translateY(0)"
-      }
+      })
     }
     const reset = () => {
       for (const item of items) {
@@ -311,11 +378,15 @@ export function useStagger<T extends HTMLElement>({
         item.style.transitionDelay = ""
       }
     }
-    // `immediate`: cascade on mount (for an always-visible row like the sticky bar
-    // that sits below the scroll-trigger zone and would never intersect).
+    // `immediate`: cascade on mount (an always-visible row like the sticky bar, or the
+    // hero gated by <Entrance>). doubleRaf defers past the parked-state paint + gate
+    // lift so the transition animates instead of snapping (see its doc).
     if (immediate) {
-      show()
-      return reset
+      const cancel = doubleRaf(show)
+      return () => {
+        cancel()
+        reset()
+      }
     }
     const stop = observeReveal(container, fromBottomPct, show)
     return () => {
@@ -336,7 +407,7 @@ export function useStagger<T extends HTMLElement>({
 export function useFade<T extends HTMLElement>({
   durationMs = 600,
   yPx = 14,
-  fromBottomPct = 30,
+  fromBottomPct = 20,
   delayMs = 0,
   immediate = false,
   index,
@@ -475,7 +546,7 @@ export function useCountUp<T extends HTMLElement>(
 export function useDrawIcon<T extends SVGSVGElement>({
   durationMs = 1100,
   staggerMs = 60,
-  fromBottomPct = 30,
+  fromBottomPct = 20,
   immediate = false,
   index,
 }: {
@@ -495,7 +566,6 @@ export function useDrawIcon<T extends SVGSVGElement>({
       "path, polyline, line, polygon, circle, ellipse, rect",
     )
     if (!shapes.length) return
-    const ease = "cubic-bezier(0.16, 1, 0.3, 1)"
     const lengths: number[] = []
     shapes.forEach((shape, i) => {
       let len = 0
@@ -514,7 +584,7 @@ export function useDrawIcon<T extends SVGSVGElement>({
       void svg.getBoundingClientRect() // commit the hidden state as the start
       shapes.forEach((shape, i) => {
         if (!lengths[i]) return
-        shape.style.transition = `stroke-dashoffset ${durationMs}ms ${ease} ${extra + i * staggerMs}ms`
+        shape.style.transition = `stroke-dashoffset ${durationMs}ms ${EASE_REVEAL} ${extra + i * staggerMs}ms`
         shape.style.strokeDashoffset = "0"
       })
     }
@@ -550,10 +620,10 @@ export function useDrawIcon<T extends SVGSVGElement>({
  */
 export function useClipOpen<T extends HTMLElement>({
   durationMs = 1500,
-  // Images open at ~mid-view (not 30% from the bottom like the rest): the box is
-  // invisible until triggered, so opening it as it reaches the middle of the
-  // viewport shows the animation while keeping the empty-reserved-space gap short.
-  fromBottomPct = 50,
+  // Images + tiles trigger higher than the text/line/fade reveals (40% vs the shared
+  // 20%): the box is invisible until it opens, so firing earlier keeps the
+  // reserved-but-empty gap short instead of leaving a blank box low on screen.
+  fromBottomPct = 40,
   immediate = false,
   delayMs = 0,
   index,
