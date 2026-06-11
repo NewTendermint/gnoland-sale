@@ -3,15 +3,16 @@
 /**
  * Last-chance CTA. Builds its own contrast tile inside a default Section (rather than
  * Section tone="contrast") for a taller vertical rhythm right before the footer.
- * Centered headline + 2 CTAs (inverted pill primary + text link secondary).
+ * Centered headline + 2 CTAs (inverted pill primary + ghost pill secondary).
  */
 import { useSale } from "../../(layout)/SaleProvider"
+import { ArrowLink } from "../../(ui)/ArrowLink"
 import { ClipOpen } from "../../(ui)/ClipOpen"
-import { CtaArrow } from "../../(ui)/CtaArrow"
 import { FadeIn } from "../../(ui)/FadeIn"
 import { Reveal } from "../../(ui)/Reveal"
 import { RevealGroup } from "../../(ui)/RevealGroup"
-import { Section } from "../../(ui)/Section"
+import { CONTRAST_TILE, Section } from "../../(ui)/Section"
+import { HEADING_TITLE } from "../../(ui)/SectionHeading"
 
 export function PreFooterCta() {
   const { setBidPanelOpen } = useSale()
@@ -21,10 +22,7 @@ export function PreFooterCta() {
         {/* py-20 lg:py-28 is taller than Section's default contrast tile (py-12 lg:py-16).
             The tile LEADS the group (clip-open): it grows first, and the cluster below
             starts halfway through that growth - the panel never shows static content first. */}
-        <ClipOpen
-          lead
-          className="rounded-[var(--frame-radius)] bg-surface-contrast py-20 text-on-contrast lg:py-28"
-        >
+        <ClipOpen lead className={`${CONTRAST_TILE} py-20 lg:py-28`}>
           <div className="grid grid-cols-12 gap-6">
             <RevealGroup
               as="div"
@@ -36,11 +34,7 @@ export function PreFooterCta() {
               >
                 Public sale
               </FadeIn>
-              <Reveal
-                as="h2"
-                type="words"
-                className="text-3xl font-bold uppercase leading-[1.05] tracking-tight text-on-contrast md:text-4xl lg:text-5xl"
-              >
+              <Reveal as="h2" type="words" className={`${HEADING_TITLE} text-on-contrast`}>
                 Ready to join the sale?
               </Reveal>
               <Reveal
@@ -51,20 +45,20 @@ export function PreFooterCta() {
                 is the same for everyone.
               </Reveal>
               <FadeIn as="div" className="mt-10 flex flex-wrap items-center justify-center gap-4">
-                <button
-                  type="button"
+                <ArrowLink
                   onClick={() => setBidPanelOpen(true)}
-                  className="group inline-flex items-center gap-2 rounded-full bg-on-contrast px-7 py-3.5 text-xs font-bold uppercase tracking-[0.2em] text-surface-contrast transition-colors hover:bg-on-contrast/90"
-                >
-                  <span>Place a bid</span>
-                  <CtaArrow />
-                </button>
-                <a
+                  label="Place a bid"
+                  arrow="slide"
+                  variant="solid-contrast"
+                  size="lg"
+                />
+                <ArrowLink
                   href="#how-it-works"
-                  className="text-xs font-bold uppercase tracking-[0.2em] text-on-contrast-muted underline-offset-4 transition-colors hover:text-on-contrast hover:underline"
-                >
-                  How it works
-                </a>
+                  label="How it works"
+                  arrow="slide"
+                  variant="ghost-contrast"
+                  size="lg"
+                />
               </FadeIn>
             </RevealGroup>
           </div>

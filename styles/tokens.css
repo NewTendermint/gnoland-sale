@@ -52,7 +52,7 @@
   --radius-sm: 4px;
   --radius-md: 8px;
   --radius-full: 9999px;
-  --frame-radius: 20px;
+  --frame-radius: 40px;
   --reveal-padding: 16px;
 
   /* Motion */
@@ -90,7 +90,7 @@
 
 @media (max-width: 640px) {
   :root {
-    --frame-radius: 12px;
+    --frame-radius: 24px;
     --reveal-padding: 8px;
   }
 }

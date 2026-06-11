@@ -2,9 +2,9 @@
 
 /**
  * How to Participate. Wrapped in a large dark tile with rounded corners.
- * The section is journey-aware: a `journeyState` drives the CTA (caption
- * + label + href) and the visual opacity of each step (done / current /
- * pending). The journey comes from `useSale()` (wallet + Sonar entity),
+ * The section is journey-aware: a `journeyState` drives the CTA label and
+ * the visual opacity of each step (done / current / pending). The journey
+ * comes from `useSale()` (wallet + Sonar entity),
  * mapped onto this section's 6-state funnel vocabulary by `funnelState`.
  */
 import { useSale } from "../../(layout)/SaleProvider"
@@ -26,31 +26,13 @@ type JourneyState =
   | "bidding"
   | "ended"
 
-const CTA_BY_STATE: Record<JourneyState, { caption: string; label: string }> = {
-  disconnected: {
-    caption: "Start by connecting your wallet.",
-    label: "Connect your wallet",
-  },
-  "kyc-pending": {
-    caption: "Verify your identity with Sonar.",
-    label: "Verify with Sonar",
-  },
-  "kyc-complete": {
-    caption: "Identity verified.",
-    label: "Connect your wallet",
-  },
-  "wallet-ready": {
-    caption: "Wallet connected.",
-    label: "Place your bid",
-  },
-  bidding: {
-    caption: "You have an active bid.",
-    label: "Update your bid",
-  },
-  ended: {
-    caption: "Auction closed.",
-    label: "View your results",
-  },
+const CTA_BY_STATE: Record<JourneyState, { label: string }> = {
+  disconnected: { label: "Connect your wallet" },
+  "kyc-pending": { label: "Verify with Sonar" },
+  "kyc-complete": { label: "Connect your wallet" },
+  "wallet-ready": { label: "Place your bid" },
+  bidding: { label: "Update your bid" },
+  ended: { label: "View your results" },
 }
 
 type StepStatus = "done" | "current" | "pending"
@@ -110,11 +92,10 @@ export function HowItWorks() {
       <RevealGroup as="div" className="col-span-12 lg:col-span-6 lg:col-start-2">
         <SectionHeading tone="contrast" eyebrow="How it works" title="How to participate" />
         <FadeIn as="div" className="mt-8 mb-10">
-          <p className="mb-2 text-base text-on-contrast-muted">{cta.caption}</p>
           <ArrowLink
             onClick={() => setBidPanelOpen(true)}
             label={cta.label}
-            className="text-sm text-on-contrast transition-colors hover:text-on-contrast-muted"
+            variant="ghost-contrast"
           />
         </FadeIn>
       </RevealGroup>
@@ -147,7 +128,7 @@ export function HowItWorks() {
               <Reveal
                 as="h3"
                 index={4}
-                className="mt-4 font-mono text-lg font-medium uppercase tracking-tight text-on-contrast lg:text-xl"
+                className="mt-1 font-mono text-lg font-medium uppercase tracking-tight text-on-contrast lg:text-xl"
               >
                 {s.title}
               </Reveal>

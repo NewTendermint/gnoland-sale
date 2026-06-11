@@ -2,6 +2,11 @@ import type { ReactNode } from "react"
 import { ClipOpen } from "./ClipOpen"
 import { RevealGroup } from "./RevealGroup"
 
+/** Inverted framed surface (black tile in light theme / white in dark), minus
+ * padding. Section's default contrast tile and any section building its own tile
+ * (e.g. a taller pre-footer CTA) compose this so the frame stays identical. */
+export const CONTRAST_TILE = "rounded-[var(--frame-radius)] bg-surface-contrast text-on-contrast"
+
 type SectionProps = {
   id?: string
   tone?: "default" | "contrast"
@@ -23,8 +28,7 @@ export function Section({
   children,
 }: SectionProps) {
   const grid = <div className={`grid grid-cols-12 gap-6 ${gridClassName}`}>{children}</div>
-  const tileClass =
-    "rounded-[var(--frame-radius)] bg-surface-contrast py-12 text-on-contrast lg:py-16"
+  const tileClass = `${CONTRAST_TILE} py-12 lg:py-16`
   return (
     <section id={id} className={`bg-background py-14 text-foreground lg:py-20 ${className}`}>
       <div className="mx-auto max-w-[var(--max-width-container)] px-6 lg:px-8">

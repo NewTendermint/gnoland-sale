@@ -27,9 +27,15 @@ import { Countdown } from "./Countdown"
 import { useSale } from "./SaleProvider"
 import { WalletButton } from "./WalletButton"
 
+// Positioning shell: pinned above the page frame, capped to the container and
+// gutter-padded so the card inside lands exactly on the 12-col grid width.
 const SHELL =
-  "fixed bottom-[var(--reveal-padding)] left-[var(--reveal-padding)] right-[var(--reveal-padding)] z-[var(--z-sticky)] overflow-hidden rounded-[var(--frame-radius)] bg-background"
-const INSET = "mx-auto max-w-[var(--max-width-container)] px-6 lg:px-8"
+  "fixed bottom-[var(--reveal-padding)] left-[var(--reveal-padding)] right-[var(--reveal-padding)] z-[var(--z-sticky)] mx-auto max-w-[var(--max-width-container)] px-6 lg:px-8"
+// Visible card: its edges align with the section grids (container minus gutters).
+const CARD = "overflow-hidden rounded-t-[var(--frame-radius)] bg-background"
+// Solid inverted CTA pill, shared across the bar's phase states (pre-sale / live / ended).
+const CTA_PILL =
+  "group inline-flex items-center gap-2 rounded-full bg-surface-contrast px-7 py-3.5 text-xs font-bold uppercase tracking-[0.2em] text-on-contrast transition-colors hover:bg-surface-contrast/80"
 
 type BarMetric = { icon: string; value: ReactNode; label: string }
 
@@ -127,7 +133,7 @@ export function BidPanel() {
             <button
               type="button"
               onClick={registrationOpen ? handleConnectSonar : undefined}
-              className="group inline-flex items-center gap-2 rounded-full bg-surface-contrast px-7 py-3.5 text-xs font-bold uppercase tracking-[0.2em] text-on-contrast transition-colors hover:bg-surface-contrast/80"
+              className={CTA_PILL}
             >
               <span>{registrationOpen ? "Register now" : "Get notified"}</span>
               <CtaArrow />
@@ -175,10 +181,7 @@ export function BidPanel() {
               </div>
             ))}
           </div>
-          <button
-            type="button"
-            className="group inline-flex items-center gap-2 rounded-full bg-surface-contrast px-7 py-3.5 text-xs font-bold uppercase tracking-[0.2em] text-on-contrast transition-colors hover:bg-surface-contrast/80"
-          >
+          <button type="button" className={CTA_PILL}>
             <span>{hasBid ? "Claim refund" : "View results"}</span>
             <CtaArrow />
           </button>
@@ -204,7 +207,7 @@ export function BidPanel() {
 
   return (
     <aside aria-label="Bid panel" data-component="bid-panel" className={SHELL}>
-      <div className={INSET}>
+      <div className={CARD}>
         <div className="grid grid-cols-12 gap-6">
           <Entrance className="col-span-12 lg:col-span-10 lg:col-start-2">
             <DrawLine immediate delayMs={200} />
@@ -276,7 +279,7 @@ export function BidPanel() {
                         ref={triggerRef}
                         onClick={() => setExpanded(true)}
                         aria-expanded={expanded}
-                        className="group inline-flex items-center gap-2 rounded-full bg-surface-contrast px-7 py-3.5 text-xs font-bold uppercase tracking-[0.2em] text-on-contrast transition-colors hover:bg-surface-contrast/80"
+                        className={CTA_PILL}
                       >
                         <span data-cta-label className="inline-flex items-center gap-2">
                           <BidStatusTag journey={journey} />
@@ -291,10 +294,8 @@ export function BidPanel() {
             </div>
           </Entrance>
         </div>
-      </div>
 
-      {expanded ? (
-        <div className={INSET}>
+        {expanded ? (
           <div className="grid grid-cols-12 gap-6 pb-4 sm:pb-6">
             <div className="col-span-12 lg:col-span-10 lg:col-start-2">
               <div
@@ -313,8 +314,8 @@ export function BidPanel() {
               </div>
             </div>
           </div>
-        </div>
-      ) : null}
+        ) : null}
+      </div>
     </aside>
   )
 }
@@ -323,7 +324,7 @@ export function BidPanel() {
 function BarShell({ children }: { children: ReactNode }) {
   return (
     <aside aria-label="Bid panel" data-component="bid-panel" className={SHELL}>
-      <div className={INSET}>
+      <div className={CARD}>
         <div className="grid grid-cols-12 gap-6">
           <div className="col-span-12 lg:col-span-10 lg:col-start-2">{children}</div>
         </div>

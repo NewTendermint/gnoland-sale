@@ -27,57 +27,57 @@ export const TOTAL_SUPPLY = 1_333_000_000
 
 // Genesis allocation, seven categories. Ordered largest -> smallest so the
 // stacked bar and the on-contrast ink ramp (darkest = largest) read together.
-// Colors use the on-contrast ink so they flip with the tile (white ink on the
-// black tile in light mode, black ink on the white tile in dark mode).
+// Colors use the foreground ink so the bar + legend read on the grey surface-alt
+// tile: a black-to-grey ramp in light mode, white-to-grey in dark mode.
 export const allocation: AllocationRow[] = [
   {
     category: "Airdrop1 - Cosmos",
     percent: 26.26,
     amount: 350_000_000,
     note: "From partial Cosmos governance snapshot 3 years ago",
-    color: "color-mix(in srgb, var(--on-contrast) 100%, transparent)",
+    color: "color-mix(in srgb, var(--foreground) 100%, transparent)",
   },
   {
     category: "NT,LLC",
     percent: 24.91,
     amount: 332_000_000,
     note: "For use at NT,LLC discretion",
-    color: "color-mix(in srgb, var(--on-contrast) 82%, transparent)",
+    color: "color-mix(in srgb, var(--foreground) 70%, transparent)",
   },
   {
     category: "Investors",
     percent: 22.51,
     amount: 300_000_000,
     note: "For past and future investors",
-    color: "color-mix(in srgb, var(--on-contrast) 65%, transparent)",
+    color: "color-mix(in srgb, var(--foreground) 50%, transparent)",
   },
   {
     category: "Airdrop2 - AtomOne",
     percent: 17.33,
     amount: 231_000_000,
     note: "From recent AtomOne snapshot prior to launch",
-    color: "color-mix(in srgb, var(--on-contrast) 50%, transparent)",
+    color: "color-mix(in srgb, var(--foreground) 35%, transparent)",
   },
   {
     category: "Ecosystem Treasury",
     percent: 4.5,
     amount: 60_000_000,
     note: "For prior and future Gno.land ecosystem development",
-    color: "color-mix(in srgb, var(--on-contrast) 38%, transparent)",
+    color: "color-mix(in srgb, var(--foreground) 24%, transparent)",
   },
   {
     category: "Core Treasury",
     percent: 3.0,
     amount: 40_000_000,
     note: "For paying for core development",
-    color: "color-mix(in srgb, var(--on-contrast) 28%, transparent)",
+    color: "color-mix(in srgb, var(--foreground) 15%, transparent)",
   },
   {
     category: "Validator Treasury",
     percent: 1.5,
     amount: 20_000_000,
     note: "For paying validators",
-    color: "color-mix(in srgb, var(--on-contrast) 18%, transparent)",
+    color: "color-mix(in srgb, var(--foreground) 9%, transparent)",
   },
 ]
 

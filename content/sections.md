@@ -214,7 +214,7 @@ Refined metric definitions (from the team xlsx, 2026-06-01), mapped to the Sonar
 ### Gno Programming Language
 Gno is derived from Go, a language used by millions of developers worldwide to build advanced, multi-user systems. This foundation provides immediate access to a large developer community and their tools, accelerating adoption and lowering the learning curve.
 
-### Deterministic, Source-level Execution
+### Source-level Determinism
 Programs are easily readable by humans and behave identically across all networks. Such consistency guarantees every node produces the same results for trustless consensus, while keeping code easy to read, audit, and maintain.
 
 ### Native Persistent State
@@ -251,10 +251,10 @@ Applications interoperate as processes instead of isolated contracts. This inter
 
 **4 use cases**:
 
-- **Transaction fees** - GNOT is the fuel that enables each and every transaction.
-- **Storage deposits** - Owning GNOT means reserving ownership of storage on Gno.land.
-- **IBC/ICS interactions** - GNOT is used to pay for all cross-chain interactions.
-- **Contract execution** - GNOT functions as the gas token that powers smart contract execution.
+- **Transaction fees** - GNOT is the fuel that enables every transaction on the gno.land network. Whether transferring tokens or calling a contract, each transaction is paid for in GNOT, so demand for the token rises with use of the network itself.
+- **Storage deposits** - Owning GNOT means reserving ownership of persistent storage on Gno.land. Because applications and their state persist on-chain by default, holding GNOT is what secures the space they occupy over time.
+- **IBC/ICS interactions** - GNOT is used to pay for all cross-chain interactions over IBC and ICS. Moving value and messages between Gno.land and the broader Cosmos ecosystem settles in GNOT, extending the token's utility beyond the chain itself.
+- **Contract execution** - GNOT functions as the gas token that powers smart contract execution. Every computation a contract runs is metered and settled in GNOT, keeping resources fairly priced and the network resistant to spam.
 
 **Asset TBD**: [Need voxel illustration of "GNOT in motion" or a circular flow diagram]
 

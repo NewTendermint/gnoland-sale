@@ -12,14 +12,16 @@
  */
 import { Fragment } from "react"
 import { useSale } from "../../(layout)/SaleProvider"
+import { ArrowLink } from "../../(ui)/ArrowLink"
 import { DrawLine } from "../../(ui)/DrawLine"
 import { FadeIn } from "../../(ui)/FadeIn"
 import { Icon } from "../../(ui)/Icon"
 import { Reveal } from "../../(ui)/Reveal"
 import { RevealGroup } from "../../(ui)/RevealGroup"
 import { Section } from "../../(ui)/Section"
-import { SectionHeading } from "../../(ui)/SectionHeading"
+import { HEADING_TITLE } from "../../(ui)/SectionHeading"
 import {
+  documents,
   positionMetricsActive,
   positionMetricsEmpty,
   termGroups,
@@ -77,11 +79,7 @@ export function TokenDetails() {
               Live auction
             </p>
           </FadeIn>
-          <Reveal
-            as="h2"
-            type="words"
-            className="text-4xl font-bold uppercase leading-[1.05] tracking-tight text-foreground md:text-5xl lg:text-6xl"
-          >
+          <Reveal as="h2" type="words" className={`${HEADING_TITLE} text-foreground`}>
             GNOT Token Sale
           </Reveal>
           <FadeIn as="p" className="mt-4 max-w-2xl text-base text-muted md:text-lg">
@@ -183,6 +181,26 @@ export function TokenDetails() {
             </Fragment>
           ))}
         </div>
+
+        {/* Documents: ghost-pill CTAs (matching the other ArrowLink CTAs),
+            right-aligned just below the table. Inside the RevealGroup so they
+            cascade with the rest. External audit opens a tab; the disclosure is
+            an in-page anchor. */}
+        <FadeIn
+          as="div"
+          className="col-span-12 mt-6 flex flex-wrap items-center justify-end gap-3 lg:col-span-10 lg:col-start-2"
+        >
+          {documents.map((d) => (
+            <ArrowLink
+              key={d.label}
+              href={d.href}
+              external={!d.href.startsWith("#")}
+              arrow="diagonal"
+              label={d.value}
+              variant="ghost"
+            />
+          ))}
+        </FadeIn>
       </RevealGroup>
     </Section>
   )

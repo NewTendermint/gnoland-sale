@@ -15,7 +15,7 @@ import { stats } from "../../../content/sections/stats"
 export function Stats() {
   return (
     <Section id="stats" tone="contrast" clip>
-      <div className="col-span-12 lg:col-span-7 lg:col-start-2">
+      <div className="col-span-12 lg:col-span-10 lg:col-start-2">
         <SectionHeading
           tone="contrast"
           eyebrow="By the numbers"
@@ -26,7 +26,7 @@ export function Stats() {
       <RevealGroup
         as="dl"
         staggerMs={0}
-        className="col-span-12 mt-12 grid grid-cols-2 gap-x-8 gap-y-10 md:grid-cols-3 lg:col-span-8 lg:col-start-4 lg:mt-16 lg:grid-cols-4"
+        className="col-span-12 mt-12 grid grid-cols-2 gap-x-8 gap-y-10 md:grid-cols-3 lg:col-span-7 lg:col-start-5 lg:mt-16 lg:grid-cols-4"
       >
         {stats.map((s) => (
           // All figures share one slot (index 0) so they launch together, once,

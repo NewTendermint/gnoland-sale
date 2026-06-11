@@ -30,7 +30,7 @@ export function Narrative() {
             they fire together once that gap has passed. */}
           <RevealBoundary>
             <RevealGroup staggerMs={1100}>
-              <Reveal as="p" className="mt-28 text-3xl leading-snug text-muted lg:text-4xl">
+              <Reveal as="p" className="mt-36 text-3xl leading-snug text-muted lg:text-4xl">
                 Gno.land is a next-generation Layer 1 smart contract platform based on Gno, a
                 deterministic, interpreted version of the Go programming language. Founded by Jae
                 Kwon, co-founder of Cosmos and Tendermint, Gno.land represents a paradigm shift in
@@ -79,19 +79,19 @@ export function Narrative() {
             </RevealGroup>
           </RevealBoundary>
         </div>
-        <div className="col-span-12 lg:col-span-4 lg:col-start-8 lg:pt-32">
+        <div className="col-span-12 lg:col-span-5 lg:col-start-8 lg:pt-32">
           <RevealGroup>
             <SectionHeading
               eyebrow="About"
               title="The Open Knowledge Base for the New Millennium"
               index={0}
             />
-            <ParallaxBox className="mt-48 aspect-[4/5]" strength={320} index={2} />
+            <ParallaxBox className="mt-48 aspect-[4/5] lg:w-4/5" strength={320} index={2} />
           </RevealGroup>
           <RevealBoundary>
-            <DrawLine className="mt-80" />
+            <DrawLine className="mt-64 lg:w-4/5" />
             <RevealGroup>
-              <Reveal as="p" className="mt-6 text-2xl text-muted">
+              <Reveal as="p" className="mt-6 text-2xl text-muted lg:w-4/5">
                 With its familiar language and intuitive building processes, Gno.land reduces
                 barriers for millions of Go developers, making Web3 more accessible while supporting
                 applications that anyone can trust and use. In addition to its
@@ -101,11 +101,7 @@ export function Narrative() {
                 positioned to be the decentralized global knowledge base for the new millennium.
               </Reveal>
               <FadeIn as="div" className="mt-8">
-                <ArrowLink
-                  href="https://docs.gno.land"
-                  label="Discover gno.land"
-                  className="text-sm text-foreground transition-colors hover:text-muted"
-                />
+                <ArrowLink href="https://docs.gno.land" label="Discover gno.land" variant="ghost" />
               </FadeIn>
             </RevealGroup>
           </RevealBoundary>

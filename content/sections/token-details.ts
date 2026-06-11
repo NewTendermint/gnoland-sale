@@ -55,19 +55,18 @@ export const termGroups: Array<{
       { label: "Mainnet launch", value: "Q1 2026 Beta · Q3 2026 Mainnet" },
     ],
   },
+]
+
+// Rendered as two large inline links below the terms table, not as a term group.
+export const documents: Array<{ label: string; value: string; href: string }> = [
   {
-    eyebrow: "Documents",
-    rows: [
-      {
-        label: "Audit",
-        value: "GnoVM · Oak Security",
-        href: "https://github.com/oak-security/audit-reports/tree/main/Gno",
-      },
-      {
-        label: "Disclosure",
-        value: "Token Disclosure Document",
-        href: "#token-disclosure",
-      },
-    ],
+    label: "Audit",
+    value: "GnoVM · Oak Security Audit",
+    href: "https://github.com/oak-security/audit-reports/tree/main/Gno",
+  },
+  {
+    label: "Disclosure",
+    value: "Token Disclosure Document",
+    href: "#token-disclosure",
   },
 ]

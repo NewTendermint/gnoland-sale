@@ -2,8 +2,13 @@ import { FadeIn } from "./FadeIn"
 import { Reveal } from "./Reveal"
 import { RevealGroup } from "./RevealGroup"
 
+/** The h2 type ramp. Single source so sections that build a custom heading layout
+ * (centered, with a status prefix, width-constrained lead) stay on the same scale. */
+export const HEADING_TITLE =
+  "text-5xl font-bold leading-[1.05] tracking-tight md:text-6xl lg:text-7xl"
+
 type SectionHeadingProps = {
-  eyebrow: string
+  eyebrow?: string
   title: string
   lead?: string
   tone?: "default" | "contrast"
@@ -29,19 +34,16 @@ export function SectionHeading({
   const leadColor = tone === "contrast" ? "text-on-contrast-muted" : "text-muted"
   return (
     <RevealGroup>
-      <FadeIn
-        as="p"
-        index={index}
-        className={`mb-3 font-mono text-xs uppercase tracking-widest ${eyebrowColor}`}
-      >
-        {eyebrow}
-      </FadeIn>
-      <Reveal
-        as="h2"
-        type="words"
-        index={index}
-        className={`text-3xl font-bold uppercase leading-[1.05] tracking-tight md:text-4xl lg:text-5xl ${titleColor}`}
-      >
+      {eyebrow ? (
+        <FadeIn
+          as="p"
+          index={index}
+          className={`mb-3 font-mono text-xs uppercase tracking-widest ${eyebrowColor}`}
+        >
+          {eyebrow}
+        </FadeIn>
+      ) : null}
+      <Reveal as="h2" type="words" index={index} className={`${HEADING_TITLE} ${titleColor}`}>
         {title}
       </Reveal>
       {lead ? (
