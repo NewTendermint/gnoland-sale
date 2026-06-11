@@ -36,8 +36,8 @@ export function Section({
           clip ? (
             // One timeline for the whole tile: the panel leads (clips open), then the
             // content reveal starts partway through that growth.
-            <RevealGroup fromBottomPct={50}>
-              <ClipOpen lead className={tileClass}>
+            <RevealGroup fromBottomPct={40}>
+              <ClipOpen lead durationMs={2200} className={tileClass}>
                 {grid}
               </ClipOpen>
             </RevealGroup>

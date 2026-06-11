@@ -82,6 +82,25 @@ export function observeReveal(el: Element, fromBottomPct: number, onHit: () => v
 }
 
 /**
+ * Run `fn` after TWO animation frames, returning a cancel fn. The first frame lets a
+ * just-parked start state (opacity 0 / scaleX 0 / translateY) - and any <Entrance> gate
+ * lifting - actually paint; the second frame fires `fn`, so an on-mount CSS transition
+ * has a real "before" frame and animates instead of snapping (a single rAF is
+ * unreliable, worse under dev Strict Mode). The cancel handles both frames, so an
+ * unmount mid-schedule (Strict Mode double-mount) is safe.
+ */
+export function doubleRaf(fn: () => void): () => void {
+  let inner = 0
+  const outer = requestAnimationFrame(() => {
+    inner = requestAnimationFrame(fn)
+  })
+  return () => {
+    cancelAnimationFrame(outer)
+    cancelAnimationFrame(inner)
+  }
+}
+
+/**
  * Wire one reveal primitive's trigger, the single branch every hook shared: run it
  * on mount (`immediate`), through its RevealGroup (in cascade order), or on its own
  * one-shot scroll observer. `reveal(extra)` plays the animation offset by the
@@ -104,8 +123,11 @@ export function wireReveal(
   },
 ): () => void {
   if (o.immediate) {
-    reveal(0)
-    return reset
+    const cancel = doubleRaf(() => reveal(0))
+    return () => {
+      cancel()
+      reset()
+    }
   }
   if (o.group) {
     const unregister = o.group.register(el, {

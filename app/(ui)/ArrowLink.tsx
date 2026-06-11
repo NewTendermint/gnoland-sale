@@ -1,14 +1,21 @@
 import { CtaArrow } from "./CtaArrow"
 
-/** Color variants, decoupled from callers: pick one per surface instead of passing
- * the full color string. `ghost` = light surface; `ghost-contrast` / `solid-contrast`
- * = on a dark contrast tile (outline vs inverted fill). */
+/**
+ * Per-surface colour variants (pick one instead of passing raw colours). The "pan"
+ * hover (Codrops button--pan, via `.btn-pan`) slides a panel up to fill the pill and
+ * the label colour swaps to read on it - so each variant sets its border, resting
+ * fill/text, the panel colour (`before:bg-*`), and the hovered text (`hover:text-*`).
+ * Colour-swap, not the demo's mix-blend-difference, so it's predictable on every
+ * surface/theme. `ghost` = light surface; the `*-contrast` ones sit on a dark tile;
+ * `solid-contrast` uses the mid-tone `border-faint` (a grey that reads on both the
+ * fill and the surface, where a pure-b/w opposite-colour border would vanish).
+ */
 const VARIANTS = {
-  ghost: "border-border text-foreground hover:bg-foreground hover:text-background",
+  ghost: "border border-border text-foreground before:bg-foreground hover:text-background",
   "ghost-contrast":
-    "border-on-contrast/25 text-on-contrast hover:bg-on-contrast hover:text-surface-contrast",
+    "border border-on-contrast/25 text-on-contrast before:bg-on-contrast hover:text-surface-contrast",
   "solid-contrast":
-    "border-transparent bg-on-contrast text-surface-contrast hover:bg-on-contrast/90",
+    "border border-faint bg-on-contrast text-surface-contrast before:bg-surface-contrast hover:text-on-contrast",
 } as const
 
 /** Pill sizes. `sm` is the default editorial CTA; `lg` matches the hero/pre-footer cluster. */
@@ -49,12 +56,15 @@ export function ArrowLink({
   size = "sm",
   className = "",
 }: ArrowLinkProps) {
+  // Pan hover lives in the `.btn-pan` class (the ::before panel + its motion + the
+  // label's z-index/colour transition); here we only declare the pill shape and the
+  // colours it pans between - `before:bg-*` (panel) and `text-* hover:text-*` (label).
   const base =
-    "group inline-flex items-center gap-2 rounded-full border font-bold uppercase tracking-[0.2em] transition-colors"
+    "btn-pan group inline-flex cursor-pointer items-center gap-2 rounded-full font-bold uppercase tracking-[0.2em]"
   const cls = `${base} ${SIZES[size]} ${VARIANTS[variant]} ${className}`
   const diagonal = arrow === "diagonal" || (arrow === "auto" && external)
   const inner = (
-    <>
+    <span className="inline-flex items-center gap-2">
       {label}
       {diagonal ? (
         <span className="transition-transform group-hover:translate-x-1" aria-hidden="true">
@@ -63,7 +73,7 @@ export function ArrowLink({
       ) : (
         <CtaArrow />
       )}
-    </>
+    </span>
   )
   if (onClick) {
     return (

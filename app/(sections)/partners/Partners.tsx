@@ -7,7 +7,7 @@
  */
 import { ParallaxBox } from "../../(ui)/ParallaxBox"
 import { Reveal } from "../../(ui)/Reveal"
-import { RevealGroup } from "../../(ui)/RevealGroup"
+import { RevealBoundary, RevealGroup } from "../../(ui)/RevealGroup"
 import { Section } from "../../(ui)/Section"
 import { SectionHeading } from "../../(ui)/SectionHeading"
 import { partners } from "../../../content/sections/partners"
@@ -20,30 +20,41 @@ export function Partners() {
             sub-grid lets the list sit at section cols 2-4 (sub-cols 2-4). */}
         <div className="col-span-12 grid grid-cols-1 gap-y-32 lg:col-span-6 lg:col-start-1 lg:grid-cols-6">
           <div className="lg:col-span-6">
-            <ParallaxBox className="aspect-[4/5]" strength={90} index={2} />
+            <RevealBoundary>
+              <ParallaxBox className="aspect-[4/5]" strength={90} />
+            </RevealBoundary>
           </div>
 
           <ul className="lg:col-span-5 lg:col-start-2">
             {partners.map((p, i) => (
-              <RevealGroup as="li" key={p.name} className={i > 0 ? "mt-8" : ""}>
-                <Reveal
-                  as="h3"
-                  className="text-lg font-semibold leading-tight tracking-tight text-foreground"
-                >
-                  {p.name}
-                </Reveal>
-                <Reveal as="p" className="mt-3 text-xl leading-snug text-foreground">
-                  {p.body}
-                </Reveal>
-              </RevealGroup>
+              // Each partner leaves the title group (RevealBoundary) for its own scroll
+              // trigger, so they reveal one at a time. Name rises, then the body rises.
+              <RevealBoundary key={p.name}>
+                <RevealGroup as="li" className={i > 0 ? "mt-8" : ""}>
+                  <Reveal
+                    as="h3"
+                    index={0}
+                    className="text-lg font-semibold leading-tight tracking-tight text-foreground"
+                  >
+                    {p.name}
+                  </Reveal>
+                  <Reveal as="p" index={1} className="mt-3 text-xl leading-snug text-foreground">
+                    {p.body}
+                  </Reveal>
+                </RevealGroup>
+              </RevealBoundary>
             ))}
           </ul>
         </div>
 
-        {/* Right column: title + second (lower) image. */}
+        {/* Right column: title (now the only member of the group, so it triggers on
+            its OWN scroll position - eyebrow + title as a block) + second image on its
+            own trigger. */}
         <div className="col-span-12 lg:col-span-4 lg:col-start-8 lg:pt-32">
-          <SectionHeading eyebrow="Partners" title="Working alongside" />
-          <ParallaxBox className="mt-48 aspect-[4/5]" strength={320} index={2} />
+          <SectionHeading eyebrow="Partners" title="Working alongside" index={0} />
+          <RevealBoundary>
+            <ParallaxBox className="mt-48 aspect-[4/5]" strength={320} />
+          </RevealBoundary>
         </div>
       </RevealGroup>
     </Section>
