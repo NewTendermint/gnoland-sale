@@ -226,14 +226,14 @@ export function BidPanel() {
                   immediate
                   delayMs={900}
                   className={`flex flex-wrap items-center ${
-                    expanded ? "gap-x-5 gap-y-2 sm:gap-x-7" : "gap-8 sm:gap-10"
+                    expanded ? "gap-x-5 gap-y-2 sm:gap-x-7" : "gap-6 gap-y-2 sm:gap-7"
                   }`}
                 >
                   {metrics.map((m, i) => (
                     <div
                       key={m.label}
                       className={`flex items-center ${
-                        expanded ? "gap-x-5 sm:gap-x-7" : "gap-8 sm:gap-10"
+                        expanded ? "gap-x-5 sm:gap-x-7" : "gap-6 sm:gap-7"
                       }`}
                     >
                       {i > 0 ? (

@@ -261,6 +261,7 @@ export function useReveal<T extends HTMLElement>({
     let killed = false
     let split: { revert: () => void } | undefined
     let teardown: (() => void) | undefined
+    let played = false
     if (immediate) el.style.visibility = "hidden"
     loadEngine()
       .then(({ SplitText }) => {
@@ -275,10 +276,23 @@ export function useReveal<T extends HTMLElement>({
           wordsClass: "reveal-word",
           onSplit: (self) => {
             const units = (type === "words" ? self.words : self.lines) as HTMLElement[]
+            // A re-split AFTER the reveal has played (autoSplit fires on any
+            // re-wrap: window resize, scrollbar appearing, a wallet modal's
+            // scroll lock, late font swap) must re-render the END state - fresh
+            // units sit at translateY(0) with no transition and no trigger.
+            // Resetting them would visibly replay the entrance on every layout
+            // change.
+            if (played) {
+              el.style.visibility = ""
+              teardown?.()
+              teardown = undefined
+              return
+            }
             for (const line of units) line.style.transform = "translateY(110%)"
             // `extra` is the group's cascade offset (0 outside a group); it shifts
             // the whole line stagger so this block reveals after the ones above it.
             const reveal = (extra = 0) => {
+              played = true
               units.forEach((line, i) => {
                 line.style.transition = `transform ${durationMs}ms ${EASE_REVEAL} ${delayMs + extra + i * staggerMs}ms`
               })
@@ -286,8 +300,8 @@ export function useReveal<T extends HTMLElement>({
               for (const line of units) line.style.transform = "translateY(0)"
             }
             // Lines are now hidden in their masks - safe to show the container, then
-            // wire the trigger (re-wired here on each autoSplit re-run). The member
-            // duration includes the per-line stagger so the group orders finishes.
+            // wire the trigger (re-wired here on each pre-play autoSplit re-run). The
+            // member duration includes the per-line stagger so the group orders finishes.
             el.style.visibility = ""
             teardown?.()
             teardown = wireReveal(el, reveal, () => {}, {
