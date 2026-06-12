@@ -68,15 +68,31 @@ export async function getMyPosition(): Promise<MyBid> {
 /**
  * Begin the Sonar OAuth login. Returns the URL to send the browser to: the real
  * Sonar authorization page, or (in mock) straight back home already logged in.
- * The caller performs the redirect.
+ * Module-private: redirectToSonarLogin below is the public surface.
  */
-export async function startSonarLogin(): Promise<string> {
+async function startSonarLogin(): Promise<string> {
   const res = await fetch("/api/auth/sonar/init", { method: "POST" })
   if (!res.ok) {
     throw new Error(`/api/auth/sonar/init responded ${res.status}`)
   }
   const data = (await res.json()) as { authorizationUrl: string }
   return data.authorizationUrl
+}
+
+/**
+ * Fire-and-redirect wrapper around startSonarLogin: the shared behavior of every
+ * "Register / Verify with Sonar" CTA. A failed init resolves silently - the CTA
+ * stays on screen and can simply be clicked again.
+ */
+export function redirectToSonarLogin(): void {
+  startSonarLogin().then(
+    (url) => {
+      window.location.href = url
+    },
+    () => {
+      /* init failed; the CTA remains and can be retried */
+    },
+  )
 }
 
 async function postJson<T>(path: string, body: unknown): Promise<T> {
@@ -89,6 +105,18 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
     throw new HttpError(res.status, `${path} responded ${res.status}`)
   }
   return res.json() as Promise<T>
+}
+
+/**
+ * End the Sonar link for this browser: the server deletes its stored tokens and
+ * destroys the session cookie. Callers then invalidate the entity query so the
+ * journey drops back to kyc-required.
+ */
+export async function postSonarLogout(): Promise<void> {
+  const res = await fetch("/api/auth/sonar/logout", { method: "POST" })
+  if (!res.ok) {
+    throw new HttpError(res.status, `/api/auth/sonar/logout responded ${res.status}`)
+  }
 }
 
 /** Whether the session's entity may purchase for this wallet (KYC/region/risk). */

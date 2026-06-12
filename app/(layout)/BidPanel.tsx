@@ -7,6 +7,7 @@
  * collapses it. Phase-driven: pre-sale and ended render their own compact bars
  * (BarShell). Data comes from useSale().
  */
+import { useQueryClient } from "@tanstack/react-query"
 import { useEffect, useRef } from "react"
 import type { ReactNode } from "react"
 import { BidFlow } from "../(sections)/bid/BidFlow"
@@ -17,23 +18,25 @@ import { Entrance } from "../(ui)/Entrance"
 import { Icon } from "../(ui)/Icon"
 import { Stagger } from "../(ui)/Stagger"
 import { useCtaEntrance } from "../../lib/motion/use-motion"
-import { startSonarLogin } from "../../lib/sale/api"
+import { newsletterEnabled } from "../../lib/newsletter/config"
+import { postSonarLogout, redirectToSonarLogin } from "../../lib/sale/api"
 import { gnotEstimate } from "../../lib/sale/calc"
 import { SALE_ECONOMICS, formatSaleDate } from "../../lib/sale/economics"
 import { fmtCompactUsd, fmtCount, fmtGnot, fmtPrice } from "../../lib/sale/format"
 import { useBid } from "../../lib/sale/hooks"
-import { bidCtaLabel } from "../../lib/sale/labels"
+import { derivePreSaleBar } from "../../lib/sale/journey"
+import { VERIFY_STATUS, bidCtaLabel } from "../../lib/sale/labels"
+import type { PreSaleBarState } from "../../lib/sale/types"
+import { AddToCalendarButton } from "./AddToCalendarButton"
 import { Countdown } from "./Countdown"
+import { NewsletterForm } from "./NewsletterForm"
 import { useSale } from "./SaleProvider"
 import { WalletButton } from "./WalletButton"
 
-// Positioning shell: pinned above the page frame, capped to the container and
-// gutter-padded so the card inside lands exactly on the 12-col grid width.
+// Container cap + gutter padding so the card lands exactly on the 12-col grid width.
 const SHELL =
   "bar-enter fixed bottom-[var(--reveal-padding)] left-[var(--reveal-padding)] right-[var(--reveal-padding)] z-[var(--z-sticky)] mx-auto max-w-[var(--max-width-container)] px-6 lg:px-8"
-// Visible card: its edges align with the section grids (container minus gutters).
 const CARD = "overflow-hidden rounded-t-[var(--frame-radius)] bg-background"
-// Solid inverted CTA pill, shared across the bar's phase states (pre-sale / live / ended).
 const CTA_PILL =
   "btn-pan group inline-flex cursor-pointer items-center justify-center rounded-full border border-faint bg-surface-contrast px-7 py-3.5 text-xs font-bold uppercase tracking-[0.2em] text-on-contrast before:bg-on-contrast hover:text-surface-contrast"
 
@@ -46,10 +49,12 @@ export function BidPanel() {
     journey,
     commitment,
     myBid,
+    sonarReturn,
     bidPanelOpen: expanded,
     setBidPanelOpen: setExpanded,
   } = useSale()
   const bid = useBid()
+  const queryClient = useQueryClient()
   const panelRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const wasExpanded = useRef(false)
@@ -58,15 +63,16 @@ export function BidPanel() {
   // triggerRef for focus management - one DOM node can hold only one ref.
   const ctaRef = useCtaEntrance<HTMLSpanElement>({ delayMs: 1250 })
 
-  // Start the Sonar OAuth login (the kyc-required gate's CTA). In mock this
-  // short-circuits to a logged-in session; in prod it redirects to Sonar's page.
-  function handleConnectSonar() {
-    startSonarLogin().then(
-      (url) => {
-        window.location.href = url
+  // End the Sonar link (the pre-sale registered state's quiet escape hatch, e.g.
+  // wrong account). Refetching entity + position drops the journey to kyc-required.
+  function handleSignOut() {
+    postSonarLogout().then(
+      () => {
+        queryClient.invalidateQueries({ queryKey: ["sale", "entity"] })
+        queryClient.invalidateQueries({ queryKey: ["sale", "my-bid"] })
       },
       () => {
-        /* login start failed; the gate keeps offering "Verify with Sonar" */
+        /* logout failed; the link stays and can be retried */
       },
     )
   }
@@ -108,7 +114,11 @@ export function BidPanel() {
   }
 
   if (phase === "pre-sale") {
-    const registrationOpen = preSaleStage === "registration-open"
+    const barState = derivePreSaleBar(preSaleStage, journey, sonarReturn)
+    // One countdown, always to the user's NEXT milestone: registration opening
+    // first, then the sale opening - and a registered user's next milestone is
+    // the sale itself, whatever the stage.
+    const countToSale = preSaleStage === "registration-open" || barState === "registered"
     return (
       <BarShell>
         <DrawLine immediate />
@@ -117,30 +127,24 @@ export function BidPanel() {
             <Icon name="clock" draw={false} className="h-[18px] w-[18px]" />
             <div>
               <p className="font-mono text-2xl font-medium tracking-tight tabular-nums sm:text-3xl">
-                <Countdown targetIso={SALE_ECONOMICS.saleOpensIso} />
+                <Countdown
+                  targetIso={
+                    countToSale ? SALE_ECONOMICS.saleOpensIso : SALE_ECONOMICS.registrationOpensIso
+                  }
+                />
               </p>
               <p className="mt-0.5 text-[10px] uppercase tracking-[0.2em] text-muted">
-                Opens {formatSaleDate(SALE_ECONOMICS.saleOpensIso)}
+                {countToSale
+                  ? `Opens ${formatSaleDate(SALE_ECONOMICS.saleOpensIso)}`
+                  : `Registration opens ${formatSaleDate(SALE_ECONOMICS.registrationOpensIso, false)}`}
               </p>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-            <p className="text-sm text-muted">
-              {registrationOpen
-                ? "Registration is open"
-                : `Registration opens ${formatSaleDate(SALE_ECONOMICS.registrationOpensIso, false)}`}
-            </p>
-            <button
-              type="button"
-              onClick={registrationOpen ? handleConnectSonar : undefined}
-              className={CTA_PILL}
-            >
-              <span className="inline-flex items-center gap-2">
-                <span>{registrationOpen ? "Register now" : "Get notified"}</span>
-                <CtaArrow />
-              </span>
-            </button>
-          </div>
+          <PreSaleRight
+            state={barState}
+            onRegister={redirectToSonarLogin}
+            onSignOut={handleSignOut}
+          />
         </div>
       </BarShell>
     )
@@ -222,14 +226,14 @@ export function BidPanel() {
                   immediate
                   delayMs={900}
                   className={`flex flex-wrap items-center ${
-                    expanded ? "gap-x-5 gap-y-2 sm:gap-x-7" : "gap-8 sm:gap-10"
+                    expanded ? "gap-x-5 gap-y-2 sm:gap-x-7" : "gap-6 gap-y-2 sm:gap-7"
                   }`}
                 >
                   {metrics.map((m, i) => (
                     <div
                       key={m.label}
                       className={`flex items-center ${
-                        expanded ? "gap-x-5 sm:gap-x-7" : "gap-8 sm:gap-10"
+                        expanded ? "gap-x-5 sm:gap-x-7" : "gap-6 sm:gap-7"
                       }`}
                     >
                       {i > 0 ? (
@@ -326,7 +330,7 @@ export function BidPanel() {
                       journey={journey}
                       clearingPriceUsd={commitment.clearingPriceUsd}
                       myBid={myBid}
-                      onConnectSonar={handleConnectSonar}
+                      onConnectSonar={redirectToSonarLogin}
                       onBid={bid.submit}
                       walletButton={<WalletButton />}
                     />
@@ -339,6 +343,137 @@ export function BidPanel() {
       </div>
     </aside>
   )
+}
+
+/** Compact status line for the pre-sale bar, mirroring the gate-row pattern. */
+function BarStatus({
+  icon,
+  title,
+  body,
+  tone = "default",
+}: {
+  icon: string
+  title: string
+  body: string
+  tone?: "default" | "danger" | "ok"
+}) {
+  const iconColor =
+    tone === "danger" ? "text-danger" : tone === "ok" ? "text-mint" : "text-foreground"
+  return (
+    <div className="flex items-center gap-3">
+      <Icon name={icon} draw={false} className={`h-5 w-5 shrink-0 ${iconColor}`} />
+      <p className="text-sm">
+        <span className="font-medium text-foreground">{title}</span>{" "}
+        <span className="text-muted">{body}</span>
+      </p>
+    </div>
+  )
+}
+
+/**
+ * Pre-sale bar right cluster, one branch per derivePreSaleBar state: the stage ask
+ * (newsletter capture / register CTA) unless the user already has a Sonar status to
+ * show, with the OAuth-return error on top. See lib/sale/journey.ts.
+ */
+function PreSaleRight({
+  state,
+  onRegister,
+  onSignOut,
+}: {
+  state: PreSaleBarState
+  onRegister: () => void
+  onSignOut: () => void
+}) {
+  switch (state) {
+    case "notify":
+      return newsletterEnabled() ? (
+        // items-start: the form's status line below would pull a centered round down.
+        <div className="flex flex-wrap items-start gap-5">
+          <NewsletterForm variant="bar" inputId="newsletter-email-bar" />
+          <AddToCalendarButton milestone="registration" variant="bar" />
+        </div>
+      ) : (
+        // Feature intentionally off: state the next date, no dead CTA.
+        <p className="text-sm text-muted">{`Sale opens ${formatSaleDate(SALE_ECONOMICS.saleOpensIso)}`}</p>
+      )
+    case "register":
+      return (
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+          <p className="text-sm text-muted">Registration is open</p>
+          <button type="button" onClick={onRegister} className={CTA_PILL}>
+            <span className="inline-flex items-center gap-2">
+              <span>Register now</span>
+              <CtaArrow />
+            </span>
+          </button>
+        </div>
+      )
+    case "pending":
+      return (
+        <BarStatus
+          icon="clock"
+          title={`${VERIFY_STATUS.pending.title}.`}
+          body={VERIFY_STATUS.pending.body}
+        />
+      )
+    case "failed":
+      return (
+        <BarStatus
+          icon="shield-check"
+          tone="danger"
+          title={`${VERIFY_STATUS.failed.title}.`}
+          body={VERIFY_STATUS.failed.body}
+        />
+      )
+    case "not-eligible":
+      return (
+        <BarStatus
+          icon="shield-check"
+          tone="danger"
+          title={`${VERIFY_STATUS["not-eligible"].title}.`}
+          body={VERIFY_STATUS["not-eligible"].body}
+        />
+      )
+    case "registered":
+      return (
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+          <BarStatus
+            icon="shield-check"
+            tone="ok"
+            title="You're registered."
+            body={`The sale opens ${formatSaleDate(SALE_ECONOMICS.saleOpensIso)}.`}
+          />
+          <AddToCalendarButton milestone="sale" variant="bar" />
+          <button
+            type="button"
+            onClick={onSignOut}
+            className="text-xs font-bold uppercase tracking-[0.2em] text-muted underline-offset-4 hover:text-foreground hover:underline"
+          >
+            Sign out of Sonar
+          </button>
+        </div>
+      )
+    case "auth-error":
+      return (
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+          <BarStatus
+            icon="shield-check"
+            tone="danger"
+            title="Could not connect to Sonar."
+            body="Please try again."
+          />
+          <button type="button" onClick={onRegister} className={CTA_PILL}>
+            <span className="inline-flex items-center gap-2">
+              <span>Try again</span>
+              <CtaArrow />
+            </span>
+          </button>
+        </div>
+      )
+    default:
+      // Compile-time exhaustiveness: a new PreSaleBarState must add a case here.
+      return state satisfies never
+  }
 }
 
 /** Shared bar shell: SHELL frame + inset + 12-col grid, content inset to cols 2-11. */

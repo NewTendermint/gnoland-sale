@@ -39,3 +39,17 @@ export const fmtCount = (n: number) => n.toLocaleString("en-US")
 
 /** Whole GNOT token count, e.g. "26,667". */
 export const fmtGnot = (n: number) => n.toLocaleString("en-US", { maximumFractionDigits: 0 })
+
+/**
+ * Countdown remainder as compact ticking digits: "32d 14:03:27" (days + a zero-padded
+ * HH:MM:SS clock), dropping the day prefix under 24h ("14:03:27"). The fixed-width
+ * clock + tabular-nums at the call site keep layout stable while seconds tick.
+ * Clamps at "00:00:00" once the target has passed.
+ */
+export const fmtCountdown = (msLeft: number) => {
+  const total = Math.max(0, Math.floor(msLeft / 1000))
+  const days = Math.floor(total / 86_400)
+  const pad = (n: number) => String(n).padStart(2, "0")
+  const clock = `${pad(Math.floor((total % 86_400) / 3_600))}:${pad(Math.floor((total % 3_600) / 60))}:${pad(total % 60)}`
+  return days > 0 ? `${days}d ${clock}` : clock
+}

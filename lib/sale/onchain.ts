@@ -15,8 +15,10 @@
  * The signature, the caller, and every type stay the same. The real body, using
  * wagmi/core actions (callable here, no hooks):
  *   1. Bid struct (verified from SettlementSale.sol): { lockup: bool, price: uint64,
- *      amount: uint256 }. Scale params.amountUsd to the payment-token decimals and
- *      params.priceUsd to the contract's price scale.
+ *      amount: uint256 }. Convert ONLY through usdToTokenUnits / priceUsdToMicroUsd
+ *      (lib/sale/calc.ts, integer-exact + tested): amount with the payment token's
+ *      real decimals (PaymentTokenDecimals from commitment data, never hardcoded),
+ *      price re-mapped once A.12.1 confirms the uint64 scale.
  *   2. EIP-2612: signTypedData(wagmiConfig, ...) on the payment token (USDC) for
  *      (erc20PermitDeadline, erc20PermitSignature bytes). Single-tx path, no approve.
  *   3. Map permit.PermitJSON (Sonar BasicPermitV3) to the PurchasePermitV3 tuple;

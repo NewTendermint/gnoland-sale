@@ -24,3 +24,23 @@ export function bidCtaLabel(journey: JourneyState): string {
       return "Place a bid"
   }
 }
+
+/**
+ * Verification-status copy shared by its three surfaces (bid gate rows, pre-sale
+ * bar, How-to status line) so the owner-validated wording can never drift apart.
+ * Titles carry no trailing period; each surface adds its own punctuation.
+ */
+export const VERIFY_STATUS = {
+  pending: {
+    title: "Verification in progress",
+    body: "We will let you know as soon as Sonar has reviewed it.",
+  },
+  failed: {
+    title: "Verification did not pass",
+    body: "Contact support if you believe this is an error.",
+  },
+  "not-eligible": {
+    title: "Not eligible",
+    body: "This sale is not available in your region.",
+  },
+} as const

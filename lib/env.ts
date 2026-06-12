@@ -31,6 +31,14 @@ const envSchema = z.object({
   // than a public URL. Defaults to testnet so a misconfigured prod mislabels
   // toward sandbox rather than falsely claiming mainnet.
   SALE_CHAIN: z.enum(["base", "base-sepolia"]).default("base-sepolia"),
+  // Newsletter (Mailchimp). Optional: the feature degrades cleanly when absent
+  // (the form is flag-gated, dev mocks the API, prod answers 502), so booting
+  // without them is valid. An EMPTY string (the .env.example default a dev will
+  // copy) is normalized to absent rather than failing the whole env at boot.
+  // Read sites use process.env directly (mock-config precedent) to stay
+  // test-mutable; these entries document the contract.
+  MAILCHIMP_API_KEY: z.preprocess((v) => (v === "" ? undefined : v), z.string().optional()),
+  MAILCHIMP_AUDIENCE_ID: z.preprocess((v) => (v === "" ? undefined : v), z.string().optional()),
 })
 
 export type Env = z.infer<typeof envSchema>

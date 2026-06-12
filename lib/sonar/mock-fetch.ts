@@ -14,7 +14,11 @@ function liveCommitmentData(): ReadCommitmentDataResponse {
     ...base,
     TotalCommitmentAmount: String(Math.round((1_200_000 + t * 400) * unit)), // +~$4k / 10s
     UniqueCommitmentCount: 1247 + Math.floor(t / 20), // +1 bidder / 20s
-    ClearingPriceMicroUSD: String(120_000 + Math.floor(t / 60) * 500), // +$0.0005 / min
+    // Starts at $0.10 and climbs $0.0005/min, capped at $0.1161 (18 increments):
+    // a real clearing can never exceed the $0.1290 hardcap, the ramp stays alive
+    // in dev (exercises the price-floor tracking), and the cap keeps two stepper
+    // steps of headroom.
+    ClearingPriceMicroUSD: String(Math.min(100_000 + Math.floor(t / 60) * 500, 116_100)),
   }
 }
 

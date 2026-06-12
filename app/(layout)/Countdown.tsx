@@ -2,22 +2,12 @@
 
 /**
  * Live countdown to a target ISO timestamp. Renders a placeholder until the first
- * client tick so server and client markup match (no hydration mismatch). Granularity
- * coarsens with distance: "Dd Hh", then "Hh Mm" under a day, then "Mm Ss" under an
- * hour. The tick interval matches: 1s in the final hour (seconds shown), 60s before.
+ * client tick so server and client markup match (no hydration mismatch). The
+ * remainder is recomputed from Date.now() each tick, so background-tab timeout
+ * throttling self-corrects; tabular-nums keeps the 1Hz tick from shifting layout.
  */
 import { useEffect, useState } from "react"
-
-function format(ms: number): string {
-  if (ms <= 0) return "0m"
-  const days = Math.floor(ms / 86_400_000)
-  const hours = Math.floor((ms % 86_400_000) / 3_600_000)
-  const mins = Math.floor((ms % 3_600_000) / 60_000)
-  const secs = Math.floor((ms % 60_000) / 1000)
-  if (days > 0) return `${days}d ${hours}h`
-  if (hours > 0) return `${hours}h ${mins}m`
-  return `${mins}m ${secs}s`
-}
+import { fmtCountdown } from "../../lib/sale/format"
 
 export function Countdown({
   targetIso,
@@ -29,18 +19,16 @@ export function Countdown({
     const target = new Date(targetIso).getTime()
     let id: ReturnType<typeof setTimeout>
     const tick = () => {
-      const ms = Math.max(0, target - Date.now())
-      setRemaining(ms)
-      // 1s only in the final hour (seconds shown); coarser before to avoid churn.
-      id = setTimeout(tick, ms < 3_600_000 ? 1000 : 60_000)
+      setRemaining(Math.max(0, target - Date.now()))
+      id = setTimeout(tick, 1000)
     }
     tick()
     return () => clearTimeout(id)
   }, [targetIso])
 
   return (
-    <span className="tabular-nums [word-spacing:-0.3em]">
-      {remaining === null ? placeholder : format(remaining)}
+    <span className="tabular-nums">
+      {remaining === null ? placeholder : fmtCountdown(remaining)}
     </span>
   )
 }

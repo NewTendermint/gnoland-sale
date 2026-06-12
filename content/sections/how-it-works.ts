@@ -8,7 +8,7 @@
 export const steps: Array<{ title: string; body: string; icon: string }> = [
   {
     title: "Verify",
-    body: "Complete identity verification with Sonar.",
+    body: "Complete identity verification with Sonar, Echo's compliance platform.",
     icon: "shield-check",
   },
   {
