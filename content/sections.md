@@ -105,6 +105,8 @@ Refined metric definitions (from the team xlsx, 2026-06-01), mapped to the Sonar
 
 ## #3 - Token Sale Details  🟡 Partial (numbers in, some provisional)
 
+> **2026-06-13 confirmations (Jae + Ryan, via owner)**: hardcap English auction - floor $0.0645 ($86M FDV), **maximum price $0.1290** ($172M FDV), no further bids once the hardcap is reached; **bid increment $0.00645** (no price levels; any off-step bid must show a UI error); **US accredited investors enabled with a 1-year lockup**; pre-registration July 1, sale July 15 (unchanged); **September 1, 2026 = transfers enabled / listings / distribution (mainnet)**. Reflected the same day in the terms table, bid validation, FAQ and Roadmap (Q3 highlight; the Q1 "distribution begins" claim removed). The 31M vs 77,499,999 offered-amount discrepancy below remains OPEN.
+
 **Status**: Updated 2026-06-01 from the team xlsx + the 2026-05-30 Sonar call recap (see `docs/REQUIREMENTS_FROM_TEAMS.md` A.12.2). Values marked 🟡 were filled from Friday's meeting and still need Dongwon to finalize. The contribution-window end date is deliberately left vague because the sale may be extended (A.12.2).
 
 **Source xls note**: "I filled out the numbers based on our meeting on Friday, but I will need to talk to Dongwon to finalize some numbers."
@@ -115,16 +117,19 @@ Refined metric definitions (from the team xlsx, 2026-06-01), mapped to the Sonar
 |---|---|---|
 | Token | GNOT | ✅ |
 | Starting price (= minimum price) | $0.0645 per GNOT | ✅ |
+| Maximum price | $0.129 per GNOT (hardcap; bidding stops if reached) | ✅ confirmed 2026-06-13 |
+| Bid increment | $0.00645 (UI rejects any off-step bid) | ✅ confirmed 2026-06-13 |
 | Total raise | $2,000,000 at starting price (may grow if oversubscribed) | ✅ |
 | Minimum commitment | $200 per entity | 🟡 provisional |
 | Maximum commitment | $100,000 per entity (whale cap) | 🟡 provisional |
-| FDV when total raise is met | $86,000,000 ($0.0645 x 1.333B total supply) | ✅ |
+| FDV at clearing | $86M to $172M (floor to hardcap) | ✅ confirmed 2026-06-13 |
 | Unlock schedule | 7% released on mainnet launch (the day GNOT becomes transferable), 7% released each subsequent month, and 9% in the final month - fully vested 13 months after mainnet launch | ✅ |
-| Allocation (% of total supply) | 31,000,000 GNOT (2.32% of the 1.333B total supply) | ✅ |
+| Allocation (% of total supply) | 31,000,000 GNOT (2.32% of the 1.333B total supply) | ✅ (see discrepancy note) |
 | Registration opens | July 1, 2026 | ✅ |
-| Contribution window | Opens July 15, 2026; end date TBD (kept vague, may be extended) | 🟡 end TBD |
+| Contribution window | Opens July 15, 2026 · until close or hardcap | ✅ confirmed 2026-06-13 |
 | Accepted currency | USDC (USDT technically supported by the contract; default USDC) | 🟡 |
-| Mainnet launch | Q1 2026 Beta · Q3 2026 Mainnet (transferable) | ✅ from roadmap |
+| Mainnet / distribution | September 1, 2026 (transfers enabled, listings, distribution) | ✅ confirmed 2026-06-13 |
+| US participants | Accredited investors only, 1-year lockup (stack vs overlay interaction OPEN, A.15) | ✅ confirmed 2026-06-13 |
 | Auction format | Uniform Price Auction (English Auction) | ✅ |
 
 **Sonar dashboard intel (2026-06-10, NOT published yet - the dashboard is on Sepolia/testnet, treated as test config):** offered tokens this sale **77,499,999** (token decimals 6); price cap **$0.129**; bid increment **$0.00645**; commitment window **July 15 -> July 20, 2026** (00:00 UTC); registration opens July 1, 2026; chain Sepolia; payment USDC; English auction. Proceeds-receiver + contract-admin addresses still empty.
@@ -180,7 +185,7 @@ Refined metric definitions (from the team xlsx, 2026-06-01), mapped to the Sonar
 
 **4 steps** (horizontal grid):
 
-1. **Verify** - Complete identity verification with Sonar.
+1. **Verify** - Complete identity verification with Sonar, Echo's compliance platform. (Sonar one-liner added 2026-06-13, owner-requested)
 2. **Connect** - Connect your wallet to join the sale.
 3. **Bid** - Set your max price and commit USDC or USDT.
 4. **Distribution** - Tokens are distributed to your address. Token lockup is applied according to schedule.
@@ -308,11 +313,11 @@ Applications interoperate as processes instead of isolated contracts. This inter
 
 **2025** - Stabilization with Test6 to Test8, GovDAO V3, token mechanics, and major GnoVM upgrades. Governance testing, dev updates, community events, and validator tooling improvements.
 
-**Q1 2026 - Gno.land Beta Mainnet Launch** - Token distribution. Release of functional network and initial operating system.
+**Q1 2026 - Gno.land Beta Mainnet Launch** - Release of functional network and initial operating system. (Re-dated 2026-06-13: the "token distribution" claim moved to Q3 - distribution cannot precede the July sale.)
 
 **Q2 2026 - Expanding the network** - Bridging AtomOne and Gno.land for security and interoperability. Advancing Gno's functionality and features.
 
-**Q3 2026 - Mainnet Launch** - Protocol-level transfers enabled. Fully interoperable, security-hardened network.
+**Q3 2026 - Mainnet Launch (highlighted station)** - The GNOT public sale runs in July; on September 1 protocol-level transfers are enabled and GNOT distribution to sale participants begins alongside listings. Fully interoperable, security-hardened network.
 
 **Q4 2026 - Beyond - Ecosystem Growth** - Major focus on building killer apps on Gno.land. Develop tooling.
 
@@ -412,6 +417,26 @@ A community-driven, constitutionally governed blockchain designed to prioritize 
 **Format**: grid of media cards (logo + headline + date + external link). 6-12 entries.
 
 **To collect during launch campaign**: press coverage, podcast appearances, video features.
+
+---
+
+## #15b - FAQ  ✅ (drafted 2026-06-13, copy VALIDATED by owner 2026-06-13)
+
+**Status**: Added 2026-06-13 (review top-10 #7). Placed between Partners and the pre-footer CTA. Copy drafted by the assistant at the owner's request; every Q/A below needs owner sign-off. Mirrored into `content/sections/faq.ts` (numbers/dates pulled from `lib/sale/economics.ts` so they cannot drift from the terms table).
+
+**Title**: `Frequently asked questions`
+**Eyebrow**: `FAQ`
+
+**Format**: hairline-separated rows (Team credits pattern), question as full-width button, answer expands on click (grid-rows trick, single-open, reduced-motion safe).
+
+1. **How does the auction work?** - This is a uniform price auction: every winner pays the same final clearing price. You set the maximum price you are willing to pay and the amount you commit; if the final clearing price ends at or below your maximum, you receive tokens at the clearing price, not at your maximum. Bidding stops early if the $0.129 hardcap is reached. (price dynamic from economics)
+2. **What happens if I get outbid?** - You can raise your bid at any time while the sale is open. If the final clearing price ends above your maximum, you do not receive tokens and your committed funds become refundable once the sale settles.
+3. **What is Sonar and why do I need to verify my identity?** - This is a regulated public sale, so every participant completes a one-time identity verification (about 3 minutes) with Sonar, the compliance platform by Echo. Reviews are asynchronous and can take time, so register early - registration opens July 1, 2026, two weeks before the sale. (dates dynamic from economics)
+4. **Who can participate?** - Eligibility depends on your jurisdiction and is checked during Sonar verification. The sale is not available in some regions; if yours is restricted, Sonar will tell you during registration. US participants: accredited investors only, with a one-year lockup.
+5. **What do I need to place a bid?** - A verified Sonar account, a self-custody wallet connected to Base, and USDC or USDT to commit. Get these ready before the sale opens July 15 - funding a wallet on sale day is the most common delay. (date dynamic)
+6. **How much can I commit?** - Bids run from $0.0645 to $0.129 per GNOT in $0.00645 steps - the form starts you at the cheapest price that is currently winning, and you move one step at a time. Commitments run between $200 and $100,000 per participant. (numbers dynamic from economics; commitment min/max PROVISIONAL per A.12.2; price band confirmed 2026-06-13)
+7. **When do I receive my tokens?** - Distribution begins September 1, 2026, when transfers are enabled at mainnet. Tokens are sent to your wallet with the unlock schedule applied: 7% unlocks at launch, then 7% each month, with the final 9% in month 13. No cliff. (date dynamic from economics; matches #4b vesting)
+8. **Can I withdraw my bid?** - No. A bid can be raised, never lowered or withdrawn while the sale runs. If your maximum ends below the final clearing price, your committed funds become refundable at settlement.
 
 ---
 

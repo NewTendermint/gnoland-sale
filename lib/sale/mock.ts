@@ -79,7 +79,9 @@ export const MOCK_JOURNEY_INPUTS: Record<JourneyState, JourneyInput> = {
     isBaseChain: true,
     setupState: "complete",
     eligibility: "eligible",
-    myBid: { priceUsd: 0.18, committedUsd: 3200, lockup: false },
+    // On the increment grid and under the $0.129 hardcap (a bid can never exceed
+    // it), while still above the clearing so the state derives "winning".
+    myBid: { priceUsd: 0.12255, committedUsd: 3200, lockup: false },
     clearingPriceUsd: 0.12,
   },
   "has-bid-outbid": {

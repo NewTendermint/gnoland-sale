@@ -10,7 +10,6 @@ import { BidFlow } from "../../(sections)/bid/BidFlow"
 import { BidStatusTag, FunnelSteps } from "../../(sections)/bid/FunnelSteps"
 import { CtaArrow } from "../../(ui)/CtaArrow"
 import { Icon } from "../../(ui)/Icon"
-import { SALE_ECONOMICS, formatSaleDate } from "../../../lib/sale/economics"
 import { fmtCompactUsd, fmtCount, fmtPrice } from "../../../lib/sale/format"
 import { bidCtaLabel } from "../../../lib/sale/labels"
 import { MOCK_COMMITMENT_LIVE, MOCK_JOURNEY_INPUTS } from "../../../lib/sale/mock"
@@ -24,7 +23,7 @@ const METRICS = [
       : "TBD",
     label: "Clearing",
   },
-  { icon: "clock", value: "5d 12h 30m", label: "Time left" },
+  { icon: "clock", value: "5d 12:30:00", label: "Time left" },
   {
     icon: "users-group",
     value: fmtCount(MOCK_COMMITMENT_LIVE.uniqueCommitmentCount),
@@ -197,16 +196,35 @@ export default function DevStatesPage() {
           </p>
           <CompactPreview
             lead="Public sale"
-            headline={`Opens ${formatSaleDate(SALE_ECONOMICS.saleOpensIso)}`}
-            sub={`Registration opens ${formatSaleDate(SALE_ECONOMICS.registrationOpensIso, false)}`}
-            cta="Register now"
-          />
-          <CompactPreview
-            lead="Public sale"
             headline="Auction closed"
-            sub="Final clearing $0.12"
+            sub="Final clearing $0.1161"
             cta="View results"
           />
+        </section>
+
+        {/* The pre-sale bar matrix renders REAL components driven by the dev overrides,
+            so link to the live bar instead of duplicating its copy in replicas. */}
+        <section className="flex flex-col gap-3 border-t border-border pt-6">
+          <p className="font-mono text-xs font-medium uppercase tracking-[0.2em] text-foreground">
+            pre-sale bar states (drive the real bar)
+          </p>
+          <ul className="flex flex-col gap-1.5 text-sm text-muted">
+            {[
+              ["notify (stage A)", "/?phase=pre-sale&registration=closed&journey=kyc-required"],
+              ["register (stage B)", "/?phase=pre-sale&registration=open&journey=kyc-required"],
+              ["pending", "/?phase=pre-sale&registration=open&journey=kyc-pending"],
+              ["failed", "/?phase=pre-sale&registration=open&journey=kyc-failed"],
+              ["not eligible", "/?phase=pre-sale&registration=open&journey=not-eligible"],
+              ["registered", "/?phase=pre-sale&registration=open&journey=disconnected"],
+              ["auth error", "/?phase=pre-sale&auth=error&journey=kyc-required"],
+            ].map(([label, href]) => (
+              <li key={href}>
+                <a href={href} className="link-underline hover:text-foreground">
+                  {label} <code className="font-mono text-xs">{href}</code>
+                </a>
+              </li>
+            ))}
+          </ul>
         </section>
       </div>
     </main>

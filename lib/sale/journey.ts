@@ -1,5 +1,13 @@
 import { bidStatus } from "./calc"
-import type { EntitySetupState, JourneyInput, JourneyState, PositionState } from "./types"
+import type {
+  EntitySetupState,
+  JourneyInput,
+  JourneyState,
+  PositionState,
+  PreSaleBarState,
+  PreSaleStage,
+  SonarReturn,
+} from "./types"
 
 // Sonar EntitySetupState buckets
 const PENDING_SETUP: EntitySetupState[] = ["in-progress", "ready-for-review", "in-review"]
@@ -53,4 +61,38 @@ export function derivePositionState(journey: JourneyState, hasBid: boolean): Pos
   if (hasBid) return "active"
   if (journey === "ready") return "no-bids"
   return "not-ready"
+}
+
+// Journey states that have NOT cleared the Verify gate: no Sonar session yet, KYC
+// still in flight or failed, or blocked by eligibility.
+const UNVERIFIED_JOURNEYS: JourneyState[] = [
+  "kyc-required",
+  "kyc-pending",
+  "kyc-failed",
+  "not-eligible",
+]
+
+/** True once the journey is past the Verify gate (Sonar setup complete + eligible). */
+export function isSonarVerified(journey: JourneyState): boolean {
+  return !UNVERIFIED_JOURNEYS.includes(journey)
+}
+
+/**
+ * Pre-sale sticky-bar state. Precedence: an OAuth return error beats everything
+ * (the user just bounced back and needs to know), then any KNOWN Sonar status (a
+ * user who already engaged shows their status, not a generic ask), then the stage
+ * default ask: newsletter capture before registration opens, register after.
+ */
+export function derivePreSaleBar(
+  stage: PreSaleStage,
+  journey: JourneyState,
+  sonarReturn: SonarReturn,
+): PreSaleBarState {
+  if (sonarReturn === "error") return "auth-error"
+  if (journey === "kyc-pending") return "pending"
+  if (journey === "kyc-failed") return "failed"
+  if (journey === "not-eligible") return "not-eligible"
+  if (isSonarVerified(journey)) return "registered"
+  // kyc-required: no Sonar session yet, show the stage ask.
+  return stage === "registration-open" ? "register" : "notify"
 }

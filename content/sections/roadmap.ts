@@ -27,8 +27,7 @@ export const items: RoadmapItem[] = [
   {
     year: "Q1 2026",
     title: "Gno.land Beta Mainnet Launch",
-    body: "GNOT distribution to bidders begins, and Gno.land Beta Mainnet goes live with the functional network and initial operating system layer ready for the first wave of real usage.",
-    highlight: true,
+    body: "Gno.land Beta Mainnet goes live with the functional network and initial operating system layer ready for the first wave of real usage.",
   },
   {
     year: "Q2 2026",
@@ -38,7 +37,8 @@ export const items: RoadmapItem[] = [
   {
     year: "Q3 2026",
     title: "Mainnet Launch",
-    body: "Protocol-level token transfers are enabled, finalizing the path from beta to a fully interoperable, security-hardened mainnet ready for production-grade traffic.",
+    body: "The GNOT public sale runs in July, and on September 1 protocol-level token transfers are enabled: GNOT distribution to sale participants begins alongside listings, finalizing the path from beta to a fully interoperable, security-hardened mainnet.",
+    highlight: true,
   },
   {
     year: "Q4 2026 - Beyond",

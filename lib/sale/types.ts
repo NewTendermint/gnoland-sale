@@ -75,6 +75,24 @@ export type JourneyState =
 // active (a bid is placed). Derived + unit-tested via derivePositionState (journey.ts).
 export type PositionState = "not-ready" | "no-bids" | "active"
 
+// Sonar OAuth return hint, read once from ?auth= on the callback redirect then
+// stripped from the URL. Display-only by design: "ok" just refetches the entity
+// (the journey moves only when the server-confirmed status lands) and "error"
+// surfaces a notice. It is never an input to an auth decision.
+export type SonarReturn = "ok" | "error" | null
+
+// Pre-sale sticky-bar right-cluster state, derived by derivePreSaleBar (journey.ts):
+// the stage ask (notify before registration opens, register after) unless the user
+// already has a Sonar status to show, or just bounced back from OAuth with an error.
+export type PreSaleBarState =
+  | "notify"
+  | "register"
+  | "pending"
+  | "failed"
+  | "not-eligible"
+  | "registered"
+  | "auth-error"
+
 // Inputs the journey deriver needs. No readyToPurchase here: the per-attempt
 // pre-purchase gating lives in the bid step (PreflightGates), mirroring Sonar's
 // useSonarPurchase. See journey.ts + spec §7.2.

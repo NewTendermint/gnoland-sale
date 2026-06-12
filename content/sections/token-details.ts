@@ -35,15 +35,18 @@ export const termGroups: Array<{
     eyebrow: "Supply",
     rows: [
       { label: "Max supply", value: "1,333,000,000 GNOT" },
+      { label: "Sale allocation", value: "31,000,000 GNOT (2.32% of supply)" },
       { label: "Circulating at TGE", value: "93,310,000 GNOT (7%)" },
       { label: "Target raise", value: "$2,000,000" },
-      { label: "FDV at clearing", value: "After auction close", tbd: true },
+      { label: "FDV at clearing", value: "$86M to $172M (hardcap)" },
     ],
   },
   {
     eyebrow: "Bid range",
     rows: [
       { label: "Minimum price", value: "$0.0645 per GNOT" },
+      { label: "Maximum price", value: "$0.129 per GNOT (hardcap)" },
+      { label: "Bid increment", value: "$0.00645" },
       { label: "Min commitment", value: "$200 per entity" },
       { label: "Max commitment", value: "$100,000 per entity" },
     ],
@@ -51,8 +54,9 @@ export const termGroups: Array<{
   {
     eyebrow: "Schedule",
     rows: [
-      { label: "Contribution window", value: "Opens July 15, 2026 · end TBD" },
-      { label: "Mainnet launch", value: "Q1 2026 Beta · Q3 2026 Mainnet" },
+      { label: "Registration opens", value: "July 1, 2026" },
+      { label: "Contribution window", value: "Opens July 15, 2026 · until close or hardcap" },
+      { label: "Mainnet / distribution", value: "September 1, 2026 (transfers enabled)" },
     ],
   },
 ]

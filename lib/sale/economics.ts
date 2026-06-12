@@ -4,16 +4,24 @@
  * PROVISIONAL values are flagged; confirm with the team before launch.
  */
 export const SALE_ECONOMICS = {
-  startingPriceUsd: 0.0645, // = minimum price (confirmed). NO maximum price (param list #6 = NA).
+  startingPriceUsd: 0.0645, // = minimum price (confirmed; floor valuation $86M)
+  // Hardcap (confirmed 2026-06-13, Jae): bids run up to $0.1290 (valuation $172M);
+  // once the hardcap is reached, no further bids are accepted.
+  maxPriceUsd: 0.129,
   saleSupplyGnot: 31_000_000, // confirmed
   totalSupplyGnot: 1_333_000_000, // confirmed
   targetRaiseUsd: 2_000_000, // floor, may grow if oversubscribed (confirmed)
-  fdvUsd: 86_000_000, // confirmed ($0.0645 x 1.333B)
-  // TODO(real-data): confirm the PROVISIONAL values below (min/max commitment, bid
-  // increment, sale dates) with the team / Sonar before launch.
+  fdvUsd: 86_000_000, // floor FDV (confirmed; $0.0645 x 1.333B)
+  hardcapFdvUsd: 172_000_000, // hardcap FDV (confirmed 2026-06-13; $0.1290 x 1.333B)
+  // TODO(real-data): confirm the PROVISIONAL values below (min/max commitment)
+  // with the team / Sonar before launch.
   minCommitmentUsd: 200, // PROVISIONAL - sheet $200; Sonar pending (~$100 example). A.12.2 / param #3.
   maxCommitmentUsd: 100_000, // PROVISIONAL - sheet $100k; Sonar pending. A.12.2 / param #4.
-  bidIncrementUsd: 0.005, // PROVISIONAL - proposed $0.005; NOT enforced on-chain (A.12.1). Param #7.
+  // Confirmed 2026-06-13 (Ryan): plain English auction, bids move in $0.00645 steps
+  // between min and max; the UI must reject any off-increment price with an error.
+  bidIncrementUsd: 0.00645,
+  // Confirmed 2026-06-13 (Jae): transfers enabled / listings / distribution (mainnet).
+  mainnetIso: "2026-09-01T00:00:00Z",
   multipleWalletsPerEntity: true, // confirmed (param #13); contract caps via MaxWalletsPerEntityExceeded
   // Dates are flags: override via env NEXT_PUBLIC_REGISTRATION_OPENS / NEXT_PUBLIC_SALE_OPENS /
   // NEXT_PUBLIC_SALE_CLOSES (ISO).

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { fmtCompactUsd } from "../../../lib/sale/format"
+import { fmtCompactUsd, fmtCountdown } from "../../../lib/sale/format"
 
 // fmtCompactUsd is hand-rolled for deterministic output across JS engines; these
 // assertions pin its exact format.
@@ -23,5 +23,32 @@ describe("fmtCompactUsd", () => {
 
   it("rounds sub-$1 amounts down to $0", () => {
     expect(fmtCompactUsd(0.02)).toBe("$0")
+  })
+})
+
+// fmtCountdown drives the always-ticking timers; these assertions pin the exact
+// "Xd HH:MM:SS" shape (zero-padded clock, day prefix only from 24h up, zero clamp).
+describe("fmtCountdown", () => {
+  it("clamps past targets to 00:00:00", () => {
+    expect(fmtCountdown(0)).toBe("00:00:00")
+    expect(fmtCountdown(-5_000)).toBe("00:00:00")
+  })
+
+  it("floors sub-second remainders", () => {
+    expect(fmtCountdown(999)).toBe("00:00:00")
+  })
+
+  it("renders a zero-padded clock under a day", () => {
+    expect(fmtCountdown(5_000)).toBe("00:00:05")
+    expect(fmtCountdown(61_000)).toBe("00:01:01")
+    expect(fmtCountdown(3_600_000 + 2 * 60_000 + 3_000)).toBe("01:02:03")
+    expect(fmtCountdown(86_400_000 - 1_000)).toBe("23:59:59")
+  })
+
+  it("prefixes whole days from 24h up", () => {
+    expect(fmtCountdown(86_400_000)).toBe("1d 00:00:00")
+    expect(fmtCountdown(32 * 86_400_000 + 14 * 3_600_000 + 3 * 60_000 + 27_000)).toBe(
+      "32d 14:03:27",
+    )
   })
 })

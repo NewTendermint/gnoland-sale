@@ -1,7 +1,21 @@
 import { describe, expect, it } from "vitest"
-import { deriveJourney, derivePositionState } from "../../../lib/sale/journey"
+import {
+  deriveJourney,
+  derivePositionState,
+  derivePreSaleBar,
+  isSonarVerified,
+} from "../../../lib/sale/journey"
 import { MOCK_JOURNEY_INPUTS } from "../../../lib/sale/mock"
 import type { JourneyInput, JourneyState } from "../../../lib/sale/types"
+
+const UNVERIFIED: JourneyState[] = ["kyc-required", "kyc-pending", "kyc-failed", "not-eligible"]
+const VERIFIED: JourneyState[] = [
+  "disconnected",
+  "wrong-network",
+  "ready",
+  "has-bid-winning",
+  "has-bid-outbid",
+]
 
 const base: JourneyInput = {
   isConnected: false,
@@ -148,6 +162,42 @@ describe("derivePositionState - TokenDetails 'Your position' display", () => {
     for (const s of allStates.filter((s) => s !== "ready")) {
       expect(derivePositionState(s, false)).toBe("not-ready")
     }
+  })
+})
+
+describe("isSonarVerified", () => {
+  it("false before the Verify gate clears", () => {
+    for (const s of UNVERIFIED) expect(isSonarVerified(s)).toBe(false)
+  })
+  it("true past the Verify gate", () => {
+    for (const s of VERIFIED) expect(isSonarVerified(s)).toBe(true)
+  })
+})
+
+describe("derivePreSaleBar - pre-sale sticky-bar state", () => {
+  it("auth-error beats everything, in both stages", () => {
+    expect(derivePreSaleBar("registration-closed", "kyc-required", "error")).toBe("auth-error")
+    expect(derivePreSaleBar("registration-open", "ready", "error")).toBe("auth-error")
+  })
+  it("a known Sonar status beats the stage ask, in both stages", () => {
+    for (const stage of ["registration-closed", "registration-open"] as const) {
+      expect(derivePreSaleBar(stage, "kyc-pending", null)).toBe("pending")
+      expect(derivePreSaleBar(stage, "kyc-failed", null)).toBe("failed")
+      expect(derivePreSaleBar(stage, "not-eligible", null)).toBe("not-eligible")
+    }
+  })
+  it("a verified user parks on registered, in both stages", () => {
+    for (const stage of ["registration-closed", "registration-open"] as const) {
+      for (const s of VERIFIED) expect(derivePreSaleBar(stage, s, null)).toBe("registered")
+    }
+  })
+  it("a fresh visitor gets the stage ask", () => {
+    expect(derivePreSaleBar("registration-closed", "kyc-required", null)).toBe("notify")
+    expect(derivePreSaleBar("registration-open", "kyc-required", null)).toBe("register")
+  })
+  it('auth "ok" does not alter the derivation (entity refetch carries the change)', () => {
+    expect(derivePreSaleBar("registration-closed", "kyc-required", "ok")).toBe("notify")
+    expect(derivePreSaleBar("registration-open", "kyc-required", "ok")).toBe("register")
   })
 })
 

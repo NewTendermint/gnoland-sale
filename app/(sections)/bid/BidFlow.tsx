@@ -7,26 +7,30 @@
  * wallet). The /dev/states preview submits through MockBidSubmitter; the real path
  * calls onBid (useBid -> submitBidOnChain), where the wagmi replaceBidWithPermit
  * lands later (ABI source-verified, REQUIREMENTS A.12.1).
- * Visitor-facing copy here is placeholder, pending final wording.
  */
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import type { ReactNode } from "react"
 import { useConnect, useSwitchChain } from "wagmi"
 import { PRIMARY_CHAIN_ID } from "../../(layout)/web3"
 import { GnotCoin } from "../../(ui)/GnotCoin"
 import { Icon } from "../../(ui)/Icon"
-import { gnotEstimate, validateBidAmount, validateBidPrice } from "../../../lib/sale/calc"
+import {
+  gnotEstimate,
+  snapBidPrice,
+  validateBidAmount,
+  validateBidPrice,
+} from "../../../lib/sale/calc"
 import { SALE_ECONOMICS } from "../../../lib/sale/economics"
 import { fmtGnot, fmtPrice, fmtUsd } from "../../../lib/sale/format"
+import { VERIFY_STATUS } from "../../../lib/sale/labels"
 import { type BidParams, type BidResult, MockBidSubmitter } from "../../../lib/sale/submitter"
 import type { JourneyState, MyBid } from "../../../lib/sale/types"
 
 const submitter = new MockBidSubmitter()
 
-// Inverted pill: on the .bid-capsule contrast surface, the CTA flips to a light
-// pill with dark text (bg-on-contrast / text-surface-contrast).
+// disabled:pointer-events-none because :hover still matches disabled controls.
 const PILL =
-  "btn-pan inline-flex cursor-pointer items-center justify-center rounded-full border border-faint bg-on-contrast px-6 py-3 text-xs font-bold uppercase tracking-[0.2em] text-surface-contrast before:bg-surface-contrast hover:text-on-contrast disabled:cursor-not-allowed disabled:opacity-40"
+  "btn-pan inline-flex cursor-pointer items-center justify-center rounded-full border border-faint bg-on-contrast px-6 py-3 text-xs font-bold uppercase tracking-[0.2em] text-surface-contrast before:bg-surface-contrast hover:text-on-contrast disabled:pointer-events-none disabled:opacity-40"
 
 // Brand logos for connectors that do not expose their own icon (keyed by connector id).
 // EIP-6963 wallets (MetaMask, Keplr, ...) supply connector.icon; these two do not.
@@ -143,8 +147,8 @@ function GateContent({
       return (
         <GateRow
           icon="clock"
-          title="Verification in progress"
-          body="We will let you know as soon as Sonar has reviewed it."
+          title={VERIFY_STATUS.pending.title}
+          body={VERIFY_STATUS.pending.body}
         />
       )
     case "kyc-failed":
@@ -152,8 +156,8 @@ function GateContent({
         <GateRow
           icon="shield-check"
           tone="danger"
-          title="Verification did not pass"
-          body="Contact support if you believe this is an error."
+          title={VERIFY_STATUS.failed.title}
+          body={VERIFY_STATUS.failed.body}
           cta="Contact support"
         />
       )
@@ -162,8 +166,8 @@ function GateContent({
         <GateRow
           icon="shield-check"
           tone="danger"
-          title="Not eligible"
-          body="This sale is not available in your region."
+          title={VERIFY_STATUS["not-eligible"].title}
+          body={VERIFY_STATUS["not-eligible"].body}
         />
       )
     default:
@@ -286,7 +290,8 @@ function SwitchNetworkGate() {
         disabled={isPending}
         className={PILL}
       >
-        {isPending ? "Switching..." : "Switch to Base"}
+        {/* The .btn-pan > span contract: bare text would paint UNDER the panel. */}
+        <span>{isPending ? "Switching..." : "Switch to Base"}</span>
       </button>
     </div>
   )
@@ -294,8 +299,7 @@ function SwitchNetworkGate() {
 
 // Maps a reverted bid reason (Sonar pre-purchase failures + the client's own) to a
 // short message shown under the bid form; an unrecognized reason falls back to the
-// generic message rather than surfacing a raw upstream string. Placeholder copy,
-// pending final wording.
+// generic message rather than surfacing a raw upstream string.
 function reasonToMessage(reason: string): string {
   const messages: Record<string, string> = {
     "requires-liveness": "An identity check is needed before bidding.",
@@ -322,10 +326,32 @@ function BidRow({
   walletButton?: ReactNode
 }) {
   const minPrice = SALE_ECONOMICS.startingPriceUsd
-  const suggested = Math.max(clearingPriceUsd ?? minPrice, prevBid?.priceUsd ?? 0, minPrice)
-  const [price, setPrice] = useState(String(suggested))
+  const maxPrice = SALE_ECONOMICS.maxPriceUsd
+  const increment = SALE_ECONOMICS.bidIncrementUsd
+  const band = { minPriceUsd: minPrice, maxPriceUsd: maxPrice, incrementUsd: increment }
+  // The stepper's floor is the USEFUL minimum, not just the static one: a bid below
+  // the current clearing is legal but dead on arrival (clearing only rises), and a
+  // raise can never go below the current bid. Snapped on-grid like everything else.
+  const floor = snapBidPrice(
+    Math.max(clearingPriceUsd ?? minPrice, prevBid?.priceUsd ?? 0, minPrice),
+    band,
+  )
+  // Prefill starts at the floor: the cheapest price that is currently winning.
+  const [price, setPrice] = useState(String(floor))
+  // Until the user touches the stepper, the (read-only) field tracks the floor as
+  // data lands - the panel can mount before the first clearing poll, which would
+  // otherwise leave a stale dead-on-arrival default. After the first interaction
+  // the price is the user's choice and is never mutated silently.
+  const [touched, setTouched] = useState(false)
   // Raises start from the current committed amount so the CTA is active; first bids start empty.
   const [amount, setAmount] = useState(prevBid ? String(prevBid.committedUsd) : "")
+  // ANY interaction freezes the price (not just the stepper): once the user is
+  // engaging with the form, the floor tracking must never move the price they
+  // are about to submit under their cursor.
+  function onAmountChange(v: string) {
+    setTouched(true)
+    setAmount(v)
+  }
   const [submitState, setSubmitState] = useState<"idle" | "submitting" | "submitted">("idle")
   const [submitError, setSubmitError] = useState<string | null>(null)
 
@@ -333,7 +359,12 @@ function BidRow({
   const amountNum = Number(amount)
   const priceCheck = validateBidPrice(priceNum, {
     minPriceUsd: minPrice,
-    prevPriceUsd: prevBid?.priceUsd,
+    maxPriceUsd: maxPrice,
+    incrementUsd: increment,
+    // Defensive cap: a previous bid above the hardcap (bad upstream data) would
+    // otherwise make every raise "below-previous" forever - degrade to "pinned
+    // at the max" instead of a deadlocked form.
+    prevPriceUsd: prevBid ? Math.min(prevBid.priceUsd, maxPrice) : undefined,
   })
   const amountCheck = validateBidAmount(
     amountNum,
@@ -342,21 +373,49 @@ function BidRow({
   )
   const priceShown = price !== "" && !Number.isNaN(priceNum)
   const amountShown = amount !== "" && !Number.isNaN(amountNum)
+
+  // Grid stepping. The price domain is 11 discrete steps, so the field is
+  // READ-ONLY and the -/+ controls (and arrow keys) are the only way to move it:
+  // one notch per gesture, clamped between the useful floor (clearing/current bid)
+  // and the hardcap. No typed price means no price error is even reachable.
+  const snappedRef = Number.isFinite(priceNum) && priceNum > 0 ? snapBidPrice(priceNum, band) : null
+  const nextUp = snappedRef != null ? snapBidPrice(snappedRef + increment, band) : null
+  const nextDown = snappedRef != null ? snapBidPrice(snappedRef - increment, band) : null
+  function stepPrice(dir: 1 | -1) {
+    setTouched(true)
+    if (snappedRef == null) {
+      setPrice(String(floor))
+      return
+    }
+    const next = snapBidPrice(snappedRef + dir * increment, band)
+    setPrice(String(Math.max(next, floor)))
+  }
+  useEffect(() => {
+    if (!touched) setPrice(String(floor))
+  }, [floor, touched])
   const priceValid = priceShown && priceCheck === "ok"
   const amountValid = amountShown && amountCheck === "ok"
   const canSubmit = priceValid && amountValid && submitState === "idle"
   const est = gnotEstimate(amountValid ? amountNum : 0, clearingPriceUsd ?? minPrice)
 
-  const error =
+  // Field errors attach to THEIR field (rendered under the offending cell); the
+  // bottom-left line only carries general messages (submit failures, live note).
+  const priceError =
     priceShown && priceCheck === "below-min"
       ? `Min price ${fmtPrice(minPrice)}.`
-      : priceShown && priceCheck === "below-previous" && prevBid
-        ? `Raise above your current ${fmtPrice(prevBid.priceUsd)}.`
-        : amountShown && amountCheck === "too-low"
-          ? `Min ${fmtUsd(SALE_ECONOMICS.minCommitmentUsd)}.`
-          : amountShown && amountCheck === "too-high"
-            ? `Max ${fmtUsd(SALE_ECONOMICS.maxCommitmentUsd)}.`
+      : priceShown && priceCheck === "above-max"
+        ? `Max price ${fmtPrice(maxPrice)} - the hardcap.`
+        : priceShown && priceCheck === "off-increment"
+          ? `Bids move in $${increment} steps.`
+          : priceShown && priceCheck === "below-previous" && prevBid
+            ? `Raise above your current ${fmtPrice(prevBid.priceUsd)}.`
             : null
+  const amountError =
+    amountShown && amountCheck === "too-low"
+      ? `Min ${fmtUsd(SALE_ECONOMICS.minCommitmentUsd)}.`
+      : amountShown && amountCheck === "too-high"
+        ? `Max ${fmtUsd(SALE_ECONOMICS.maxCommitmentUsd)}.`
+        : null
 
   // Live status vs the (last-polled) clearing price so the user knows BEFORE
   // submitting whether the bid is winning or outbid. The clearing price moves
@@ -424,30 +483,49 @@ function BidRow({
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex flex-wrap items-end gap-x-8 gap-y-4">
+      {/* items-start + equal-height cells (h-12 controls everywhere): tops and
+          baselines align by construction, and an in-flow field error only grows
+          its own cell downward - siblings never move, nothing can overlap. */}
+      <div className="flex flex-wrap items-start gap-x-8 gap-y-4">
         <InputCell
           id="bid-price"
           label="Max price"
           value={price}
           onChange={setPrice}
+          readOnly
+          stepper={{
+            onUp: () => stepPrice(1),
+            onDown: () => stepPrice(-1),
+            upDisabled: snappedRef != null && nextUp === snappedRef,
+            downDisabled:
+              snappedRef != null && (nextDown === snappedRef || (nextDown ?? 0) < floor),
+            upLabel: "Raise the price one step",
+            downLabel: "Lower the price one step",
+          }}
           invalid={priceShown && priceCheck !== "ok"}
-          hint="The highest price you'll pay per GNOT. You win if it's at or above the final clearing price, and you pay the clearing price - not your max. Can only be raised, never lowered."
+          hint={`You win at or above the final clearing price and pay the clearing price, not your max. Moves in $${increment} steps up to the ${fmtPrice(maxPrice)} hardcap; raise-only.`}
+          prefix="$"
+          suffix="/ GNOT"
+          error={priceError}
           className="w-28"
         />
         <InputCell
           id="bid-amount"
           label="Amount (USDC)"
           value={amount}
-          onChange={setAmount}
+          onChange={onAmountChange}
           invalid={amountShown && amountCheck !== "ok"}
           placeholder={String(SALE_ECONOMICS.minCommitmentUsd)}
-          hint={`How much USDC you commit. It sets your allocation: GNOT received = your amount divided by the clearing price. Min ${fmtUsd(SALE_ECONOMICS.minCommitmentUsd)}, max ${fmtUsd(SALE_ECONOMICS.maxCommitmentUsd)}.`}
+          hint={`The total USDC you pay if filled (refunded if outbid). GNOT received = amount / clearing price. Min ${fmtUsd(SALE_ECONOMICS.minCommitmentUsd)}, max ${fmtUsd(SALE_ECONOMICS.maxCommitmentUsd)}.`}
+          prefix="$"
+          error={amountError}
           className="w-32"
         />
 
         <div className="flex flex-col gap-1.5">
           <span className="text-[10px] uppercase tracking-[0.2em] text-muted">You receive</span>
-          <div className="flex items-center gap-2 py-2">
+          {/* h-12 like the input boxes, so the row's cells share one height. */}
+          <div className="flex h-12 items-center gap-2">
             <GnotCoin className="h-6 w-6 text-muted" />
             <span className="font-mono text-lg tabular-nums text-foreground">
               ~{fmtGnot(est)} <span className="text-muted">GNOT</span>
@@ -455,20 +533,34 @@ function BidRow({
           </div>
         </div>
 
-        <div className="ml-auto flex items-end gap-4">
-          <button type="button" onClick={onSubmit} disabled={!canSubmit} className={PILL}>
-            <span className="inline-flex items-center gap-2">
-              {submitState === "submitting" ? "Signing..." : prevBid ? "Raise bid" : "Place bid"}
-            </span>
-          </button>
-          {walletButton}
+        <div className="ml-auto flex flex-col gap-1.5">
+          {/* Invisible label slot: keeps this unlabeled cell on the same vertical
+              rhythm as the labeled ones, so the controls sit on the field line. */}
+          <span
+            aria-hidden="true"
+            className="invisible select-none text-[10px] uppercase tracking-[0.2em]"
+          >
+            .
+          </span>
+          <div className="flex h-12 items-center gap-4">
+            <button type="button" onClick={onSubmit} disabled={!canSubmit} className={PILL}>
+              <span className="inline-flex items-center gap-2">
+                {submitState === "submitting" ? "Signing..." : prevBid ? "Raise bid" : "Place bid"}
+              </span>
+            </button>
+            {walletButton}
+          </div>
         </div>
       </div>
-      {(error ?? submitError) ? (
-        <p className="text-xs font-medium text-danger">{error ?? submitError}</p>
+      {/* General line (submit failures + live note), capped to roughly the two
+          fields' combined width. A FIELD error replaces it entirely - the message
+          then lives under the offending field instead, so only one message kind
+          shows at a time. Submit errors stay on one truncated line. */}
+      {priceError || amountError ? null : submitError ? (
+        <p className="max-w-md truncate text-xs font-medium text-danger">{submitError}</p>
       ) : clearingNote ? (
         <p
-          className={`text-xs ${
+          className={`max-w-md truncate text-xs ${
             clearingNote.tone === "warn" ? "font-medium text-amber" : "text-muted"
           }`}
         >
@@ -486,49 +578,138 @@ function sanitizeDecimal(v: string): string {
   return rest.length > 0 ? `${head}.${rest.join("")}` : head
 }
 
+// Glyph-only stepper buttons inside the field; disabled state reads as "edge of
+// the band" (at the hardcap the + visibly greys out).
+const STEP_BTN =
+  "flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full font-mono text-base text-muted transition-colors hover:text-foreground disabled:pointer-events-none disabled:opacity-30"
+
 function InputCell({
   id,
   label,
   value,
   onChange,
+  readOnly = false,
+  prefix,
+  suffix,
+  error,
   invalid,
   placeholder,
   hint,
+  stepper,
   className = "",
 }: {
   id: string
   label: string
   value: string
   onChange: (v: string) => void
+  /** Display-only field, mutated through the stepper (the 11-step price). */
+  readOnly?: boolean
+  /** Unit chrome inside the cell, e.g. "$" before and "/ GNOT" after the value. */
+  prefix?: string
+  suffix?: string
+  /** Field error, one truncated line strictly capped to the field's width. */
+  error?: string | null
   invalid: boolean
   placeholder?: string
   hint?: string
+  /** Discrete-grid stepper: renders -/+ inside the field and wires ArrowUp/Down. */
+  stepper?: {
+    onUp: () => void
+    onDown: () => void
+    upDisabled?: boolean
+    downDisabled?: boolean
+    upLabel: string
+    downLabel: string
+  }
   className?: string
 }) {
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="relative flex flex-col gap-1.5">
       <div className="flex items-center gap-1.5">
         <label htmlFor={id} className="text-[10px] uppercase tracking-[0.2em] text-muted">
           {label}
         </label>
         {hint ? <FieldHint text={hint} /> : null}
       </div>
+      {/* Pinned h-12: every cell control in the bid row shares this height, so the
+          bottom-aligned row lines up labels AND fields by construction. */}
       <div
-        className={`flex items-center rounded-[var(--radius-md)] border bg-surface-alt px-3.5 py-2.5 transition-colors ${
+        className={`flex h-12 items-center rounded-[var(--radius-md)] border bg-surface-alt px-3.5 transition-colors ${
           invalid ? "border-danger" : "border-border focus-within:border-faint"
         }`}
       >
+        {prefix ? (
+          <span aria-hidden="true" className="mr-1 font-mono text-lg text-muted">
+            {prefix}
+          </span>
+        ) : null}
         <input
           id={id}
           type="text"
           inputMode="decimal"
           value={value}
           placeholder={placeholder}
+          readOnly={readOnly}
           onChange={(e) => onChange(sanitizeDecimal(e.target.value))}
+          onKeyDown={
+            stepper
+              ? (e) => {
+                  if (e.key === "ArrowUp") {
+                    e.preventDefault()
+                    stepper.onUp()
+                  } else if (e.key === "ArrowDown") {
+                    e.preventDefault()
+                    stepper.onDown()
+                  }
+                }
+              : undefined
+          }
           aria-invalid={invalid || undefined}
+          aria-describedby={error ? `${id}-error` : undefined}
           className={`${className} bg-transparent font-mono text-lg tabular-nums text-foreground outline-none`}
         />
+        {suffix ? (
+          <span aria-hidden="true" className="ml-1 whitespace-nowrap font-mono text-sm text-muted">
+            {suffix}
+          </span>
+        ) : null}
+        {stepper ? (
+          <div className="ml-1.5 flex items-center gap-0.5">
+            {/* Steppers stay usable when the value is invalid: stepping snaps back
+                onto the grid, so the buttons ARE the recovery path. */}
+            <button
+              type="button"
+              aria-label={stepper.downLabel}
+              onClick={stepper.onDown}
+              disabled={stepper.downDisabled}
+              className={STEP_BTN}
+            >
+              -
+            </button>
+            <button
+              type="button"
+              aria-label={stepper.upLabel}
+              onClick={stepper.onUp}
+              disabled={stepper.upDisabled}
+              className={STEP_BTN}
+            >
+              +
+            </button>
+          </div>
+        ) : null}
       </div>
+      {/* One truncated text-xs line, strictly capped to the field's width (w-0 +
+          min-w-full sizes it to the box above without widening the cell). mt-0.5
+          on top of the cell's gap-1.5 totals the same 8px the general line gets
+          from the root's gap-2, so swapping message kinds never moves the bar. */}
+      {error ? (
+        <p
+          id={`${id}-error`}
+          className="mt-0.5 w-0 min-w-full truncate text-xs font-medium text-danger"
+        >
+          {error}
+        </p>
+      ) : null}
     </div>
   )
 }

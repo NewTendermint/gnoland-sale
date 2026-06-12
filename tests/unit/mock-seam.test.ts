@@ -23,7 +23,9 @@ describe("Sonar mock-fetch seam (real SDK + fixtures)", () => {
     const data = await readCommitments()
     expect(data).toEqual({
       totalCommittedUsd: 1_200_000,
-      clearingPriceUsd: 0.12,
+      // The mock clearing ramps from $0.10 (t=0 pinned here) toward its $0.1161
+      // cap - a real clearing can never exceed the $0.1290 hardcap.
+      clearingPriceUsd: 0.1,
       uniqueCommitmentCount: 1247,
     })
     now.mockRestore()

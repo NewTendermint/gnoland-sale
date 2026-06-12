@@ -1,9 +1,4 @@
-/**
- * Narrative. Default section on a 12-col grid (cols 2-11). Title spans
- * cols 2-11 top, prose paragraphs in cols 2-7 below (with the CTA link),
- * key stats in cols 9-11 right column. Colors flow from semantic theme
- * tokens so the section flips with the page theme.
- */
+/** Narrative ("About") section: prose + key stats + docs link. */
 import { ArrowLink } from "../../(ui)/ArrowLink"
 import { CountUp } from "../../(ui)/CountUp"
 import { DrawLine } from "../../(ui)/DrawLine"
@@ -112,7 +107,13 @@ export function Narrative() {
                 positioned to be the decentralized global knowledge base for the new millennium.
               </Reveal>
               <FadeIn as="div" className="mt-8">
-                <ArrowLink href="https://docs.gno.land" label="Discover gno.land" variant="ghost" />
+                {/* external: a same-tab docs navigation mid-page is a funnel exit. */}
+                <ArrowLink
+                  href="https://docs.gno.land"
+                  external
+                  label="Discover gno.land"
+                  variant="ghost"
+                />
               </FadeIn>
             </RevealGroup>
           </RevealBoundary>

@@ -67,16 +67,20 @@ export function Ecosystem() {
                       <Reveal as="p" index={2} className="text-2xl text-foreground">
                         {p.body}
                       </Reveal>
-                      <FadeIn as="div" index={3} className="mt-5 flex justify-start">
-                        <ArrowLink
-                          href={p.href ?? "https://github.com/gnoverse"}
-                          external
-                          arrow="diagonal"
-                          label="Explore"
-                          ariaLabel={`Explore ${p.name}`}
-                          variant="ghost"
-                        />
-                      </FadeIn>
+                      {/* Only link when the project has a real URL: "Explore X" landing on
+                          the generic org page is a label/destination mismatch. */}
+                      {p.href ? (
+                        <FadeIn as="div" index={3} className="mt-5 flex justify-start">
+                          <ArrowLink
+                            href={p.href}
+                            external
+                            arrow="diagonal"
+                            label="Explore"
+                            ariaLabel={`Explore ${p.name}`}
+                            variant="ghost"
+                          />
+                        </FadeIn>
+                      ) : null}
                     </div>
                   </div>
                 </RevealGroup>

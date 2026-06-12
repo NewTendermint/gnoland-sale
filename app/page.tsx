@@ -1,6 +1,7 @@
 import { BidPanel } from "./(layout)/BidPanel"
 import { SaleProvider } from "./(layout)/SaleProvider"
 import { Ecosystem } from "./(sections)/ecosystem/Ecosystem"
+import { Faq } from "./(sections)/faq/Faq"
 import { Features } from "./(sections)/features/Features"
 import { GnotUtility } from "./(sections)/gnot-utility/GnotUtility"
 import { Hero } from "./(sections)/hero/Hero"
@@ -30,6 +31,7 @@ export default function Home() {
         <Roadmap />
         <Ecosystem />
         <Partners />
+        <Faq />
         <PreFooterCta />
       </main>
       <BidPanel />
