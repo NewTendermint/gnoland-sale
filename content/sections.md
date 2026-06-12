@@ -173,15 +173,15 @@ Refined metric definitions (from the team xlsx, 2026-06-01), mapped to the Sonar
 
 ## #5 - How to Participate  ✅
 
-**Status**: Updated 2026-06-03 (relabeled steps 1-3 to Connect / Verify / Bid to match the bid funnel; 4th step Distribution kept)
+**Status**: Updated 2026-06-12 (reordered to Verify / Connect / Bid: Sonar verification is wallet-independent and opens ~2 weeks before the sale, so it leads; verified returning users auto-skip it. 4th step Distribution kept.)
 
 **Title**: `How to participate`
 **Eyebrow**: `How it works`
 
 **4 steps** (horizontal grid):
 
-1. **Connect** - Connect your wallet to join the sale.
-2. **Verify** - Complete identity verification with Sonar.
+1. **Verify** - Complete identity verification with Sonar.
+2. **Connect** - Connect your wallet to join the sale.
 3. **Bid** - Set your max price and commit USDC or USDT.
 4. **Distribution** - Tokens are distributed to your address. Token lockup is applied according to schedule.
 

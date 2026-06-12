@@ -7,8 +7,9 @@
  *     lives in the sticky BidPanel to avoid duplication.
  *   - Terms: thematic key/value groups separated by a hairline.
  *
- * Position block has three states: disconnected (prompt to connect), connected with
- * no bids (empty values, prompt to bid), and connected with bids (full values).
+ * Position block has three states: not-ready (not yet verified + connected + eligible,
+ * prompt to connect), ready with no bids (empty values, prompt to bid), and bids placed
+ * (full values).
  */
 import { Fragment } from "react"
 import { useSale } from "../../(layout)/SaleProvider"
@@ -29,8 +30,7 @@ import {
 } from "../../../content/sections/token-details"
 import { bidStatus, gnotEstimate } from "../../../lib/sale/calc"
 import { fmtGnot, fmtPrice, fmtUsd } from "../../../lib/sale/format"
-
-type PositionState = "disconnected" | "no-bids" | "active"
+import { derivePositionState } from "../../../lib/sale/journey"
 
 /** Scroll-trigger line for the terms-table groups (and the documents): each reveals
  * when its top reaches this % from the BOTTOM of the viewport. Lower = the trigger
@@ -38,11 +38,9 @@ type PositionState = "disconnected" | "no-bids" | "active"
 const TABLE_REVEAL_PCT = 10
 
 export function TokenDetails() {
-  // Derived from the sale context: disconnected until a wallet connects, active
-  // once the session has a bid (myBid), else no-bids.
   const { journey, myBid, commitment } = useSale()
-  const positionState: PositionState =
-    journey === "disconnected" ? "disconnected" : myBid ? "active" : "no-bids"
+  // "Your position" display state, derived (+ unit-tested) in lib/sale/journey.ts.
+  const positionState = derivePositionState(journey, myBid !== null)
 
   const positionMetrics: Array<{ icon: string; value: string; label: string }> = (() => {
     if (positionState !== "active" || !myBid) {
@@ -91,7 +89,7 @@ export function TokenDetails() {
             GNOT Token Sale
           </Reveal>
           <FadeIn as="p" className="mt-4 max-w-2xl text-base text-muted md:text-lg">
-            {positionState === "disconnected"
+            {positionState === "not-ready"
               ? "Connect a wallet to see your position in the auction."
               : positionState === "no-bids"
                 ? "You have no bids yet. Place your first one using the panel below."

@@ -230,7 +230,7 @@ function ConnectChoices() {
         <p className="text-sm">
           <span className="font-medium text-foreground">Connect your wallet.</span>{" "}
           <span className={error ? "text-danger" : "text-muted"}>
-            {error ? "Connection failed. Try again." : "Check your eligibility and place a bid."}
+            {error ? "Connection failed. Try again." : "Connect the wallet you'll bid with."}
           </span>
         </p>
       </div>

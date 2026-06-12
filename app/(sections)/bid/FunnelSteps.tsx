@@ -1,18 +1,18 @@
 import type { JourneyState } from "../../../lib/sale/types"
 
 /**
- * Wallet-free funnel chrome: the Connect -> Verify -> Bid stepper and the in-button
+ * Wallet-free funnel chrome: the Verify -> Connect -> Bid stepper and the in-button
  * winning/outbid status tag. Kept out of BidFlow (which pulls wagmi) so the bar's
  * top row and CTA can render them without dragging the wallet stack into the
  * initial bundle.
  */
 const FUNNEL: { label: string; states: JourneyState[] }[] = [
-  { label: "Connect", states: ["disconnected", "wrong-network"] },
   { label: "Verify", states: ["kyc-required", "kyc-pending", "kyc-failed", "not-eligible"] },
+  { label: "Connect", states: ["disconnected", "wrong-network"] },
   { label: "Bid", states: ["ready", "has-bid-winning", "has-bid-outbid"] },
 ]
 
-/** Funnel position: Connect -> Verify -> Bid, current step highlighted.
+/** Funnel position: Verify -> Connect -> Bid, current step highlighted.
  * Rendered in the bar's top (metrics) row, right side, when expanded. */
 export function FunnelSteps({ journey }: { journey: JourneyState }) {
   const current = FUNNEL.findIndex((s) => s.states.includes(journey))
