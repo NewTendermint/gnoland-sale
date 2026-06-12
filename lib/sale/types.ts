@@ -70,6 +70,11 @@ export type JourneyState =
   | "has-bid-winning"
   | "has-bid-outbid"
 
+// The TokenDetails "Your position" block reduces the journey to three display states:
+// not-ready (earlier in the funnel, prompt to get set up), no-bids (ready, no bid yet),
+// active (a bid is placed). Derived + unit-tested via derivePositionState (journey.ts).
+export type PositionState = "not-ready" | "no-bids" | "active"
+
 // Inputs the journey deriver needs. No readyToPurchase here: the per-attempt
 // pre-purchase gating lives in the bid step (PreflightGates), mirroring Sonar's
 // useSonarPurchase. See journey.ts + spec §7.2.

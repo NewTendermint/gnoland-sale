@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { deriveJourney } from "../../../lib/sale/journey"
+import { deriveJourney, derivePositionState } from "../../../lib/sale/journey"
 import { MOCK_JOURNEY_INPUTS } from "../../../lib/sale/mock"
 import type { JourneyInput, JourneyState } from "../../../lib/sale/types"
 
@@ -12,56 +12,61 @@ const base: JourneyInput = {
   clearingPriceUsd: 0.1,
 }
 
-// connected + on Base + KYC complete + eligible, ready to vary the tail of the funnel
-const cleared: JourneyInput = {
+// Verified + eligible (the Sonar session is complete) but no wallet yet: this is what
+// unlocks the wallet gates and the bid tail under the verify-first ordering.
+const verified: JourneyInput = {
   ...base,
-  isConnected: true,
-  isBaseChain: true,
   setupState: "complete",
   eligibility: "eligible",
 }
 
-describe("deriveJourney - wallet gates", () => {
-  it("disconnected when no wallet", () => {
-    expect(deriveJourney(base)).toBe("disconnected")
+// Verified + connected on Base: ready to vary the bid tail.
+const cleared: JourneyInput = {
+  ...verified,
+  isConnected: true,
+  isBaseChain: true,
+}
+
+describe("deriveJourney - Verify gate is first and wallet-independent", () => {
+  it("kyc-required for a brand-new visitor (no Sonar session, no wallet)", () => {
+    expect(deriveJourney(base)).toBe("kyc-required")
   })
-  it("wrong-network when connected off Base", () => {
-    expect(deriveJourney({ ...base, isConnected: true, isBaseChain: false })).toBe("wrong-network")
+  it("kyc-required even with a wallet connected (verify precedes connect)", () => {
+    expect(deriveJourney({ ...base, isConnected: true, isBaseChain: true })).toBe("kyc-required")
+  })
+  it("kyc-required when not-started", () => {
+    expect(deriveJourney({ ...base, setupState: "not-started" })).toBe("kyc-required")
+  })
+  it("kyc-pending for every in-flight setup state, with or without a wallet", () => {
+    for (const s of ["in-progress", "ready-for-review", "in-review"] as const) {
+      expect(deriveJourney({ ...base, setupState: s })).toBe("kyc-pending")
+    }
+  })
+  it("kyc-failed for every failure setup state, with or without a wallet", () => {
+    for (const s of ["failure", "failure-final", "technical-issue"] as const) {
+      expect(deriveJourney({ ...base, setupState: s })).toBe("kyc-failed")
+    }
+  })
+  it("not-eligible surfaces before connect (no wallet needed to learn it)", () => {
+    expect(deriveJourney({ ...base, setupState: "complete", eligibility: "not-eligible" })).toBe(
+      "not-eligible",
+    )
   })
 })
 
-describe("deriveJourney - KYC ladder (EntitySetupState)", () => {
-  it("kyc-required when setupState is null", () => {
-    expect(deriveJourney({ ...base, isConnected: true, isBaseChain: true, setupState: null })).toBe(
-      "kyc-required",
+describe("deriveJourney - wallet gates (reached only once verified + eligible)", () => {
+  it("disconnected when verified but no wallet", () => {
+    expect(deriveJourney(verified)).toBe("disconnected")
+  })
+  it("wrong-network when verified + connected off Base", () => {
+    expect(deriveJourney({ ...verified, isConnected: true, isBaseChain: false })).toBe(
+      "wrong-network",
     )
-  })
-  it("kyc-required when not-started", () => {
-    expect(
-      deriveJourney({ ...base, isConnected: true, isBaseChain: true, setupState: "not-started" }),
-    ).toBe("kyc-required")
-  })
-  it("kyc-pending for every in-flight setup state", () => {
-    for (const s of ["in-progress", "ready-for-review", "in-review"] as const) {
-      expect(deriveJourney({ ...base, isConnected: true, isBaseChain: true, setupState: s })).toBe(
-        "kyc-pending",
-      )
-    }
-  })
-  it("kyc-failed for every failure setup state", () => {
-    for (const s of ["failure", "failure-final", "technical-issue"] as const) {
-      expect(deriveJourney({ ...base, isConnected: true, isBaseChain: true, setupState: s })).toBe(
-        "kyc-failed",
-      )
-    }
   })
 })
 
 describe("deriveJourney - eligibility + bid tail", () => {
-  it("not-eligible when eligibility is not-eligible", () => {
-    expect(deriveJourney({ ...cleared, eligibility: "not-eligible" })).toBe("not-eligible")
-  })
-  it("ready when complete + eligible + no bid", () => {
+  it("ready when verified + connected + eligible + no bid", () => {
     expect(deriveJourney(cleared)).toBe("ready")
   })
   it("ready when setup complete but eligibility is unknown-setup-incomplete (only not-eligible blocks)", () => {
@@ -93,6 +98,56 @@ describe("deriveJourney - eligibility + bid tail", () => {
         clearingPriceUsd: null,
       }),
     ).toBe("has-bid-winning")
+  })
+})
+
+describe("deriveJourney - guard precedence (earlier gate wins)", () => {
+  it("kyc-failed beats not-eligible and the wallet gates", () => {
+    expect(
+      deriveJourney({
+        ...base,
+        setupState: "failure",
+        eligibility: "not-eligible",
+        isConnected: true,
+        isBaseChain: true,
+      }),
+    ).toBe("kyc-failed")
+  })
+  it("not-eligible beats the wallet gates (verified but ineligible, off Base)", () => {
+    expect(
+      deriveJourney({
+        ...base,
+        setupState: "complete",
+        eligibility: "not-eligible",
+        isConnected: true,
+        isBaseChain: false,
+      }),
+    ).toBe("not-eligible")
+  })
+})
+
+describe("derivePositionState - TokenDetails 'Your position' display", () => {
+  const allStates: JourneyState[] = [
+    "disconnected",
+    "wrong-network",
+    "kyc-required",
+    "kyc-pending",
+    "kyc-failed",
+    "not-eligible",
+    "ready",
+    "has-bid-winning",
+    "has-bid-outbid",
+  ]
+  it("active whenever a bid exists, in any journey state", () => {
+    for (const s of allStates) expect(derivePositionState(s, true)).toBe("active")
+  })
+  it("no-bids only when ready with no bid yet", () => {
+    expect(derivePositionState("ready", false)).toBe("no-bids")
+  })
+  it("not-ready for every pre-ready state with no bid (incl. the fresh kyc-required visitor)", () => {
+    for (const s of allStates.filter((s) => s !== "ready")) {
+      expect(derivePositionState(s, false)).toBe("not-ready")
+    }
   })
 })
 

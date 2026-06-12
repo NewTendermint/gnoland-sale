@@ -5,7 +5,7 @@
  * The section is journey-aware: a `journeyState` drives the CTA label and
  * the visual opacity of each step (done / current / pending). The journey
  * comes from `useSale()` (wallet + Sonar entity),
- * mapped onto this section's 6-state funnel vocabulary by `funnelState`.
+ * mapped onto this section's funnel vocabulary by `funnelState`.
  */
 import { useSale } from "../../(layout)/SaleProvider"
 import { ArrowLink } from "../../(ui)/ArrowLink"
@@ -18,18 +18,13 @@ import { SectionHeading } from "../../(ui)/SectionHeading"
 import { steps } from "../../../content/sections/how-it-works"
 import type { JourneyState as SaleJourney, SalePhase } from "../../../lib/sale/types"
 
-type JourneyState =
-  | "disconnected"
-  | "kyc-pending"
-  | "kyc-complete"
-  | "wallet-ready"
-  | "bidding"
-  | "ended"
+// Section-local funnel vocabulary: which of the four steps is current. Verify-first,
+// matching the bid funnel + deriveJourney: Verify -> Connect -> Bid -> Distribution.
+type FunnelStep = "needs-verify" | "needs-connect" | "wallet-ready" | "bidding" | "ended"
 
-const CTA_BY_STATE: Record<JourneyState, { label: string }> = {
-  disconnected: { label: "Connect your wallet" },
-  "kyc-pending": { label: "Verify with Sonar" },
-  "kyc-complete": { label: "Connect your wallet" },
+const CTA_BY_STATE: Record<FunnelStep, { label: string }> = {
+  "needs-verify": { label: "Verify with Sonar" },
+  "needs-connect": { label: "Connect your wallet" },
   "wallet-ready": { label: "Place your bid" },
   bidding: { label: "Update your bid" },
   ended: { label: "View your results" },
@@ -37,21 +32,14 @@ const CTA_BY_STATE: Record<JourneyState, { label: string }> = {
 
 type StepStatus = "done" | "current" | "pending"
 
-function getStepStatus(stepIndex: number, journey: JourneyState): StepStatus {
-  const order: JourneyState[] = [
-    "disconnected",
-    "kyc-pending",
-    "kyc-complete",
-    "wallet-ready",
-    "bidding",
-    "ended",
-  ]
+function getStepStatus(stepIndex: number, journey: FunnelStep): StepStatus {
+  const order: FunnelStep[] = ["needs-verify", "needs-connect", "wallet-ready", "bidding", "ended"]
   const j = order.indexOf(journey)
-  // Step order: 0 Connect, 1 Verify, 2 Bid, 3 Distribution.
+  // Step order: 0 Verify, 1 Connect, 2 Bid, 3 Distribution.
   if (stepIndex === 0) return j === 0 ? "current" : "done"
   if (stepIndex === 1) return j === 0 ? "pending" : j === 1 ? "current" : "done"
-  if (stepIndex === 2) return j < 3 ? "pending" : j === 5 ? "done" : "current"
-  if (stepIndex === 3) return j === 5 ? "current" : "pending"
+  if (stepIndex === 2) return j < 2 ? "pending" : j === 4 ? "done" : "current"
+  if (stepIndex === 3) return j === 4 ? "current" : "pending"
   return "pending"
 }
 
@@ -61,9 +49,9 @@ const STATUS_OPACITY: Record<StepStatus, string> = {
   pending: "opacity-50",
 }
 
-// Map the canonical sale journey (9 states) + phase onto this section's 6-state
-// funnel vocabulary, choosing which step is current and which CTA shows.
-function funnelState(journey: SaleJourney, phase: SalePhase): JourneyState {
+// Map the canonical sale journey (9 states) + phase onto this section's funnel
+// vocabulary, choosing which step is current and which CTA shows.
+function funnelState(journey: SaleJourney, phase: SalePhase): FunnelStep {
   if (phase === "ended") return "ended"
   switch (journey) {
     case "ready":
@@ -71,14 +59,13 @@ function funnelState(journey: SaleJourney, phase: SalePhase): JourneyState {
     case "has-bid-winning":
     case "has-bid-outbid":
       return "bidding"
-    case "kyc-required":
-    case "kyc-pending":
-    case "kyc-failed":
-    case "not-eligible":
-      return "kyc-pending"
+    case "disconnected":
+    case "wrong-network":
+      // verified + eligible, wallet not connected yet
+      return "needs-connect"
     default:
-      // disconnected, wrong-network: no wallet connected yet
-      return "disconnected"
+      // kyc-required, kyc-pending, kyc-failed, not-eligible: verify not done
+      return "needs-verify"
   }
 }
 

@@ -61,8 +61,11 @@ export function useMyBid() {
     queryKey: ["sale", "my-bid"],
     queryFn: getMyPosition,
     // No wallet means no position to show, and readMyBid would still call Sonar, so
-    // skip until connected. (useEntity stays eager: gating it would flash "verify
-    // identity" on a returning verified user's reload to save a cheap 401.)
+    // skip until connected. (useEntity, by contrast, stays eager - NOT gated on connect:
+    // verify-first leads with the entity-derived gate, so fetching it ASAP minimizes the
+    // brief first-paint "verify" window a returning verified user sees before the entity
+    // query settles. Eager shrinks that window; it does not remove it, since the verify
+    // gate now precedes the wallet gate.)
     enabled: isConnected,
     // Don't clobber an optimistic post-bid position (set by useBid) on window focus;
     // the mock has no server-side commitment to refetch. TODO(real-data): invalidate

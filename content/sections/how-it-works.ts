@@ -7,14 +7,14 @@
 
 export const steps: Array<{ title: string; body: string; icon: string }> = [
   {
-    title: "Connect",
-    body: "Connect your wallet to join the sale.",
-    icon: "wallet",
-  },
-  {
     title: "Verify",
     body: "Complete identity verification with Sonar.",
     icon: "shield-check",
+  },
+  {
+    title: "Connect",
+    body: "Connect your wallet to join the sale.",
+    icon: "wallet",
   },
   {
     title: "Bid",

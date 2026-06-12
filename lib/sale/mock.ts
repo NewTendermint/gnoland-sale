@@ -20,16 +20,17 @@ export const MOCK_JOURNEY_INPUTS: Record<JourneyState, JourneyInput> = {
   disconnected: {
     isConnected: false,
     isBaseChain: false,
-    setupState: null,
-    eligibility: null,
+    // Verify-first: the Connect gate is only reached once verified + eligible.
+    setupState: "complete",
+    eligibility: "eligible",
     myBid: null,
     clearingPriceUsd: 0.12,
   },
   "wrong-network": {
     isConnected: true,
     isBaseChain: false,
-    setupState: null,
-    eligibility: null,
+    setupState: "complete",
+    eligibility: "eligible",
     myBid: null,
     clearingPriceUsd: 0.12,
   },
