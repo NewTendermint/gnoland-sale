@@ -13,6 +13,7 @@ import { Icon } from "../../(ui)/Icon"
 import { fmtCompactUsd, fmtCount, fmtPrice } from "../../../lib/sale/format"
 import { bidCtaLabel } from "../../../lib/sale/labels"
 import { MOCK_COMMITMENT_LIVE, MOCK_JOURNEY_INPUTS } from "../../../lib/sale/mock"
+import { stateOverridesEnabled } from "../../../lib/sale/overrides"
 import type { JourneyState } from "../../../lib/sale/types"
 
 const METRICS = [
@@ -158,7 +159,7 @@ function Caption({ children }: { children: string }) {
 }
 
 export default function DevStatesPage() {
-  if (process.env.NODE_ENV === "production") notFound()
+  if (!stateOverridesEnabled()) notFound()
 
   const states = Object.keys(MOCK_JOURNEY_INPUTS) as JourneyState[]
 

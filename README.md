@@ -70,7 +70,7 @@ Inside a phase, each visitor gets a derived funnel state (`lib/sale/journey.ts`,
 
 | When | What you do | What is automatic |
 |---|---|---|
-| Pre-sale launch | Set `NEXT_PUBLIC_SALE_PHASE=pre-sale`, `NEXT_PUBLIC_NEWSLETTER_ENABLED=1`, Mailchimp creds; deploy | Stage A renders (newsletter + countdown) |
+| Pre-sale launch | Set `NEXT_PUBLIC_SALE_PHASE=pre-sale`, `NEXT_PUBLIC_NEWSLETTER_ENABLED=1`, Mailchimp creds; **delete the `NEXT_PUBLIC_STATE_OVERRIDES` block from `netlify.toml [build.environment]`** (hardening checklist M3 - the public page must not be flippable from a crafted `?phase=` link); deploy | Stage A renders (newsletter + countdown) |
 | July 1 (registration) | Nothing | Stage A -> B by clock, "Register now" appears |
 | July 15 (sale opens) | Set `NEXT_PUBLIC_SALE_PHASE=live`; deploy (until the on-chain Stage feed is wired, then nothing) | Live metrics + bid funnel |
 | Sale closes | Set `NEXT_PUBLIC_SALE_PHASE=ended`; deploy (same caveat) | Final clearing + results |
@@ -138,8 +138,9 @@ The one on-chain write (submitting the signed bid with the permit) happens clien
 ## Development and review
 
 - `SONAR_MOCK=1` (auto-behavior in dev with no creds): the whole Sonar surface runs on local fixtures (`lib/sonar/mock-*`), including a slowly climbing mock clearing price.
-- `/dev/states`: every funnel state, collapsed + expanded, without a wallet or Sonar. Gated out of production.
-- URL overrides (non-production only): `?phase=pre-sale|live|ended`, `?registration=open|closed`, `?journey=<state>` preview any combination on the real page.
+- `/dev/states`: every funnel state, collapsed + expanded, without a wallet or Sonar.
+- URL overrides: `?phase=pre-sale|live|ended`, `?registration=open|closed`, `?journey=<state>` preview any combination on the real page.
+- Both are gated by `stateOverridesEnabled()` (`lib/sale/overrides.ts`): always on in dev; on in production builds only while `netlify.toml` sets `NEXT_PUBLIC_STATE_OVERRIDES=1` (the staging URL is reviewable by the whole team). **That flag MUST be removed from `[build.environment]` before the public launch** - tracked as hardening checklist M3, also flagged in the runbook above.
 
 ## Layout
 

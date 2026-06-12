@@ -6,7 +6,8 @@
  * deriveJourney (lib/sale/journey.ts) from the wallet + the session's Sonar entity;
  * this provider delegates to it rather than growing its own logic.
  *
- * Dev-only overrides (never in production): ?phase=pre-sale|live|ended,
+ * State-preview overrides (gated by stateOverridesEnabled - dev always, prod
+ * builds only with NEXT_PUBLIC_STATE_OVERRIDES=1): ?phase=pre-sale|live|ended,
  * ?registration=open|closed and ?journey=<state> preview any state without a
  * wallet or Sonar. ?auth=ok|error is production (Sonar OAuth return hint).
  */
@@ -17,6 +18,7 @@ import { useAccount } from "wagmi"
 import { useEntity, useMyBid, useSaleData } from "../../lib/sale/hooks"
 import { deriveJourney } from "../../lib/sale/journey"
 import { MOCK_JOURNEY_INPUTS } from "../../lib/sale/mock"
+import { stateOverridesEnabled } from "../../lib/sale/overrides"
 import { resolvePreSaleStage, resolveSalePhase } from "../../lib/sale/phase"
 import type {
   CommitmentData,
@@ -85,7 +87,7 @@ export function SaleProvider({ children }: { children: ReactNode }) {
         queryClient.invalidateQueries({ queryKey: ["sale", "entity"] })
       }
     }
-    if (process.env.NODE_ENV === "production") return
+    if (!stateOverridesEnabled()) return
     const params = url.searchParams
     const p = params.get("phase")
     if (p) setPhase(resolveSalePhase({ override: p }))
