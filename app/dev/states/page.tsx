@@ -203,11 +203,13 @@ export default function DevStatesPage() {
           />
         </section>
 
-        {/* The pre-sale bar matrix renders REAL components driven by the dev overrides,
-            so link to the live bar instead of duplicating its copy in replicas. */}
+        {/* The pre-sale + ended bar matrices render REAL components driven by the dev
+            overrides, so link to the live bar instead of duplicating its copy. The ended
+            bar's "View results" expands a panel that connects the WALLET, then shows the
+            settlement; the journey override seeds the mock commitment for that panel. */}
         <section className="flex flex-col gap-3 border-t border-border pt-6">
           <p className="font-mono text-xs font-medium uppercase tracking-[0.2em] text-foreground">
-            pre-sale bar states (drive the real bar)
+            pre-sale + ended bar states (drive the real bar)
           </p>
           <ul className="flex flex-col gap-1.5 text-sm text-muted">
             {[
@@ -218,6 +220,14 @@ export default function DevStatesPage() {
               ["not eligible", "/?phase=pre-sale&registration=open&journey=not-eligible"],
               ["registered", "/?phase=pre-sale&registration=open&journey=disconnected"],
               ["auth error", "/?phase=pre-sale&auth=error&journey=kyc-required"],
+              [
+                "ended - won (expand -> connect -> allocation)",
+                "/?phase=ended&journey=has-bid-winning",
+              ],
+              [
+                "ended - outbid (expand -> connect -> claim)",
+                "/?phase=ended&journey=has-bid-outbid",
+              ],
             ].map(([label, href]) => (
               <li key={href}>
                 <a href={href} className="link-underline hover:text-foreground">

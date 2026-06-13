@@ -215,8 +215,11 @@ function GateRow({
 
 /** Inline wallet picker for the disconnected gate. Extension wallets connect via
  * their own extension prompt; WalletConnect opens its native QR modal (the single
- * intentional popup). No app-level modal. */
-function ConnectChoices() {
+ * intentional popup). No app-level modal. Exported so the ended settlement panel
+ * reuses the same picker; `prompt` lets it carry surface-specific copy. */
+export function ConnectChoices({
+  prompt = "Connect the wallet you'll bid with.",
+}: { prompt?: string } = {}) {
   const { connectors, connect, isPending, variables, error } = useConnect()
   const pendingUid =
     variables?.connector && "uid" in variables.connector ? variables.connector.uid : undefined
@@ -234,7 +237,7 @@ function ConnectChoices() {
         <p className="text-sm">
           <span className="font-medium text-foreground">Connect your wallet.</span>{" "}
           <span className={error ? "text-danger" : "text-muted"}>
-            {error ? "Connection failed. Try again." : "Connect the wallet you'll bid with."}
+            {error ? "Connection failed. Try again." : prompt}
           </span>
         </p>
       </div>

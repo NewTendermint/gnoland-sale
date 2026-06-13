@@ -12,6 +12,7 @@ import { useEffect, useRef } from "react"
 import type { ReactNode } from "react"
 import { BidFlow } from "../(sections)/bid/BidFlow"
 import { BidStatusTag, FunnelSteps } from "../(sections)/bid/FunnelSteps"
+import { SettlementFlow } from "../(sections)/bid/SettlementFlow"
 import { CtaArrow } from "../(ui)/CtaArrow"
 import { DrawLine } from "../(ui)/DrawLine"
 import { Entrance } from "../(ui)/Entrance"
@@ -20,10 +21,9 @@ import { Stagger } from "../(ui)/Stagger"
 import { useCtaEntrance } from "../../lib/motion/use-motion"
 import { newsletterEnabled } from "../../lib/newsletter/config"
 import { postSonarLogout, redirectToSonarLogin } from "../../lib/sale/api"
-import { gnotEstimate } from "../../lib/sale/calc"
 import { SALE_ECONOMICS, formatSaleDate } from "../../lib/sale/economics"
-import { fmtCompactUsd, fmtCount, fmtGnot, fmtPrice } from "../../lib/sale/format"
-import { useBid } from "../../lib/sale/hooks"
+import { fmtCompactUsd, fmtCount, fmtPrice } from "../../lib/sale/format"
+import { useBid, useClaim } from "../../lib/sale/hooks"
 import { derivePreSaleBar } from "../../lib/sale/journey"
 import { VERIFY_STATUS, bidCtaLabel } from "../../lib/sale/labels"
 import type { PreSaleBarState } from "../../lib/sale/types"
@@ -54,6 +54,7 @@ export function BidPanel() {
     setBidPanelOpen: setExpanded,
   } = useSale()
   const bid = useBid()
+  const claim = useClaim()
   const queryClient = useQueryClient()
   const panelRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
@@ -151,23 +152,17 @@ export function BidPanel() {
   }
 
   if (phase === "ended") {
-    const hasBid = myBid !== null
     const clearingUsd = commitment.clearingPriceUsd ?? 0
     const finalCells: BarMetric[] = [
       { icon: "clearing", value: fmtPrice(clearingUsd), label: "Final price" },
       { icon: "database", value: fmtCompactUsd(commitment.totalCommittedUsd), label: "Raised" },
       { icon: "users-group", value: fmtCount(commitment.uniqueCommitmentCount), label: "Bidders" },
     ]
-    if (hasBid && myBid) {
-      finalCells.push({
-        icon: "cube",
-        value: fmtGnot(gnotEstimate(myBid.committedUsd, clearingUsd)),
-        label: "Your allocation",
-      })
-    }
     return (
       <BarShell>
         <DrawLine immediate />
+        {/* Collapsed: global final metrics + one "View results" CTA. Like the live bar,
+            it expands into a panel that connects the wallet then shows the settlement. */}
         <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4 pb-6 pt-4 sm:pb-8 sm:pt-6">
           <div className="flex flex-wrap items-center gap-x-7 gap-y-3 sm:gap-x-9">
             <span className="rounded-full border border-border px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-muted">
@@ -187,12 +182,65 @@ export function BidPanel() {
               </div>
             ))}
           </div>
-          <button type="button" className={CTA_PILL}>
-            <span className="inline-flex items-center gap-2">
-              <span>{hasBid ? "Claim refund" : "View results"}</span>
-              <CtaArrow />
-            </span>
-          </button>
+          {expanded ? (
+            <button
+              type="button"
+              onClick={() => setExpanded(false)}
+              aria-label="Close"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border text-muted transition-colors duration-300 hover:border-surface-contrast hover:bg-surface-contrast hover:text-on-contrast"
+            >
+              <svg
+                viewBox="0 0 16 16"
+                className="h-3.5 w-3.5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                aria-hidden="true"
+              >
+                <path d="M3 3l10 10M13 3L3 13" strokeLinecap="round" />
+              </svg>
+            </button>
+          ) : (
+            <button
+              type="button"
+              ref={triggerRef}
+              onClick={() => setExpanded(true)}
+              aria-expanded={expanded}
+              className={CTA_PILL}
+            >
+              <span className="inline-flex items-center gap-2">
+                <span>View results</span>
+                <CtaArrow />
+              </span>
+            </button>
+          )}
+        </div>
+
+        {/* Expanding settlement sheet, same grid-rows 0fr->1fr trick and easing as the
+            live panel: connect the wallet, then the per-bidder settlement + refund claim. */}
+        <div
+          className={`grid transition-[grid-template-rows] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none ${
+            expanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+          }`}
+        >
+          <div className="overflow-hidden">
+            <div className="pb-4 sm:pb-6">
+              <div
+                ref={panelRef}
+                tabIndex={-1}
+                inert={!expanded}
+                className={`bid-capsule max-h-[60vh] overflow-y-auto px-6 py-5 transition-opacity duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] focus:outline-none motion-reduce:transition-none ${
+                  expanded ? "opacity-100" : "opacity-0"
+                }`}
+              >
+                <SettlementFlow
+                  clearingPriceUsd={commitment.clearingPriceUsd}
+                  myBid={myBid}
+                  onClaim={claim.claim}
+                />
+              </div>
+            </div>
+          </div>
         </div>
       </BarShell>
     )

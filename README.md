@@ -41,7 +41,7 @@ Three phases drive every surface (`lib/sale/phase.ts`):
 |---|---|
 | `pre-sale` | Countdown bar, newsletter or registration CTAs, no bid form |
 | `live` | Live metrics (clearing, committed, bidders), the bid funnel |
-| `ended` | Final clearing price, results |
+| `ended` | Final clearing price, per-bidder settlement (allocation / refundable) + the USDC refund claim |
 
 Resolution order (first match wins):
 

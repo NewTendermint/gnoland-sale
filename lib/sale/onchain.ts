@@ -1,19 +1,20 @@
 "use client"
 
 /**
- * The on-chain bid step: SettlementSale.replaceBidWithPermit. The single boundary
- * between the app and the chain, and the single swap point for going live. useBid
- * awaits it after the Sonar gates (pre-purchase + permit).
+ * The on-chain steps of the sale: the single boundary between the app and the chain,
+ * and the single swap point for going live. Two actions, both on the SettlementSale
+ * contract (source-verified, REQUIREMENTS A.12.1):
+ *   - submitBidOnChain  -> replaceBidWithPermit (live phase, awaited by useBid after
+ *     the Sonar pre-purchase + permit gates).
+ *   - claimRefundOnChain -> claimRefund (ended phase, Stage.Done; awaited by useClaim).
  *
- * Emulated today because SettlementSale is not deployed yet (REQUIREMENTS A.1:
- * only Sonar can provision the sale) and its PurchasePermitV3 struct is not openly
- * readable, so the real call can't be written or tested. The emulation runs in
- * local dev only and is off on every deployed build (NODE_ENV === "production"),
- * so a real deployment never presents a fake "submitted" bid.
+ * Both are emulated today because SettlementSale is not deployed yet (REQUIREMENTS A.1:
+ * only Sonar can provision the sale). The emulation runs in local dev only and is off on
+ * every deployed build (NODE_ENV === "production"), so a real deployment never presents
+ * a fake success. Going live = wire the real wagmi/core path (no hooks here) in each
+ * function below; the signatures, callers and types stay the same.
  *
- * Going live: delete the EMULATION block below and drop the real wagmi path in.
- * The signature, the caller, and every type stay the same. The real body, using
- * wagmi/core actions (callable here, no hooks):
+ * replaceBidWithPermit, real body:
  *   1. Bid struct (verified from SettlementSale.sol): { lockup: bool, price: uint64,
  *      amount: uint256 }. Convert ONLY through usdToTokenUnits / priceUsdToMicroUsd
  *      (lib/sale/calc.ts, integer-exact + tested): amount with the payment token's
@@ -27,6 +28,13 @@
  *      functionName: "replaceBidWithPermit", args: [token, bid, purchasePermit,
  *      purchasePermitSignature, erc20PermitDeadline, erc20PermitSignature] }) -> txHash.
  *   5. Re-verify the ABI from Basescan (REQUIREMENTS A.3 Tier 1) before launch.
+ *
+ * claimRefund, real body: no Sonar permit and no amount - the contract refunds the
+ * connected wallet's unfilled commitment at Stage.Done. Guard the chain (Base) first,
+ * then writeContract(wagmiConfig, { address: <SETTLEMENT_SALE from env>, abi,
+ * functionName: "claimRefund", args: [] }) -> txHash. Re-verify the ABI (A.3 Tier 1).
+ * Also read the REAL claimable refund from the contract to drive the UI figure + the
+ * claim button (the ended-bar estimate is binary - see lib/sale/settlement.ts).
  */
 import type { BidParams, BidResult } from "./submitter"
 import type { SalePermit } from "./types"
@@ -38,6 +46,10 @@ type OnChainBidArgs = {
   permit: SalePermit
   wallet: `0x${string}`
 }
+
+export type ClaimResult =
+  | { status: "claimed"; txHash: string }
+  | { status: "reverted"; reason: string }
 
 export async function submitBidOnChain(args: OnChainBidArgs): Promise<BidResult> {
   // --- EMULATION (local dev only) - DELETE when the contract lands ---
@@ -55,4 +67,17 @@ export async function submitBidOnChain(args: OnChainBidArgs): Promise<BidResult>
 
   // No contract wired yet (REQUIREMENTS A.1): never fake success on a real deploy.
   return { status: "reverted", reason: "On-chain bidding is not available yet" }
+}
+
+export async function claimRefundOnChain(_args: { wallet: `0x${string}` }): Promise<ClaimResult> {
+  // --- EMULATION (local dev only) - DELETE when the contract lands ---
+  // TODO(real-data): swap for the real wagmi claimRefund (see the file header) once
+  // SettlementSale is deployed. No transaction is sent.
+  if (process.env.NODE_ENV !== "production") {
+    return { status: "claimed", txHash: "0xemulated-no-onchain-tx" }
+  }
+  // --- end EMULATION ---
+
+  // No contract wired yet (REQUIREMENTS A.1): never fake a refund on a real deploy.
+  return { status: "reverted", reason: "Refund claims are not available yet" }
 }

@@ -1,0 +1,154 @@
+"use client"
+
+/**
+ * Ended-phase settlement panel for the expanded sticky bar. Same shape as the live
+ * BidFlow: a disconnected wallet sees the wallet picker; a connected wallet sees its
+ * final outcome (allocation + refundable) derived from the clearing price, the on-chain
+ * refund claim, and the in-bar wallet control (disconnect). Optional `onClaim` wires the
+ * real wallet; without it the claim is simulated locally (dev preview).
+ *
+ * Visitor-facing copy here is placeholder, pending team validation.
+ */
+import { useState } from "react"
+import { useAccount } from "wagmi"
+import { WalletButton } from "../../(layout)/WalletButton"
+import { GnotCoin } from "../../(ui)/GnotCoin"
+import { Icon } from "../../(ui)/Icon"
+import { SALE_ECONOMICS, formatSaleDate } from "../../../lib/sale/economics"
+import { fmtGnot, fmtPrice, fmtUsd } from "../../../lib/sale/format"
+import type { ClaimResult } from "../../../lib/sale/onchain"
+import { deriveSettlement } from "../../../lib/sale/settlement"
+import type { MyBid } from "../../../lib/sale/types"
+import { ConnectChoices } from "./BidFlow"
+
+// Same recipe as BidFlow's inverted bid-capsule PILL (a shared pill module is a
+// tracked follow-up). disabled:pointer-events-none because :hover matches disabled.
+const PILL =
+  "btn-pan inline-flex cursor-pointer items-center justify-center rounded-full border border-faint bg-on-contrast px-6 py-3 text-xs font-bold uppercase tracking-[0.2em] text-surface-contrast before:bg-surface-contrast hover:text-on-contrast disabled:pointer-events-none disabled:opacity-40"
+
+function Cell({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <span className="text-[10px] uppercase tracking-[0.2em] text-muted">{label}</span>
+      <div className="flex h-8 items-center gap-2 font-mono text-lg tabular-nums text-foreground">
+        {children}
+      </div>
+    </div>
+  )
+}
+
+export function SettlementFlow({
+  clearingPriceUsd,
+  myBid,
+  onClaim,
+}: {
+  clearingPriceUsd: number | null
+  myBid: MyBid
+  onClaim?: () => Promise<ClaimResult>
+}) {
+  const { isConnected } = useAccount()
+  const [claimState, setClaimState] = useState<"idle" | "claiming" | "claimed">("idle")
+  const [claimError, setClaimError] = useState<string | null>(null)
+
+  // Connect gate, same as the live bid funnel: the refund is claimed by the wallet
+  // that committed, so the wallet must be connected before any settlement shows.
+  if (!isConnected) {
+    return (
+      <ConnectChoices prompt="Connect the wallet you bid with to see your results and claim any refund." />
+    )
+  }
+
+  const settlement = deriveSettlement(myBid, clearingPriceUsd)
+  if (!settlement) {
+    return (
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <p className="text-sm">
+          <span className="font-medium text-foreground">No commitment for this wallet.</span>{" "}
+          <span className="text-muted">Switch to the wallet you bid with.</span>
+        </p>
+        <WalletButton />
+      </div>
+    )
+  }
+
+  const { status, committedUsd, refundableUsd, gnotAllocation } = settlement
+  const won = status === "won"
+  const canClaim = refundableUsd > 0
+
+  async function onClaimClick() {
+    setClaimState("claiming")
+    setClaimError(null)
+    // No onClaim (preview): simulate a successful claim locally.
+    const result = onClaim ? await onClaim() : ({ status: "claimed", txHash: "0xmock" } as const)
+    if (result.status === "claimed") {
+      setClaimState("claimed")
+    } else {
+      setClaimState("idle")
+      setClaimError(result.reason)
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-5">
+      <div className="flex items-center gap-3">
+        <Icon
+          name="shield-check"
+          draw={false}
+          className={`h-5 w-5 shrink-0 ${won ? "text-mint" : "text-foreground"}`}
+        />
+        <p className="text-sm text-foreground">
+          {won
+            ? "Your bid cleared. Here's your allocation."
+            : "You were outbid. Your full commitment is refundable."}
+        </p>
+      </div>
+
+      <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-5">
+        <div className="flex flex-wrap items-end gap-x-8 gap-y-5">
+          <Cell label="Final clearing">
+            {fmtPrice(clearingPriceUsd ?? 0)} <span className="text-sm text-muted">/ GNOT</span>
+          </Cell>
+          <Cell label="Your commitment">{fmtUsd(committedUsd)}</Cell>
+          {won ? (
+            <Cell label="Your allocation">
+              <GnotCoin className="h-5 w-5 text-muted" />~{fmtGnot(gnotAllocation)}
+              <span className="text-sm text-muted">GNOT</span>
+            </Cell>
+          ) : null}
+          <Cell label="Refundable">
+            {fmtUsd(refundableUsd)} <span className="text-sm text-muted">USDC</span>
+          </Cell>
+        </div>
+
+        <div className="ml-auto flex items-center gap-4">
+          {claimState === "claimed" ? (
+            <span className="inline-flex items-center gap-2 text-sm font-medium text-foreground">
+              <Icon name="shield-check" draw={false} className="h-5 w-5 shrink-0 text-mint" />
+              Refund sent
+            </span>
+          ) : canClaim ? (
+            <button
+              type="button"
+              onClick={onClaimClick}
+              disabled={claimState === "claiming"}
+              className={PILL}
+            >
+              <span>
+                {claimState === "claiming" ? "Claiming..." : `Claim ${fmtUsd(refundableUsd)}`}
+              </span>
+            </button>
+          ) : null}
+          <WalletButton />
+        </div>
+      </div>
+
+      {claimError ? <p className="text-xs font-medium text-danger">{claimError}</p> : null}
+      {won ? (
+        <p className="text-xs text-muted">
+          GNOT is sent to your wallet at mainnet ({formatSaleDate(SALE_ECONOMICS.mainnetIso)}), with
+          the unlock schedule applied.
+        </p>
+      ) : null}
+    </div>
+  )
+}

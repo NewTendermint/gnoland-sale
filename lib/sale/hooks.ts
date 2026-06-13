@@ -16,7 +16,7 @@ import {
   postGeneratePermit,
   postPrePurchase,
 } from "./api"
-import { submitBidOnChain } from "./onchain"
+import { type ClaimResult, claimRefundOnChain, submitBidOnChain } from "./onchain"
 import type { BidParams, BidResult } from "./submitter"
 import type { CommitmentData, MyBid } from "./types"
 
@@ -140,4 +140,28 @@ export function useBid() {
   }
 
   return { submit }
+}
+
+/**
+ * Refund claim for the ended phase. The contract refunds the connected wallet's
+ * unfilled commitment directly (claimRefund at Stage.Done) - no Sonar gate, no permit,
+ * so this just hands off to the on-chain step. Emulated until SettlementSale is deployed
+ * (lib/sale/onchain.ts), unchanged at go-live. The wallet is already connected wherever
+ * a claim is offered: the position that drives it (useMyBid) is gated on the connection.
+ */
+export function useClaim() {
+  const { address } = useAccount()
+
+  async function claim(): Promise<ClaimResult> {
+    if (!address) {
+      return { status: "reverted", reason: "Connect your wallet" }
+    }
+    try {
+      return await claimRefundOnChain({ wallet: address })
+    } catch {
+      return { status: "reverted", reason: "Could not claim your refund" }
+    }
+  }
+
+  return { claim }
 }
