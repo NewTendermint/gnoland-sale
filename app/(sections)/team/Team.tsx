@@ -37,8 +37,8 @@ export function Team() {
         </Reveal>
       </RevealGroup>
 
-      <DrawLine className="col-span-12 lg:col-span-10 lg:col-start-2" />
-      <ul className="col-span-12 lg:col-span-10 lg:col-start-2">
+      <DrawLine className="band-10" />
+      <ul className="band-10">
         {team.map((p) => (
           <Fragment key={p.name}>
             <FadeIn as="li" className="py-6 text-center lg:py-8">

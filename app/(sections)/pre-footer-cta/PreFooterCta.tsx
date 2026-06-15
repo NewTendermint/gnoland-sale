@@ -1,9 +1,11 @@
 "use client"
 
 /**
- * Last-chance CTA. Builds its own contrast tile inside a default Section (rather than
- * Section tone="contrast") for a taller vertical rhythm right before the footer.
- * Centered headline + 2 CTAs (inverted pill primary + ghost pill secondary).
+ * Last-chance CTA. Builds its own full-bleed contrast band (rather than
+ * Section tone="contrast") for a taller vertical rhythm right before the footer:
+ * the inverted surface spans the whole .screen width with the content re-contained
+ * on the shared grid. Centered headline + 2 CTAs (inverted pill primary + ghost
+ * pill secondary).
  */
 import { AddToCalendarButton } from "../../(layout)/AddToCalendarButton"
 import { Countdown } from "../../(layout)/Countdown"
@@ -14,11 +16,11 @@ import { ClipOpen } from "../../(ui)/ClipOpen"
 import { FadeIn } from "../../(ui)/FadeIn"
 import { Reveal } from "../../(ui)/Reveal"
 import { RevealGroup } from "../../(ui)/RevealGroup"
-import { CONTRAST_TILE, Section } from "../../(ui)/Section"
 import { HEADING_TITLE } from "../../(ui)/SectionHeading"
 import { newsletterEnabled } from "../../../lib/newsletter/config"
 import { redirectToSonarLogin } from "../../../lib/sale/api"
 import { SALE_ECONOMICS, formatSaleDate } from "../../../lib/sale/economics"
+import { DESKTOP_ONLY } from "../../../lib/sale/labels"
 
 export function PreFooterCta() {
   const { phase, preSaleStage, setBidPanelOpen } = useSale()
@@ -27,21 +29,21 @@ export function PreFooterCta() {
   const registrationOpen = preSaleStage === "registration-open"
 
   return (
-    <Section id="pre-footer-cta">
-      <RevealGroup as="div" className="col-span-12">
-        {/* py-20 lg:py-28 is taller than Section's default contrast tile (py-12 lg:py-16).
-            The tile LEADS the group (clip-open): it grows first, and the cluster below
-            starts halfway through that growth - the panel never shows static content first. */}
-        <ClipOpen lead className={`${CONTRAST_TILE} py-20 lg:py-28`}>
-          <div className="grid grid-cols-12 gap-6">
+    <section id="pre-footer-cta" className="bg-background py-10 text-foreground lg:py-20">
+      {/* Full-bleed contrast band (same pattern as Section's contrast tile): the
+          inverted surface spans the whole .screen width, the container nested inside
+          keeps the content on the shared grid. py-20 lg:py-28 is taller than Section's
+          default tile (py-12 lg:py-16). The tile LEADS the group (clip-open): it grows
+          first, and the cluster below starts halfway through that growth - the panel
+          never shows static content first. */}
+      <RevealGroup as="div">
+        <ClipOpen lead className="contrast-tile py-20 lg:py-28">
+          <div className="page-container grid grid-cols-12 gap-6">
             <RevealGroup
               as="div"
               className="col-span-12 flex flex-col items-center text-center lg:col-span-8 lg:col-start-3"
             >
-              <FadeIn
-                as="p"
-                className="mb-4 font-mono text-xs uppercase tracking-widest text-on-contrast-muted"
-              >
+              <FadeIn as="p" className="mb-4 section-eyebrow text-on-contrast-muted">
                 Public sale
               </FadeIn>
               <Reveal as="h2" type="words" className={`${HEADING_TITLE} text-on-contrast`}>
@@ -51,13 +53,26 @@ export function PreFooterCta() {
                 as="p"
                 className="mx-auto mt-6 max-w-xl text-lg text-on-contrast-muted md:text-xl"
               >
-                {preSale
-                  ? registrationOpen
-                    ? `Registration is open - verify once with Sonar now, then bid when the sale opens ${formatSaleDate(SALE_ECONOMICS.saleOpensIso, false)}.`
-                    : `Registration opens ${formatSaleDate(SALE_ECONOMICS.registrationOpensIso, false)} - the sale opens ${formatSaleDate(SALE_ECONOMICS.saleOpensIso)}.`
-                  : ended
-                    ? "The auction has closed. Final results and your position are above."
-                    : "Connect your wallet, verify once with Sonar, and place your bid. The clearing price is the same for everyone."}
+                {preSale ? (
+                  registrationOpen ? (
+                    // "Verify now" only makes sense where the Sonar CTA exists
+                    // (funnel contexts); awareness ones read the desktop variant.
+                    <>
+                      <span className="hidden funnel:inline">
+                        {`Registration is open - verify once with Sonar now, then bid when the sale opens ${formatSaleDate(SALE_ECONOMICS.saleOpensIso, false)}.`}
+                      </span>
+                      <span className="funnel:hidden">
+                        {`Registration is open - register from a desktop browser, then bid when the sale opens ${formatSaleDate(SALE_ECONOMICS.saleOpensIso, false)}.`}
+                      </span>
+                    </>
+                  ) : (
+                    `Registration opens ${formatSaleDate(SALE_ECONOMICS.registrationOpensIso, false)} - the sale opens ${formatSaleDate(SALE_ECONOMICS.saleOpensIso)}.`
+                  )
+                ) : ended ? (
+                  "The auction has closed. Final results and your position are above."
+                ) : (
+                  "Connect your wallet, verify once with Sonar, and place your bid. The clearing price is the same for everyone."
+                )}
               </Reveal>
               {preSale ? (
                 <FadeIn as="div" className="mt-8 text-center">
@@ -82,13 +97,18 @@ export function PreFooterCta() {
                     // returns BELOW it as the fallback for visitors not ready to
                     // KYC yet (sole pre-sale surface where both asks coexist).
                     <div className="flex flex-col items-center gap-6">
-                      <ArrowLink
-                        onClick={redirectToSonarLogin}
-                        label="Register now"
-                        arrow="slide"
-                        variant="solid-contrast"
-                        size="lg"
-                      />
+                      {/* Sonar OAuth is desktop-only; awareness contexts already read
+                          the desktop pointer in the body line above and keep the
+                          capture row below as their ask. */}
+                      <div className="hidden funnel:block">
+                        <ArrowLink
+                          onClick={redirectToSonarLogin}
+                          label="Register now"
+                          arrow="slide"
+                          variant="solid-contrast"
+                          size="lg"
+                        />
+                      </div>
                       {newsletterEnabled() ? (
                         <div className="flex flex-wrap items-start justify-center gap-6">
                           <NewsletterForm variant="tile" inputId="newsletter-email-tile" />
@@ -119,14 +139,21 @@ export function PreFooterCta() {
                   />
                 ) : (
                   // Live phase only: during pre-sale the tile stays single-ask.
+                  // The bid CTA only exists on funnel-capable contexts; awareness
+                  // ones read the desktop pointer. "How it works" (anchor) stays.
                   <>
-                    <ArrowLink
-                      onClick={() => setBidPanelOpen(true)}
-                      label="Place a bid"
-                      arrow="slide"
-                      variant="solid-contrast"
-                      size="lg"
-                    />
+                    <div className="hidden funnel:block">
+                      <ArrowLink
+                        onClick={() => setBidPanelOpen(true)}
+                        label="Place a bid"
+                        arrow="slide"
+                        variant="solid-contrast"
+                        size="lg"
+                      />
+                    </div>
+                    <p className="w-full text-sm text-on-contrast-muted funnel:hidden">
+                      {`${DESKTOP_ONLY.live.title}. ${DESKTOP_ONLY.live.body}`}
+                    </p>
                     <ArrowLink
                       href="#how-it-works"
                       label="How it works"
@@ -141,6 +168,6 @@ export function PreFooterCta() {
           </div>
         </ClipOpen>
       </RevealGroup>
-    </Section>
+    </section>
   )
 }

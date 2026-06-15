@@ -44,3 +44,27 @@ export const VERIFY_STATUS = {
     body: "This sale is not available in your region.",
   },
 } as const
+
+/**
+ * Awareness-mode "continue on desktop" copy (touch devices or < lg viewports;
+ * see docs/specs/2026-06-13-mobile-awareness-only-design.md). Shared by the
+ * read-only bar and the section CTA swaps so the wording can never drift.
+ * Same shape and punctuation convention as VERIFY_STATUS: titles carry no
+ * trailing period, each surface adds its own.
+ *
+ * Copy: placeholder labels, pending team validation.
+ */
+export const DESKTOP_ONLY = {
+  register: {
+    title: "Registration is open",
+    body: "Register from a desktop browser at sale.gno.land.",
+  },
+  live: {
+    title: "Bidding happens on desktop",
+    body: "For your security, bids are placed from a desktop browser with your wallet. Open sale.gno.land on your computer.",
+  },
+  ended: {
+    title: "Results and claims are on desktop",
+    body: "Connect on your computer to view your settlement and claim any refund.",
+  },
+} as const

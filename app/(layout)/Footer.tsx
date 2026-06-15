@@ -11,13 +11,13 @@ import { communityLinks, externalLinks } from "./nav.data"
 export function Footer() {
   return (
     <footer className="bg-background pt-16 pb-48 text-foreground">
-      <div className="mx-auto max-w-[var(--max-width-container)] px-6 lg:px-8">
+      <div className="page-container">
         <div className="grid grid-cols-12 gap-6">
           <div className="col-span-12 lg:col-span-6 lg:col-start-2">
             <p className="mb-4 text-xl font-semibold">gno.land</p>
             <DrawLine />
             <div className="grid grid-cols-1 gap-6 pt-4 lg:grid-cols-6">
-              <Stagger as="ul" className="space-y-2 text-xl text-muted lg:col-span-2">
+              <Stagger as="ul" className="space-y-2 text-lg text-muted lg:text-xl lg:col-span-2">
                 <li>
                   <a
                     href="#token-details"
@@ -53,7 +53,7 @@ export function Footer() {
               </Stagger>
               <Stagger
                 as="ul"
-                className="space-y-2 text-xl text-muted lg:col-span-2 lg:col-start-5"
+                className="space-y-2 text-lg text-muted lg:text-xl lg:col-span-2 lg:col-start-5"
               >
                 <li>
                   <a
@@ -89,7 +89,7 @@ export function Footer() {
           <div className="col-span-6 sm:col-span-4 lg:col-span-2 lg:col-start-8">
             <p className="mb-4 text-xl font-semibold">Community</p>
             <DrawLine />
-            <Stagger as="ul" className="space-y-2 pt-4 text-xl text-muted">
+            <Stagger as="ul" className="space-y-2 pt-4 text-lg text-muted lg:text-xl">
               {communityLinks.map((link) => (
                 <li key={link.href}>
                   <a
@@ -106,7 +106,7 @@ export function Footer() {
           <div className="col-span-6 sm:col-span-4 lg:col-span-2 lg:col-start-10">
             <p className="mb-4 text-xl font-semibold">External</p>
             <DrawLine />
-            <Stagger as="ul" className="space-y-2 pt-4 text-xl text-muted">
+            <Stagger as="ul" className="space-y-2 pt-4 text-lg text-muted lg:text-xl">
               {externalLinks.map((link) => (
                 <li key={link.href}>
                   <a

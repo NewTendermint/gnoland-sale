@@ -41,32 +41,36 @@ export function useSaleData() {
 
 /**
  * The session's Sonar entity (KYC + eligibility); `data` is null when the user
- * is not connected to Sonar. Feeds the journey via deriveJourney.
+ * is not connected to Sonar. Feeds the journey via deriveJourney. `enabled`
+ * (default true) lets awareness-only contexts (touch or < lg, no Sonar funnel)
+ * skip the fetch entirely; see SaleProvider.
  */
-export function useEntity() {
+export function useEntity(opts?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["sale", "entity"],
     queryFn: getEntity,
+    enabled: opts?.enabled ?? true,
   })
 }
 
 /**
  * The session's current position (price + committed); `data` is null when the
  * entity has no commitment or is not connected to Sonar. Feeds `myBid` in the
- * journey + the position UI.
+ * journey + the position UI. `enabled` (default true) composes with the wallet
+ * gate below; awareness-only contexts pass false (no position UI there).
  */
-export function useMyBid() {
+export function useMyBid(opts?: { enabled?: boolean }) {
   const { isConnected } = useAccount()
   return useQuery({
     queryKey: ["sale", "my-bid"],
     queryFn: getMyPosition,
     // No wallet means no position to show, and readMyBid would still call Sonar, so
-    // skip until connected. (useEntity, by contrast, stays eager - NOT gated on connect:
+    // skip until connected. (useEntity, by contrast, is NOT gated on connect:
     // verify-first leads with the entity-derived gate, so fetching it ASAP minimizes the
     // brief first-paint "verify" window a returning verified user sees before the entity
     // query settles. Eager shrinks that window; it does not remove it, since the verify
     // gate now precedes the wallet gate.)
-    enabled: isConnected,
+    enabled: isConnected && (opts?.enabled ?? true),
     // Don't clobber an optimistic post-bid position (set by useBid) on window focus;
     // the mock has no server-side commitment to refetch. TODO(real-data): invalidate
     // this after a real bid so readMyBid confirms the indexed commitment.

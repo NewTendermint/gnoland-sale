@@ -111,7 +111,13 @@ export function TokenDetails() {
               </p>
             </FadeIn>
           ) : (
-            <FadeIn as="p" className="mt-4 max-w-2xl text-base text-muted md:text-lg">
+            // "Your position" needs a wallet, so it is funnel-only: on awareness
+            // contexts (touch / < lg) there is no position to show, so the subtext
+            // and the block below are hidden there (they only render on desktop).
+            <FadeIn
+              as="p"
+              className="mt-4 hidden max-w-2xl text-base text-muted funnel:block md:text-lg"
+            >
               {positionState === "not-ready"
                 ? "Connect a wallet to see your position in the auction."
                 : positionState === "no-bids"
@@ -123,11 +129,11 @@ export function TokenDetails() {
 
         {!preSale ? (
           <>
-            <DrawLine className="col-span-12 lg:col-span-10 lg:col-start-2" />
+            <DrawLine className="col-span-12 hidden funnel:block lg:col-span-10 lg:col-start-2" />
 
             <FadeIn
               as="div"
-              className="col-span-12 grid grid-cols-12 gap-6 py-12 lg:col-span-10 lg:col-start-2 lg:grid-cols-10"
+              className="col-span-12 hidden grid-cols-12 gap-6 py-12 funnel:grid lg:col-span-10 lg:col-start-2 lg:grid-cols-10"
             >
               <div className="col-span-12 lg:col-span-3">
                 <h3 className="font-mono text-2xl font-medium uppercase tracking-tight text-foreground lg:text-3xl">
@@ -159,7 +165,7 @@ export function TokenDetails() {
           </>
         ) : null}
 
-        <DrawLine className="col-span-12 lg:col-span-10 lg:col-start-2" />
+        <DrawLine className="band-10" />
 
         {/* The terms table + documents leave the title cascade. RevealBoundary cuts
             the outer group context, then EACH term group (and the documents) gets its

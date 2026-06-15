@@ -32,7 +32,7 @@ export function Ecosystem() {
             <SectionHeading eyebrow="Ecosystem" title="Built by a growing community" index={0} />
           </div>
 
-          <DrawLine className="col-span-10 mt-16" index={1} />
+          <DrawLine className="col-span-10 mt-10 lg:mt-16" index={1} />
 
           <ul className="col-span-10 mt-6">
             {featured.map((p, i) => (
@@ -40,27 +40,32 @@ export function Ecosystem() {
                 <RevealGroup as="li" className="group flex flex-col gap-6 py-6">
                   {i > 0 ? <ItemDivider /> : null}
                   <div className="grid grid-cols-1 gap-2 md:grid-cols-10 md:gap-6">
-                    {/* Title cell: icon + name, category as a borderless subtitle. */}
-                    <div className="md:col-span-3 md:self-start md:pr-4 md:pt-4">
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="shrink-0 text-faint transition-colors group-hover:text-foreground">
-                          <Icon name={p.icon} index={1} className="h-12 w-12" />
-                        </span>
+                    {/* Title cell: the name + category form ONE group beside the icon,
+                        so their gap is the group's own (tight mt-1) and never depends on
+                        the icon's height. items-start top-aligns the icon with that group
+                        (≈ the body's first line). On mobile the group leads on the left
+                        (name a touch larger) with the icon to its right; from md the
+                        desktop order returns (icon in the gutter, group right-aligned). */}
+                    <div className="flex flex-row-reverse items-start justify-between gap-3 md:col-span-3 md:flex-row md:self-start md:pr-4 md:pt-4">
+                      <span className="shrink-0 text-faint transition-colors group-hover:text-foreground">
+                        <Icon name={p.icon} index={1} className="h-10 w-10 md:h-12 md:w-12" />
+                      </span>
+                      <div>
                         <Reveal
                           as="h3"
                           index={1}
-                          className="text-right text-lg font-semibold leading-tight tracking-tight text-foreground"
+                          className="text-left text-xl font-semibold leading-tight tracking-tight text-foreground md:text-right md:text-lg"
                         >
                           {p.name}
                         </Reveal>
+                        <FadeIn
+                          as="p"
+                          index={2}
+                          className="mt-1 text-left font-mono text-[10px] uppercase tracking-[0.2em] text-faint md:text-right"
+                        >
+                          {p.category}
+                        </FadeIn>
                       </div>
-                      <FadeIn
-                        as="p"
-                        index={2}
-                        className="mt-1 text-right font-mono text-[10px] uppercase tracking-[0.2em] text-faint"
-                      >
-                        {p.category}
-                      </FadeIn>
                     </div>
                     {/* Body cell offset to cols 4-10: paragraph, then a ghost CTA. */}
                     <div className="md:col-span-7 md:col-start-4 md:pt-6">
@@ -94,7 +99,7 @@ export function Ecosystem() {
           <DrawLine className="col-span-12 mt-12 lg:col-span-10 lg:col-start-2" />
         </RevealBoundary>
 
-        <ul className="col-span-12 grid grid-cols-1 gap-x-6 gap-y-10 pt-12 sm:grid-cols-2 lg:col-span-10 lg:col-start-2 lg:grid-cols-4">
+        <ul className="col-span-12 grid grid-cols-2 gap-x-6 gap-y-10 pt-12 lg:col-span-10 lg:col-start-2 lg:grid-cols-4">
           {others.map((p) => (
             <RevealBoundary key={p.name}>
               <RevealGroup as="li" className="group">

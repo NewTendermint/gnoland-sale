@@ -15,7 +15,7 @@ import { stats } from "../../../content/sections/stats"
 export function Stats() {
   return (
     <Section id="stats" tone="contrast" clip>
-      <div className="col-span-12 lg:col-span-10 lg:col-start-2">
+      <div className="band-10">
         <SectionHeading
           tone="contrast"
           eyebrow="By the numbers"

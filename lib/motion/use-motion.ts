@@ -1,6 +1,8 @@
 "use client"
 
 import { useContext, useEffect, useRef } from "react"
+import { LG_MEDIA_QUERY } from "../device/breakpoints"
+import { useMediaQuery } from "../device/use-media-query"
 import { loadEngine } from "./engine"
 import { RevealGroupContext, doubleRaf, observeReveal, wireReveal } from "./reveal-group"
 import { shouldAnimate } from "./should-animate"
@@ -37,10 +39,17 @@ export function useMotion<T extends HTMLElement>({
 }: MotionConfig) {
   const triggerRef = useRef<T>(null)
   const targetRef = useRef<T>(null)
+  // Desktop-only flourish gate, REACTIVE to crossing Tailwind's lg (shared
+  // useMediaQuery): the parallax is torn down (and its transform cleared) when the
+  // window drops below lg - even if the page first loaded at desktop width - and
+  // re-armed when it grows back. The grey scene slots stay still on mobile; only the
+  // future internal scene parallax (inside the window) will move there. On top of
+  // the touch / reduced-motion gate.
+  const wide = useMediaQuery(LG_MEDIA_QUERY)
   useEffect(() => {
     const trigger = triggerRef.current
     const target = targetRef.current
-    if (!trigger || !target || !shouldAnimate()) return
+    if (!trigger || !target || !shouldAnimate() || !wide) return
     let killed = false
     let cleanup: (() => void) | undefined
     loadEngine().then(({ gsap }) => {
@@ -66,6 +75,9 @@ export function useMotion<T extends HTMLElement>({
         cleanup = () => {
           tween.scrollTrigger?.kill()
           tween.kill()
+          // Drop the transform GSAP applied so the slot sits flat once parallax is
+          // gone (e.g. after shrinking below lg) instead of frozen at its last offset.
+          gsap.set(target, { clearProps: "transform" })
         }
       }
     })
@@ -73,7 +85,7 @@ export function useMotion<T extends HTMLElement>({
       killed = true
       cleanup?.()
     }
-  }, [type, distance, lerp])
+  }, [type, distance, lerp, wide])
   return { triggerRef, targetRef }
 }
 
@@ -347,6 +359,7 @@ export function useStagger<T extends HTMLElement>({
   fromBottomPct = 20,
   delayMs = 0,
   immediate = false,
+  active,
 }: {
   staggerMs?: number
   durationMs?: number
@@ -354,13 +367,50 @@ export function useStagger<T extends HTMLElement>({
   fromBottomPct?: number
   delayMs?: number
   immediate?: boolean
+  /** Controlled (open/close) mode. When set, the cascade is driven by this flag
+   * instead of scroll/mount, and - unlike the scroll reveals - it PLAYS ON TOUCH
+   * (only reduced-motion opts out), so it fits an open-triggered surface like the
+   * burger menu. Children still cascade by index (i * staggerMs), so it scales to
+   * any item count. Closing is a no-op here: the caller's container fades the items
+   * out (e.g. the menu overlay's opacity), and the next open re-parks + cascades. */
+  active?: boolean
 } = {}) {
   const ref = useRef<T>(null)
   useEffect(() => {
     const container = ref.current
-    if (!container || !shouldAnimate()) return
+    if (!container) return
     const items = Array.from(container.children) as HTMLElement[]
     if (!items.length) return
+
+    // Controlled mode: drive by `active`, play on touch (reduced-motion opts out).
+    if (active !== undefined) {
+      // Closed: leave the items; the caller's container opacity carries them out and
+      // the next open re-parks them. (Hidden meanwhile by that container's opacity.)
+      if (!active) return
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        for (const item of items) {
+          item.style.opacity = "1"
+          item.style.transform = "none"
+        }
+        return
+      }
+      // Park hidden transition-free, commit with a reflow, then cascade in by index.
+      for (const item of items) {
+        item.style.transition = "none"
+        item.style.opacity = "0"
+        item.style.transform = `translateY(${yPx}px)`
+      }
+      void container.offsetWidth
+      items.forEach((item, i) => {
+        const d = delayMs + i * staggerMs
+        item.style.transition = `opacity ${durationMs}ms ease ${d}ms, transform ${durationMs}ms ${EASE_REVEAL} ${d}ms`
+        item.style.opacity = "1"
+        item.style.transform = "translateY(0)"
+      })
+      return
+    }
+
+    if (!shouldAnimate()) return
     // Park the painted start state (the transition itself is (re)applied in show()).
     for (const item of items) {
       item.style.opacity = "0"
@@ -407,7 +457,7 @@ export function useStagger<T extends HTMLElement>({
       stop()
       reset()
     }
-  }, [staggerMs, durationMs, yPx, fromBottomPct, delayMs, immediate])
+  }, [staggerMs, durationMs, yPx, fromBottomPct, delayMs, immediate, active])
   return ref
 }
 

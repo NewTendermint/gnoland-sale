@@ -15,6 +15,7 @@ import { useQueryClient } from "@tanstack/react-query"
 import { createContext, useContext, useEffect, useState } from "react"
 import type { ReactNode } from "react"
 import { useAccount } from "wagmi"
+import { useFunnelCapable } from "../../lib/device/funnel-gate"
 import { useEntity, useMyBid, useSaleData } from "../../lib/sale/hooks"
 import { deriveJourney } from "../../lib/sale/journey"
 import { MOCK_JOURNEY_INPUTS } from "../../lib/sale/mock"
@@ -47,15 +48,22 @@ const SaleContext = createContext<SaleContextValue | null>(null)
 
 export function SaleProvider({ children }: { children: ReactNode }) {
   const { isConnected, chainId } = useAccount()
+  // Awareness-only contexts (touch or < lg; lib/device/funnel-gate.ts) never
+  // offer registration/bidding, so the authenticated Sonar queries below are
+  // skipped there entirely - less network, less surface. The commitments poll
+  // stays active everywhere: the awareness bar needs the metrics AND the paused
+  // kill-switch flag. `undefined` (first client frame) also skips; on desktop
+  // the queries start one frame later, nothing user-visible.
+  const funnelCapable = useFunnelCapable()
   // Live auction metrics from /api/sonar/commitments (real fetch; fixture or
   // real Sonar behind the route). initialData keeps `commitment` always defined.
   const sale = useSaleData()
   // The session's Sonar entity (KYC + eligibility); data is null until connected
   // to Sonar. Feeds the journey below.
-  const entity = useEntity()
+  const entity = useEntity({ enabled: funnelCapable === true })
   // The session's current position (price + committed), filtered server-side from
   // the commitment set by the entity. null until the entity has a commitment.
-  const position = useMyBid()
+  const position = useMyBid({ enabled: funnelCapable === true })
   const [phase, setPhase] = useState<SalePhase>(() =>
     resolveSalePhase({ override: process.env.NEXT_PUBLIC_SALE_PHASE }),
   )
