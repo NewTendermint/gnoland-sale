@@ -13,15 +13,23 @@ import { SectionHeading } from "../../(ui)/SectionHeading"
 import { partners } from "../../../content/sections/partners"
 
 export function Partners() {
+  // Single source for the heading copy: a mobile-only copy leads the section, the
+  // desktop copy stays in the right column (only one is visible per breakpoint).
+  const heading = { eyebrow: "Partners", title: "Working alongside" }
   return (
     <Section id="partners">
       <RevealGroup inline staggerMs={250}>
+        {/* Mobile: the title leads the section; desktop keeps it in the right column
+            below. order-first + lg:hidden swap which copy shows. */}
+        <div className="order-first col-span-12 lg:hidden">
+          <SectionHeading eyebrow={heading.eyebrow} title={heading.title} index={0} />
+        </div>
         {/* Left column: the big tile, then the partner list below it. The 6-col
             sub-grid lets the list sit at section cols 2-4 (sub-cols 2-4). */}
-        <div className="col-span-12 grid grid-cols-1 gap-y-32 lg:col-span-6 lg:col-start-1 lg:grid-cols-6">
+        <div className="col-span-12 grid grid-cols-1 gap-y-12 lg:col-span-6 lg:col-start-1 lg:grid-cols-6 lg:gap-y-32">
           <div className="lg:col-span-6">
             <RevealBoundary>
-              <ParallaxBox className="aspect-[4/5]" strength={90} />
+              <ParallaxBox className="aspect-[3/2] lg:aspect-[4/5]" strength={90} />
             </RevealBoundary>
           </div>
 
@@ -47,13 +55,14 @@ export function Partners() {
           </ul>
         </div>
 
-        {/* Right column: title (now the only member of the group, so it triggers on
-            its OWN scroll position - eyebrow + title as a block) + second image on its
-            own trigger. */}
+        {/* Right column: the title (desktop only - hidden on mobile, where the copy
+            above leads) + the second image on its own trigger. */}
         <div className="col-span-12 lg:col-span-4 lg:col-start-8 lg:pt-32">
-          <SectionHeading eyebrow="Partners" title="Working alongside" index={0} />
+          <div className="hidden lg:block">
+            <SectionHeading eyebrow={heading.eyebrow} title={heading.title} index={0} />
+          </div>
           <RevealBoundary>
-            <ParallaxBox className="mt-48 aspect-[4/5]" strength={320} />
+            <ParallaxBox className="mt-4 aspect-[3/2] lg:mt-48 lg:aspect-[4/5]" strength={320} />
           </RevealBoundary>
         </div>
       </RevealGroup>

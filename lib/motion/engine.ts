@@ -2,10 +2,9 @@
 
 /**
  * GSAP motion engine, encapsulated so call sites never import GSAP directly
- * (keeps the engine swappable - `lib/motion/use-parallax.ts` is the lean
- * fallback). Lazy-loaded once on the client; ScrollTrigger is bound to the
- * `.screen` scroll container, never `window`. Native scroll only - we use
- * `scrub` for value-lerp, never ScrollSmoother (no smooth-scroll on the page).
+ * (keeps the engine swappable). Lazy-loaded once on the client; ScrollTrigger is
+ * bound to the `.screen` scroll container, never `window`. Native scroll only - we
+ * use `scrub` for value-lerp, never ScrollSmoother (no smooth-scroll on the page).
  */
 
 async function create() {

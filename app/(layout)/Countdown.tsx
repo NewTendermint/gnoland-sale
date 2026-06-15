@@ -12,7 +12,8 @@ import { fmtCountdown } from "../../lib/sale/format"
 export function Countdown({
   targetIso,
   placeholder = "--",
-}: { targetIso: string; placeholder?: string }) {
+  seconds = true,
+}: { targetIso: string; placeholder?: string; seconds?: boolean }) {
   const [remaining, setRemaining] = useState<number | null>(null)
 
   useEffect(() => {
@@ -28,7 +29,7 @@ export function Countdown({
 
   return (
     <span className="tabular-nums">
-      {remaining === null ? placeholder : fmtCountdown(remaining)}
+      {remaining === null ? placeholder : fmtCountdown(remaining, seconds)}
     </span>
   )
 }

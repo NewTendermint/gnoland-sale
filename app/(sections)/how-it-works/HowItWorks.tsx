@@ -18,7 +18,7 @@ import { steps } from "../../../content/sections/how-it-works"
 import { redirectToSonarLogin } from "../../../lib/sale/api"
 import { SALE_ECONOMICS, formatSaleDate } from "../../../lib/sale/economics"
 import { isSonarVerified } from "../../../lib/sale/journey"
-import { VERIFY_STATUS } from "../../../lib/sale/labels"
+import { DESKTOP_ONLY, VERIFY_STATUS } from "../../../lib/sale/labels"
 import type { PreSaleStage, JourneyState as SaleJourney, SalePhase } from "../../../lib/sale/types"
 
 // Section-local funnel vocabulary: which of the four steps is current. Verify-first,
@@ -134,11 +134,21 @@ export function HowItWorks() {
             <p className="text-base text-on-contrast-muted">{preSaleStatus}</p>
           ) : phase === "pre-sale" ? (
             registrationOpen ? (
-              <ArrowLink
-                onClick={redirectToSonarLogin}
-                label="Register now"
-                variant="ghost-contrast"
-              />
+              // Funnel-capable contexts get the Sonar CTA; awareness ones (touch
+              // or < lg) get the desktop pointer instead - registration is
+              // desktop-only (lib/device/funnel-gate.ts, CSS dual render).
+              <>
+                <div className="hidden funnel:block">
+                  <ArrowLink
+                    onClick={redirectToSonarLogin}
+                    label="Register now"
+                    variant="ghost-contrast"
+                  />
+                </div>
+                <p className="text-base text-on-contrast-muted funnel:hidden">
+                  {`${DESKTOP_ONLY.register.title}. ${DESKTOP_ONLY.register.body}`}
+                </p>
+              </>
             ) : (
               // Stage A: an explicit not-open-yet line, then the same all-in-one
               // capture capsule as the bar/pre-footer, left-aligned to the column.
@@ -151,11 +161,22 @@ export function HowItWorks() {
               </div>
             )
           ) : (
-            <ArrowLink
-              onClick={() => setBidPanelOpen(true)}
-              label={liveCtaLabel(journeyState)}
-              variant="ghost-contrast"
-            />
+            // Same split for live/ended: the panel-opening CTA only exists where
+            // the funnel bar does; awareness contexts read the desktop pointer.
+            <>
+              <div className="hidden funnel:block">
+                <ArrowLink
+                  onClick={() => setBidPanelOpen(true)}
+                  label={liveCtaLabel(journeyState)}
+                  variant="ghost-contrast"
+                />
+              </div>
+              <p className="text-base text-on-contrast-muted funnel:hidden">
+                {journeyState === "ended"
+                  ? `${DESKTOP_ONLY.ended.title}. ${DESKTOP_ONLY.ended.body}`
+                  : `${DESKTOP_ONLY.live.title}. ${DESKTOP_ONLY.live.body}`}
+              </p>
+            </>
           )}
         </FadeIn>
       </RevealGroup>

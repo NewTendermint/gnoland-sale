@@ -35,11 +35,7 @@ export function SectionHeading({
   return (
     <RevealGroup>
       {eyebrow ? (
-        <FadeIn
-          as="p"
-          index={index}
-          className={`mb-3 font-mono text-xs uppercase tracking-widest ${eyebrowColor}`}
-        >
+        <FadeIn as="p" index={index} className={`mb-3 section-eyebrow ${eyebrowColor}`}>
           {eyebrow}
         </FadeIn>
       ) : null}

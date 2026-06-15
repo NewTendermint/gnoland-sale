@@ -31,9 +31,9 @@ export function StatementList({ id, eyebrow, title, items }: StatementListProps)
         {/* Full-width image banner - its OWN scroll trigger (RevealBoundary), so it
             clips open on its own and the title below is NOT chained to it. mb-24
             clearance so the box's float never rides onto the title. */}
-        <div className="col-span-12 mb-24">
+        <div className="col-span-12 mb-10 lg:mb-24">
           <RevealBoundary>
-            <ParallaxBox className="aspect-[3/1]" strength={100} />
+            <ParallaxBox className="aspect-2/1 sm:aspect-3/1" strength={100} />
           </RevealBoundary>
         </div>
 
@@ -45,7 +45,7 @@ export function StatementList({ id, eyebrow, title, items }: StatementListProps)
             <SectionHeading eyebrow={eyebrow} title={title} index={0} />
           </div>
 
-          <DrawLine className="col-span-10 mt-16" index={1} />
+          <DrawLine className="col-span-10 mt-10 lg:mt-16" index={1} />
 
           <ul className="col-span-10 mt-6">
             {items.map((item, i) => (
@@ -58,18 +58,21 @@ export function StatementList({ id, eyebrow, title, items }: StatementListProps)
                 <RevealGroup as="li" className="flex flex-col gap-6 py-6">
                   {i > 0 ? <ItemDivider /> : null}
                   <div className="grid grid-cols-1 gap-2 md:grid-cols-10 md:gap-6">
-                    {/* Title cell: icon + title; the icon top-aligns with the body's
-                        first line (md:pt-4 against the body's md:pt-6). */}
-                    <div className="flex items-center justify-between gap-3 md:col-span-3 md:self-start md:pr-4 md:pt-4">
+                    {/* Title cell: on mobile the title leads on the left (a touch
+                        larger) with the icon to its right; from md the desktop order
+                        returns (icon in the left gutter, title right-aligned against
+                        the body). The icon top-aligns with the body's first line
+                        (md:pt-4 against the body's md:pt-6). */}
+                    <div className="flex flex-row-reverse items-center justify-between gap-3 md:col-span-3 md:flex-row md:self-start md:pr-4 md:pt-4">
                       <Icon
                         name={item.icon}
                         index={1}
-                        className="h-12 w-12 shrink-0 text-foreground"
+                        className="h-10 w-10 shrink-0 text-foreground md:h-12 md:w-12"
                       />
                       <Reveal
                         as="h3"
                         index={1}
-                        className="text-right text-xs font-bold uppercase leading-tight tracking-tight text-foreground"
+                        className="text-left text-base font-bold uppercase leading-tight tracking-tight text-foreground md:text-right md:text-xs"
                       >
                         {item.title}
                       </Reveal>

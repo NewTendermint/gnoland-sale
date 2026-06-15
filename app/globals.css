@@ -11,6 +11,13 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Funnel capability gate: desktop-grade contexts only (fine pointer + hover +
+   >= lg). Base styles are awareness-first; `funnel:` reveals the sale-funnel UI
+   (register / connect / bid / claim CTAs). MUST stay in sync with
+   FUNNEL_MEDIA_QUERY in lib/device/funnel-gate.ts - a unit test
+   (tests/unit/device/funnel-gate.test.ts) enforces it. */
+@custom-variant funnel (@media (hover: hover) and (pointer: fine) and (min-width: 64rem));
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -25,12 +32,10 @@
   --color-on-contrast-muted: var(--on-contrast-muted);
 
   --color-mint: var(--mint);
-  --color-mint-soft: var(--mint-soft);
   --color-on-mint: var(--on-mint);
   --color-amber: var(--amber);
   --color-on-amber: var(--on-amber);
   --color-danger: var(--danger);
-  --color-info: var(--info);
 
   --font-display: var(--font-display-var), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-mono-var), ui-monospace, monospace;
@@ -39,7 +44,7 @@
   --radius-sm: var(--radius-sm);
   --radius-md: var(--radius-md);
   --radius-full: var(--radius-full);
-  --ease-default: var(--ease-default);
+  --ease-reveal: var(--ease-reveal);
 }
 
 html,
@@ -131,6 +136,45 @@ main > section {
        text-on-contrast-muted / ...) so the label adapts to its surface
        (normal page vs dark contrast tile). */
     @apply font-mono text-xs uppercase tracking-[0.2em];
+  }
+
+  /* Mono eyebrow above a section heading (wider tracking than .section-label).
+     Typography only - the caller supplies the color for its surface. */
+  .section-eyebrow {
+    @apply font-mono text-xs uppercase tracking-widest;
+  }
+
+  /* The standard inner band: full width on mobile, the centered 10-of-12 columns
+     from lg. The shared content placement for most sections. */
+  .band-10 {
+    @apply col-span-12 lg:col-span-10 lg:col-start-2;
+  }
+
+  /* Small outline status badge (e.g. the ended bar's "Closed"). */
+  .status-pill {
+    @apply rounded-full border border-border px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-muted;
+  }
+
+  /* Inverted framed surface (black on light / white on dark), rounded with the frame
+     radius. Full-bleed on mobile, contained to the container width from lg so it reads
+     as a framed card with gutters. Callers add vertical padding (and overflow-hidden
+     where a child bleeds to the tile edge). */
+  .contrast-tile {
+    @apply rounded-[var(--frame-radius)] bg-surface-contrast text-on-contrast lg:mx-auto lg:max-w-[var(--max-width-container)];
+  }
+
+  /* Centered content well: the max-width container + responsive gutter. Every section,
+     the footer and the sticky bar sit on it so content lines up across the page.
+     Callers add their own grid / vertical padding. */
+  .page-container {
+    @apply mx-auto max-w-[var(--max-width-container)] px-6 lg:px-8;
+  }
+
+  /* Inverted CTA pill for the contrast bid-capsule (BidFlow + SettlementFlow): a
+     rounded uppercase pill on the on-contrast surface. Pair with `btn-pan` for the
+     hover - btn-pan owns the ::before pan, which @apply can't pull in. */
+  .bid-pill {
+    @apply inline-flex cursor-pointer items-center justify-center rounded-full border border-faint bg-on-contrast px-6 py-3 text-xs font-bold uppercase tracking-[0.2em] text-surface-contrast before:bg-surface-contrast hover:text-on-contrast disabled:pointer-events-none disabled:opacity-40;
   }
 
   /* Animated link underline: a currentColor hairline that wipes in from the left on

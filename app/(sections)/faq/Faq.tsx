@@ -30,8 +30,8 @@ export function Faq() {
         <SectionHeading eyebrow="FAQ" title="Frequently asked questions" />
       </RevealGroup>
 
-      <DrawLine className="col-span-12 lg:col-span-10 lg:col-start-2" />
-      <ul className="col-span-12 lg:col-span-10 lg:col-start-2">
+      <DrawLine className="band-10" />
+      <ul className="band-10">
         {faq.map((item, i) => {
           const isOpen = open === i
           return (

@@ -21,11 +21,6 @@ import { deriveSettlement } from "../../../lib/sale/settlement"
 import type { MyBid } from "../../../lib/sale/types"
 import { ConnectChoices } from "./BidFlow"
 
-// Same recipe as BidFlow's inverted bid-capsule PILL (a shared pill module is a
-// tracked follow-up). disabled:pointer-events-none because :hover matches disabled.
-const PILL =
-  "btn-pan inline-flex cursor-pointer items-center justify-center rounded-full border border-faint bg-on-contrast px-6 py-3 text-xs font-bold uppercase tracking-[0.2em] text-surface-contrast before:bg-surface-contrast hover:text-on-contrast disabled:pointer-events-none disabled:opacity-40"
-
 function Cell({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1.5">
@@ -131,7 +126,7 @@ export function SettlementFlow({
               type="button"
               onClick={onClaimClick}
               disabled={claimState === "claiming"}
-              className={PILL}
+              className="btn-pan bid-pill"
             >
               <span>
                 {claimState === "claiming" ? "Claiming..." : `Claim ${fmtUsd(refundableUsd)}`}

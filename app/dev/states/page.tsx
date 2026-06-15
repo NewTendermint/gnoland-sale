@@ -6,6 +6,7 @@ import { notFound } from "next/navigation"
  * metrics / pill / compact-bar markup are a dev replica of BidPanel.
  */
 import type { ReactNode } from "react"
+import { AwarenessBarBody } from "../../(layout)/BidPanelAwareness"
 import { BidFlow } from "../../(sections)/bid/BidFlow"
 import { BidStatusTag, FunnelSteps } from "../../(sections)/bid/FunnelSteps"
 import { CtaArrow } from "../../(ui)/CtaArrow"
@@ -164,7 +165,7 @@ export default function DevStatesPage() {
   const states = Object.keys(MOCK_JOURNEY_INPUTS) as JourneyState[]
 
   return (
-    <main className="mx-auto max-w-[var(--max-width-container)] px-6 py-10 lg:px-8">
+    <main className="page-container py-10">
       <header className="mb-8">
         <p className="font-mono text-xs uppercase tracking-[0.2em] text-muted">Dev harness</p>
         <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground">
@@ -201,6 +202,36 @@ export default function DevStatesPage() {
             sub="Final clearing $0.1161"
             cta="View results"
           />
+        </section>
+
+        {/* Awareness bar (touch devices or < lg windows): the REAL read-only body
+            per phase - no funnel CTA by design. The live bar swaps to it when the
+            funnel gate is off; preview it for real by resizing the window below lg. */}
+        <section className="flex flex-col gap-3 border-t border-border pt-6">
+          <p className="font-mono text-xs font-medium uppercase tracking-[0.2em] text-foreground">
+            awareness bar (touch or &lt; lg) - read-only, per phase
+          </p>
+          {(
+            [
+              ["pre-sale / notify (stage A)", "pre-sale", "registration-closed"],
+              ["pre-sale / registration open (stage B)", "pre-sale", "registration-open"],
+              ["live", "live", "registration-closed"],
+              ["ended", "ended", "registration-closed"],
+            ] as const
+          ).map(([label, phase, stage]) => (
+            <div key={label} className="flex flex-col gap-3">
+              <Caption>{label}</Caption>
+              <div className="rounded-[var(--frame-radius)] border border-border bg-background px-6 lg:px-8">
+                <div className="border-t border-border">
+                  <AwarenessBarBody
+                    phase={phase}
+                    preSaleStage={stage}
+                    commitment={MOCK_COMMITMENT_LIVE}
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
         </section>
 
         {/* The pre-sale + ended bar matrices render REAL components driven by the dev

@@ -28,10 +28,6 @@ import type { JourneyState, MyBid } from "../../../lib/sale/types"
 
 const submitter = new MockBidSubmitter()
 
-// disabled:pointer-events-none because :hover still matches disabled controls.
-const PILL =
-  "btn-pan inline-flex cursor-pointer items-center justify-center rounded-full border border-faint bg-on-contrast px-6 py-3 text-xs font-bold uppercase tracking-[0.2em] text-surface-contrast before:bg-surface-contrast hover:text-on-contrast disabled:pointer-events-none disabled:opacity-40"
-
 // Brand logos for connectors that do not expose their own icon (keyed by connector id).
 // EIP-6963 wallets (MetaMask, Keplr, ...) supply connector.icon; these two do not.
 const BRAND_ICONS: Record<string, ReactNode> = {
@@ -205,7 +201,7 @@ function GateRow({
         </p>
       </div>
       {cta ? (
-        <button type="button" onClick={onCta} className={PILL}>
+        <button type="button" onClick={onCta} className="btn-pan bid-pill">
           <span className="inline-flex items-center gap-2">{cta}</span>
         </button>
       ) : null}
@@ -291,7 +287,7 @@ function SwitchNetworkGate() {
         type="button"
         onClick={() => switchChain({ chainId: PRIMARY_CHAIN_ID })}
         disabled={isPending}
-        className={PILL}
+        className="btn-pan bid-pill"
       >
         {/* The .btn-pan > span contract: bare text would paint UNDER the panel. */}
         <span>{isPending ? "Switching..." : "Switch to Base"}</span>
@@ -546,7 +542,12 @@ function BidRow({
             .
           </span>
           <div className="flex h-12 items-center gap-4">
-            <button type="button" onClick={onSubmit} disabled={!canSubmit} className={PILL}>
+            <button
+              type="button"
+              onClick={onSubmit}
+              disabled={!canSubmit}
+              className="btn-pan bid-pill"
+            >
               <span className="inline-flex items-center gap-2">
                 {submitState === "submitting" ? "Signing..." : prevBid ? "Raise bid" : "Place bid"}
               </span>
