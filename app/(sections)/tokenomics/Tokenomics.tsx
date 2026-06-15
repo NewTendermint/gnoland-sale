@@ -76,7 +76,7 @@ export function Tokenomics() {
           >
             <FadeIn as="div" index={8} className="mb-4 flex items-baseline justify-between gap-3">
               <p className="font-mono text-sm font-bold uppercase tracking-widest text-foreground">
-                Allocation
+                Token Distribution
               </p>
               <p className="font-mono text-xs uppercase tracking-widest text-muted tabular-nums">
                 {gnot(TOTAL_SUPPLY)}

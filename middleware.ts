@@ -6,7 +6,7 @@ import { NextResponse } from "next/server"
  *
  * The hard headers are enforced. The nonce-based CSP ships Report-Only first so it
  * logs violations without blocking the wallet stack (WalletConnect relays over wss,
- * the Base RPC, wasm in crypto libs). Validate the allowlist against real reports,
+ * the Ethereum RPC, wasm in crypto libs). Validate the allowlist against real reports,
  * then rename the header to "Content-Security-Policy" to enforce (at which point
  * Next auto-applies the nonce to its own scripts, clearing the script-src reports).
  *
@@ -24,7 +24,10 @@ export function middleware(request: NextRequest) {
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https:",
     "font-src 'self' data:",
-    "connect-src 'self' https://mainnet.base.org https://sepolia.base.org https://*.base.org wss://relay.walletconnect.com wss://relay.walletconnect.org https://*.walletconnect.com https://*.walletconnect.org https://*.web3modal.org https://*.reown.com https://*.coinbase.com https://*.cbhq.net",
+    // RPC hosts are viem's public defaults for mainnet (eth.merkle.io) + sepolia
+    // (*.rpc.thirdweb.com). Set a dedicated RPC (Alchemy/Infura) + allowlist it here
+    // before prod; public endpoints rate-limit and are not launch-grade.
+    "connect-src 'self' https://eth.merkle.io https://*.rpc.thirdweb.com wss://relay.walletconnect.com wss://relay.walletconnect.org https://*.walletconnect.com https://*.walletconnect.org https://*.web3modal.org https://*.reown.com https://*.coinbase.com https://*.cbhq.net",
     "frame-src 'self' https://*.walletconnect.org https://*.walletconnect.com https://*.coinbase.com",
     "worker-src 'self' blob:",
     "base-uri 'self'",

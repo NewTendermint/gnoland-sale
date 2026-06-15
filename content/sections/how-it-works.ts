@@ -18,7 +18,7 @@ export const steps: Array<{ title: string; body: string; icon: string }> = [
   },
   {
     title: "Bid",
-    body: "Set your max price and commit USDC or USDT.",
+    body: "Set your max price and commit USDC.",
     icon: "scale",
   },
   {

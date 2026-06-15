@@ -5,18 +5,26 @@
  * copy. This module mirrors that copy for the build (dev-facing).
  */
 
-export const positionMetricsEmpty: Array<{ icon: string; value: string; label: string }> = [
-  { icon: "database", value: "-", label: "My commitment" },
-  { icon: "progress-ring", value: "-", label: "My filled" },
-  { icon: "line-chart", value: "-", label: "My best bid" },
-  { icon: "cube", value: "-", label: "My GNOT estimate" },
+export type PositionMetric = {
+  icon: string
+  value: string
+  label: string
+  /** Render the value as a status dot + word (Active / Outbid) instead of a figure. */
+  badge?: boolean
+}
+
+export const positionMetricsEmpty: PositionMetric[] = [
+  { icon: "database", value: "-", label: "USDC committed" },
+  { icon: "line-chart", value: "-", label: "Bid price" },
+  { icon: "cube", value: "-", label: "GNOT allocation" },
+  { icon: "progress-ring", value: "-", label: "Status", badge: true },
 ]
 
-export const positionMetricsActive: Array<{ icon: string; value: string; label: string }> = [
-  { icon: "database", value: "$3,200", label: "My commitment" },
-  { icon: "progress-ring", value: "75%", label: "My filled" },
-  { icon: "line-chart", value: "$0.18", label: "My best bid" },
-  { icon: "cube", value: "20,000", label: "My GNOT estimate" },
+export const positionMetricsActive: PositionMetric[] = [
+  { icon: "database", value: "$3,200", label: "USDC committed" },
+  { icon: "line-chart", value: "$0.18", label: "Bid price" },
+  { icon: "cube", value: "20,000", label: "GNOT allocation" },
+  { icon: "progress-ring", value: "Active", label: "Status", badge: true },
 ]
 
 export const termGroups: Array<{
@@ -24,39 +32,25 @@ export const termGroups: Array<{
   rows: Array<{ label: string; value: string; tbd?: boolean; href?: string }>
 }> = [
   {
-    eyebrow: "Token",
+    eyebrow: "Sale Overview",
     rows: [
       { label: "Token", value: "GNOT" },
-      { label: "Format", value: "Uniform Price Auction (English Auction)" },
-      { label: "Currencies", value: "USDC, USDT (on Base)" },
+      { label: "Sale allocation", value: "77,500,000 GNOT (~5.8% of supply)" },
+      { label: "Sale format", value: "Uniform Price Auction (English Auction)" },
+      { label: "Accepted currency", value: "USDC (Ethereum Mainnet)" },
+      { label: "Contribution window", value: "July 15 - July 21, 2026" },
+      { label: "Expected mainnet launch", value: "Q3 2026" },
     ],
   },
   {
-    eyebrow: "Supply",
+    eyebrow: "Pricing and Caps",
     rows: [
-      { label: "Max supply", value: "1,333,000,000 GNOT" },
-      { label: "Sale allocation", value: "31,000,000 GNOT (2.32% of supply)" },
-      { label: "Circulating at TGE", value: "93,310,000 GNOT (7%)" },
-      { label: "Target raise", value: "$2,000,000" },
-      { label: "FDV at clearing", value: "$86M to $172M (hardcap)" },
-    ],
-  },
-  {
-    eyebrow: "Bid range",
-    rows: [
-      { label: "Minimum price", value: "$0.0645 per GNOT" },
-      { label: "Maximum price", value: "$0.129 per GNOT (hardcap)" },
+      { label: "Starting price", value: "$0.0645 per GNOT" },
+      { label: "Max price", value: "$0.129 per GNOT" },
       { label: "Bid increment", value: "$0.00645" },
-      { label: "Min commitment", value: "$200 per entity" },
-      { label: "Max commitment", value: "$100,000 per entity" },
-    ],
-  },
-  {
-    eyebrow: "Schedule",
-    rows: [
-      { label: "Registration opens", value: "July 1, 2026" },
-      { label: "Contribution window", value: "Opens July 15, 2026 · until close or hardcap" },
-      { label: "Mainnet / distribution", value: "September 1, 2026 (transfers enabled)" },
+      { label: "Minimum commitment", value: "$100" },
+      { label: "Soft cap", value: "$2,000,000" },
+      { label: "Hard cap", value: "$10,000,000" },
     ],
   },
 ]

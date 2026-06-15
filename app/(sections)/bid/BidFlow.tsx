@@ -279,7 +279,7 @@ function SwitchNetworkGate() {
           <span className={error ? "text-danger" : "text-muted"}>
             {error
               ? "Could not switch. Try again."
-              : "This sale runs on Base. Switch your wallet to continue."}
+              : "This sale runs on Ethereum. Switch your wallet to continue."}
           </span>
         </p>
       </div>
@@ -290,7 +290,7 @@ function SwitchNetworkGate() {
         className="btn-pan bid-pill"
       >
         {/* The .btn-pan > span contract: bare text would paint UNDER the panel. */}
-        <span>{isPending ? "Switching..." : "Switch to Base"}</span>
+        <span>{isPending ? "Switching..." : "Switch to Ethereum"}</span>
       </button>
     </div>
   )

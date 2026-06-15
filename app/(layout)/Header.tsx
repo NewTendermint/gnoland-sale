@@ -140,7 +140,7 @@ export function Header() {
             </ul>
 
             <a href="/" className="shrink-0 text-lg font-bold text-foreground lg:px-8">
-              gno.land
+              Gno.land
             </a>
 
             <ul

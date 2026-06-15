@@ -124,7 +124,7 @@ export function HowItWorks() {
   return (
     <Section id="how-it-works" tone="contrast" clip>
       <RevealGroup as="div" className="col-span-12 lg:col-span-6 lg:col-start-2">
-        <SectionHeading tone="contrast" eyebrow="How it works" title="How to participate" />
+        <SectionHeading tone="contrast" eyebrow="How it works" title="How to Participate" />
         <FadeIn as="div" className="mt-8 mb-10">
           {journeyState === "registered" ? (
             <p className="text-base text-on-contrast-muted">

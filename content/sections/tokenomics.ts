@@ -38,7 +38,7 @@ export const allocation: AllocationRow[] = [
     color: "color-mix(in srgb, var(--foreground) 100%, transparent)",
   },
   {
-    category: "NT,LLC",
+    category: "NEWTENDERMINT, LLC",
     percent: 24.91,
     amount: 332_000_000,
     note: "For use at NT,LLC discretion",

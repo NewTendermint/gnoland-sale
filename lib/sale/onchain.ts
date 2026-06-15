@@ -27,10 +27,10 @@
  *   4. writeContract(wagmiConfig, { address: <SETTLEMENT_SALE from env>, abi,
  *      functionName: "replaceBidWithPermit", args: [token, bid, purchasePermit,
  *      purchasePermitSignature, erc20PermitDeadline, erc20PermitSignature] }) -> txHash.
- *   5. Re-verify the ABI from Basescan (REQUIREMENTS A.3 Tier 1) before launch.
+ *   5. Re-verify the ABI from Etherscan (REQUIREMENTS A.3 Tier 1) before launch.
  *
  * claimRefund, real body: no Sonar permit and no amount - the contract refunds the
- * connected wallet's unfilled commitment at Stage.Done. Guard the chain (Base) first,
+ * connected wallet's unfilled commitment at Stage.Done. Guard the chain (Ethereum) first,
  * then writeContract(wagmiConfig, { address: <SETTLEMENT_SALE from env>, abi,
  * functionName: "claimRefund", args: [] }) -> txHash. Re-verify the ABI (A.3 Tier 1).
  * Also read the REAL claimable refund from the contract to drive the UI figure + the

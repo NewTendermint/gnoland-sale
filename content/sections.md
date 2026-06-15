@@ -31,7 +31,7 @@ When a section is `⚠️ TBD`, please replace the `[TBD: ...]` placeholders wit
 **Copy** (validated):
 
 - Title: `GNOT Public Sale`
-- Sub-claim: `The native token of gno.land, a multi-user OS written in Go.`
+- Sub-claim: `The native token of Gno.land, the next-generation smart contract platform powered by Gno.`
 - Meta line: dynamic, depends on auction state (see below).
 - Pill: dynamic, depends on auction state (see below).
 
@@ -105,7 +105,9 @@ Refined metric definitions (from the team xlsx, 2026-06-01), mapped to the Sonar
 
 ## #3 - Token Sale Details  🟡 Partial (numbers in, some provisional)
 
-> **2026-06-13 confirmations (Jae + Ryan, via owner)**: hardcap English auction - floor $0.0645 ($86M FDV), **maximum price $0.1290** ($172M FDV), no further bids once the hardcap is reached; **bid increment $0.00645** (no price levels; any off-step bid must show a UI error); **US accredited investors enabled with a 1-year lockup**; pre-registration July 1, sale July 15 (unchanged); **September 1, 2026 = transfers enabled / listings / distribution (mainnet)**. Reflected the same day in the terms table, bid validation, FAQ and Roadmap (Q3 highlight; the Q1 "distribution begins" claim removed). The 31M vs 77,499,999 offered-amount discrepancy below remains OPEN.
+> **2026-06-13 confirmations (Jae + Ryan, via owner)**: hardcap English auction - floor $0.0645 ($86M FDV), **maximum price $0.1290** ($172M FDV), no further bids once the hardcap is reached; **bid increment $0.00645** (no price levels; any off-step bid must show a UI error); **US accredited investors enabled with a 1-year lockup**; pre-registration July 1, sale July 15 (unchanged); **September 1, 2026 = transfers enabled / listings / distribution (mainnet)**. Reflected the same day in the terms table, bid validation, FAQ and Roadmap. The 31M vs 77,499,999 offered-amount discrepancy below is now RESOLVED - see the 2026-06-15 amendment.
+>
+> **2026-06-15 amendment (doc revision, owner-validated): chain + economics updated.** The sale runs on **Ethereum mainnet** (preview: Sepolia), accepting USDC - the earlier Base pin is superseded (code + ADR migrated 2026-06-15). Offered amount is **77,500,000 GNOT (~5.8% of supply)**, superseding the recorded 31M. **Soft cap $2,000,000 / hard cap $10,000,000**, **minimum commitment $100**, **contribution window July 15-21, 2026**. The terms table is now two sections (Sale Overview + Pricing and Caps) instead of four. Roadmap Q1 2026 now states the first GNOT (genesis/beta) distribution. Wherever the fields and notes below still show 31M / $200 / Base / a vague end date, they are superseded by this amendment.
 
 **Status**: Updated 2026-06-01 from the team xlsx + the 2026-05-30 Sonar call recap (see `docs/REQUIREMENTS_FROM_TEAMS.md` A.12.2). Values marked 🟡 were filled from Friday's meeting and still need Dongwon to finalize. The contribution-window end date is deliberately left vague because the sale may be extended (A.12.2).
 
@@ -134,7 +136,7 @@ Refined metric definitions (from the team xlsx, 2026-06-01), mapped to the Sonar
 
 **Sonar dashboard intel (2026-06-10, NOT published yet - the dashboard is on Sepolia/testnet, treated as test config):** offered tokens this sale **77,499,999** (token decimals 6); price cap **$0.129**; bid increment **$0.00645**; commitment window **July 15 -> July 20, 2026** (00:00 UTC); registration opens July 1, 2026; chain Sepolia; payment USDC; English auction. Proceeds-receiver + contract-admin addresses still empty.
 
-> ⚠️ **Unresolved discrepancy (team to confirm):** the dashboard's offered amount **77,499,999** (~5.81% of supply, => ~$5M at $0.0645 / ~$10M at the $0.129 cap) contradicts the figure currently on the page, **31,000,000 / 2.32% / $2M raise**. Because the dashboard is on Sepolia (test), the page keeps the recorded **31M / $2M** until the team confirms the mainnet config. Min price $0.0645 is the one dashboard value cross-confirmed and used on the page. Min/max commitment ($200 / $100,000) and the contribution-window open date are filled on the page but remain 🟡 provisional.
+> ✅ **RESOLVED 2026-06-15 (owner-validated):** offered amount = **77,500,000 / ~5.8%**, soft cap $2M / hard cap $10M, min commitment $100, window July 15-21, chain **Ethereum mainnet**. _(Original note kept for history:)_ ⚠️ the dashboard's offered amount **77,499,999** (~5.81% of supply, => ~$5M at $0.0645 / ~$10M at the $0.129 cap) contradicts the figure currently on the page, **31,000,000 / 2.32% / $2M raise**. Because the dashboard is on Sepolia (test), the page keeps the recorded **31M / $2M** until the team confirms the mainnet config. Min price $0.0645 is the one dashboard value cross-confirmed and used on the page. Min/max commitment ($200 / $100,000) and the contribution-window open date are filled on the page but remain 🟡 provisional.
 
 ---
 
@@ -187,7 +189,7 @@ Refined metric definitions (from the team xlsx, 2026-06-01), mapped to the Sonar
 
 1. **Verify** - Complete identity verification with Sonar, Echo's compliance platform. (Sonar one-liner added 2026-06-13, owner-requested)
 2. **Connect** - Connect your wallet to join the sale.
-3. **Bid** - Set your max price and commit USDC or USDT.
+3. **Bid** - Set your max price and commit USDC.
 4. **Distribution** - Tokens are distributed to your address. Token lockup is applied according to schedule.
 
 **Source xls note (2026-06-01)**: "Add link to Sonar registration website." The Verify step's CTA links to the Sonar registration/OAuth URL (the `#register` anchor today is a placeholder; real URL comes with the `clientUUID` from the Founder Dashboard, REQUIREMENTS A.2). Registration opens **July 1, 2026**, two weeks before the sale opens (July 15) - the pre-sale phase should push registration during this window.
@@ -202,9 +204,9 @@ Refined metric definitions (from the team xlsx, 2026-06-01), mapped to the Sonar
 
 **Body**:
 
-> Gno.land, developed by NewTendermint, is a next-generation Layer 1 smart contract platform based on Gno, a deterministic, interpreted version of the Go programming language. Founded by Jae Kwon, co-founder of Cosmos and Tendermint, Gno.land represents a paradigm shift in multi-user programming. Our technology empowers developer communities to iteratively and interactively build a single shared program, enabling Gno.land to serve as the "GitHub" of the blockchain ecosystem.
+> Gno.land, developed by NewTendermint, is a next-generation smart contract platform built on Gno, a Go-based interpreted language that lets developers build secure, expressive on-chain applications using one of the world's most popular programming languages. Founded by Jae Kwon, co-founder of Cosmos and Tendermint, Gno.land represents a paradigm shift in multi-user programming. Unlike traditional blockchain environments that require a learning curve, Gno.land meets developers where they already are, dramatically lowering the barrier to entry while maintaining the performance and clarity Go is known for.
 >
-> With its familiar language and intuitive building processes, Gno.land reduces barriers for millions of Go developers, making Web3 more accessible while supporting applications that anyone can trust and use. In addition to its developer-friendliness, Gno.land is built with decentralization and censorship-resistance at its core. Under the leadership of GovDAO, the main decentralized governing body, and adhering to its Constitution, Gno.land is positioned to be the decentralized global knowledge base for the new millennium.
+> At its core, Gno.land is designed for transparency, security, and long-term composability. All smart contracts are fully on-chain, human-readable, and permanently verifiable, meaning anyone can audit, fork, or build on top of existing code without trust assumptions. Combined with a fair, community-driven governance model and a tokenomics structure designed for sustainable growth, Gno.land is building the foundation for a more open and accountable decentralized internet.
 
 ---
 
@@ -212,62 +214,56 @@ Refined metric definitions (from the team xlsx, 2026-06-01), mapped to the Sonar
 
 **Status**: Ready
 
-**Lead**: `Gno.land fundamentally changes the programming paradigm for blockchain`
+**Lead**: none - the list leads with the OS statement as its first item.
 
-**5 features**:
+**6 features** (shipped 2026-06-15; supersedes the prior 5-feature list and the Option A/B decision - the section H2 stays "Built for Developers, Designed for Eternity", the OS line is the first list item):
 
-### Gno Programming Language
-Gno is derived from Go, a language used by millions of developers worldwide to build advanced, multi-user systems. This foundation provides immediate access to a large developer community and their tools, accelerating adoption and lowering the learning curve.
+### The World's First General-Purpose, Language-Based, Multi-User OS
+More than just a typical smart contract platform, Gno.land is designed to be a general-purpose operating system where developer communities can collaboratively build and contribute to a single, shared, ever-evolving program.
 
-### Source-level Determinism
-Programs are easily readable by humans and behave identically across all networks. Such consistency guarantees every node produces the same results for trustless consensus, while keeping code easy to read, audit, and maintain.
+### Built for Go Developers
+Gno.land is powered by Gno, a programming language that is 99% identical to Go. With millions of Go developers worldwide, anyone familiar with Go can start building on Gno.land immediately. No new language to learn, no unfamiliar tooling.
 
-### Native Persistent State
-Applications and objects persist by default and do not require external databases. Eliminating external databases removes the need for manual state management and external database complexity, making applications simpler and more reliable.
+### Human-Readable Smart Contracts
+By running smart contracts as plain, readable source code rather than opaque bytecode, Gno.land lets anyone read, audit, fork, and improve any application on the network with complete transparency.
 
-### Multi-User Concurrency
-Shared state, parallel execution, and long-lived processes are built in. These features allow for scalable, interactive, and continuously running applications that support simultaneous multi-user engagement.
+### Native Composability and Type Safety
+Gno.land uses Go-style packages with full type checking, so bugs are caught before deployment rather than on a live network. Developers can safely build on top of existing contracts, making complex applications easier to compose and maintain.
 
-### OS-like Composability
-Applications interoperate as processes instead of isolated contracts. This interoperability allows them to work together seamlessly, similar to programs in an operating system, enabling greater reusability and a richer ecosystem.
+### Fully Deterministic Execution
+Every smart contract on Gno.land behaves identically across the entire network, guaranteeing predictable, trustless consensus while keeping code simple, transparent, and straightforward to audit.
 
----
-
-**Alternative feature set (team-provided 2026-06-01, DECISION PENDING - do not ship both).** The team xlsx now offers a second framing of this section under the lead "Gno.land fundamentally changes the smart contract programming paradigm". Recorded here as Option B; the owner picks A (above) or B (below) before we wire copy.
-
-#### Option B - 6 features
-
-- **Human-Readable Smart Contracts** - Gno.land executes smart contracts as human-readable source code instead of opaque bytecode, allowing anyone to read, audit, fork, and improve on-chain applications with full transparency.
-- **World's First Language-Based Multi-User OS** - Gno.land is not just another smart contract platform. It is designed as a multi-user operating system that lets large developer communities collaboratively build and interact with a single shared program.
-- **Go-Powered Developer Experience** - Gno.land is powered by Gno, a programming language ~99% identical to Go. Millions of existing Go developers can start building with almost zero learning curve using familiar tools and syntax.
-- **Native Composability and Type Safety** - Gno.land supports type-checked interactions between contracts using Go-style packages, making it safer, more reliable, and more powerful to build complex interconnected applications than most other platforms.
-- **Fully Deterministic Execution** - Gno.land guarantees that smart contracts behave identically across the entire network, ensuring predictable, trustless consensus while keeping code simple, transparent, and easy to audit.
-- **Simpler, More Maintainable Code** - Gno.land automatically saves and manages data for developers. This eliminates repetitive and error-prone work, letting developers build applications faster with cleaner code and fewer bugs.
+### Automatic Data Persistence
+Gno.land automatically saves and manages data for developers, eliminating some of the most repetitive and error-prone work in smart contract development. On Gno.land, developers can focus on the important stuff - building and shipping.
 
 ---
 
-## #8 - GNOT is the native utility token for all economic activity  ✅
+## #8 - GNOT, the Native Token Powering Gno.land  ✅
 
 **Status**: Ready - needs graphic asset
 
 **Source xls note**: "NEED GRAPHIC"
 
-**Lead**: `GNOT is used for`
+**Lead**: none - the title carries the section; use cases below.
 
-**4 use cases**:
+**4 use cases** (reordered + rewritten 2026-06-15):
 
-- **Transaction fees** - GNOT is the fuel that enables every transaction on the gno.land network. Whether transferring tokens or calling a contract, each transaction is paid for in GNOT, so demand for the token rises with use of the network itself.
-- **Storage deposits** - Owning GNOT means reserving ownership of persistent storage on Gno.land. Because applications and their state persist on-chain by default, holding GNOT is what secures the space they occupy over time.
-- **IBC/ICS interactions** - GNOT is used to pay for all cross-chain interactions over IBC and ICS. Moving value and messages between Gno.land and the broader Cosmos ecosystem settles in GNOT, extending the token's utility beyond the chain itself.
-- **Contract execution** - GNOT functions as the gas token that powers smart contract execution. Every computation a contract runs is metered and settled in GNOT, keeping resources fairly priced and the network resistant to spam.
+- **Storage Deposits** - GNOT is locked as a storage deposit whenever data is persisted in a realm. Holding GNOT means reserving ownership of storage on Gno.land.
+- **Transaction Fees** - GNOT is the fuel that enables every transaction on Gno.land. Each transaction is paid for in GNOT, so demand for the token rises as network activity increases.
+- **IBC/ICS** - GNOT is used for all IBC and ICS cross-chain interactions. The transfer of value between Gno.land and other chains requires GNOT, extending the token's utility beyond Gno.land itself.
+- **Contract Execution** - GNOT functions as the gas token that powers smart contract execution. Every computation a contract runs is metered and settled in GNOT, keeping resources fairly priced and the network resistant to spam.
 
 **Asset TBD**: [Need voxel illustration of "GNOT in motion" or a circular flow diagram]
 
 ---
 
-## #9 - The ecosystem in numbers  ✅
+## #9 - The Ecosystem in Numbers  ✅
 
 **Status**: Ready - testnet13 data to add when available
+
+**Eyebrow**: `Gno.land in Numbers`
+**Title**: `The Ecosystem in Numbers`
+**Lead**: `Five years of compounding open-source development. Built transparently in public by a growing developer community.`
 
 **Stats (current)**:
 - 5 years building
@@ -289,7 +285,10 @@ Applications interoperate as processes instead of isolated contracts. This inter
 
 ## #10 - Team (& Advisors)  ⚠️ TBD
 
-**Status**: TBD - list to be provided
+**Status**: TBD - people list still pending (the heading copy below shipped)
+
+**Eyebrow**: `Core team`
+**Title**: `The Team Behind Gno.land`
 
 **Source xls note**: "Need updated list of team and advisors"
 
@@ -303,21 +302,22 @@ Applications interoperate as processes instead of isolated contracts. This inter
 
 **Status**: Ready
 
-**2021** - Jae Kwon bootstraps Gno Virtual Machine (GnoVM) and Tendermint node. Foundational VM, state persistence, first Boards realm, and functional chain.
+**Eyebrow**: `Roadmap`
+**Title**: `From Bootstrap to Mainnet`
 
-**2022** - Test1 to Test3 with improved usability and example realms. GnoVM safety work and initial community workshops.
+**2021** - Jae Kwon bootstrapped the Gno Virtual Machine (GnoVM) and Tendermint node. A functional blockchain was established with a foundational virtual machine, automatic state persistence, and the first Boards realm.
 
-**2023** - Introduced tools like gnodev, Playground, and GnoChess. Released official docs and Gno Network Public License.
+**2023** - Gno.land introduced key developer tools including gnodev, the Playground, and GnoChess. The team also released official documentation and the Gno Network Public License, formalizing how the network would be developed and shared.
 
 **2024** - Permanent multi-node Test4 (with GovDAO) and Test5 with expanded validators. Major VM fixes, performance upgrades, and stability improvements.
 
-**2025** - Stabilization with Test6 to Test8, GovDAO V3, token mechanics, and major GnoVM upgrades. Governance testing, dev updates, community events, and validator tooling improvements.
+**2025** - Network stabilization came with Test6 to Test8, GovDAO V3, token mechanics, and major GnoVM upgrades. Additional progress included governance testing, regular developer updates, community events, and improved validator tooling.
 
-**Q1 2026 - Gno.land Beta Mainnet Launch** - Release of functional network and initial operating system. (Re-dated 2026-06-13: the "token distribution" claim moved to Q3 - distribution cannot precede the July sale.)
+**Q1 2026 - Gno.land Beta Mainnet Launch** - Beta Mainnet launches with the first distribution of the GNOT token, a fully operational GnoVM-powered smart contract network, and the inaugural release of GovDAO. (2026-06-15 per doc revision: the Q1 genesis/beta distribution is stated again; it is distinct from the sale-participant distribution, which is Q3 / September 1.)
 
-**Q2 2026 - Expanding the network** - Bridging AtomOne and Gno.land for security and interoperability. Advancing Gno's functionality and features.
+**Q2 2026 - Expanding the network** - Gno.land is successfully connected to AtomOne on testnet via IBC, enhancing security and interoperability. GnoVM is optimized and strengthened to ensure network stability and deliver better platform features in preparation for mainnet.
 
-**Q3 2026 - Mainnet Launch (highlighted station)** - The GNOT public sale runs in July; on September 1 protocol-level transfers are enabled and GNOT distribution to sale participants begins alongside listings. Fully interoperable, security-hardened network.
+**Q3 2026 - Mainnet Launch (highlighted station)** - The GNOT public sale is scheduled for July, followed by the Gno.land mainnet launch featuring a fully interoperable and security-hardened network with protocol-level GNOT transfers enabled.
 
 **Q4 2026 - Beyond - Ecosystem Growth** - Major focus on building killer apps on Gno.land. Develop tooling.
 
@@ -331,25 +331,28 @@ Applications interoperate as processes instead of isolated contracts. This inter
 
 **Source xls note**: "Use the same description from newtendermint.org"
 
-**Projects** (13 entries):
+**Eyebrow**: `Ecosystem`
+**Title**: `Discover What's Being Built`
+
+**Projects**: the 6 featured cards below (descriptions updated 2026-06-15) lead the section; the page then shows a compact grid of 4 others (Gno Studio Connect, Tendermint2, Gnokey, Gnoweb). CommonDAO / Gnodev / Gnoverse listed below are not currently wired into the page.
 
 ### Gnoscan
-Developed by the Onbloc team, Gnoscan is the official blockchain explorer for Gno.land. Use it to search wallet addresses, transaction hashes, blocks, and contracts, making on-chain data accessible and easy to navigate.
+Gnoscan is the official blockchain explorer for Gno.land. Use it to search wallet addresses, transaction hashes, blocks, and contracts.
 
 ### Adena
-An open-source, non-custodial wallet for Gno.land, developed by Onbloc. Built with an emphasis on user experience.
+Adena is an open-source, non-custodial wallet for Gno.land built with an emphasis on user experience.
 
 ### Gnoswap
-The first decentralized exchange (DEX) on Gno.land. An automated market maker (AMM) protocol written in Gno, it enables permissionless token exchanges on the platform.
+GnoSwap is the first decentralized exchange on Gno.land built on the principles of security, community-ownership, and efficiency.
 
 ### Boards
-An on-chain forum application built natively on Gno.land. It enables structured, open dialogue and community-driven discussion, free from centralized moderation and external control. Designed to become a flagship social application for the network, Boards offers a decentralized alternative to traditional online forums.
+Boards is an on-chain forum built natively on Gno.land. It enables structured, open dialogue and community-driven discussion, free from centralized moderation and external control.
 
 ### Akkadia
-An on-chain world-building game inspired by the Library of Alexandria. Users can create their own realms to build in their own style, and explore worlds created by others. One of the earliest examples of a fully on-chain creative application on Gno.land.
+Akkadia is an on-chain sandbox game where players create their own worlds, expand them together, and leave their activities as persistent on-chain records.
 
 ### Gno Playground
-A browser-based environment for writing, testing, and experimenting with Gno code. Share your code, run unit tests, deploy realms and packages, and execute functions directly from the interface with no local setup required.
+Gno Playground is a browser-based environment for writing, testing, and experimenting with Gno code. Share your code, run unit tests, deploy realms and packages, and execute functions directly from the interface with no local setup required.
 
 ### Gno Studio Connect
 Connect provides direct access to Gno.land's smart contracts through function calls. Use it to explore, interact with, and engage any realm's exposed functions on the network.
@@ -390,19 +393,22 @@ A community-led GitHub organization for builders in the Gno.land ecosystem. A ho
 
 **Status**: Ready
 
+**Eyebrow**: `Partners`
+**Title**: `Our Collaborators`
+
 **Partners**:
 
 ### Samourai Coop
-A development team focused on DAOs and sustainable, community-powered applications, building the governance and coordination tools that decentralized communities need to thrive.
+Samourai Coop is a development team focused on DAOs and sustainable, community-powered applications, building the governance and coordination tools that decentralized communities need to thrive.
 
 ### Berty
-A non-profit NGO specializing in secure, peer-to-peer mobile communication. Berty's work on privacy-first infrastructure aligns closely with Gno.land's mission to build a censorship-resistant internet.
+Berty is a non-profit NGO specializing in secure, peer-to-peer mobile communication. Berty's work on privacy-first infrastructure aligns closely with Gno.land's mission to build a censorship-resistant internet.
 
 ### Onbloc
-An engineering team building consumer-facing applications on Gno.land, including Adena Wallet, Gnoswap, and Gnoscan, some of the ecosystem's most used tools today.
+Onbloc is an engineering team building consumer-facing applications on Gno.land, including Adena Wallet, GnoSwap, and GnoScan, some of the ecosystem's most used tools today.
 
 ### AtomOne
-A community-driven, constitutionally governed blockchain designed to prioritize security, decentralization, and innovation within the Cosmos ecosystem. Gno.land plans to integrate with AtomOne for consensus.
+AtomOne is a community-driven, constitutionally governed blockchain prioritizing security and decentralization in the Cosmos ecosystem. Gno.land plans to integrate AtomOne for consensus.
 
 **Asset TBD per partner**: logo file (SVG preferred).
 
@@ -424,7 +430,7 @@ A community-driven, constitutionally governed blockchain designed to prioritize 
 
 **Status**: Added 2026-06-13 (review top-10 #7). Placed between Partners and the pre-footer CTA. Copy drafted by the assistant at the owner's request; every Q/A below needs owner sign-off. Mirrored into `content/sections/faq.ts` (numbers/dates pulled from `lib/sale/economics.ts` so they cannot drift from the terms table).
 
-**Title**: `Frequently asked questions`
+**Title**: `Frequently Asked Questions (FAQ)`
 **Eyebrow**: `FAQ`
 
 **Format**: hairline-separated rows (Team credits pattern), question as full-width button, answer expands on click (grid-rows trick, single-open, reduced-motion safe).
@@ -433,8 +439,8 @@ A community-driven, constitutionally governed blockchain designed to prioritize 
 2. **What happens if I get outbid?** - You can raise your bid at any time while the sale is open. If the final clearing price ends above your maximum, you do not receive tokens and your committed funds become refundable once the sale settles.
 3. **What is Sonar and why do I need to verify my identity?** - This is a regulated public sale, so every participant completes a one-time identity verification (about 3 minutes) with Sonar, the compliance platform by Echo. Reviews are asynchronous and can take time, so register early - registration opens July 1, 2026, two weeks before the sale. (dates dynamic from economics)
 4. **Who can participate?** - Eligibility depends on your jurisdiction and is checked during Sonar verification. The sale is not available in some regions; if yours is restricted, Sonar will tell you during registration. US participants: accredited investors only, with a one-year lockup.
-5. **What do I need to place a bid?** - A verified Sonar account, a self-custody wallet connected to Base, and USDC or USDT to commit. Get these ready before the sale opens July 15 - funding a wallet on sale day is the most common delay. (date dynamic)
-6. **How much can I commit?** - Bids run from $0.0645 to $0.129 per GNOT in $0.00645 steps - the form starts you at the cheapest price that is currently winning, and you move one step at a time. Commitments run between $200 and $100,000 per participant. (numbers dynamic from economics; commitment min/max PROVISIONAL per A.12.2; price band confirmed 2026-06-13)
+5. **What do I need to place a bid?** - A verified Sonar account, a self-custody wallet connected to Ethereum, and USDC to commit. Get these ready before the sale opens July 15 - funding a wallet on sale day is the most common delay. (date dynamic)
+6. **How much can I commit?** - Bids run from $0.0645 to $0.129 per GNOT in $0.00645 steps - the form starts you at the cheapest price that is currently winning, and you move one step at a time. Commitments run between $100 and $100,000 per participant. (numbers dynamic from economics; min commitment $100 confirmed 2026-06-15; price band confirmed 2026-06-13)
 7. **When do I receive my tokens?** - Distribution begins September 1, 2026, when transfers are enabled at mainnet. Tokens are sent to your wallet with the unlock schedule applied: 7% unlocks at launch, then 7% each month, with the final 9% in month 13. No cliff. (date dynamic from economics; matches #4b vesting)
 8. **Can I withdraw my bid?** - No. A bid can be raised, never lowered or withdrawn while the sale runs. If your maximum ends below the final clearing price, your committed funds become refundable at settlement.
 

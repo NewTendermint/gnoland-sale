@@ -29,7 +29,7 @@ export function Ecosystem() {
         {/* 10-col band: title left, animated rule, featured projects as rows. */}
         <div className="col-span-12 grid grid-cols-10 gap-x-6 gap-y-0 lg:col-span-10 lg:col-start-2">
           <div className="col-span-10 lg:col-span-7">
-            <SectionHeading eyebrow="Ecosystem" title="Built by a growing community" index={0} />
+            <SectionHeading eyebrow="Ecosystem" title="Discover What's Being Built" index={0} />
           </div>
 
           <DrawLine className="col-span-10 mt-10 lg:mt-16" index={1} />

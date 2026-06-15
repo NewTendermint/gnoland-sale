@@ -37,8 +37,8 @@
   NEXT_PUBLIC_NEWSLETTER_ENABLED = "1"
 
 # Deploy-context-scoped environment variables.
-# Production targets sale.gno.land and Sonar prod + Base mainnet.
-# Preview deploys hit Sonar sandbox + Base Sepolia (set per Netlify dashboard).
+# Production targets sale.gno.land and Sonar prod + Ethereum mainnet.
+# Preview deploys hit Sonar sandbox + Sepolia (set per Netlify dashboard).
 [context.production.environment]
   NEXT_PUBLIC_SITE_URL = "https://sale.gno.land"
 

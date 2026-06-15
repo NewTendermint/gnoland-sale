@@ -4,7 +4,7 @@ import {
   type GeneratePurchasePermitResponse,
   type PrePurchaseCheckResponse,
 } from "@echoxyz/sonar-core"
-import { base, baseSepolia } from "viem/chains"
+import { mainnet, sepolia } from "viem/chains"
 import { db } from "../db/client"
 import { type AuditMetadata, auditLog, auditMetadataSchema } from "../db/schema"
 import { env } from "../env"
@@ -117,7 +117,7 @@ export async function ensureFreshTokens(sessionId: string): Promise<StoredTokens
 }
 
 function auditChainId(): number {
-  return env.SALE_CHAIN === "base" ? base.id : baseSepolia.id
+  return env.SALE_CHAIN === "mainnet" ? mainnet.id : sepolia.id
 }
 
 /**

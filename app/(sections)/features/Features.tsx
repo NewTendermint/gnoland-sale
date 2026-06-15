@@ -10,8 +10,8 @@ export function Features() {
   return (
     <StatementList
       id="features"
-      eyebrow="Why gno.land"
-      title="Built for developers, designed for eternity"
+      eyebrow="Why Gno.land"
+      title="Built for Developers, Designed for Eternity"
       items={features}
     />
   )

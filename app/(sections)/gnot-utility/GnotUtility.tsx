@@ -12,7 +12,7 @@ export function GnotUtility() {
     <StatementList
       id="gnot-utility"
       eyebrow="GNOT utility"
-      title="The native utility token for all economic activity"
+      title="GNOT, the Native Token Powering Gno.land"
       items={uses}
     />
   )

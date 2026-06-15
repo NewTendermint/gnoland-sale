@@ -1,12 +1,12 @@
 # gnoland-sale
 
-Frontend for the GNOT public token sale (`sale.gno.land`), running on [Sonar by Echo](https://docs.echo.xyz/). Uniform-price (English) auction, USDC on Base, KYC via Sonar OAuth.
+Frontend for the GNOT public token sale (`sale.gno.land`), running on [Sonar by Echo](https://docs.echo.xyz/). Uniform-price (English) auction, USDC on Ethereum, KYC via Sonar OAuth.
 
 One Next.js app serves every stage of the sale. Nothing is redeployed between stages: the page reads its phase from configuration and the clock, and renders the right surfaces (see "Sale phases" below).
 
 ## Stack
 
-Next.js 15 (App Router) · TypeScript strict · Tailwind v4 · next-themes (light/dark) · Biome · wagmi v2 + RainbowKit + viem (Base mainnet / Base Sepolia only) · `@echoxyz/sonar-core` (server-only) + `sonar-react` · iron-session + libsodium · Drizzle on Netlify DB (Neon) · Netlify Blobs · Vitest + Playwright + MSW v2.
+Next.js 15 (App Router) · TypeScript strict · Tailwind v4 · next-themes (light/dark) · Biome · wagmi v2 + RainbowKit + viem (Ethereum mainnet / Sepolia only) · `@echoxyz/sonar-core` (server-only) + `sonar-react` · iron-session + libsodium · Drizzle on Netlify DB (Neon) · Netlify Blobs · Vitest + Playwright + MSW v2.
 
 ## Run locally
 
