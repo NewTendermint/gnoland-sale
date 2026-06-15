@@ -14,7 +14,7 @@ export function Footer() {
       <div className="page-container">
         <div className="grid grid-cols-12 gap-6">
           <div className="col-span-12 lg:col-span-6 lg:col-start-2">
-            <p className="mb-4 text-xl font-semibold">gno.land</p>
+            <p className="mb-4 text-xl font-semibold">Gno.land</p>
             <DrawLine />
             <div className="grid grid-cols-1 gap-6 pt-4 lg:grid-cols-6">
               <Stagger as="ul" className="space-y-2 text-lg text-muted lg:text-xl lg:col-span-2">
@@ -126,7 +126,7 @@ export function Footer() {
                 Not available in restricted jurisdictions. High-risk investment. You may lose your
                 entire commitment. Token transferability begins at mainnet launch (Q3 2026).
               </p>
-              <p className="text-xs text-muted">(c) 2026 gno.land. All rights reserved.</p>
+              <p className="text-xs text-muted">(c) 2026 Gno.land. All rights reserved.</p>
             </div>
             <ThemeToggle />
           </div>

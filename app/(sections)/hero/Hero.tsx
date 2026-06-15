@@ -75,7 +75,8 @@ export function Hero() {
                 delayMs={650}
                 className="max-w-md text-xl font-bold leading-snug text-foreground lg:text-2xl"
               >
-                The native token of gno.land. A Layer 1 by the makers of Cosmos and Tendermint.
+                The native token of Gno.land, the next-generation smart contract platform powered by
+                Gno.
               </Reveal>
             </div>
           </div>

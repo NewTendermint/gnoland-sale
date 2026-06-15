@@ -27,7 +27,7 @@ export function Faq() {
         as="div"
         className="col-span-12 mb-12 flex flex-col items-center text-center lg:col-span-6 lg:col-start-4 lg:mb-16"
       >
-        <SectionHeading eyebrow="FAQ" title="Frequently asked questions" />
+        <SectionHeading eyebrow="FAQ" title="Frequently Asked Questions (FAQ)" />
       </RevealGroup>
 
       <DrawLine className="band-10" />

@@ -35,7 +35,7 @@ export function Roadmap() {
             <SectionHeading
               tone="contrast"
               eyebrow="Roadmap"
-              title="From bootstrap to mainnet"
+              title="From Bootstrap to Mainnet"
               index={0}
             />
           </div>

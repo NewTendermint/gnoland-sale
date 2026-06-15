@@ -7,11 +7,11 @@ import "server-only"
  *
  * Two independent guards make it impossible to serve mock data on a real sale,
  * even if one env var is misset: it is off in production, AND off whenever the
- * deployment targets mainnet (SALE_CHAIN=base). Both must be false-y and the
+ * deployment targets mainnet (SALE_CHAIN=mainnet). Both must be false-y and the
  * flag must be explicitly "1".
  */
 export function sonarMockEnabled(): boolean {
   if (process.env.NODE_ENV === "production") return false
-  if (process.env.SALE_CHAIN === "base") return false
+  if (process.env.SALE_CHAIN === "mainnet") return false
   return process.env.SONAR_MOCK === "1"
 }

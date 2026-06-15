@@ -44,12 +44,14 @@ export function Narrative() {
                 as="p"
                 className="mt-14 text-3xl leading-snug text-muted lg:mt-36 lg:text-4xl"
               >
-                Gno.land is a next-generation Layer 1 smart contract platform based on Gno, a
-                deterministic, interpreted version of the Go programming language. Founded by Jae
-                Kwon, co-founder of Cosmos and Tendermint, Gno.land represents a paradigm shift in
-                multi-user programming. Our technology empowers developer communities to iteratively
-                and interactively build a single shared program, enabling Gno.land to serve as the
-                "GitHub" of the blockchain ecosystem.
+                Gno.land, developed by NewTendermint, is a next-generation smart contract platform
+                built on Gno, a Go-based interpreted language that lets developers build secure,
+                expressive on-chain applications using one of the world's most popular programming
+                languages. Founded by Jae Kwon, co-founder of Cosmos and Tendermint, Gno.land
+                represents a paradigm shift in multi-user programming. Unlike traditional blockchain
+                environments that require a learning curve, Gno.land meets developers where they
+                already are, dramatically lowering the barrier to entry while maintaining the
+                performance and clarity Go is known for.
               </Reveal>
               <RevealGroup as="dl" className="mt-12 grid grid-cols-3 gap-x-4 gap-y-6 lg:max-w-md">
                 <div>
@@ -117,20 +119,19 @@ export function Narrative() {
                 together with the text. Feel value - tune freely. */}
             <RevealGroup staggerMs={1500}>
               <Reveal as="p" className="mt-6 text-2xl text-muted lg:w-4/5">
-                With its familiar language and intuitive building processes, Gno.land reduces
-                barriers for millions of Go developers, making Web3 more accessible while supporting
-                applications that anyone can trust and use. In addition to its
-                developer-friendliness, Gno.land is built with decentralization and
-                censorship-resistance at its core. Under the leadership of GovDAO, the main
-                decentralized governing body, and adhering to its Constitution, Gno.land is
-                positioned to be the decentralized global knowledge base for the new millennium.
+                At its core, Gno.land is designed for transparency, security, and long-term
+                composability. All smart contracts are fully on-chain, human-readable, and
+                permanently verifiable, meaning anyone can audit, fork, or build on top of existing
+                code without trust assumptions. Combined with a fair, community-driven governance
+                model and a tokenomics structure designed for sustainable growth, Gno.land is
+                building the foundation for a more open and accountable decentralized internet.
               </Reveal>
               <FadeIn as="div" className="mt-8">
                 {/* external: a same-tab docs navigation mid-page is a funnel exit. */}
                 <ArrowLink
                   href="https://docs.gno.land"
                   external
-                  label="Discover gno.land"
+                  label="Discover Gno.land"
                   variant="ghost"
                 />
               </FadeIn>

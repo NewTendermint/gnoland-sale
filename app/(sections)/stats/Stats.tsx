@@ -18,9 +18,9 @@ export function Stats() {
       <div className="band-10">
         <SectionHeading
           tone="contrast"
-          eyebrow="By the numbers"
-          title="The ecosystem in numbers"
-          lead="Five years of compounding open source. Built in public, by a growing developer community."
+          eyebrow="Gno.land in Numbers"
+          title="The Ecosystem in Numbers"
+          lead="Five years of compounding open-source development. Built transparently in public by a growing developer community."
         />
       </div>
       <RevealGroup

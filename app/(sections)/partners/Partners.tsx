@@ -15,7 +15,7 @@ import { partners } from "../../../content/sections/partners"
 export function Partners() {
   // Single source for the heading copy: a mobile-only copy leads the section, the
   // desktop copy stays in the right column (only one is visible per breakpoint).
-  const heading = { eyebrow: "Partners", title: "Working alongside" }
+  const heading = { eyebrow: "Partners", title: "Our Collaborators" }
   return (
     <Section id="partners">
       <RevealGroup inline staggerMs={250}>

@@ -8,14 +8,15 @@ export const SALE_ECONOMICS = {
   // Hardcap (confirmed 2026-06-13, Jae): bids run up to $0.1290 (valuation $172M);
   // once the hardcap is reached, no further bids are accepted.
   maxPriceUsd: 0.129,
-  saleSupplyGnot: 31_000_000, // confirmed
+  saleSupplyGnot: 77_500_000, // confirmed 2026-06-15 (~5.81% of total supply)
   totalSupplyGnot: 1_333_000_000, // confirmed
-  targetRaiseUsd: 2_000_000, // floor, may grow if oversubscribed (confirmed)
+  targetRaiseUsd: 2_000_000, // soft cap / floor, may grow if oversubscribed (confirmed)
+  hardCapUsd: 10_000_000, // hard cap (confirmed 2026-06-15; ~77.5M GNOT x $0.129)
   fdvUsd: 86_000_000, // floor FDV (confirmed; $0.0645 x 1.333B)
   hardcapFdvUsd: 172_000_000, // hardcap FDV (confirmed 2026-06-13; $0.1290 x 1.333B)
   // TODO(real-data): confirm the PROVISIONAL values below (min/max commitment)
   // with the team / Sonar before launch.
-  minCommitmentUsd: 200, // PROVISIONAL - sheet $200; Sonar pending (~$100 example). A.12.2 / param #3.
+  minCommitmentUsd: 100, // confirmed 2026-06-15 (doc)
   maxCommitmentUsd: 100_000, // PROVISIONAL - sheet $100k; Sonar pending. A.12.2 / param #4.
   // Confirmed 2026-06-13 (Ryan): plain English auction, bids move in $0.00645 steps
   // between min and max; the UI must reject any off-increment price with an error.
@@ -27,10 +28,9 @@ export const SALE_ECONOMICS = {
   // NEXT_PUBLIC_SALE_CLOSES (ISO).
   registrationOpensIso: process.env.NEXT_PUBLIC_REGISTRATION_OPENS ?? "2026-07-01T00:00:00Z", // confirmed
   saleOpensIso: process.env.NEXT_PUBLIC_SALE_OPENS ?? "2026-07-15T00:00:00Z", // TIME still TBD (param #14)
-  // PLACEHOLDER close date so the live bar can show a "Time left" countdown. Not confirmed; the end
-  // date may be extended (A.12.2 / Q&A #7). The on-chain Stage is the source of truth once wired;
-  // this is the dev/fallback value. Flip via NEXT_PUBLIC_SALE_CLOSES.
-  saleClosesIso: process.env.NEXT_PUBLIC_SALE_CLOSES ?? "2026-07-29T00:00:00Z", // PLACEHOLDER
+  // Contribution window ends July 21, 2026 (confirmed 2026-06-15, doc). The on-chain Stage
+  // remains the source of truth once wired; this is the dev/fallback. Flip via NEXT_PUBLIC_SALE_CLOSES.
+  saleClosesIso: process.env.NEXT_PUBLIC_SALE_CLOSES ?? "2026-07-21T00:00:00Z",
 } as const
 
 /** Display a sale ISO date, e.g. "July 15, 2026" (UTC-fixed so SSR and client agree). */

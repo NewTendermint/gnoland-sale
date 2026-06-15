@@ -30,7 +30,7 @@ const envSchema = z.object({
   // server-side chain branching) from a validated, server-only source rather
   // than a public URL. Defaults to testnet so a misconfigured prod mislabels
   // toward sandbox rather than falsely claiming mainnet.
-  SALE_CHAIN: z.enum(["base", "base-sepolia"]).default("base-sepolia"),
+  SALE_CHAIN: z.enum(["mainnet", "sepolia"]).default("sepolia"),
   // Newsletter (Mailchimp). Optional: the feature degrades cleanly when absent
   // (the form is flag-gated, dev mocks the API, prod answers 502), so booting
   // without them is valid. An EMPTY string (the .env.example default a dev will

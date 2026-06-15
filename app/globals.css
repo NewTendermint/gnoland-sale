@@ -83,6 +83,15 @@ body {
   }
 }
 
+/* Click/anchor navigation scrolls smoothly (nav links, in-page CTAs). scroll-behavior
+   only affects programmatic + anchor-initiated scrolls, NOT manual wheel/touch input, so
+   the native scroll feel stays untouched. Gated by prefers-reduced-motion. */
+@media (prefers-reduced-motion: no-preference) {
+  .screen {
+    scroll-behavior: smooth;
+  }
+}
+
 /* Anti-FOUC gate for the coordinated page-load entrance: a subtree rendered
    data-entrance="pending" is hidden from first paint until <Entrance> lifts it
    on mount, so the cascade starts at frame 0 instead of flashing the laid-out

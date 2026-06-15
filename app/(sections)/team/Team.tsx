@@ -30,7 +30,7 @@ export function Team() {
         as="div"
         className="col-span-12 mb-12 flex flex-col items-center text-center lg:col-span-6 lg:col-start-4 lg:mb-16"
       >
-        <SectionHeading eyebrow="Core team" title="The team behind gno.land" />
+        <SectionHeading eyebrow="Core team" title="The Team Behind Gno.land" />
         <Reveal as="p" className="mt-4 max-w-xl text-base text-muted md:text-lg">
           Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt
           ut labore.

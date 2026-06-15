@@ -28,7 +28,7 @@ export const faq: Array<{ q: string; a: string }> = [
   },
   {
     q: "What do I need to place a bid?",
-    a: `A verified Sonar account, a self-custody wallet connected to Base, and USDC or USDT to commit. Get these ready before the sale opens ${formatSaleDate(SALE_ECONOMICS.saleOpensIso, false)} - funding a wallet on sale day is the most common delay.`,
+    a: `A verified Sonar account, a self-custody wallet connected to Ethereum, and USDC to commit. Get these ready before the sale opens ${formatSaleDate(SALE_ECONOMICS.saleOpensIso, false)} - funding a wallet on sale day is the most common delay.`,
   },
   {
     q: "How much can I commit?",

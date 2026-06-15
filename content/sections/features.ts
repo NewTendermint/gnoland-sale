@@ -8,28 +8,33 @@
 
 export const features = [
   {
-    icon: "terminal",
-    title: "Gno Programming Language",
-    body: "Gno is derived from Go, a language used by millions of developers worldwide to build advanced, multi-user systems. This foundation provides immediate access to a large developer community and their tools, accelerating adoption and lowering the learning curve.",
-  },
-  {
-    icon: "shield-check",
-    title: "Source-level Determinism",
-    body: "Programs are easily readable by humans and behave identically across all networks. Such consistency guarantees every node produces the same results for trustless consensus, while keeping code easy to read, audit, and maintain.",
-  },
-  {
-    icon: "database",
-    title: "Native Persistent State",
-    body: "Applications and objects persist by default and do not require external databases. Eliminating external databases removes the need for manual state management and external database complexity, making applications simpler and more reliable.",
-  },
-  {
     icon: "users-group",
-    title: "Multi-User Concurrency",
-    body: "Shared state, parallel execution, and long-lived processes are built in. These features allow for scalable, interactive, and continuously running applications that support simultaneous multi-user engagement.",
+    title: "The World's First General-Purpose, Language-Based, Multi-User OS",
+    body: "More than just a typical smart contract platform, Gno.land is designed to be a general-purpose operating system where developer communities can collaboratively build and contribute to a single, shared, ever-evolving program.",
+  },
+  {
+    icon: "terminal",
+    title: "Built for Go Developers",
+    body: "Gno.land is powered by Gno, a programming language that is 99% identical to Go. With millions of Go developers worldwide, anyone familiar with Go can start building on Gno.land immediately. No new language to learn, no unfamiliar tooling.",
+  },
+  {
+    icon: "search",
+    title: "Human-Readable Smart Contracts",
+    body: "By running smart contracts as plain, readable source code rather than opaque bytecode, Gno.land lets anyone read, audit, fork, and improve any application on the network with complete transparency.",
   },
   {
     icon: "network",
-    title: "OS-like Composability",
-    body: "Applications interoperate as processes instead of isolated contracts. This interoperability allows them to work together seamlessly, similar to programs in an operating system, enabling greater reusability and a richer ecosystem.",
+    title: "Native Composability and Type Safety",
+    body: "Gno.land uses Go-style packages with full type checking, so bugs are caught before deployment rather than on a live network. Developers can safely build on top of existing contracts, making complex applications easier to compose and maintain.",
+  },
+  {
+    icon: "shield-check",
+    title: "Fully Deterministic Execution",
+    body: "Every smart contract on Gno.land behaves identically across the entire network, guaranteeing predictable, trustless consensus while keeping code simple, transparent, and straightforward to audit.",
+  },
+  {
+    icon: "database",
+    title: "Automatic Data Persistence",
+    body: "Gno.land automatically saves and manages data for developers, eliminating some of the most repetitive and error-prone work in smart contract development. On Gno.land, developers can focus on the important stuff - building and shipping.",
   },
 ]

@@ -47,7 +47,7 @@ export function PreFooterCta() {
                 Public sale
               </FadeIn>
               <Reveal as="h2" type="words" className={`${HEADING_TITLE} text-on-contrast`}>
-                Ready to join the sale?
+                Ready to Join the Sale?
               </Reveal>
               <Reveal
                 as="p"
@@ -71,7 +71,7 @@ export function PreFooterCta() {
                 ) : ended ? (
                   "The auction has closed. Final results and your position are above."
                 ) : (
-                  "Connect your wallet, verify once with Sonar, and place your bid. The clearing price is the same for everyone."
+                  "Verify once with Sonar, connect your wallet, and place your bid."
                 )}
               </Reveal>
               {preSale ? (

@@ -24,6 +24,7 @@ import { Rise } from "../../(ui)/Rise"
 import { Section } from "../../(ui)/Section"
 import { HEADING_TITLE } from "../../(ui)/SectionHeading"
 import {
+  type PositionMetric,
   documents,
   positionMetricsActive,
   positionMetricsEmpty,
@@ -48,22 +49,23 @@ export function TokenDetails() {
   const preSale = phase === "pre-sale"
   const registrationOpen = preSaleStage === "registration-open"
 
-  const positionMetrics: Array<{ icon: string; value: string; label: string }> = (() => {
+  const positionMetrics: PositionMetric[] = (() => {
     if (positionState !== "active" || !myBid) {
       return positionMetricsEmpty
     }
-    // Live values in the content's order (commitment, filled, best bid, GNOT est).
-    // Filled is binary on the clearing price: a bid at or above clearing clears in
-    // full; true pro-rata at the margin is a settlement detail, unknown pre-close.
-    // TODO(real-data): replace the binary filled with the real pro-rata fill once
+    // Live values in the content's order (USDC committed, bid price, GNOT allocation,
+    // status). Status is binary on the clearing price: a bid at or above clearing reads
+    // Active, otherwise Outbid; the true pro-rata fill at the margin is a settlement
+    // detail, unknown pre-close.
+    // TODO(real-data): refine Active/Outbid with the real settlement outcome once
     // settlement data is available.
-    const filled =
-      bidStatus(myBid.priceUsd, commitment.clearingPriceUsd) === "winning" ? "100%" : "0%"
+    const status =
+      bidStatus(myBid.priceUsd, commitment.clearingPriceUsd) === "winning" ? "Active" : "Outbid"
     const values = [
       fmtUsd(myBid.committedUsd),
-      filled,
       fmtPrice(myBid.priceUsd),
       fmtGnot(gnotEstimate(myBid.committedUsd, commitment.clearingPriceUsd)),
+      status,
     ]
     return positionMetricsActive.map((m, i) => ({ ...m, value: values[i] }))
   })()
@@ -119,7 +121,7 @@ export function TokenDetails() {
               className="mt-4 hidden max-w-2xl text-base text-muted funnel:block md:text-lg"
             >
               {positionState === "not-ready"
-                ? "Connect a wallet to see your position in the auction."
+                ? "Connect your wallet to see your position in the auction."
                 : positionState === "no-bids"
                   ? "You have no bids yet. Place your first one using the panel below."
                   : "Snapshot of your commitments at the current clearing price."}
@@ -141,7 +143,7 @@ export function TokenDetails() {
                 </h3>
               </div>
 
-              <dl className="col-span-12 flex flex-wrap items-end justify-end gap-8 sm:gap-10 lg:col-span-7">
+              <dl className="col-span-12 flex flex-wrap items-end justify-end gap-x-4 gap-y-6 sm:gap-x-6 lg:col-span-7">
                 {positionMetrics.map((m, i) => (
                   <Fragment key={m.label}>
                     {i > 0 ? (
@@ -149,8 +151,28 @@ export function TokenDetails() {
                     ) : null}
                     <div>
                       <div className="flex items-center gap-2">
-                        <Icon name={m.icon} className="h-[18px] w-[18px]" />
-                        <dd className="font-mono text-2xl font-medium tracking-tight tabular-nums sm:text-3xl">
+                        {m.badge ? (
+                          // Status reads as a word, not a figure: a monochrome dot
+                          // (filled = Active, ring = Outbid, faint = no bid) takes the
+                          // metric-icon slot and the value drops tabular-nums.
+                          <span
+                            aria-hidden="true"
+                            className={`size-2.5 shrink-0 rounded-full ${
+                              m.value === "Active"
+                                ? "bg-foreground"
+                                : m.value === "Outbid"
+                                  ? "border border-foreground/40"
+                                  : "bg-border"
+                            }`}
+                          />
+                        ) : (
+                          <Icon name={m.icon} className="h-[18px] w-[18px]" />
+                        )}
+                        <dd
+                          className={`font-mono text-2xl font-medium tracking-tight sm:text-3xl ${
+                            m.badge ? "" : "tabular-nums"
+                          }`}
+                        >
                           {m.value}
                         </dd>
                       </div>
