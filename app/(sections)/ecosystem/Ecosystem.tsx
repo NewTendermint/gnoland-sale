@@ -46,7 +46,7 @@ export function Ecosystem() {
                         (≈ the body's first line). On mobile the group leads on the left
                         (name a touch larger) with the icon to its right; from md the
                         desktop order returns (icon in the gutter, group right-aligned). */}
-                    <div className="flex flex-row-reverse items-start justify-between gap-3 md:col-span-3 md:flex-row md:self-start md:pr-4 md:pt-4">
+                    <div className="flex flex-row-reverse items-start justify-between gap-3 md:col-span-3 md:flex-row md:self-start md:pr-4 md:pt-6">
                       <span className="shrink-0 text-faint transition-colors group-hover:text-foreground">
                         <Icon name={p.icon} index={1} className="h-10 w-10 md:h-12 md:w-12" />
                       </span>
@@ -54,7 +54,7 @@ export function Ecosystem() {
                         <Reveal
                           as="h3"
                           index={1}
-                          className="text-left text-xl font-semibold leading-tight tracking-tight text-foreground md:text-right md:text-lg"
+                          className="text-left text-xl font-semibold leading-tight tracking-tight text-foreground md:text-right md:text-lg md:pt-0.5"
                         >
                           {p.name}
                         </Reveal>
