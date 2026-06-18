@@ -1,12 +1,5 @@
 "use client"
 
-/**
- * Last-chance CTA. Builds its own full-bleed contrast band (rather than
- * Section tone="contrast") for a taller vertical rhythm right before the footer:
- * the inverted surface spans the whole .screen width with the content re-contained
- * on the shared grid. Centered headline + 2 CTAs (inverted pill primary + ghost
- * pill secondary).
- */
 import { AddToCalendarButton } from "../../(layout)/AddToCalendarButton"
 import { Countdown } from "../../(layout)/Countdown"
 import { NewsletterForm } from "../../(layout)/NewsletterForm"
@@ -30,12 +23,6 @@ export function PreFooterCta() {
 
   return (
     <section id="pre-footer-cta" className="bg-background py-10 text-foreground lg:py-20">
-      {/* Full-bleed contrast band (same pattern as Section's contrast tile): the
-          inverted surface spans the whole .screen width, the container nested inside
-          keeps the content on the shared grid. py-20 lg:py-28 is taller than Section's
-          default tile (py-12 lg:py-16). The tile LEADS the group (clip-open): it grows
-          first, and the cluster below starts halfway through that growth - the panel
-          never shows static content first. */}
       <RevealGroup as="div">
         <ClipOpen lead className="contrast-tile py-20 lg:py-28">
           <div className="page-container grid grid-cols-12 gap-6">
@@ -55,8 +42,6 @@ export function PreFooterCta() {
               >
                 {preSale ? (
                   registrationOpen ? (
-                    // "Verify now" only makes sense where the Sonar CTA exists
-                    // (funnel contexts); awareness ones read the desktop variant.
                     <>
                       <span className="hidden funnel:inline">
                         {`Registration is open - verify once with Sonar now, then bid when the sale opens ${formatSaleDate(SALE_ECONOMICS.saleOpensIso, false)}.`}
@@ -93,13 +78,7 @@ export function PreFooterCta() {
               <FadeIn as="div" className="mt-10 flex flex-wrap items-center justify-center gap-4">
                 {preSale ? (
                   registrationOpen ? (
-                    // Stage B: Register stays the only primary; the capture row
-                    // returns BELOW it as the fallback for visitors not ready to
-                    // KYC yet (sole pre-sale surface where both asks coexist).
                     <div className="flex flex-col items-center gap-6">
-                      {/* Sonar OAuth is desktop-only; awareness contexts already read
-                          the desktop pointer in the body line above and keep the
-                          capture row below as their ask. */}
                       <div className="hidden funnel:block">
                         <ArrowLink
                           onClick={redirectToSonarLogin}
@@ -117,19 +96,16 @@ export function PreFooterCta() {
                       ) : null}
                     </div>
                   ) : newsletterEnabled() ? (
-                    // items-start: the form's status line below would pull a centered round down.
                     <div className="flex flex-wrap items-start justify-center gap-6">
                       <NewsletterForm variant="tile" inputId="newsletter-email-tile" />
                       <AddToCalendarButton milestone="registration" variant="tile" />
                     </div>
                   ) : (
-                    // Capture flag off: state the next date, same fallback as the bar.
                     <p className="text-sm text-on-contrast-muted">
                       {`Sale opens ${formatSaleDate(SALE_ECONOMICS.saleOpensIso)}`}
                     </p>
                   )
                 ) : ended ? (
-                  // Closed: no bid ask anymore; route to the final numbers instead.
                   <ArrowLink
                     href="#token-details"
                     label="View results"
@@ -138,9 +114,6 @@ export function PreFooterCta() {
                     size="lg"
                   />
                 ) : (
-                  // Live phase only: during pre-sale the tile stays single-ask.
-                  // The bid CTA only exists on funnel-capable contexts; awareness
-                  // ones read the desktop pointer. "How it works" (anchor) stays.
                   <>
                     <div className="hidden funnel:block">
                       <ArrowLink

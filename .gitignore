@@ -14,6 +14,9 @@ test-results
 .vercel
 *.tsbuildinfo
 
+# Raw scene render sources - only the converted public/scenes/*-dark.* ship
+/public/scenes/_src/
+
 # Project planning artifacts kept local only, never tracked
 /CLAUDE.md
 /docs/

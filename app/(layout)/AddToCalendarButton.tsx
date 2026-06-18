@@ -1,12 +1,5 @@
 "use client"
 
-/**
- * Round add-to-calendar action: downloads a one-event all-day .ics for the next
- * sale milestone (registration opening or sale opening). Deliberately an icon
- * button, not a third pill, so it reads as a quiet companion to the newsletter
- * form / registered state rather than a competing CTA. Sizing mirrors the round
- * icon buttons already in the language (wallet connectors h-11, lg pills h-12).
- */
 import { Icon } from "../(ui)/Icon"
 import { type SaleMilestone, buildMilestoneIcs } from "../../lib/sale/calendar"
 
@@ -32,7 +25,6 @@ export function AddToCalendarButton({
     document.body.appendChild(a)
     a.click()
     a.remove()
-    // Revoke on the next tick: Safari can drop the download if revoked synchronously.
     setTimeout(() => URL.revokeObjectURL(url), 0)
   }
   return (

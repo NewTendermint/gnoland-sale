@@ -1,27 +1,4 @@
-/**
- * Tokenomics. Visualization-focused section. No visible heading - the
- * section is two equal-height tiles shown side by side on desktop (an
- * sr-only h2 keeps it in the document outline):
- *   - Left: Allocation tile (genesis breakdown)
- *   - Right: Vesting tile (unlock schedule)
- * Both are direct grid items at lg:col-span-5 (cols 2-6 and 7-11). The
- * section grid's default align-items:stretch puts them in the same row;
- * each tile is `flex flex-1` inside a `flex flex-col` grid item so it
- * fills the shared row height and the two bottoms line up regardless of
- * which list is longer. Grey surface (surface-alt, theme-flipping), no
- * parallax.
- *
- * Mobile: Allocation then Vesting (single column stack).
- *
- * Supply KPIs live in TokenDetails (Supply group). Value accrual /
- * utility mechanisms live in GnotUtility. This section is breakdown-
- * visualizations only.
- *
- * Numbers are the real, as-of-today figures from the team allocation +
- * vesting sheet (see content/sections/tokenomics.ts and sections.md #3),
- * not placeholders. The unlock schedule is identical for every allocation,
- * so it lives once in the Vesting tile rather than per allocation row.
- */
+// Tokenomics: Allocation + Vesting breakdown tiles (no visible heading, sr-only h2).
 import { Fragment } from "react"
 import { ClipOpen } from "../../(ui)/ClipOpen"
 import { DrawLine } from "../../(ui)/DrawLine"
@@ -38,10 +15,8 @@ import {
 const gnot = (n: number) => `${n.toLocaleString("en-US")} GNOT`
 
 export function Tokenomics() {
-  // Largest monthly unlock, used to scale the unlock-timeline bar heights.
   const peakUnlock = Math.max(...monthlyUnlocks)
 
-  // Key facts for the Vesting tile, mirroring the allocation list rows.
   const vestingFacts: Array<{ label: string; value: string }> = [
     { label: "Cliff", value: vesting.cliff },
     { label: "At mainnet (M1)", value: `${vesting.tgeUnlockPct}%` },
@@ -56,15 +31,9 @@ export function Tokenomics() {
 
   return (
     <Section id="tokenomics" gridClassName="-mt-6 lg:-mt-14">
-      {/* Coordinated entrance: one scroll trigger, both tiles clip in together
-          0.5s later (index 5 x staggerMs 100). No visible heading - the section is
-          two tiles only; an sr-only h2 keeps it in the document outline. */}
       <RevealGroup inline staggerMs={100}>
         <h2 className="sr-only">How GNOT is distributed</h2>
 
-        {/* Left tile: Allocation (genesis breakdown). Direct grid item; the
-            section grid's default align-items:stretch matches its height to the
-            Vesting tile. flex-1 inside the flex-col item fills that height. */}
         <RevealGroup
           as="div"
           fromBottomPct={50}
@@ -102,7 +71,6 @@ export function Tokenomics() {
               {allocation.map((row, i) => (
                 <Fragment key={row.category}>
                   <FadeIn as="li" index={10 + i} className="py-3">
-                    {/* Top sub-row: dot + category + share of supply */}
                     <div className="flex items-baseline gap-3 text-sm">
                       <span
                         aria-hidden="true"
@@ -117,7 +85,6 @@ export function Tokenomics() {
                       </span>
                     </div>
 
-                    {/* Bottom sub-row: absolute amount + purpose */}
                     <div className="mt-1 flex items-baseline gap-3 pl-[1.625rem]">
                       <span className="text-xs text-muted">{row.note}</span>
                       <span className="ml-auto shrink-0 font-mono text-xs tabular-nums text-muted">
@@ -134,8 +101,6 @@ export function Tokenomics() {
           </ClipOpen>
         </RevealGroup>
 
-        {/* Right tile: Vesting (unlock schedule). Mirrors the Allocation tile -
-            direct grid item at cols 7-11, equal height, no parallax. */}
         <RevealGroup
           as="div"
           fromBottomPct={50}
@@ -154,9 +119,6 @@ export function Tokenomics() {
               </p>
             </FadeIn>
 
-            {/* Monthly unlock timeline: one bar per release. The first 13 each free
-                7%, the 14th frees 9% (the taller bar). aria-label carries the
-                schedule for non-visual users. */}
             <FadeIn
               as="div"
               index={9}

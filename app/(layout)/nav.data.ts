@@ -4,9 +4,16 @@ export const navLinks: NavLink[] = [
   { label: "Sale", href: "#token-details" },
   { label: "Tokenomics", href: "#tokenomics" },
   { label: "How it works", href: "#how-it-works" },
-  { label: "About", href: "#narrative" },
+  { label: "FAQ", href: "#faq" },
+  { label: "Project", href: "#narrative" },
   { label: "Team", href: "#team" },
   { label: "Roadmap", href: "#roadmap" },
+  { label: "Ecosystem", href: "#ecosystem" },
+]
+
+export const heroNavLinks: NavLink[] = [
+  ...navLinks.filter((l) => l.href !== "#faq"),
+  ...navLinks.filter((l) => l.href === "#faq"),
 ]
 
 export const communityLinks: NavLink[] = [

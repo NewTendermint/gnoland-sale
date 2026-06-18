@@ -14,11 +14,7 @@ const STAGE_TO_PHASE: Record<OnChainStage, SalePhase> = {
   Done: "ended",
 }
 
-/**
- * Resolution order (first match wins): explicit override -> on-chain stage -> dev default.
- * The override is the config flag (NEXT_PUBLIC_SALE_PHASE / ?phase=). We deliberately
- * never derive from a hardcoded close date: the sale window can be extended (A.12.2).
- */
+/** Resolution order (first match wins): explicit override -> on-chain stage -> dev default. */
 export function resolveSalePhase(args: {
   override?: string | null
   onChainStage?: OnChainStage | null

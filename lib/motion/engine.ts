@@ -1,11 +1,6 @@
 "use client"
 
-/**
- * GSAP motion engine, encapsulated so call sites never import GSAP directly
- * (keeps the engine swappable). Lazy-loaded once on the client; ScrollTrigger is
- * bound to the `.screen` scroll container, never `window`. Native scroll only - we
- * use `scrub` for value-lerp, never ScrollSmoother (no smooth-scroll on the page).
- */
+// Lazy-loaded GSAP motion engine, encapsulated so call sites never import GSAP directly.
 
 async function create() {
   const [gsapMod, stMod, splitMod] = await Promise.all([
@@ -15,10 +10,8 @@ async function create() {
   ])
   const { gsap } = gsapMod
   const { ScrollTrigger } = stMod
-  // SplitText is free + public since GSAP 3.13 (we pin 3.15) - no Club registry.
   const { SplitText } = splitMod
   gsap.registerPlugin(ScrollTrigger, SplitText)
-  // Every ScrollTrigger reads the `.screen` container instead of the window.
   ScrollTrigger.defaults({ scroller: ".screen" })
   return { gsap, ScrollTrigger, SplitText }
 }

@@ -1,14 +1,5 @@
 "use client"
 
-/**
- * Ended-phase settlement panel for the expanded sticky bar. Same shape as the live
- * BidFlow: a disconnected wallet sees the wallet picker; a connected wallet sees its
- * final outcome (allocation + refundable) derived from the clearing price, the on-chain
- * refund claim, and the in-bar wallet control (disconnect). Optional `onClaim` wires the
- * real wallet; without it the claim is simulated locally (dev preview).
- *
- * Visitor-facing copy here is placeholder, pending team validation.
- */
 import { useState } from "react"
 import { useAccount } from "wagmi"
 import { WalletButton } from "../../(layout)/WalletButton"
@@ -45,8 +36,6 @@ export function SettlementFlow({
   const [claimState, setClaimState] = useState<"idle" | "claiming" | "claimed">("idle")
   const [claimError, setClaimError] = useState<string | null>(null)
 
-  // Connect gate, same as the live bid funnel: the refund is claimed by the wallet
-  // that committed, so the wallet must be connected before any settlement shows.
   if (!isConnected) {
     return (
       <ConnectChoices prompt="Connect the wallet you bid with to see your results and claim any refund." />
@@ -73,7 +62,6 @@ export function SettlementFlow({
   async function onClaimClick() {
     setClaimState("claiming")
     setClaimError(null)
-    // No onClaim (preview): simulate a successful claim locally.
     const result = onClaim ? await onClaim() : ({ status: "claimed", txHash: "0xmock" } as const)
     if (result.status === "claimed") {
       setClaimState("claimed")

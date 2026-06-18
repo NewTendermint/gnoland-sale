@@ -1,11 +1,6 @@
 import "server-only"
 
-/**
- * Reduce a User-Agent header to a coarse, non-fingerprinting class for the
- * audit log (e.g. "chrome-mobile"). Versions and the raw string are dropped on
- * purpose: the audit trail must record roughly what kind of client acted, never
- * enough to fingerprint an individual.
- */
+// Coarse, non-fingerprinting UA class for the audit log (e.g. "chrome-mobile").
 export function classifyUserAgent(ua: string | null | undefined): string {
   if (!ua) {
     return "unknown"

@@ -24,12 +24,9 @@ export function needsRefresh(expiresAt: Date, now: number = Date.now()): boolean
 /** Thrown when a wallet requests permits faster than the dedup window allows. */
 export class PermitDedupError extends Error {}
 
-// Server-side replay guard (ADR threat model). generatePurchasePermit takes no
-// amount, so the dedup key is the wallet alone. This Map is per server instance,
-// so on Netlify (Lambda, horizontal scaling) it is a best-effort fast-path, not a
-// cluster-wide guarantee; the authoritative replay controls are on chain (permit
-// single-use + expiry + ECDSA). A durable cross-instance limiter plus the Edge
-// rate-limit (ADR 4.5) are tracked for pre-launch hardening.
+// Server-side replay guard (ADR threat model), keyed by wallet. Per-instance only:
+// a best-effort fast-path, not cluster-wide; on-chain controls are authoritative.
+// Durable cross-instance limiter + Edge rate-limit tracked for pre-launch hardening.
 const lastPermitAt = new Map<string, number>()
 export function checkPermitDedup(wallet: string, now: number = Date.now()): void {
   // Opportunistic eviction so the Map cannot grow unbounded over a long sale.
@@ -47,22 +44,14 @@ export function checkPermitDedup(wallet: string, now: number = Date.now()): void
   lastPermitAt.set(wallet, now)
 }
 
-// Coalesce the whole load-and-maybe-refresh per session. A refresh rotates the
-// refresh token, so two parallel refreshes would invalidate each other (ADR
-// threat: "race condition on token refresh"); coalescing the resolve also avoids
-// redundant loads/decrypts during a burst. Same per-instance caveat as the dedup
-// Map above.
+// Coalesce load-and-maybe-refresh per session: two parallel refreshes would rotate
+// and invalidate each other's refresh token (ADR threat: token-refresh race).
 const ensureInFlight = new Map<string, Promise<StoredTokens>>()
 
 /** Thrown when Sonar rejects the token (401); the session must re-authenticate. */
 export class SonarAuthError extends Error {}
 
-/**
- * Run a Sonar SDK call, converting a 401 (token revoked / expired beyond refresh)
- * into a typed SonarAuthError after clearing the dead token, so route handlers can
- * emit 401 and the client re-auths, instead of masking it as a generic 502 that
- * traps the UI in a retry loop. Non-401 errors pass through untouched.
- */
+/** Run a Sonar SDK call; convert a 401 to SonarAuthError after clearing the dead token. */
 export async function withSonarAuth<T>(sessionId: string, fn: () => Promise<T>): Promise<T> {
   try {
     return await fn()
@@ -88,10 +77,7 @@ async function resolveTokens(sessionId: string): Promise<StoredTokens> {
   )
   const fresh: StoredTokens = {
     accessToken: res.access_token,
-    // OAuth refresh-token rotation is optional (RFC 6749 section 6); Sonar's
-    // frontend-with-backend reference keeps the existing token when a refresh
-    // response omits a new one. Mirror that, so a non-rotating refresh can't
-    // persist an undefined refresh token and brick the session.
+    // Refresh-token rotation is optional (RFC 6749 6); keep the existing one if none returned.
     refreshToken: res.refresh_token ?? current.refreshToken,
     expiresAt: new Date(Date.now() + res.expires_in * 1000),
   }
@@ -101,7 +87,6 @@ async function resolveTokens(sessionId: string): Promise<StoredTokens> {
 
 export async function ensureFreshTokens(sessionId: string): Promise<StoredTokens> {
   if (sonarMockEnabled()) {
-    // Mock: skip the DB token store entirely; the mock fetch ignores the token.
     return {
       accessToken: "mock-access-token",
       refreshToken: "mock-refresh-token",
@@ -120,11 +105,7 @@ function auditChainId(): number {
   return env.SALE_CHAIN === "mainnet" ? mainnet.id : sepolia.id
 }
 
-/**
- * Append an audit row. Metadata is validated against the strict allow-list
- * (auditMetadataSchema) before it can be persisted, so no PII can leak into the
- * jsonb column even if a caller passes extra fields.
- */
+/** Append an audit row. Metadata is validated against the PII allow-list before persist. */
 export async function recordAudit(
   event: string,
   row: {
@@ -138,8 +119,6 @@ export async function recordAudit(
 ): Promise<void> {
   const metadata = row.metadata ? auditMetadataSchema.parse(row.metadata) : null
   if (sonarMockEnabled()) {
-    // Mock: no database. Metadata is still validated above (the PII allow-list
-    // runs), but the row is not persisted.
     return
   }
   await db.insert(auditLog).values({
@@ -169,11 +148,7 @@ function normalizeFailureReason(reason: string): PrePurchaseFailureReason {
     : "unknown"
 }
 
-/**
- * Normalize Sonar's PascalCase PrePurchaseCheckResponse into the app's camelCase
- * discriminated union (lib/sale/types.ts), the shape the client consumes. Pure
- * and exported for unit testing.
- */
+/** Normalize Sonar's PrePurchaseCheckResponse into the app's camelCase union. */
 export function mapPrePurchase(res: PrePurchaseCheckResponse): PrePurchaseResult {
   if (res.ReadyToPurchase) {
     return { readyToPurchase: true }
@@ -222,7 +197,7 @@ export async function generatePurchasePermit(args: {
     wallet: args.wallet,
     ipHmac: args.ipHmac ?? null,
     userAgentClass: args.userAgentClass ?? null,
-    // A short, non-sensitive correlator (signature prefix), not the full sig.
+    // Short correlator (signature prefix), never the full sig.
     metadata: { permit_id_prefix: response.Signature.slice(0, 10), chain_id: auditChainId() },
   })
   return response

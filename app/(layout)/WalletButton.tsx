@@ -1,12 +1,5 @@
 "use client"
 
-/**
- * In-bar wallet account control, rendered in the expanded sticky bar when a wallet
- * is connected: a truncated-address chip plus a ghost round disconnect button.
- * No popup - disconnect is a direct wagmi `useDisconnect()` call. Renders nothing
- * when disconnected; the `mounted` guard avoids a hydration mismatch while wagmi
- * reconnects on the client.
- */
 import { useEffect, useState } from "react"
 import { useAccount, useDisconnect } from "wagmi"
 

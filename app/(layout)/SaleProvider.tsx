@@ -1,18 +1,7 @@
 "use client"
 
-/**
- * Client context for the sale UI: phase + per-user journey + commitment data, read
- * once and shared by the BidPanel and the sections. The journey is derived by
- * deriveJourney (lib/sale/journey.ts) from the wallet + the session's Sonar entity;
- * this provider delegates to it rather than growing its own logic.
- *
- * State-preview overrides (gated by stateOverridesEnabled - dev always, prod
- * builds only with NEXT_PUBLIC_STATE_OVERRIDES=1): ?phase=pre-sale|live|ended,
- * ?registration=open|closed and ?journey=<state> preview any state without a
- * wallet or Sonar. ?auth=ok|error is production (Sonar OAuth return hint).
- */
 import { useQueryClient } from "@tanstack/react-query"
-import { createContext, useContext, useEffect, useState } from "react"
+import { createContext, useContext, useEffect, useMemo, useState } from "react"
 import type { ReactNode } from "react"
 import { useAccount } from "wagmi"
 import { useFunnelCapable } from "../../lib/device/funnel-gate"
@@ -38,7 +27,7 @@ type SaleContextValue = {
   journey: JourneyState
   commitment: CommitmentData
   myBid: MyBid
-  /** Sonar OAuth return hint (?auth=ok|error), display-only; see lib/sale/types. */
+  /** Sonar OAuth return hint (?auth=ok|error), display-only. */
   sonarReturn: SonarReturn
   bidPanelOpen: boolean
   setBidPanelOpen: (open: boolean) => void
@@ -48,43 +37,22 @@ const SaleContext = createContext<SaleContextValue | null>(null)
 
 export function SaleProvider({ children }: { children: ReactNode }) {
   const { isConnected, chainId } = useAccount()
-  // Awareness-only contexts (touch or < lg; lib/device/funnel-gate.ts) never
-  // offer registration/bidding, so the authenticated Sonar queries below are
-  // skipped there entirely - less network, less surface. The commitments poll
-  // stays active everywhere: the awareness bar needs the metrics AND the paused
-  // kill-switch flag. `undefined` (first client frame) also skips; on desktop
-  // the queries start one frame later, nothing user-visible.
   const funnelCapable = useFunnelCapable()
-  // Live auction metrics from /api/sonar/commitments (real fetch; fixture or
-  // real Sonar behind the route). initialData keeps `commitment` always defined.
   const sale = useSaleData()
-  // The session's Sonar entity (KYC + eligibility); data is null until connected
-  // to Sonar. Feeds the journey below.
   const entity = useEntity({ enabled: funnelCapable === true })
-  // The session's current position (price + committed), filtered server-side from
-  // the commitment set by the entity. null until the entity has a commitment.
   const position = useMyBid({ enabled: funnelCapable === true })
   const [phase, setPhase] = useState<SalePhase>(() =>
     resolveSalePhase({ override: process.env.NEXT_PUBLIC_SALE_PHASE }),
   )
-  // Dev-only journey pin (?journey=); when unset the journey is wallet-derived.
   const [journeyOverride, setJourneyOverride] = useState<JourneyState | null>(null)
   const [preSaleStage, setPreSaleStage] = useState<PreSaleStage>("registration-closed")
-  // Dev-only pre-sale sub-stage pin (?registration=); wins over the clock below.
   const [stageOverride, setStageOverride] = useState<PreSaleStage | null>(null)
-  // Sonar OAuth return hint, read once from ?auth= then stripped (see below).
   const [sonarReturn, setSonarReturn] = useState<SonarReturn>(null)
-  // Sticky bid bar open/close (lifted from BidPanel so page CTAs can open it).
   const [bidPanelOpen, setBidPanelOpen] = useState(false)
   const queryClient = useQueryClient()
 
   useEffect(() => {
     setPreSaleStage(resolvePreSaleStage(Date.now()))
-    // Sonar OAuth return (?auth=ok|error from the callback redirect), read in every
-    // environment. Display-only by design: "ok" only refetches the entity (the
-    // journey moves when the server-confirmed status lands, never off the param)
-    // and "error" surfaces a notice. Strip the param so a refresh or a shared URL
-    // never re-triggers it.
     const url = new URL(window.location.href)
     const auth = url.searchParams.get("auth")
     if (auth === "ok" || auth === "error") {
@@ -101,16 +69,12 @@ export function SaleProvider({ children }: { children: ReactNode }) {
     if (p) setPhase(resolveSalePhase({ override: p }))
     const j = params.get("journey")
     if (j && j in MOCK_JOURNEY_INPUTS) setJourneyOverride(j as JourneyState)
-    // Dev-only pre-sale sub-stage pin (?registration=open|closed) so both pre-sale
-    // bars are previewable regardless of today's date (spec 7.1 companion override).
     const r = params.get("registration")
     if (r === "open" || r === "closed") {
       setStageOverride(r === "open" ? "registration-open" : "registration-closed")
     }
   }, [queryClient])
 
-  // Track the real clock so the pre-sale stage flips at its milestone without a
-  // reload: re-resolve every 60s and on tab refocus. The dev pin wins when set.
   useEffect(() => {
     if (stageOverride) return
     const resolve = () => setPreSaleStage(resolvePreSaleStage(Date.now()))
@@ -122,32 +86,40 @@ export function SaleProvider({ children }: { children: ReactNode }) {
     }
   }, [stageOverride])
 
-  // Real journey: delegate to deriveJourney (lib/sale/journey.ts) from the wallet
-  // + the session's Sonar entity (KYC/eligibility) + the clearing price. The
-  // ?journey= override (dev only) still wins for previewing any state.
-  const onSupportedChain = chainId !== undefined && SUPPORTED_CHAIN_IDS.includes(chainId)
-  const journeyInput: JourneyInput = {
+  const value = useMemo<SaleContextValue>(() => {
+    const onSupportedChain = chainId !== undefined && SUPPORTED_CHAIN_IDS.includes(chainId)
+    const journeyInput: JourneyInput = {
+      isConnected,
+      isBaseChain: onSupportedChain,
+      setupState: entity.data?.setupState ?? null,
+      eligibility: entity.data?.eligibility ?? null,
+      myBid: position.data ?? null,
+      clearingPriceUsd: sale.data.clearingPriceUsd,
+    }
+    const journey = journeyOverride ?? deriveJourney(journeyInput)
+    return {
+      phase,
+      preSaleStage: stageOverride ?? preSaleStage,
+      journey,
+      commitment: sale.data,
+      myBid: journeyOverride ? MOCK_JOURNEY_INPUTS[journeyOverride].myBid : journeyInput.myBid,
+      sonarReturn,
+      bidPanelOpen,
+      setBidPanelOpen,
+    }
+  }, [
+    chainId,
     isConnected,
-    isBaseChain: onSupportedChain,
-    setupState: entity.data?.setupState ?? null,
-    eligibility: entity.data?.eligibility ?? null,
-    myBid: position.data ?? null,
-    clearingPriceUsd: sale.data.clearingPriceUsd,
-  }
-  const journey = journeyOverride ?? deriveJourney(journeyInput)
-
-  const value: SaleContextValue = {
+    entity.data,
+    position.data,
+    sale.data,
     phase,
-    preSaleStage: stageOverride ?? preSaleStage,
-    journey,
-    commitment: sale.data,
-    // The dev override shows the mock bid for has-bid states; otherwise the real
-    // position (Sonar commitment, filtered by entity) drives it.
-    myBid: journeyOverride ? MOCK_JOURNEY_INPUTS[journeyOverride].myBid : journeyInput.myBid,
+    stageOverride,
+    preSaleStage,
+    journeyOverride,
     sonarReturn,
     bidPanelOpen,
-    setBidPanelOpen,
-  }
+  ])
 
   return <SaleContext.Provider value={value}>{children}</SaleContext.Provider>
 }

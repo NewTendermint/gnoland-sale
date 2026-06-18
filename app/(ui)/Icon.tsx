@@ -4,14 +4,12 @@ import type { ReactNode } from "react"
 import { useDrawIcon } from "../../lib/motion/use-motion"
 
 const PATHS: Record<string, ReactNode> = {
-  // Registration / identity verification step.
   "shield-check": (
     <>
       <path d="M12 3l8 3v6c0 5-3.5 9-8 9s-8-4-8-9V6l8-3z" />
       <polyline points="8 12 11 15 16 9" />
     </>
   ),
-  // Commitment / wallet step.
   wallet: (
     <>
       <rect x="3" y="7" width="18" height="13" rx="2" />
@@ -19,7 +17,6 @@ const PATHS: Record<string, ReactNode> = {
       <circle cx="16" cy="14" r="1" />
     </>
   ),
-  // Settlement / pro-rate balance step.
   scale: (
     <>
       <path d="M12 3v18" />
@@ -29,14 +26,12 @@ const PATHS: Record<string, ReactNode> = {
       <path d="M18 8l-3 6c0 1.5 1.3 2.5 3 2.5s3-1 3-2.5L18 8z" />
     </>
   ),
-  // Distribution / send step.
   send: (
     <>
       <path d="M22 2L11 13" />
       <path d="M22 2L15 22l-4-9-9-4z" />
     </>
   ),
-  // Add-to-calendar action.
   calendar: (
     <>
       <rect x="3" y="5" width="18" height="16" rx="2" />
@@ -45,7 +40,6 @@ const PATHS: Record<string, ReactNode> = {
       <path d="M3 11h18" />
     </>
   ),
-  // Database cylinder.
   database: (
     <>
       <ellipse cx="12" cy="6" rx="7" ry="2" />
@@ -53,21 +47,18 @@ const PATHS: Record<string, ReactNode> = {
       <path d="M5 12v6c0 1.1 3.1 2 7 2s7-.9 7-2v-6" />
     </>
   ),
-  // Progress ring.
   "progress-ring": (
     <>
       <circle cx="12" cy="12" r="9" opacity="0.25" />
       <path d="M12 3 A9 9 0 1 1 3 12" />
     </>
   ),
-  // Line chart.
   "line-chart": (
     <>
       <polyline points="3 17 9 11 13 15 21 7" />
       <polyline points="14 7 21 7 21 14" />
     </>
   ),
-  // Isometric cube.
   cube: (
     <>
       <polygon points="12 2 21 7 21 17 12 22 3 17 3 7" />
@@ -75,7 +66,6 @@ const PATHS: Record<string, ReactNode> = {
       <path d="M12 12V22" />
     </>
   ),
-  // Magnifier with text rows.
   search: (
     <>
       <circle cx="11" cy="11" r="7" />
@@ -83,14 +73,12 @@ const PATHS: Record<string, ReactNode> = {
       <path d="M8 9v4h4M12 7v4h4" />
     </>
   ),
-  // Shield with up-arrow.
   "shield-arrow": (
     <>
       <path d="M12 3l8 3v6c0 5-3.5 9-8 9s-8-4-8-9V6l8-3z" />
       <path d="M12 9v6M10 11l2-2 2 2" />
     </>
   ),
-  // Two-way swap arrows.
   swap: (
     <>
       <path d="M4 9h14" />
@@ -99,7 +87,6 @@ const PATHS: Record<string, ReactNode> = {
       <path d="M7 12l-3 3 3 3" />
     </>
   ),
-  // Window with text rows.
   forum: (
     <>
       <rect x="3" y="4" width="18" height="16" rx="1" />
@@ -107,7 +94,6 @@ const PATHS: Record<string, ReactNode> = {
       <path d="M6 13h8M6 16h6" />
     </>
   ),
-  // Globe.
   globe: (
     <>
       <circle cx="12" cy="12" r="9" />
@@ -116,7 +102,6 @@ const PATHS: Record<string, ReactNode> = {
       <path d="M12 3a14 14 0 000 18" />
     </>
   ),
-  // Window with play button.
   play: (
     <>
       <rect x="3" y="4" width="18" height="16" rx="1" />
@@ -124,7 +109,6 @@ const PATHS: Record<string, ReactNode> = {
       <polyline points="10 12 14 14 10 16 10 12" />
     </>
   ),
-  // Plug.
   plug: (
     <>
       <path d="M7 4v6h10V4" />
@@ -132,7 +116,6 @@ const PATHS: Record<string, ReactNode> = {
       <path d="M12 10v6a3 3 0 003 3v3" />
     </>
   ),
-  // Node graph.
   network: (
     <>
       <circle cx="12" cy="5" r="2" />
@@ -143,14 +126,12 @@ const PATHS: Record<string, ReactNode> = {
       <path d="M11 13l-5 4M13 13l5 4" />
     </>
   ),
-  // Key.
   key: (
     <>
       <circle cx="8" cy="14" r="4" />
       <path d="M11 13l8-8M15 9l3 3M17 7l3 3" />
     </>
   ),
-  // Terminal prompt.
   terminal: (
     <>
       <rect x="3" y="4" width="18" height="16" rx="1" />
@@ -158,7 +139,6 @@ const PATHS: Record<string, ReactNode> = {
       <path d="M13 15h5" />
     </>
   ),
-  // Browser chrome.
   browser: (
     <>
       <rect x="3" y="4" width="18" height="16" rx="1" />
@@ -168,7 +148,6 @@ const PATHS: Record<string, ReactNode> = {
       <circle cx="10" cy="6.5" r="0.5" />
     </>
   ),
-  // People group.
   "users-group": (
     <>
       <circle cx="12" cy="7" r="3" />
@@ -179,7 +158,6 @@ const PATHS: Record<string, ReactNode> = {
       <path d="M21 21v-.5a3.5 3.5 0 00-3-3.46" />
     </>
   ),
-  // Coin with currency mark.
   clearing: (
     <>
       <circle cx="12" cy="12" r="9" />
@@ -187,14 +165,12 @@ const PATHS: Record<string, ReactNode> = {
       <path d="M12 6v1.5M12 16.5V18" />
     </>
   ),
-  // Clock face.
   clock: (
     <>
       <circle cx="12" cy="12" r="9" />
       <path d="M12 7v5l3 2" />
     </>
   ),
-  // Question mark in a circle.
   help: (
     <>
       <circle cx="12" cy="12" r="9" />
@@ -204,9 +180,6 @@ const PATHS: Record<string, ReactNode> = {
   ),
 }
 
-/** Single inline-SVG icon keyed by name. Its strokes draw themselves on scroll
- * (newtendermint-style); pass `draw={false}` to keep it static (e.g. in the
- * interactive bid UI). */
 export function Icon({
   name,
   className = "h-5 w-5",
@@ -216,7 +189,6 @@ export function Icon({
   name: string
   className?: string
   draw?: boolean
-  /** Cascade slot when inside a RevealGroup (e.g. a card with icon + title). */
   index?: number
 }) {
   const ref = useDrawIcon<SVGSVGElement>({ index })

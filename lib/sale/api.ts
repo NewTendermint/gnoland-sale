@@ -1,17 +1,7 @@
-/**
- * Client-side API layer: typed fetchers to our own `/api/sonar/*` routes.
- *
- * The browser only ever talks to our server here, never Sonar directly; whether
- * the server answers from real Sonar or from fixtures (SONAR_MOCK) is invisible
- * to the caller. Each fetcher returns a UI-facing type from ./types, so the UI
- * contract is identical mock vs real.
- */
+// Typed fetchers to our own /api/sonar/* routes.
 import type { CommitmentData, EntitySnapshot, MyBid, PrePurchaseResult, SalePermit } from "./types"
 
-/**
- * Thrown by the JSON fetchers on a non-2xx response. Carries the HTTP status so
- * callers can branch on it (e.g. 401 means the Sonar session is gone, reconnect).
- */
+/** Thrown by the JSON fetchers on a non-2xx response; carries the HTTP status. */
 export class HttpError extends Error {
   readonly status: number
   constructor(status: number, message: string) {
@@ -34,11 +24,7 @@ export function getCommitments(): Promise<CommitmentData> {
   return getJson<CommitmentData>("/api/sonar/commitments")
 }
 
-/**
- * The session's Sonar entity (KYC + eligibility). Returns null when the user is
- * not connected to Sonar yet (401) or has no entity (404), both normal journey
- * states rather than errors.
- */
+/** The session's Sonar entity (KYC + eligibility); null on 401/404. */
 export async function getEntity(): Promise<EntitySnapshot | null> {
   const res = await fetch("/api/sonar/entity", { headers: { accept: "application/json" } })
   if (res.status === 401 || res.status === 404) {
@@ -50,10 +36,7 @@ export async function getEntity(): Promise<EntitySnapshot | null> {
   return res.json() as Promise<EntitySnapshot>
 }
 
-/**
- * The session's current position (price + committed), or null when it has no
- * commitment yet or is not connected to Sonar (401/404), both normal states.
- */
+/** The session's current position (price + committed); null on 401/404. */
 export async function getMyPosition(): Promise<MyBid> {
   const res = await fetch("/api/sonar/my-position", { headers: { accept: "application/json" } })
   if (res.status === 401 || res.status === 404) {
@@ -65,11 +48,6 @@ export async function getMyPosition(): Promise<MyBid> {
   return res.json() as Promise<MyBid>
 }
 
-/**
- * Begin the Sonar OAuth login. Returns the URL to send the browser to: the real
- * Sonar authorization page, or (in mock) straight back home already logged in.
- * Module-private: redirectToSonarLogin below is the public surface.
- */
 async function startSonarLogin(): Promise<string> {
   const res = await fetch("/api/auth/sonar/init", { method: "POST" })
   if (!res.ok) {
@@ -79,19 +57,12 @@ async function startSonarLogin(): Promise<string> {
   return data.authorizationUrl
 }
 
-/**
- * Fire-and-redirect wrapper around startSonarLogin: the shared behavior of every
- * "Register / Verify with Sonar" CTA. A failed init resolves silently - the CTA
- * stays on screen and can simply be clicked again.
- */
 export function redirectToSonarLogin(): void {
   startSonarLogin().then(
     (url) => {
       window.location.href = url
     },
-    () => {
-      /* init failed; the CTA remains and can be retried */
-    },
+    () => {},
   )
 }
 
@@ -107,11 +78,6 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
   return res.json() as Promise<T>
 }
 
-/**
- * End the Sonar link for this browser: the server deletes its stored tokens and
- * destroys the session cookie. Callers then invalidate the entity query so the
- * journey drops back to kyc-required.
- */
 export async function postSonarLogout(): Promise<void> {
   const res = await fetch("/api/auth/sonar/logout", { method: "POST" })
   if (!res.ok) {
@@ -124,10 +90,7 @@ export function postPrePurchase(wallet: string): Promise<PrePurchaseResult> {
   return postJson<PrePurchaseResult>("/api/sonar/pre-purchase", { wallet })
 }
 
-/**
- * Request a Sonar purchase permit for this wallet. Returns { PermitJSON, Signature },
- * forwarded as-is to the on-chain replaceBidWithPermit step (lib/sale/onchain.ts).
- */
+/** Request a Sonar purchase permit for this wallet ({ PermitJSON, Signature }). */
 export function postGeneratePermit(wallet: string): Promise<SalePermit> {
   return postJson<SalePermit>("/api/sonar/generate-permit", { wallet })
 }

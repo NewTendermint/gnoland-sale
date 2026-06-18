@@ -11,18 +11,13 @@ export interface StoredTokens {
   expiresAt: Date
 }
 
-// Shape of the decrypted token envelope. Parsed (not cast) on load so a schema
-// skew surfaces as a loud error rather than silent `undefined` fields.
+// Decrypted token envelope; parsed (not cast) on load so schema skew fails loudly.
 const tokenPayloadSchema = z.object({
   accessToken: z.string(),
   refreshToken: z.string(),
 })
 
-/**
- * Encrypt and upsert the OAuth token pair for a session. Only the libsodium
- * ciphertext and the expiry timestamp are persisted; plaintext tokens never
- * reach the database (or the client).
- */
+/** Encrypt and upsert the OAuth token pair; only ciphertext + expiry are persisted. */
 export async function storeTokens(sessionId: string, tokens: StoredTokens): Promise<void> {
   const encryptedTokens = await encrypt(
     JSON.stringify({ accessToken: tokens.accessToken, refreshToken: tokens.refreshToken }),
@@ -43,9 +38,7 @@ export async function storeTokens(sessionId: string, tokens: StoredTokens): Prom
     })
 }
 
-/**
- * Load and decrypt the OAuth token pair for a session, or null if none stored.
- */
+/** Load and decrypt the OAuth token pair for a session, or null if none stored. */
 export async function loadTokens(sessionId: string): Promise<StoredTokens | null> {
   const rows = await db
     .select()
@@ -62,11 +55,7 @@ export async function loadTokens(sessionId: string): Promise<StoredTokens | null
   return { accessToken, refreshToken, expiresAt: row.expiresAt }
 }
 
-/**
- * Delete a session's stored tokens. Used when Sonar rejects them with a 401
- * (revoked / expired beyond refresh), so the next request starts a fresh login
- * instead of replaying a dead token.
- */
+/** Delete a session's stored tokens (used after a Sonar 401). */
 export async function deleteTokens(sessionId: string): Promise<void> {
   await db.delete(oauthTokens).where(eq(oauthTokens.sessionId, sessionId))
 }

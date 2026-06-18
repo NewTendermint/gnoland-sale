@@ -10,10 +10,7 @@ import type {
 } from "@echoxyz/sonar-core"
 import { sonarCore } from "./server-only"
 
-// Fixtures are typed as the real SDK response shapes, so the compiler guarantees
-// they match what the live Sonar API returns: swapping mock -> real is a config
-// change, not a reshape. These are the only mock data in the system; the entire
-// path above them (SDK -> routes -> hooks -> UI) runs for real.
+// Fixtures typed as the real SDK response shapes; the only mock data in the system.
 
 const hex = (body: string): Hex => `0x${body}` as Hex
 const FAR_FUTURE = 4_102_444_800 // 2100-01-01, so the mock permit never reads as expired
@@ -36,10 +33,8 @@ export const mockFixtures = {
     expires_in: 3600,
   } satisfies TokenResponse,
 
-  // 1.2M USDC committed @ 6 decimals, clearing $0.12, 1247 bidders. The sample
-  // commitment below is ANOTHER bidder (not the session entity), so the session
-  // starts with no position - "ready" after KYC, has-bid only once it bids. The
-  // real Commitment shape is still exercised by readMyBid's entity filter.
+  // 1.2M USDC @ 6 decimals, clearing $0.12, 1247 bidders. The sample commitment is
+  // ANOTHER bidder, so the session starts with no position.
   commitmentData: {
     TotalCommitmentAmount: "1200000000000",
     ClearingPriceMicroUSD: "120000",

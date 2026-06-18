@@ -1,15 +1,5 @@
 "use client"
 
-/**
- * FAQ. Credits-list layout borrowed from Team (hairline-separated rows under a
- * centered heading), but each row is an accordion: the question is a full-width
- * button, the answer expands with the grid-rows 0fr -> 1fr trick (the same
- * motion as the sticky bar's sheet; no transition under prefers-reduced-motion)
- * and a "+" indicator rotates into a close cross. Single-open: opening a row
- * collapses the previous one, so the page height stays controlled. Collapsed
- * answers are `inert` (out of the tab order) and wired with aria-expanded /
- * aria-controls for assistive tech.
- */
 import { Fragment, useState } from "react"
 import { DrawLine } from "../../(ui)/DrawLine"
 import { FadeIn } from "../../(ui)/FadeIn"
@@ -48,7 +38,6 @@ export function Faq() {
                     <span className="text-xl font-semibold tracking-tight text-foreground md:text-2xl">
                       {item.q}
                     </span>
-                    {/* "+" rotates into a close cross when open. */}
                     <svg
                       viewBox="0 0 16 16"
                       aria-hidden="true"

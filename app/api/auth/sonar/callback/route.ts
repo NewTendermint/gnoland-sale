@@ -8,9 +8,6 @@ import { NextResponse } from "next/server"
 export const runtime = "nodejs"
 
 // GET /api/auth/sonar/callback?code=...&state=...
-// Sonar redirects the browser here after authorization. We validate the PKCE
-// state (single-use, unexpired, bound to this session), exchange the code for
-// tokens, persist them encrypted, and bounce back to the hero.
 export async function GET(request: Request) {
   const url = new URL(request.url)
   const code = url.searchParams.get("code")
@@ -25,8 +22,7 @@ export async function GET(request: Request) {
   try {
     const session = await getSession()
     const pkce = await consumePkceState(state)
-    // Bind the OAuth state to the session that initiated it: a callback whose
-    // state was minted under a different session is rejected (CSRF defense).
+    // Bind OAuth state to the initiating session (CSRF defense).
     if (!session.sessionId || session.sessionId !== pkce.sessionId) {
       throw new Error("Session/state mismatch")
     }
@@ -43,8 +39,7 @@ export async function GET(request: Request) {
     home.searchParams.set("auth", "ok")
     return NextResponse.redirect(home)
   } catch {
-    // Never leak the failure reason to the URL; the client shows a generic
-    // "could not connect" state on auth=error.
+    // Never leak the failure reason to the URL.
     home.searchParams.set("auth", "error")
     return NextResponse.redirect(home)
   }

@@ -2,31 +2,23 @@
 
 import { type ReactNode, useCallback } from "react"
 import { useClipOpen, useMotion } from "../../lib/motion/use-motion"
+import { SceneImage, type SceneImageProps } from "./SceneImage"
+import { SceneVideo, type SceneVideoProps } from "./SceneVideo"
 
 type Props = {
   className?: string
-  /** Peak parallax travel in px (mapped to the motion engine distance). */
   strength?: number
-  /** Open the box on mount instead of on scroll (for an above-the-fold box). */
   immediate?: boolean
-  /** Extra delay before the clip-open (for sequencing a coordinated entrance). */
   delayMs?: number
-  /** Clip wipe direction: "up" (the hero intro) or "down" (default for section images). */
   direction?: "up" | "down"
-  /** Cascade slot when inside a RevealGroup (same index = fire together). */
   index?: number
   "aria-label"?: string
   children?: ReactNode
+  scene?: SceneImageProps
+  /** Scene video for this slot; takes precedence over `scene` / `children`. */
+  sceneVideo?: SceneVideoProps
 }
 
-/**
- * The grey scene slot with external scroll parallax (shared motion module, GSAP
- * under the hood). The OUTER element is the stable trigger (it defines the
- * scroll range and never moves); the INNER element is what actually floats.
- * Separating them keeps the parallax running the whole time the slot is visible
- * (animating the trigger itself would shift its bounds and stop it early).
- * See docs/specs/2026-06-04-webgl-motion-system-design.md.
- */
 export function ParallaxBox({
   className = "",
   strength,
@@ -36,14 +28,21 @@ export function ParallaxBox({
   index,
   "aria-label": ariaLabel,
   children,
+  scene,
+  sceneVideo,
 }: Props) {
   const { triggerRef, targetRef } = useMotion<HTMLDivElement>({
     type: "parallax",
     distance: strength,
   })
-  // The inner box both floats (parallax target) and opens like a window
-  // (clip-open). Merge the two refs onto it.
-  const clipRef = useClipOpen<HTMLDivElement>({ immediate, delayMs, direction, index })
+  // Keep fromBottomPct in sync with SceneVideo's observeReveal threshold.
+  const clipRef = useClipOpen<HTMLDivElement>({
+    immediate,
+    delayMs,
+    direction,
+    index,
+    fromBottomPct: 20,
+  })
   const setInner = useCallback(
     (el: HTMLDivElement | null) => {
       targetRef.current = el
@@ -58,7 +57,13 @@ export function ParallaxBox({
         aria-label={ariaLabel}
         className="relative h-full w-full overflow-hidden top-8 rounded-[var(--frame-radius)] bg-surface-alt"
       >
-        {children}
+        {sceneVideo ? (
+          <SceneVideo {...sceneVideo} immediate={immediate} />
+        ) : scene ? (
+          <SceneImage {...scene} />
+        ) : (
+          children
+        )}
       </div>
     </div>
   )

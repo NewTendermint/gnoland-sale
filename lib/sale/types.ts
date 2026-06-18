@@ -1,9 +1,4 @@
-/**
- * UI-facing shapes. They mirror the fields we consume from Sonar so the UI binds
- * to these and swapping mocks for the real server proxy is a transport change.
- * Source: @echoxyz/sonar-core@0.15.0 dist/index.d.ts
- * (see docs/specs/2026-06-01-sonar-feasibility-and-sale-states.md).
- */
+// UI-facing shapes. Mirror @echoxyz/sonar-core@0.15.0 dist/index.d.ts; keep in sync.
 export type SalePhase = "pre-sale" | "live" | "ended"
 export type PreSaleStage = "registration-closed" | "registration-open"
 
@@ -38,9 +33,7 @@ export type CommitmentMetrics = {
   uniqueCommitmentCount: number
 }
 
-// Live metrics plus our kill-switch flag. `paused` (from SALE_PAUSED, added by the
-// commitments route) true means the sale is emergency-paused: the bid UI shows a
-// paused state and the mutating routes already return 503.
+// Live metrics plus the kill-switch flag. `paused` true = sale emergency-paused (mutating routes 503).
 export type CommitmentData = CommitmentMetrics & {
   paused: boolean
 }
@@ -70,20 +63,13 @@ export type JourneyState =
   | "has-bid-winning"
   | "has-bid-outbid"
 
-// The TokenDetails "Your position" block reduces the journey to three display states:
-// not-ready (earlier in the funnel, prompt to get set up), no-bids (ready, no bid yet),
-// active (a bid is placed). Derived + unit-tested via derivePositionState (journey.ts).
+// "Your position" display state, derived via derivePositionState (journey.ts).
 export type PositionState = "not-ready" | "no-bids" | "active"
 
-// Sonar OAuth return hint, read once from ?auth= on the callback redirect then
-// stripped from the URL. Display-only by design: "ok" just refetches the entity
-// (the journey moves only when the server-confirmed status lands) and "error"
-// surfaces a notice. It is never an input to an auth decision.
+// Sonar OAuth return hint from ?auth=. Display-only: never an input to an auth decision.
 export type SonarReturn = "ok" | "error" | null
 
-// Pre-sale sticky-bar right-cluster state, derived by derivePreSaleBar (journey.ts):
-// the stage ask (notify before registration opens, register after) unless the user
-// already has a Sonar status to show, or just bounced back from OAuth with an error.
+// Pre-sale sticky-bar right-cluster state, derived by derivePreSaleBar (journey.ts).
 export type PreSaleBarState =
   | "notify"
   | "register"
@@ -93,9 +79,7 @@ export type PreSaleBarState =
   | "registered"
   | "auth-error"
 
-// Inputs the journey deriver needs. No readyToPurchase here: the per-attempt
-// pre-purchase gating lives in the bid step (PreflightGates), mirroring Sonar's
-// useSonarPurchase. See journey.ts + spec §7.2.
+// Inputs the journey deriver needs (no readyToPurchase: that gating lives in the bid step).
 export type JourneyInput = {
   isConnected: boolean
   isBaseChain: boolean
@@ -105,11 +89,7 @@ export type JourneyInput = {
   clearingPriceUsd: number | null
 }
 
-/**
- * Result of the bid-step pre-purchase check (where readyToPurchase now lives).
- * Mirrors sonar-core PrePurchaseCheckResponse, normalized. Consumed by
- * PreflightGates (plan Task 9), not by the journey deriver.
- */
+// Result of the bid-step pre-purchase check. Mirrors sonar-core PrePurchaseCheckResponse, normalized.
 export type PrePurchaseResult =
   | { readyToPurchase: true }
   | {
@@ -118,13 +98,8 @@ export type PrePurchaseResult =
       livenessCheckUrl?: string
     }
 
-/**
- * The purchase permit from /api/sonar/generate-permit, forwarded as-is to the
- * on-chain replaceBidWithPermit call (lib/sale/onchain.ts). PermitJSON is Sonar's
- * BasicPermitV3; its exact mapping to the contract's PurchasePermitV3 tuple is wired
- * when the contract lands (REQUIREMENTS A.1), so it stays `unknown` here. Signature
- * is the purchasePermitSignature bytes the contract verifies.
- */
+// Purchase permit from /api/sonar/generate-permit, forwarded as-is to replaceBidWithPermit.
+// PermitJSON (Sonar BasicPermitV3) stays `unknown` until the contract mapping is wired (A.1).
 export type SalePermit = {
   PermitJSON: unknown
   Signature: string
