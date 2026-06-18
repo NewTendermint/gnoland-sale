@@ -1,11 +1,6 @@
 "use client"
 
-/**
- * Client data hooks the UI binds to. Each wraps a fetcher from ./api in TanStack
- * Query (the QueryClient is mounted by Web3Provider). Components consume these
- * (or useSale) and never see the transport; swapping mock for real Sonar changes
- * nothing here.
- */
+// Client data hooks the UI binds to; each wraps a ./api fetcher in TanStack Query.
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useAccount } from "wagmi"
 import {
@@ -20,8 +15,7 @@ import { type ClaimResult, claimRefundOnChain, submitBidOnChain } from "./onchai
 import type { BidParams, BidResult } from "./submitter"
 import type { CommitmentData, MyBid } from "./types"
 
-// Neutral zeros shown until the first fetch resolves, never fake numbers. As
-// initialData it also types `data` as always-defined.
+// Neutral zeros until the first fetch resolves; as initialData, types `data` as always-defined.
 const EMPTY_COMMITMENT: CommitmentData = {
   totalCommittedUsd: 0,
   clearingPriceUsd: null,
@@ -39,12 +33,7 @@ export function useSaleData() {
   })
 }
 
-/**
- * The session's Sonar entity (KYC + eligibility); `data` is null when the user
- * is not connected to Sonar. Feeds the journey via deriveJourney. `enabled`
- * (default true) lets awareness-only contexts (touch or < lg, no Sonar funnel)
- * skip the fetch entirely; see SaleProvider.
- */
+/** The session's Sonar entity (KYC + eligibility); `data` is null when not connected. */
 export function useEntity(opts?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["sale", "entity"],
@@ -53,33 +42,19 @@ export function useEntity(opts?: { enabled?: boolean }) {
   })
 }
 
-/**
- * The session's current position (price + committed); `data` is null when the
- * entity has no commitment or is not connected to Sonar. Feeds `myBid` in the
- * journey + the position UI. `enabled` (default true) composes with the wallet
- * gate below; awareness-only contexts pass false (no position UI there).
- */
+/** The session's current position (price + committed); `data` is null when none. */
 export function useMyBid(opts?: { enabled?: boolean }) {
   const { isConnected } = useAccount()
   return useQuery({
     queryKey: ["sale", "my-bid"],
     queryFn: getMyPosition,
-    // No wallet means no position to show, and readMyBid would still call Sonar, so
-    // skip until connected. (useEntity, by contrast, is NOT gated on connect:
-    // verify-first leads with the entity-derived gate, so fetching it ASAP minimizes the
-    // brief first-paint "verify" window a returning verified user sees before the entity
-    // query settles. Eager shrinks that window; it does not remove it, since the verify
-    // gate now precedes the wallet gate.)
     enabled: isConnected && (opts?.enabled ?? true),
-    // Don't clobber an optimistic post-bid position (set by useBid) on window focus;
-    // the mock has no server-side commitment to refetch. TODO(real-data): invalidate
-    // this after a real bid so readMyBid confirms the indexed commitment.
+    // TODO(real-data): invalidate this after a real bid so readMyBid confirms the indexed commitment.
     refetchOnWindowFocus: false,
   })
 }
 
-/** True only for a well-formed https: URL. Guards window.location.href against a
- *  javascript:/data:/http: value from an upstream (Sonar) response. */
+/** True only for a well-formed https: URL; guards against a javascript:/data: redirect sink. */
 function isSafeHttpUrl(value: string | undefined): value is string {
   if (!value) return false
   try {
@@ -89,13 +64,7 @@ function isSafeHttpUrl(value: string | undefined): value is string {
   }
 }
 
-/**
- * Bid submission. Runs the Sonar gates (pre-purchase check then generate permit)
- * for the connected wallet, then hands the permit to the on-chain step. That step
- * (EIP-2612 signature + replaceBidWithPermit) lives behind the single swap point
- * submitBidOnChain (lib/sale/onchain.ts), emulated off-chain in dev until the
- * SettlementSale contract is deployed. Nothing here changes at go-live.
- */
+/** Bid submission: Sonar pre-purchase + permit gates, then submitBidOnChain. */
 export function useBid() {
   const { address } = useAccount()
   const queryClient = useQueryClient()
@@ -107,11 +76,8 @@ export function useBid() {
     try {
       const pre = await postPrePurchase(address)
       if (!pre.readyToPurchase) {
-        // requires-liveness ships a hosted Sonar URL; send the user there to clear
-        // the identity check, then they return and retry. Validate the scheme before
-        // navigating so a tampered upstream value can't become a javascript:/data:
-        // redirect sink. TODO(real-data): tighten to a host allowlist once the
-        // liveness vendor's host is confirmed against Sonar.
+        // Validate the scheme before navigating (untrusted upstream value).
+        // TODO(real-data): tighten to a host allowlist once the liveness vendor's host is confirmed against Sonar.
         if (pre.failureReason === "requires-liveness" && isSafeHttpUrl(pre.livenessCheckUrl)) {
           window.location.href = pre.livenessCheckUrl
         }
@@ -120,10 +86,8 @@ export function useBid() {
       const permit = await postGeneratePermit(address)
       const result = await submitBidOnChain({ params, permit, wallet: address })
       if (result.status === "submitted") {
-        // Optimistic: reflect the just-placed bid as the session's position so the UI
-        // moves to has-bid right away (no "winning" before a bid, no empty state after
-        // one). TODO(real-data): also invalidate ["sale","my-bid"] to refetch the
-        // confirmed commitment from Sonar once it indexes.
+        // Optimistic: reflect the just-placed bid as the session's position.
+        // TODO(real-data): also invalidate ["sale","my-bid"] to refetch the confirmed commitment from Sonar once it indexes.
         const optimistic: MyBid = {
           priceUsd: params.priceUsd,
           committedUsd: params.amountUsd,
@@ -133,9 +97,7 @@ export function useBid() {
       }
       return result
     } catch (err) {
-      // A 401 means the Sonar session is gone (revoked or expired beyond refresh):
-      // the user must reconnect, not retry. Other failures (502 / network) revert
-      // to a generic retry so the CTA never hangs on "Signing...".
+      // 401 means the Sonar session is gone: reconnect, not retry.
       if (err instanceof HttpError && err.status === 401) {
         return { status: "reverted", reason: "session-expired" }
       }
@@ -146,13 +108,7 @@ export function useBid() {
   return { submit }
 }
 
-/**
- * Refund claim for the ended phase. The contract refunds the connected wallet's
- * unfilled commitment directly (claimRefund at Stage.Done) - no Sonar gate, no permit,
- * so this just hands off to the on-chain step. Emulated until SettlementSale is deployed
- * (lib/sale/onchain.ts), unchanged at go-live. The wallet is already connected wherever
- * a claim is offered: the position that drives it (useMyBid) is gated on the connection.
- */
+/** Refund claim for the ended phase: hands off to claimRefundOnChain, no Sonar gate. */
 export function useClaim() {
   const { address } = useAccount()
 

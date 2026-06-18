@@ -1,9 +1,3 @@
-/** The GNOT token icon: the gno.land gnome mark sitting inside a round coin border.
- * Single `currentColor` (the ring is stroked, the gnome filled) so it reads as a
- * monochrome icon, inherits the surrounding text color, and flips with the theme
- * like the rest of the icon set. The gnome path geometry is verbatim from the
- * gno.land site logo, scaled down and centered so it sits with margin inside the
- * ring. Decorative (aria-hidden): the adjacent "GNOT" label already names it. */
 export function GnotCoin({ className = "" }: { className?: string }) {
   return (
     <svg

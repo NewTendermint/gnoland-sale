@@ -2,21 +2,10 @@ import "server-only"
 import sodium from "libsodium-wrappers"
 import { env } from "../env"
 
-/**
- * Authenticated symmetric encryption for OAuth tokens at rest.
- *
- * Scheme: libsodium secretbox (XSalsa20-Poly1305). A fresh 24-byte random
- * nonce is generated per call and prepended to the ciphertext, so encrypting
- * the same plaintext twice yields different output and decryption is fully
- * self-contained. The Poly1305 tag makes tampering fail closed: a modified
- * ciphertext throws on decrypt rather than returning corrupt plaintext.
- */
+// libsodium secretbox (XSalsa20-Poly1305) for OAuth tokens at rest; nonce prepended per call.
 
-// libsodium runs from WASM and must finish initializing before any call.
-// `sodium.ready` resolves once and is safe to await on every call.
 async function encryptionKey(): Promise<Uint8Array> {
   await sodium.ready
-  // env.ENCRYPTION_KEY is validated as 64 hex chars (32 bytes) at startup.
   return sodium.from_hex(env.ENCRYPTION_KEY)
 }
 

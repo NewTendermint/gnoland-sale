@@ -6,15 +6,13 @@ import { NextResponse } from "next/server"
 export const runtime = "nodejs"
 
 // GET /api/sonar/entity
-// Authenticated: returns the session's entity (id + KYC setup state +
-// eligibility), the data the client journey is derived from. entityId is taken
-// from the session's token server-side, never from the client.
+// Authenticated; entityId is taken from the session server-side, never from the client.
 export async function GET() {
   const session = await getSession()
   if (!session.sessionId) {
     return NextResponse.json({ error: "unauthenticated" }, { status: 401 })
   }
-  // Rolling: re-stamp the 2h cookie window on each authenticated read.
+  // Rolling: re-stamp the 2h cookie window.
   await session.save()
   try {
     const entity = await getEntity(session.sessionId)
@@ -23,8 +21,7 @@ export async function GET() {
     }
     return NextResponse.json(entity)
   } catch (err) {
-    // A revoked/expired Sonar token (401) means the client must reconnect, not
-    // that the entity is unavailable; mirror the permit routes and emit 401.
+    // Revoked/expired Sonar token -> 401 so the client reconnects.
     if (err instanceof SonarAuthError) {
       return NextResponse.json({ error: "unauthenticated" }, { status: 401 })
     }

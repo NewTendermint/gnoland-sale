@@ -1,6 +1,3 @@
-/** Forward arrow shared by every call-to-action: a horizontal stroke arrow that
- * slides on the parent's group-hover. Single source so all CTAs match the sticky
- * bid bar - place the trigger inside a `group` for the hover slide. */
 export function CtaArrow({ className = "h-3 w-3" }: { className?: string }) {
   return (
     <svg

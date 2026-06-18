@@ -1,20 +1,7 @@
 "use client"
 
-/**
- * Site header. Desktop (>= lg): the gno.land wordmark stays centred with the nav
- * links on either side, both fading in once the visitor scrolls past the hero (an
- * IntersectionObserver on #hero, rooted to the .screen scroll container, flips the
- * reveal); links reserve their space while hidden so the wordmark never shifts.
- * Mobile (< lg): logo left + burger right, both always visible (the hero drops its
- * inline nav there, so the burger is the only nav above the fold). The burger opens
- * a frame-inset overlay (the page frame + radius stay visible around it) whose links
- * reveal line by line with a staggered transition - the same motion language as the
- * page's paragraph reveals, but driven by the open state so it plays on touch too
- * (the scroll-reveal system is disabled on coarse pointers). Disclosure pattern,
- * mirroring the bid panel: focus moves in on open, returns to the burger on close,
- * Escape closes, `inert` when closed, .screen scroll locked while open.
- */
 import { useEffect, useRef, useState } from "react"
+import { Logo } from "../(ui)/Logo"
 import { Stagger } from "../(ui)/Stagger"
 import { LG_MEDIA_QUERY } from "../../lib/device/breakpoints"
 import { navLinks } from "./nav.data"
@@ -38,9 +25,6 @@ export function Header() {
     return () => io.disconnect()
   }, [])
 
-  // Disclosure plumbing, mirroring BidPanel's expanded sheet: focus moves into
-  // the overlay on open and back to the burger on close, Escape closes, and the
-  // .screen scroll is locked while open so the page never moves underneath.
   useEffect(() => {
     if (menuOpen) {
       menuRef.current?.focus()
@@ -61,8 +45,6 @@ export function Header() {
     }
   }, [menuOpen])
 
-  // The overlay is lg:hidden; if the window grows past lg while it is open,
-  // close it so the scroll lock and inert state never outlive their UI.
   useEffect(() => {
     if (!menuOpen) return
     const mql = window.matchMedia(LG_MEDIA_QUERY)
@@ -81,9 +63,6 @@ export function Header() {
 
   return (
     <>
-      {/* Mobile nav overlay: inset by the page frame so the black chrome + radius
-          stay visible around it (signature element). Below the header in the
-          z-scale so the wordmark + burger row stays on top and usable. */}
       <div
         id="mobile-menu"
         ref={menuRef}
@@ -94,10 +73,6 @@ export function Header() {
         }`}
       >
         <nav aria-label="Menu" className="flex h-full flex-col items-center justify-center">
-          {/* Links reveal line by line on open: the shared Stagger in controlled
-              mode (active=menuOpen). It cascades by index, so it scales to any number
-              of links and plays on touch (the scroll-reveal path is off on coarse
-              pointers). The overlay's opacity fades them out on close. */}
           <Stagger
             as="ul"
             active={menuOpen}
@@ -139,8 +114,8 @@ export function Header() {
               ))}
             </ul>
 
-            <a href="/" className="shrink-0 text-lg font-bold text-foreground lg:px-8">
-              Gno.land
+            <a href="/" aria-label="Gno.land" className="shrink-0 lg:px-8">
+              <Logo className="h-6 w-auto" />
             </a>
 
             <ul
@@ -158,9 +133,6 @@ export function Header() {
               ))}
             </ul>
 
-            {/* Burger (below lg, right side): two hairlines folding into a cross.
-                44px hit area. Always visible on mobile - it is the only nav above
-                the fold once the hero drops its inline links. */}
             <button
               type="button"
               ref={burgerRef}

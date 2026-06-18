@@ -20,8 +20,7 @@ const geistMono = localFont({
   display: "swap",
 })
 
-// Social/OG metadata. The OG image asset is still pending (REQUIREMENTS B23);
-// once it lands, add `images` to openGraph + twitter.
+// OG image asset pending (REQUIREMENTS B23); add `images` to openGraph + twitter when it lands.
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://sale.gno.land"
 const TITLE = "GNOT Public Token Sale - Gno.land"
 const DESCRIPTION = "The native token for Gno.land - Layer 1 smart contract platform."

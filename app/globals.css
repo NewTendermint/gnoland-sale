@@ -1,21 +1,10 @@
-/**
- * Global styles for sale.gno.land.
- *
- * Import order: Tailwind base, then design tokens (CSS variables), then
- * the @theme inline block that maps those variables into Tailwind utilities.
- * Component-level styles live in their own files; only structural rules
- * and accessibility baselines belong here.
- */
+/* Global styles for sale.gno.land. */
 @import "tailwindcss";
 @import "../styles/tokens.css";
 
 @custom-variant dark (&:is(.dark *));
 
-/* Funnel capability gate: desktop-grade contexts only (fine pointer + hover +
-   >= lg). Base styles are awareness-first; `funnel:` reveals the sale-funnel UI
-   (register / connect / bid / claim CTAs). MUST stay in sync with
-   FUNNEL_MEDIA_QUERY in lib/device/funnel-gate.ts - a unit test
-   (tests/unit/device/funnel-gate.test.ts) enforces it. */
+/* Keep in sync with FUNNEL_MEDIA_QUERY in lib/device/funnel-gate.ts. */
 @custom-variant funnel (@media (hover: hover) and (pointer: fine) and (min-width: 64rem));
 
 @theme inline {
@@ -60,6 +49,16 @@ body {
 
 body {
   padding: var(--reveal-padding);
+  animation: frame-pad-in 1000ms var(--ease-reveal) both;
+}
+
+@keyframes frame-pad-in {
+  from {
+    padding: 0;
+  }
+  to {
+    padding: var(--reveal-padding);
+  }
 }
 
 .screen {
@@ -71,6 +70,23 @@ body {
   z-index: 1;
   overflow: hidden auto;
   scrollbar-width: none;
+  animation: frame-screen-in 1000ms var(--ease-reveal) both;
+}
+
+@keyframes frame-screen-in {
+  from {
+    height: 100vh;
+  }
+  to {
+    height: calc(100vh - var(--reveal-padding) * 2);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body,
+  .screen {
+    animation: none;
+  }
 }
 
 .screen::-webkit-scrollbar {
@@ -80,28 +96,27 @@ body {
 @supports (height: 100dvh) {
   .screen {
     height: calc(100dvh - var(--reveal-padding) * 2);
+    animation: frame-screen-in-dvh 1000ms var(--ease-reveal) both;
+  }
+
+  @keyframes frame-screen-in-dvh {
+    from {
+      height: 100dvh;
+    }
+    to {
+      height: calc(100dvh - var(--reveal-padding) * 2);
+    }
   }
 }
 
-/* Click/anchor navigation scrolls smoothly (nav links, in-page CTAs). scroll-behavior
-   only affects programmatic + anchor-initiated scrolls, NOT manual wheel/touch input, so
-   the native scroll feel stays untouched. Gated by prefers-reduced-motion. */
+/* scroll-behavior affects anchor/programmatic scrolls only, not manual input. */
 @media (prefers-reduced-motion: no-preference) {
   .screen {
     scroll-behavior: smooth;
   }
 }
 
-/* Anti-FOUC gate for the coordinated page-load entrance: a subtree rendered
-   data-entrance="pending" is hidden from first paint until <Entrance> lifts it
-   on mount, so the cascade starts at frame 0 instead of flashing the laid-out
-   page. Must be opacity (NOT visibility:hidden): a visibility:hidden subtree is
-   not painted, so a CSS transition armed on it under the gate has no painted
-   before-change frame and SNAPS to its end value the instant the gate lifts
-   (the image clip-open and sticky bar did exactly this). opacity:0 keeps the
-   subtree composited/painted, so the same transition arms and animates normally.
-   pointer-events:none stops clicks landing on the invisible content pre-lift.
-   opacity keeps layout/height stable too, so nothing reflows when it lifts. */
+/* Anti-FOUC gate. Must be opacity (NOT visibility:hidden), or armed transitions snap on lift. */
 [data-entrance="pending"] {
   opacity: 0;
   pointer-events: none;
@@ -141,53 +156,34 @@ main > section {
 
 @layer utilities {
   .section-label {
-    /* Typography only; the color comes from the caller (text-faint /
-       text-on-contrast-muted / ...) so the label adapts to its surface
-       (normal page vs dark contrast tile). */
     @apply font-mono text-xs uppercase tracking-[0.2em];
   }
 
-  /* Mono eyebrow above a section heading (wider tracking than .section-label).
-     Typography only - the caller supplies the color for its surface. */
   .section-eyebrow {
     @apply font-mono text-xs uppercase tracking-widest;
   }
 
-  /* The standard inner band: full width on mobile, the centered 10-of-12 columns
-     from lg. The shared content placement for most sections. */
   .band-10 {
     @apply col-span-12 lg:col-span-10 lg:col-start-2;
   }
 
-  /* Small outline status badge (e.g. the ended bar's "Closed"). */
   .status-pill {
     @apply rounded-full border border-border px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-muted;
   }
 
-  /* Inverted framed surface (black on light / white on dark), rounded with the frame
-     radius. Full-bleed on mobile, contained to the container width from lg so it reads
-     as a framed card with gutters. Callers add vertical padding (and overflow-hidden
-     where a child bleeds to the tile edge). */
   .contrast-tile {
     @apply rounded-[var(--frame-radius)] bg-surface-contrast text-on-contrast lg:mx-auto lg:max-w-[var(--max-width-container)];
   }
 
-  /* Centered content well: the max-width container + responsive gutter. Every section,
-     the footer and the sticky bar sit on it so content lines up across the page.
-     Callers add their own grid / vertical padding. */
   .page-container {
     @apply mx-auto max-w-[var(--max-width-container)] px-6 lg:px-8;
   }
 
-  /* Inverted CTA pill for the contrast bid-capsule (BidFlow + SettlementFlow): a
-     rounded uppercase pill on the on-contrast surface. Pair with `btn-pan` for the
-     hover - btn-pan owns the ::before pan, which @apply can't pull in. */
+  /* Pair with `btn-pan` for the hover; btn-pan owns the ::before pan @apply can't pull in. */
   .bid-pill {
     @apply inline-flex cursor-pointer items-center justify-center rounded-full border border-faint bg-on-contrast px-6 py-3 text-xs font-bold uppercase tracking-[0.2em] text-surface-contrast before:bg-surface-contrast hover:text-on-contrast disabled:pointer-events-none disabled:opacity-40;
   }
 
-  /* Animated link underline: a currentColor hairline that wipes in from the left on
-     hover/focus. Pure CSS (::after + scaleX), applied to text links - never to CTAs. */
   .link-underline {
     position: relative;
   }
@@ -210,11 +206,7 @@ main > section {
     transform: scaleX(1);
   }
 
-  /* "Pan" CTA hover (Codrops button--pan): a panel slides up from the bottom to fill
-     the pill on hover, while the label rides on top and swaps colour. This class owns
-     the structure + motion; the caller keeps the colours as utilities - `before:bg-*`
-     for the panel, `text-* hover:text-*` for the label - so it works on every variant
-     and theme. Requires: a rounded pill whose label is wrapped in a single <span>. */
+  /* "Pan" CTA hover. Requires a rounded pill whose label is wrapped in a single <span>. */
   .btn-pan {
     position: relative;
     overflow: hidden;
@@ -226,8 +218,6 @@ main > section {
     inset: 0;
     z-index: 0;
     transform: translateY(100%);
-    /* --ease-reveal (easeOutExpo) at 500ms, so the pan decelerates like the rest of
-       the page's motion. */
     transition: transform var(--motion-500) var(--ease-reveal);
   }
 
@@ -235,24 +225,37 @@ main > section {
     transform: translateY(0);
   }
 
-  /* Sticky bid bar entrance: fades in as one unit at the END of the page-load
-     sequence (after the hero has revealed). `both` keeps it at opacity 0 through the
-     delay so it never flashes in early. Reduced-motion: shown immediately. */
   .bar-enter {
-    animation: bar-enter var(--motion-500) var(--ease-reveal) 1100ms both;
+    animation: bar-enter 800ms cubic-bezier(0.22, 1, 0.36, 1) 1100ms both;
   }
 
   @keyframes bar-enter {
     from {
+      transform: translateY(120%) scale(0.75);
+    }
+    to {
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .bar-content-enter {
+    animation: bar-content-enter var(--motion-500) var(--ease-reveal) 1800ms both;
+  }
+
+  @keyframes bar-content-enter {
+    from {
       opacity: 0;
+      transform: translateY(8px);
     }
     to {
       opacity: 1;
+      transform: translateY(0);
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .bar-enter {
+    .bar-enter,
+    .bar-content-enter {
       animation: none;
     }
   }
@@ -278,11 +281,7 @@ main > section {
     border-radius: var(--radius-md);
   }
 
-  /* Contrast capsule for the expanded bid panel: a black tile (light theme) /
-     white tile (dark). Re-scopes the semantic tokens so the bid flow's existing
-     utilities (text-foreground, text-muted, border-border, bg-surface-alt) render
-     correctly on the contrast surface - no per-component restyling needed. The CTA
-     pill inverts explicitly (bg-on-contrast / text-surface-contrast). */
+  /* Re-scopes semantic tokens onto the contrast surface for the expanded bid panel. */
   .bid-capsule {
     background-color: var(--surface-contrast);
     color: var(--on-contrast);
@@ -293,12 +292,5 @@ main > section {
     --border: color-mix(in srgb, var(--on-contrast) 18%, transparent);
     --border-strong: color-mix(in srgb, var(--on-contrast) 34%, transparent);
     --surface-alt: color-mix(in srgb, var(--on-contrast) 8%, transparent);
-  }
-
-  /* The dark-theme capsule is a white tile; the brand amber/danger are too light to
-     read as text on it. Darken them within this surface so alert / error notes stay legible. */
-  .dark .bid-capsule {
-    --amber: #9a6300;
-    --danger: #c92a43;
   }
 }

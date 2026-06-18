@@ -1,8 +1,3 @@
-/**
- * Site footer. One wide block on the left (brand tagline + Resources links in 2
- * sub-cols under a single border-top), then Community + External as narrower blocks
- * each with their own column-width border. Copyright row at the bottom.
- */
 import { DrawLine } from "../(ui)/DrawLine"
 import { Stagger } from "../(ui)/Stagger"
 import { ThemeToggle } from "./ThemeToggle"
@@ -63,7 +58,6 @@ export function Footer() {
                     Documentation
                   </a>
                 </li>
-                {/* Legal documents pending from counsel. Placeholder hrefs kept until URLs land. */}
                 <li>
                   {/* biome-ignore lint/a11y/useValidAnchor: legal page URL not yet provided */}
                   <a href="#" className="link-underline transition-colors hover:text-foreground">

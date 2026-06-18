@@ -1,15 +1,6 @@
 import { SALE_ECONOMICS } from "./economics"
 
-/**
- * Client-side ICS generation for the "add to calendar" buttons. A downloaded
- * .ics is universal (Apple / Google / Outlook import it), sends nothing to any
- * third party, and needs no dependency: the file is a dozen lines of text.
- *
- * Events are ALL-DAY on purpose: the exact opening time is still TBD
- * (REQUIREMENTS A.12.2 / param #14), and a timed 00:00 UTC event would render
- * as a misleading local time (02:00 in Paris). An all-day event is honest and
- * timezone-proof; the reminder emails carry the precise time once known.
- */
+// Client-side ICS generation for the "add to calendar" buttons. Events are all-day.
 
 export type SaleMilestone = "registration" | "sale"
 
@@ -46,16 +37,12 @@ function icsStamp(ms: number): string {
     .replace(/\.\d{3}/, "")
 }
 
-/**
- * Build the one-event ICS for a milestone. `nowMs` is injected (not read from the
- * clock) so the output is pure and testable; callers pass Date.now().
- */
+/** Build the one-event ICS for a milestone. `nowMs` is injected so the output is pure. */
 export function buildMilestoneIcs(
   milestone: SaleMilestone,
   nowMs: number,
 ): { filename: string; ics: string } {
   const event = EVENTS[milestone]
-  // CRLF line endings per RFC 5545; every line stays under the 75-octet fold limit.
   const ics = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",

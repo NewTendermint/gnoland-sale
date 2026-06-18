@@ -1,11 +1,5 @@
 "use client"
 
-/**
- * Live countdown to a target ISO timestamp. Renders a placeholder until the first
- * client tick so server and client markup match (no hydration mismatch). The
- * remainder is recomputed from Date.now() each tick, so background-tab timeout
- * throttling self-corrects; tabular-nums keeps the 1Hz tick from shifting layout.
- */
 import { useEffect, useState } from "react"
 import { fmtCountdown } from "../../lib/sale/format"
 

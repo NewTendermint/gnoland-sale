@@ -3,22 +3,11 @@ import { type IronSession, type SessionOptions, getIronSession } from "iron-sess
 import { cookies } from "next/headers"
 import { env } from "../env"
 
-/**
- * Session payload. Deliberately minimal: just an opaque session id (the foreign
- * key into oauth_tokens). No OAuth tokens and no PII live in the cookie itself;
- * the cookie only references server-held, encrypted data.
- */
+// Cookie holds only an opaque session id (FK into oauth_tokens); no tokens, no PII.
 export interface AppSession {
   sessionId?: string
 }
 
-/**
- * Read (or lazily create) the session for the current request. Only valid in a
- * request scope (Route Handler / Server Action) where `cookies()` is writable.
- * Options are built here, not at module top level, so importing this module
- * (e.g. during `next build` page-data collection) does not require
- * SESSION_PASSWORD to be present.
- */
 export async function getSession(): Promise<IronSession<AppSession>> {
   const cookieStore = await cookies()
   const sessionOptions: SessionOptions = {
@@ -29,10 +18,7 @@ export async function getSession(): Promise<IronSession<AppSession>> {
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       path: "/",
-      // 2 hours, rolling: re-stamped on every save(). The authenticated routes
-      // (entity, my-position, and the bid routes via resolveBidRequest) re-save on
-      // each request, so an active session slides forward while an idle one expires
-      // 2h after its last request.
+      // 2 hours, rolling: re-stamped on every save().
       maxAge: 60 * 60 * 2,
     },
   }

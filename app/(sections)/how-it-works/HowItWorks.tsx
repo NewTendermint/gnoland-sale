@@ -1,10 +1,5 @@
 "use client"
 
-/**
- * How to Participate, in the large contrast tile. Journey-aware: `funnelState`
- * maps the canonical journey (useSale) onto the section's four-step ladder
- * (done / current / pending opacity) and drives which CTA or status line shows.
- */
 import { NewsletterForm } from "../../(layout)/NewsletterForm"
 import { useSale } from "../../(layout)/SaleProvider"
 import { ArrowLink } from "../../(ui)/ArrowLink"
@@ -21,11 +16,6 @@ import { isSonarVerified } from "../../../lib/sale/journey"
 import { DESKTOP_ONLY, VERIFY_STATUS } from "../../../lib/sale/labels"
 import type { PreSaleStage, JourneyState as SaleJourney, SalePhase } from "../../../lib/sale/types"
 
-// Section-local funnel vocabulary: which of the four steps is current. Verify-first,
-// matching deriveJourney: Verify -> Connect -> Bid -> Distribution. "locked" is
-// pre-sale before registration opens (nothing actionable, plain roadmap);
-// "registered" is the pre-sale parking state (verified, wallet + bid open with the
-// sale, the CTA gives way to a confirmation).
 type FunnelStep =
   | "locked"
   | "needs-verify"
@@ -35,8 +25,6 @@ type FunnelStep =
   | "bidding"
   | "ended"
 
-// Live/ended CTA label. Total over FunnelStep so no cast is needed at the call
-// site; "registered" and "locked" render dedicated lines before this is consulted.
 function liveCtaLabel(state: FunnelStep): string {
   switch (state) {
     case "needs-connect":
@@ -52,8 +40,6 @@ function liveCtaLabel(state: FunnelStep): string {
   }
 }
 
-// Pre-sale mirror of the sticky bar's status copy: a user who already engaged
-// Sonar sees their verification status here, never a generic Register CTA.
 const PRESALE_STATUS: Partial<Record<SaleJourney, string>> = {
   "kyc-pending": `${VERIFY_STATUS.pending.title}. ${VERIFY_STATUS.pending.body}`,
   "kyc-failed": `${VERIFY_STATUS.failed.title}. ${VERIFY_STATUS.failed.body}`,
@@ -63,15 +49,10 @@ const PRESALE_STATUS: Partial<Record<SaleJourney, string>> = {
 type StepStatus = "done" | "current" | "pending" | "plain"
 
 function getStepStatus(stepIndex: number, journey: FunnelStep): StepStatus {
-  // Pre-sale, registration not open yet: no ladder position exists, so the four
-  // steps read as a plain full-strength roadmap and the not-open-yet line above
-  // the CTA carries the meaning.
   if (journey === "locked") return "plain"
-  // Pre-sale parking state: Verify is done, nothing else is actionable yet.
   if (journey === "registered") return stepIndex === 0 ? "done" : "pending"
   const order: FunnelStep[] = ["needs-verify", "needs-connect", "wallet-ready", "bidding", "ended"]
   const j = order.indexOf(journey)
-  // Step order: 0 Verify, 1 Connect, 2 Bid, 3 Distribution.
   if (stepIndex === 0) return j === 0 ? "current" : "done"
   if (stepIndex === 1) return j === 0 ? "pending" : j === 1 ? "current" : "done"
   if (stepIndex === 2) return j < 2 ? "pending" : j === 4 ? "done" : "current"
@@ -86,15 +67,10 @@ const STATUS_OPACITY: Record<StepStatus, string> = {
   plain: "opacity-100",
 }
 
-// Map the canonical sale journey (9 states) + phase + pre-sale stage onto this
-// section's funnel vocabulary, choosing which step is current and which CTA shows.
 function funnelState(journey: SaleJourney, phase: SalePhase, stage: PreSaleStage): FunnelStep {
   if (phase === "ended") return "ended"
   const verified = isSonarVerified(journey)
   if (phase === "pre-sale") {
-    // Pre-sale: registration is the only actionable step (wallet connect / bid would
-    // be dead CTAs - the pre-sale bar has no expanded panel). A verified user parks
-    // on "registered"; before registration even opens, the whole ladder is locked.
     if (verified) return "registered"
     return stage === "registration-open" ? "needs-verify" : "locked"
   }
@@ -106,10 +82,8 @@ function funnelState(journey: SaleJourney, phase: SalePhase, stage: PreSaleStage
       return "bidding"
     case "disconnected":
     case "wrong-network":
-      // verified + eligible, wallet not connected yet
       return "needs-connect"
     default:
-      // kyc-required, kyc-pending, kyc-failed, not-eligible: verify not done
       return "needs-verify"
   }
 }
@@ -118,7 +92,6 @@ export function HowItWorks() {
   const { journey, phase, preSaleStage, setBidPanelOpen } = useSale()
   const journeyState = funnelState(journey, phase, preSaleStage)
   const registrationOpen = preSaleStage === "registration-open"
-  // Pre-sale verification status (pending / failed / not-eligible), if any.
   const preSaleStatus = phase === "pre-sale" ? PRESALE_STATUS[journey] : undefined
 
   return (
@@ -134,9 +107,6 @@ export function HowItWorks() {
             <p className="text-base text-on-contrast-muted">{preSaleStatus}</p>
           ) : phase === "pre-sale" ? (
             registrationOpen ? (
-              // Funnel-capable contexts get the Sonar CTA; awareness ones (touch
-              // or < lg) get the desktop pointer instead - registration is
-              // desktop-only (lib/device/funnel-gate.ts, CSS dual render).
               <>
                 <div className="hidden funnel:block">
                   <ArrowLink
@@ -150,8 +120,6 @@ export function HowItWorks() {
                 </p>
               </>
             ) : (
-              // Stage A: an explicit not-open-yet line, then the same all-in-one
-              // capture capsule as the bar/pre-footer, left-aligned to the column.
               <div>
                 <p className="mb-4 text-base text-on-contrast-muted">
                   Registration is not open yet - it opens{" "}
@@ -161,8 +129,6 @@ export function HowItWorks() {
               </div>
             )
           ) : (
-            // Same split for live/ended: the panel-opening CTA only exists where
-            // the funnel bar does; awareness contexts read the desktop pointer.
             <>
               <div className="hidden funnel:block">
                 <ArrowLink
@@ -192,10 +158,6 @@ export function HowItWorks() {
                 i > 0 ? "lg:border-l lg:border-on-contrast/15 lg:px-6" : "lg:pr-6"
               }`}
             >
-              {/* Fixed slots (3/4/5) shared by every step, so the four columns start
-                  TOGETHER (after the title block, which cascades from the slots above)
-                  while each step still reveals its own rows top to bottom. The whole
-                  thing starts at half the clip's growth (the panel lead). */}
               <div className="flex items-center gap-3">
                 <Icon name={s.icon} index={3} className="h-6 w-6 text-on-contrast-muted" />
                 <FadeIn

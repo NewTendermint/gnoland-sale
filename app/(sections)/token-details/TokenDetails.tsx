@@ -1,16 +1,5 @@
 "use client"
 
-/**
- * Sale section, two blocks:
- *   - Your position: user-specific metrics (commitment, filled, GNOT estimate, best
- *     bid) computed from the session's myBid + clearing price. Global market state
- *     lives in the sticky BidPanel to avoid duplication.
- *   - Terms: thematic key/value groups separated by a hairline.
- *
- * Position block has three states: not-ready (not yet verified + connected + eligible,
- * prompt to connect), ready with no bids (empty values, prompt to bid), and bids placed
- * (full values).
- */
 import { Fragment } from "react"
 import { Countdown } from "../../(layout)/Countdown"
 import { useSale } from "../../(layout)/SaleProvider"
@@ -35,17 +24,11 @@ import { SALE_ECONOMICS } from "../../../lib/sale/economics"
 import { fmtGnot, fmtPrice, fmtUsd } from "../../../lib/sale/format"
 import { derivePositionState } from "../../../lib/sale/journey"
 
-/** Scroll-trigger line for the terms-table groups (and the documents): each reveals
- * when its top reaches this % from the BOTTOM of the viewport. Lower = the trigger
- * sits lower on screen, so a group animates only once you are nearly on it. */
 const TABLE_REVEAL_PCT = 10
 
 export function TokenDetails() {
   const { phase, preSaleStage, journey, myBid, commitment } = useSale()
-  // "Your position" display state, derived (+ unit-tested) in lib/sale/journey.ts.
   const positionState = derivePositionState(journey, myBid !== null)
-  // Pre-sale: no position exists yet, so the header carries the big next-milestone
-  // countdown and the position block stays out entirely.
   const preSale = phase === "pre-sale"
   const registrationOpen = preSaleStage === "registration-open"
 
@@ -53,10 +36,6 @@ export function TokenDetails() {
     if (positionState !== "active" || !myBid) {
       return positionMetricsEmpty
     }
-    // Live values in the content's order (USDC committed, bid price, GNOT allocation,
-    // status). Status is binary on the clearing price: a bid at or above clearing reads
-    // Active, otherwise Outbid; the true pro-rata fill at the margin is a settlement
-    // detail, unknown pre-close.
     // TODO(real-data): refine Active/Outbid with the real settlement outcome once
     // settlement data is available.
     const status =
@@ -72,18 +51,12 @@ export function TokenDetails() {
 
   return (
     <Section id="token-details">
-      {/* Title cascade: the title triggers, then the line and the position block
-          cascade just after - one trigger instead of each row scroll-appearing on its
-          own. `inline` adds no box, the grid is intact. The terms table + documents
-          break out below into their own trigger (see the RevealBoundary further down)
-          so they animate when the reader reaches THEM, not when the title does. */}
       <RevealGroup inline>
         <RevealGroup
           as="div"
           className="col-span-12 mb-12 flex flex-col items-center text-center lg:col-span-10 lg:col-start-2"
         >
-          <FadeIn as="div" className="mb-3 flex items-center gap-2">
-            {/* The pulsing live dot only makes sense while the auction runs. */}
+          <FadeIn as="div" className="mt-12 mb-3 flex items-center gap-3">
             {phase === "live" && positionState === "active" && (
               <span className="relative flex size-2">
                 <span className="absolute inline-flex size-full animate-ping rounded-full bg-foreground opacity-30" />
@@ -113,9 +86,6 @@ export function TokenDetails() {
               </p>
             </FadeIn>
           ) : (
-            // "Your position" needs a wallet, so it is funnel-only: on awareness
-            // contexts (touch / < lg) there is no position to show, so the subtext
-            // and the block below are hidden there (they only render on desktop).
             <FadeIn
               as="p"
               className="mt-4 hidden max-w-2xl text-base text-muted funnel:block md:text-lg"
@@ -152,9 +122,6 @@ export function TokenDetails() {
                     <div>
                       <div className="flex items-center gap-2">
                         {m.badge ? (
-                          // Status reads as a word, not a figure: a monochrome dot
-                          // (filled = Active, ring = Outbid, faint = no bid) takes the
-                          // metric-icon slot and the value drops tabular-nums.
                           <span
                             aria-hidden="true"
                             className={`size-2.5 shrink-0 rounded-full ${
@@ -189,19 +156,10 @@ export function TokenDetails() {
 
         <DrawLine className="band-10" />
 
-        {/* The terms table + documents leave the title cascade. RevealBoundary cuts
-            the outer group context, then EACH term group (and the documents) gets its
-            OWN inline RevealGroup = its own scroll trigger (TABLE_REVEAL_PCT), so every
-            group animates when YOU reach it, not all at once when the title does. */}
         <RevealBoundary>
           <div className="col-span-12 flex flex-col lg:col-span-10 lg:col-start-2">
             {termGroups.map((g, gi) => (
               <RevealGroup inline fromBottomPct={TABLE_REVEAL_PCT} key={g.eyebrow}>
-                {/* Plain layout grid (no group-level FadeIn): inside, the title
-                    reveals line-by-line like the tiles, the number fades, and each
-                    row rises from a mask - all members of this group's cascade, so
-                    they stagger in (number/title slot 0, rows 1..n, divider last)
-                    when the group is reached. */}
                 <div className="grid grid-cols-12 gap-6 py-5 lg:grid-cols-10 lg:py-6">
                   <div className="col-span-12 lg:col-span-3">
                     <div className="flex items-baseline gap-3">
@@ -263,7 +221,6 @@ export function TokenDetails() {
             ))}
           </div>
 
-          {/* Own trigger: the documents reveal when reached, not with the last group. */}
           <RevealGroup inline fromBottomPct={TABLE_REVEAL_PCT}>
             <div className="col-span-12 mt-6 flex flex-wrap items-center justify-end gap-3 lg:col-span-10 lg:col-start-2">
               {documents.map((d, di) => (

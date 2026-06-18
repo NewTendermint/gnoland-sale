@@ -3,10 +3,8 @@ import { getStore } from "@netlify/blobs"
 import { env } from "../env"
 import { sonarCore } from "./server-only"
 
-// PKCE state lives in a dedicated Blobs store, keyed by the random `state`
-// value. Netlify Blobs has no native TTL (verified: docs.netlify.com Blobs,
-// "does NOT support automatic expiration"), so expiry is stamped in metadata
-// and enforced on read in consumePkceState.
+// PKCE state in a Blobs store keyed by `state`. Netlify Blobs has no native TTL, so
+// expiry is stamped in metadata and enforced on read in consumePkceState.
 const PKCE_STORE = "sonar-pkce"
 const PKCE_TTL_MS = 10 * 60 * 1000 // 10 minutes
 
@@ -16,16 +14,12 @@ export interface PkcePayload {
 }
 
 function pkceStore() {
-  // On the Netlify runtime (Functions/Edge backing Next route handlers) siteID
-  // and token are injected automatically; only the store name is needed.
   return getStore(PKCE_STORE)
 }
 
 /**
- * Generate PKCE params via the Sonar SDK, stash the verifier server-side keyed
- * by `state` (10-min TTL, write-once), and return the Sonar authorization URL.
- * The verifier never leaves the server; only `state` + `code_challenge` travel
- * to Sonar.
+ * Stash the PKCE verifier server-side keyed by `state` (10-min TTL, write-once),
+ * return the authorization URL. The verifier never leaves the server.
  */
 export async function generatePkceAndStore(sessionId: string): Promise<string> {
   const { codeVerifier, codeChallenge, state } = await sonarCore.generatePKCEParams()
@@ -43,11 +37,8 @@ export async function generatePkceAndStore(sessionId: string): Promise<string> {
 }
 
 /**
- * Consume a PKCE state on the OAuth callback: confirm it exists and is
- * unexpired, then return the stored verifier. The entry is deleted before any
- * value is returned (single-use), so a replayed callback cannot reuse it. This
- * is the CSRF/replay control for the OAuth flow; the caller additionally binds
- * `sessionId` to the current session.
+ * Consume a PKCE state on the OAuth callback (single-use, delete-before-return):
+ * the CSRF/replay control for the OAuth flow. Caller also binds `sessionId`.
  */
 export async function consumePkceState(state: string): Promise<PkcePayload> {
   const store = pkceStore()
@@ -55,8 +46,7 @@ export async function consumePkceState(state: string): Promise<PkcePayload> {
   if (!entry) {
     throw new Error("PKCE state not found")
   }
-  // Delete first, unconditionally: even an expired or malformed entry must not
-  // survive a consume attempt.
+  // Delete first, unconditionally: even an expired/malformed entry must not survive a consume.
   await store.delete(state)
   const expiresAt = entry.metadata.expiresAt
   if (typeof expiresAt !== "number" || expiresAt < Date.now()) {

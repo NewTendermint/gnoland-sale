@@ -1,19 +1,4 @@
-/**
- * Core team. 8 named individuals (5 verified against the official
- * gno.land blog post + 3 added pending team confirmation on spelling
- * and bios).
- *
- * Layout: asymmetric. Title block on the left column (cols 2-5,
- * left-aligned, sticky on desktop while the list scrolls past),
- * credits list on the right column (cols 7-11). Each entry: name in
- * editorial typography + short bio in mono caps, separated by hairline
- * borders. The asymmetric split clearly separates "section header"
- * from "list items" so the h2 isn't read as just another name.
- *
- * Mobile: title centered above the list (single column stack).
- *
- * Avatar/photo intentionally omitted, pure typography credits style.
- */
+// Core team: 5 names verified, 3 pending team confirmation on spelling and bios.
 import { Fragment } from "react"
 import { DrawLine } from "../../(ui)/DrawLine"
 import { FadeIn } from "../../(ui)/FadeIn"

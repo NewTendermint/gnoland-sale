@@ -4,10 +4,7 @@ import { useEffect, useState } from "react"
 
 const COLUMNS = ["c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8", "c9", "c10", "c11", "c12"] as const
 
-/**
- * Debug overlay showing the 12-column grid. Toggled via `?grid` URL query.
- * Fixed positioning so it stays visible while scrolling. Test-only.
- */
+// Debug 12-column grid overlay, toggled via the `?grid` URL query.
 export function GridOverlay() {
   const [show, setShow] = useState(false)
 

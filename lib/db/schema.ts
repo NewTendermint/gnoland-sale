@@ -2,18 +2,9 @@ import { bigint, index, jsonb, pgTable, text, timestamp, uuid } from "drizzle-or
 import { z } from "zod"
 import { evmAddress } from "../validation"
 
-// No `import "server-only"` here: drizzle-kit imports this from a plain Node CLI
-// (generate/migrate), where the guard would throw. The connection itself
-// (lib/db/client.ts) carries it. This file holds only table metadata and a
-// validation schema, no secret access.
+// No `import "server-only"` here: drizzle-kit imports this from a plain Node CLI.
 
-/**
- * Encrypted OAuth token store, keyed by an opaque session id.
- *
- * `encrypted_tokens` is the libsodium secretbox envelope of
- * `{ accessToken, refreshToken }` (see lib/security/encryption.ts). Plaintext
- * tokens never touch the database or the client.
- */
+// Encrypted OAuth token store (libsodium secretbox envelope), keyed by opaque session id.
 export const oauthTokens = pgTable(
   "oauth_tokens",
   {
@@ -26,16 +17,7 @@ export const oauthTokens = pgTable(
   (table) => [index("oauth_tokens_expires_at_idx").on(table.expiresAt)],
 )
 
-/**
- * Append-only audit trail for permit issuance and other sensitive events.
- *
- * Privacy model (ADR 4.7): wallet and entity id are stored in clear because
- * they are already public on chain; hashing them would be false anonymization
- * (reversible by rainbow table). The client IP, the one non-public field, is
- * stored only as an irreversible HMAC, and the user agent is reduced to a
- * coarse class. `metadata` is held to a strict allow-list (auditMetadataSchema)
- * so no PII can slip into the jsonb column.
- */
+// Append-only audit trail. IP stored only as HMAC; metadata held to a strict allow-list.
 export const auditLog = pgTable(
   "audit_log",
   {
@@ -56,11 +38,7 @@ export const auditLog = pgTable(
   ],
 )
 
-/**
- * Strict allow-list for the audit_log.metadata jsonb column, validated at write
- * time (lib/sonar/permit.ts). Anything not listed (email, name, full IP, full
- * user agent, raw permit signatures) is rejected before it can be persisted.
- */
+// Strict allow-list for audit_log.metadata; anything unlisted (PII) is rejected at write.
 export const auditMetadataSchema = z
   .object({
     permit_id_prefix: z.string().max(16).optional(),

@@ -1,9 +1,3 @@
-/**
- * Ecosystem-in-numbers. Rendered on a contrast tile (Section owns the
- * inverted frame) to flip the rhythm of the page. Title block left, 7 stats
- * in a responsive grid right, separated by hairline dividers. Colors flow
- * from semantic on-contrast theme tokens.
- */
 import { CountUp } from "../../(ui)/CountUp"
 import { DrawLine } from "../../(ui)/DrawLine"
 import { FadeIn } from "../../(ui)/FadeIn"
@@ -29,8 +23,6 @@ export function Stats() {
         className="col-span-12 mt-12 grid grid-cols-2 gap-x-8 gap-y-10 md:grid-cols-3 lg:col-span-7 lg:col-start-5 lg:mt-16 lg:grid-cols-4"
       >
         {stats.map((s) => (
-          // All figures share one slot (index 0) so they launch together, once,
-          // inside the tile timeline (the panel leads, the row fires at its base).
           <div key={s.label}>
             <DrawLine colorClass="bg-on-contrast/15" index={0} />
             <dd className="pt-6">

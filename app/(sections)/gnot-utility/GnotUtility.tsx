@@ -1,11 +1,7 @@
-/**
- * GNOT utility (demand side of the token: what GNOT does), rendered as an editorial
- * statement section. Layout + animation live in the shared StatementList; this file
- * only supplies the eyebrow, title, and the utility data. The Tokenomics section
- * above is supply-side only (allocation, vesting, treasury).
- */
+// GNOT utility (demand side: what GNOT does), rendered via the shared StatementList.
 import { StatementList } from "../../(ui)/StatementList"
 import { uses } from "../../../content/sections/gnot-utility"
+import { sceneVideos } from "../../../lib/scenes"
 
 export function GnotUtility() {
   return (
@@ -14,6 +10,7 @@ export function GnotUtility() {
       eyebrow="GNOT utility"
       title="GNOT, the Native Token Powering Gno.land"
       items={uses}
+      sceneVideo={sceneVideos.gnotUtility}
     />
   )
 }

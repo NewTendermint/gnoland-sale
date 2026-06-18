@@ -22,9 +22,9 @@ describe("sonarMockEnabled (prod-safety guard)", () => {
     expect(sonarMockEnabled()).toBe(false)
   })
 
-  it("is OFF against mainnet (SALE_CHAIN=base) even with SONAR_MOCK=1", () => {
+  it("is OFF against mainnet (SALE_CHAIN=mainnet) even with SONAR_MOCK=1", () => {
     vi.stubEnv("NODE_ENV", "development")
-    vi.stubEnv("SALE_CHAIN", "base")
+    vi.stubEnv("SALE_CHAIN", "mainnet")
     vi.stubEnv("SONAR_MOCK", "1")
     expect(sonarMockEnabled()).toBe(false)
   })

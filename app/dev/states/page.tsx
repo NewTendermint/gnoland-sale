@@ -1,10 +1,5 @@
 import { notFound } from "next/navigation"
-/**
- * Dev-only state harness: for every state, renders the sticky bar both collapsed
- * (metrics + opening CTA) and expanded (metrics + stepper on top, flow below), so the
- * whole funnel is reviewable without a wallet or Sonar. Gated out of production. The
- * metrics / pill / compact-bar markup are a dev replica of BidPanel.
- */
+// Dev-only state harness: renders the sticky bar in every state. Gated out of production.
 import type { ReactNode } from "react"
 import { AwarenessBarBody } from "../../(layout)/BidPanelAwareness"
 import { BidFlow } from "../../(sections)/bid/BidFlow"
@@ -95,7 +90,6 @@ function MetricsRow({
   )
 }
 
-/** Collapsed bar: metrics + the opening CTA on the right. */
 function CollapsedBar({ journey }: { journey: JourneyState }) {
   return (
     <div className="rounded-[var(--frame-radius)] border border-border bg-background px-6 lg:px-8">
@@ -104,7 +98,6 @@ function CollapsedBar({ journey }: { journey: JourneyState }) {
   )
 }
 
-/** Expanded bar: metrics + stepper (+ bid CTA) on top, flow content below. */
 function ExpandedBar({ journey }: { journey: JourneyState }) {
   const input = MOCK_JOURNEY_INPUTS[journey]
   return (
@@ -125,7 +118,6 @@ function ExpandedBar({ journey }: { journey: JourneyState }) {
   )
 }
 
-/** Replica of the pre-sale / ended compact bar. */
 function CompactPreview({
   lead,
   headline,
@@ -204,9 +196,6 @@ export default function DevStatesPage() {
           />
         </section>
 
-        {/* Awareness bar (touch devices or < lg windows): the REAL read-only body
-            per phase - no funnel CTA by design. The live bar swaps to it when the
-            funnel gate is off; preview it for real by resizing the window below lg. */}
         <section className="flex flex-col gap-3 border-t border-border pt-6">
           <p className="font-mono text-xs font-medium uppercase tracking-[0.2em] text-foreground">
             awareness bar (touch or &lt; lg) - read-only, per phase
@@ -234,10 +223,6 @@ export default function DevStatesPage() {
           ))}
         </section>
 
-        {/* The pre-sale + ended bar matrices render REAL components driven by the dev
-            overrides, so link to the live bar instead of duplicating its copy. The ended
-            bar's "View results" expands a panel that connects the WALLET, then shows the
-            settlement; the journey override seeds the mock commitment for that panel. */}
         <section className="flex flex-col gap-3 border-t border-border pt-6">
           <p className="font-mono text-xs font-medium uppercase tracking-[0.2em] text-foreground">
             pre-sale + ended bar states (drive the real bar)

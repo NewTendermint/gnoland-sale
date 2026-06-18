@@ -2,28 +2,22 @@ import "server-only"
 import type { FetchLike, ReadCommitmentDataResponse } from "@echoxyz/sonar-core"
 import { mockFixtures } from "./mock-fixtures"
 
-// TODO(real-data): demo-only, throwaway. Ramps the mock auction's totals over time
-// so the live metrics visibly move on each poll. To go real, return
-// mockFixtures.commitmentData directly and delete this. The per-entity Commitments
-// stay fixed (your own bid does not move; the market around it does).
+// TODO(real-data): demo-only, throwaway. Ramps the mock auction's totals over time. To go
+// real, return mockFixtures.commitmentData directly and delete this.
 function liveCommitmentData(): ReadCommitmentDataResponse {
   const base = mockFixtures.commitmentData
   const unit = 10 ** base.PaymentTokenDecimals
-  const t = Math.floor(Date.now() / 1000) % 3600 // ramps over an hour, then repeats
+  const t = Math.floor(Date.now() / 1000) % 3600
   return {
     ...base,
-    TotalCommitmentAmount: String(Math.round((1_200_000 + t * 400) * unit)), // +~$4k / 10s
-    UniqueCommitmentCount: 1247 + Math.floor(t / 20), // +1 bidder / 20s
-    // Starts at $0.10 and climbs $0.0005/min, capped at $0.1161 (18 increments):
-    // a real clearing can never exceed the $0.1290 hardcap, the ramp stays alive
-    // in dev (exercises the price-floor tracking), and the cap keeps two stepper
-    // steps of headroom.
+    TotalCommitmentAmount: String(Math.round((1_200_000 + t * 400) * unit)),
+    UniqueCommitmentCount: 1247 + Math.floor(t / 20),
+    // Capped at $0.1161, below the $0.1290 hardcap.
     ClearingPriceMicroUSD: String(Math.min(100_000 + Math.floor(t / 60) * 500, 116_100)),
   }
 }
 
-// Maps a Sonar SDK request path to its fixture. Paths are the RPC endpoints the
-// SDK posts to (verified in @echoxyz/sonar-core dist/index.cjs).
+// Maps a Sonar SDK request path to its fixture.
 function fixtureForPath(path: string): unknown {
   if (path.endsWith("read-commitment-data")) return liveCommitmentData()
   if (path.endsWith("PrePurchaseCheck")) return mockFixtures.prePurchase
@@ -35,13 +29,7 @@ function fixtureForPath(path: string): unknown {
   return {}
 }
 
-/**
- * A drop-in `fetch` for the Sonar SDK that returns local fixtures instead of
- * hitting the network. Injected into createClient({ fetch }) only when
- * SONAR_MOCK=1 in dev (see lib/sonar/client.ts). The entire real plumbing (SDK
- * parsing -> route handlers -> client hooks -> UI) runs unchanged; only the HTTP
- * response is a fixture. Swap to real Sonar = drop the flag + set real creds.
- */
+/** Drop-in `fetch` for the Sonar SDK that returns local fixtures (SONAR_MOCK=1, dev). */
 export const mockSonarFetch: FetchLike = async (input) => {
   const url = input instanceof URL ? input : new URL(String(input))
   return new Response(JSON.stringify(fixtureForPath(url.pathname)), {

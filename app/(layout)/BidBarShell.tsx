@@ -1,42 +1,66 @@
 "use client"
 
-/**
- * Shared sticky-bar primitives for the two BidPanel variants (desktop funnel /
- * awareness read-only): the fixed shell geometry, the card surface, the CTA
- * pill class, the compact status line and the paused kill-switch bar. Split out
- * of BidPanel.tsx when the bar gained an awareness variant
- * (docs/specs/2026-06-13-mobile-awareness-only-design.md).
- */
-import type { ReactNode } from "react"
+import { type ReactNode, useEffect, useRef } from "react"
 import { DrawLine } from "../(ui)/DrawLine"
 import { Icon } from "../(ui)/Icon"
+import { LG_MEDIA_QUERY } from "../../lib/device/breakpoints"
+import { useMediaQuery } from "../../lib/device/use-media-query"
+import { shouldAnimate } from "../../lib/motion/should-animate"
 import { SALE_ECONOMICS } from "../../lib/sale/economics"
 import { fmtCompactUsd, fmtCount, fmtPrice } from "../../lib/sale/format"
 import type { CommitmentData } from "../../lib/sale/types"
 import { Countdown } from "./Countdown"
 
-// Full-bleed fixed shell: spans the whole .screen width (inset only by the page
-// frame's --reveal-padding, so its edges sit on the .screen edges), like the
-// contrast tiles. The CARD background fills it; the .page-container inside re-contains
-// the content on the shared grid.
 export const SHELL =
   "bar-enter fixed bottom-[var(--reveal-padding)] left-[var(--reveal-padding)] right-[var(--reveal-padding)] z-[var(--z-sticky)]"
-// All four corners on --frame-radius: full-bleed, the bottom corners meet the
-// .screen's rounded bottom corners (same radius) so the frame stays seamless; the
-// top corners round against the page above.
-export const CARD = "overflow-hidden rounded-[var(--frame-radius)] bg-background"
+export const CARD =
+  "overflow-hidden rounded-[var(--frame-radius)] bg-background lg:mx-auto lg:max-w-[calc(var(--max-width-container)_-_4rem)] lg:rounded-b-none"
 export const CTA_PILL =
-  "btn-pan group inline-flex cursor-pointer items-center justify-center rounded-full border border-faint bg-surface-contrast px-7 py-3.5 text-xs font-bold uppercase tracking-[0.2em] text-on-contrast before:bg-on-contrast hover:text-surface-contrast"
+  "btn-pan group inline-flex cursor-pointer items-center justify-center rounded-full border border-faint bg-foreground px-7 py-3.5 text-xs font-bold uppercase tracking-[0.2em] text-background before:bg-background hover:text-foreground"
+
+const BAR_GROW_INSET = 4.25
+const BAR_GROW_PX = 300
+
+export function useBarGrow<T extends HTMLElement>() {
+  const ref = useRef<T>(null)
+  const wide = useMediaQuery(LG_MEDIA_QUERY)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    if (!shouldAnimate() || !wide) {
+      el.style.clipPath = ""
+      return
+    }
+    const scroller = document.querySelector<HTMLElement>(".screen") ?? document.documentElement
+    let raf = 0
+    const apply = () => {
+      raf = 0
+      const p = Math.min(scroller.scrollTop / BAR_GROW_PX, 1)
+      const x = (BAR_GROW_INSET * (1 - p)).toFixed(3)
+      el.style.clipPath = `inset(0 ${x}% 0 ${x}% round var(--frame-radius) var(--frame-radius) 0 0)`
+    }
+    const onScroll = () => {
+      if (!raf) raf = requestAnimationFrame(apply)
+    }
+    apply()
+    scroller.addEventListener("scroll", onScroll, { passive: true })
+    return () => {
+      scroller.removeEventListener("scroll", onScroll)
+      if (raf) cancelAnimationFrame(raf)
+      el.style.clipPath = ""
+    }
+  }, [wide])
+  return ref
+}
 
 export type BarMetric = { icon: string; value: ReactNode; label: string }
 
-/** Shared bar shell: full-bleed SHELL + CARD, content re-contained on the 12-col
- * grid (cols 2-11), so the bar's text lines up with the page sections above. */
 export function BarShell({ children }: { children: ReactNode }) {
+  const cardRef = useBarGrow<HTMLDivElement>()
   return (
     <aside aria-label="Bid panel" data-component="bid-panel" className={SHELL}>
-      <div className={CARD}>
-        <div className="page-container grid grid-cols-12 gap-6">
+      <div ref={cardRef} className={CARD}>
+        <div className="bar-content-enter grid grid-cols-12 gap-6 px-6 lg:px-0">
           <div className="band-10">{children}</div>
         </div>
       </div>
@@ -44,7 +68,6 @@ export function BarShell({ children }: { children: ReactNode }) {
   )
 }
 
-/** Compact status line shared by the pre-sale and awareness bars (gate-row pattern). */
 export function BarStatus({
   icon,
   title,
@@ -69,9 +92,6 @@ export function BarStatus({
   )
 }
 
-/** One read-only metric cell (value + label, optional leading icon) at the bar's
- * compact size. `compact` drops the icon so several cells fit on one mobile line.
- * Shared by the awareness bar (live + ended) and the desktop ended bar. */
 export function MetricCell({
   metric,
   compact = false,
@@ -88,8 +108,6 @@ export function MetricCell({
   )
 }
 
-/** Clock + countdown + caption, the bar's milestone block. `targetIso` / `caption`
- * are caller-computed (the next milestone differs by phase and journey). */
 export function BarCountdown({ targetIso, caption }: { targetIso: string; caption: string }) {
   return (
     <div className="flex items-center gap-3">
@@ -104,8 +122,6 @@ export function BarCountdown({ targetIso, caption }: { targetIso: string; captio
   )
 }
 
-/** The four live-auction metrics (clearing, time left, bidders, committed). One
- * source for both bars; "time left" is a live Countdown to the close. */
 export function liveMetrics(commitment: CommitmentData): BarMetric[] {
   return [
     {
@@ -123,9 +139,6 @@ export function liveMetrics(commitment: CommitmentData): BarMetric[] {
   ]
 }
 
-/** The three key live figures for the compact (mobile awareness) bar: clearing,
- * time left (no seconds, calmer), and total raised. Drops "Bidders" so the row
- * fits one line; uses "Raised" (as the ended bar does) for the committed total. */
 export function liveKeyMetrics(commitment: CommitmentData): BarMetric[] {
   return [
     {
@@ -142,7 +155,6 @@ export function liveKeyMetrics(commitment: CommitmentData): BarMetric[] {
   ]
 }
 
-/** The three settled metrics shown once the auction has ended. */
 export function finalMetrics(commitment: CommitmentData): BarMetric[] {
   return [
     { icon: "clearing", value: fmtPrice(commitment.clearingPriceUsd ?? 0), label: "Final price" },
@@ -151,11 +163,6 @@ export function finalMetrics(commitment: CommitmentData): BarMetric[] {
   ]
 }
 
-/**
- * Kill-switch bar (SALE_PAUSED, surfaced via the polled commitments feed): a
- * global override shown regardless of phase or device. The mutating routes
- * already 503. Placeholder copy, pending final wording.
- */
 export function PausedBar() {
   return (
     <BarShell>

@@ -1,14 +1,5 @@
 "use client"
 
-/**
- * Desktop (funnel-capable) sticky bid bar. Collapsed it shows the live metrics
- * (clearing, time-left, bidders, committed) plus the "Place a bid" CTA; clicking it
- * expands the bar upward into a panel hosting the BidFlow (connect -> verify -> bid
- * form -> submit). Escape or Close collapses it. Phase-driven: pre-sale and ended
- * render their own compact bars (BarShell). Data comes from useSale(). Only mounted
- * on funnel-capable contexts (see BidPanel.tsx dispatcher + lib/device/funnel-gate.ts);
- * the paused kill-switch lives in the dispatcher.
- */
 import { useQueryClient } from "@tanstack/react-query"
 import { useEffect, useRef } from "react"
 import { BidFlow } from "../(sections)/bid/BidFlow"
@@ -38,6 +29,7 @@ import {
   SHELL,
   finalMetrics,
   liveMetrics,
+  useBarGrow,
 } from "./BidBarShell"
 import { NewsletterForm } from "./NewsletterForm"
 import { useSale } from "./SaleProvider"
@@ -60,28 +52,19 @@ export function BidPanelDesktop() {
   const panelRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const wasExpanded = useRef(false)
-  // CTA page-load entrance: the pill scales in, then its label fades in. Lands on
-  // a wrapping <span> (not the button itself) because the button already carries
-  // triggerRef for focus management - one DOM node can hold only one ref.
   const ctaRef = useCtaEntrance<HTMLSpanElement>({ delayMs: 1250 })
+  const cardRef = useBarGrow<HTMLDivElement>()
 
-  // End the Sonar link (the pre-sale registered state's quiet escape hatch, e.g.
-  // wrong account). Refetching entity + position drops the journey to kyc-required.
   function handleSignOut() {
     postSonarLogout().then(
       () => {
         queryClient.invalidateQueries({ queryKey: ["sale", "entity"] })
         queryClient.invalidateQueries({ queryKey: ["sale", "my-bid"] })
       },
-      () => {
-        /* logout failed; the link stays and can be retried */
-      },
+      () => {},
     )
   }
 
-  // The expanded panel behaves like a disclosure/bottom-sheet: move focus into it on
-  // open, return focus to the trigger on close, and let Escape close it, so keyboard
-  // users are never stranded at the top of the document.
   useEffect(() => {
     if (expanded) {
       panelRef.current?.focus()
@@ -99,9 +82,6 @@ export function BidPanelDesktop() {
 
   if (phase === "pre-sale") {
     const barState = derivePreSaleBar(preSaleStage, journey, sonarReturn)
-    // One countdown, always to the user's NEXT milestone: registration opening
-    // first, then the sale opening - and a registered user's next milestone is
-    // the sale itself, whatever the stage.
     const countToSale = preSaleStage === "registration-open" || barState === "registered"
     return (
       <BarShell>
@@ -131,8 +111,6 @@ export function BidPanelDesktop() {
     return (
       <BarShell>
         <DrawLine immediate />
-        {/* Collapsed: global final metrics + one "View results" CTA. Like the live bar,
-            it expands into a panel that connects the wallet then shows the settlement. */}
         <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4 pb-6 pt-4 sm:pb-8 sm:pt-6">
           <div className="flex flex-wrap items-center gap-x-7 gap-y-3 sm:gap-x-9">
             <span className="status-pill">Closed</span>
@@ -141,23 +119,7 @@ export function BidPanelDesktop() {
             ))}
           </div>
           {expanded ? (
-            <button
-              type="button"
-              onClick={() => setExpanded(false)}
-              aria-label="Close"
-              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border text-muted transition-colors duration-300 hover:border-surface-contrast hover:bg-surface-contrast hover:text-on-contrast"
-            >
-              <svg
-                viewBox="0 0 16 16"
-                className="h-3.5 w-3.5"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                aria-hidden="true"
-              >
-                <path d="M3 3l10 10M13 3L3 13" strokeLinecap="round" />
-              </svg>
-            </button>
+            <CloseButton onClick={() => setExpanded(false)} />
           ) : (
             <button
               type="button"
@@ -174,8 +136,6 @@ export function BidPanelDesktop() {
           )}
         </div>
 
-        {/* Expanding settlement sheet, same grid-rows 0fr->1fr trick and easing as the
-            live panel: connect the wallet, then the per-bidder settlement + refund claim. */}
         <div
           className={`grid transition-[grid-template-rows] duration-500 ease-reveal motion-reduce:transition-none ${
             expanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
@@ -208,8 +168,8 @@ export function BidPanelDesktop() {
 
   return (
     <aside aria-label="Bid panel" data-component="bid-panel" className={SHELL}>
-      <div className={CARD}>
-        <div className="page-container grid grid-cols-12 gap-6">
+      <div ref={cardRef} className={CARD}>
+        <div className="bar-content-enter grid grid-cols-12 gap-6 px-6 lg:px-0">
           <Entrance className="band-10">
             <DrawLine immediate delayMs={200} />
             <div className="pb-6 pt-4 sm:pb-8 sm:pt-6">
@@ -255,23 +215,7 @@ export function BidPanelDesktop() {
                   {expanded ? (
                     <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
                       <FunnelSteps journey={journey} />
-                      <button
-                        type="button"
-                        onClick={() => setExpanded(false)}
-                        aria-label="Close"
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border text-muted transition-colors duration-300 hover:border-surface-contrast hover:bg-surface-contrast hover:text-on-contrast"
-                      >
-                        <svg
-                          viewBox="0 0 16 16"
-                          className="h-3.5 w-3.5"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="1.5"
-                          aria-hidden="true"
-                        >
-                          <path d="M3 3l10 10M13 3L3 13" strokeLinecap="round" />
-                        </svg>
-                      </button>
+                      <CloseButton onClick={() => setExpanded(false)} />
                     </div>
                   ) : (
                     <span ref={ctaRef} className="inline-flex">
@@ -296,13 +240,7 @@ export function BidPanelDesktop() {
           </Entrance>
         </div>
 
-        {/* Expanding sheet: the height animates 0 -> auto via the grid-rows 0fr/1fr
-            trick (the panel is always mounted so it has a height to grow into; `inert`
-            when collapsed keeps the hidden form out of the tab order). BidFlow's wagmi
-            hooks are passive subscriptions (no network / no auto-connect), so mounting
-            it early is cheap. Same easeOutExpo as the page's other motion; no
-            transition under prefers-reduced-motion. */}
-        <div className="page-container grid grid-cols-12 gap-6">
+        <div className="grid grid-cols-12 gap-6 px-6 lg:px-0">
           <div className="band-10">
             <div
               className={`grid transition-[grid-template-rows] duration-500 ease-reveal motion-reduce:transition-none ${
@@ -338,11 +276,28 @@ export function BidPanelDesktop() {
   )
 }
 
-/**
- * Pre-sale bar right cluster, one branch per derivePreSaleBar state: the stage ask
- * (newsletter capture / register CTA) unless the user already has a Sonar status to
- * show, with the OAuth-return error on top. See lib/sale/journey.ts.
- */
+function CloseButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label="Close"
+      className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border text-muted transition-colors duration-300 hover:border-surface-contrast hover:bg-surface-contrast hover:text-on-contrast"
+    >
+      <svg
+        viewBox="0 0 16 16"
+        className="h-3.5 w-3.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        aria-hidden="true"
+      >
+        <path d="M3 3l10 10M13 3L3 13" strokeLinecap="round" />
+      </svg>
+    </button>
+  )
+}
+
 function PreSaleRight({
   state,
   onRegister,
@@ -355,13 +310,11 @@ function PreSaleRight({
   switch (state) {
     case "notify":
       return newsletterEnabled() ? (
-        // items-start: the form's status line below would pull a centered round down.
         <div className="flex flex-wrap items-start gap-5">
           <NewsletterForm variant="bar" inputId="newsletter-email-bar" />
           <AddToCalendarButton milestone="registration" variant="bar" />
         </div>
       ) : (
-        // Feature intentionally off: state the next date, no dead CTA.
         <p className="text-sm text-muted">{`Sale opens ${formatSaleDate(SALE_ECONOMICS.saleOpensIso)}`}</p>
       )
     case "register":
@@ -439,7 +392,6 @@ function PreSaleRight({
         </div>
       )
     default:
-      // Compile-time exhaustiveness: a new PreSaleBarState must add a case here.
       return state satisfies never
   }
 }
