@@ -7,6 +7,9 @@ export const SUPPORTED_CHAIN_IDS: readonly number[] = [mainnet.id, sepolia.id]
 
 export const PRIMARY_CHAIN_ID = mainnet.id
 
+// Coinbase Wallet SDK + EIP-6963 browser-extension wallets (MetaMask, Keplr...) auto-discovered.
+// WalletConnect (mobile wallets via QR) is wired but DORMANT until NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID
+// is set; once set it appears automatically in ConnectChoices (no extra UI code).
 const wcProjectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID
 
 export const wagmiConfig = createConfig({

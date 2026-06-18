@@ -21,43 +21,52 @@
     "*.{ts,tsx,js,jsx,json}": ["biome check --apply"]
   },
   "dependencies": {
+    "@coinbase/wallet-sdk": "^4.3.7",
     "@echoxyz/sonar-core": "0.15.0",
     "@neondatabase/serverless": "^1.1.0",
     "@netlify/blobs": "^10.7.9",
-    "@tanstack/react-query": "^5.100.14",
+    "@tanstack/react-query": "^5.101.0",
+    "@walletconnect/ethereum-provider": "^2.23.9",
     "drizzle-orm": "^0.45.2",
     "gsap": "^3.15.0",
     "iron-session": "^8.0.4",
     "libsodium-wrappers": "^0.8.4",
     "next": "15.5.18",
     "next-themes": "^0.4.6",
-    "react": "19.0.0",
-    "react-dom": "19.0.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
     "server-only": "^0.0.1",
-    "viem": "^2.52.0",
-    "wagmi": "^2.19.5",
+    "viem": "^2.52.2",
+    "wagmi": "^3.6.17",
     "zod": "^4.4.3"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
-    "@netlify/plugin-nextjs": "^5.15.11",
+    "@netlify/plugin-nextjs": "^5.15.12",
     "@secretlint/secretlint-rule-preset-recommend": "^13.0.2",
-    "@tailwindcss/postcss": "^4.3.0",
+    "@tailwindcss/postcss": "^4.3.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@types/libsodium-wrappers": "^0.7.14",
     "@types/node": "22.9.0",
-    "@types/react": "19.0.1",
-    "@types/react-dom": "19.0.1",
-    "@vitest/ui": "^4.1.6",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitest/ui": "^4.1.9",
     "drizzle-kit": "^0.31.10",
     "husky": "^9.1.7",
     "jsdom": "^28.1.0",
     "lint-staged": "^16.4.0",
-    "postcss": "^8.5.14",
+    "postcss": "^8.5.15",
     "secretlint": "^13.0.2",
-    "tailwindcss": "^4.3.0",
-    "typescript": "5.7.2",
-    "vitest": "^4.1.6"
+    "tailwindcss": "^4.3.1",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.9"
+  },
+  "//overrides": "Security/compat pins for transitive deps until upstream ships the fix; re-review on each dep bump (Dependabot). 'ws ^8.21.0' patches the ws DoS GHSA-96hv-2xvq-fx4p pulled by viem's isows; the nested @walletconnect/jsonrpc-ws-connection keeps its own non-vulnerable ws@7 so WalletConnect is untouched.",
+  "overrides": {
+    "ws": "^8.21.0",
+    "@walletconnect/jsonrpc-ws-connection": {
+      "ws": "^7.5.1"
+    }
   }
 }
