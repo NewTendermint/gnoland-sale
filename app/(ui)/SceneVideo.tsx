@@ -19,6 +19,9 @@ const EASE_CLIP = "cubic-bezier(0.22, 1, 0.36, 1)" // keep in sync with useClipO
 const SCALE_REST = 1.3 // == SceneImage's scale-[1.3]
 const SCALE_FROM = 1.16
 const FADE_MS = 250
+// Start the video this long before sliding the grey cover, so a decoder cold-start stutters
+// behind the cover (out of view), not on screen.
+const COVER_LEAD_MS = 70
 
 export function SceneVideo({
   sources,
@@ -46,22 +49,32 @@ export function SceneVideo({
       return
     }
     setArmed(true)
+    let timer = 0
+    let coverTimer = 0
     const reveal = () => {
-      setRevealed(true)
+      // Play first, then slide the grey cover a beat later (COVER_LEAD_MS) so a decoder
+      // cold-start stutters behind the cover, not in view.
       setVideoShown(true)
       setPlaying(true)
+      coverTimer = window.setTimeout(() => setRevealed(true), COVER_LEAD_MS)
     }
-    let timer = 0
     if (immediate) {
       setPreload(true)
       timer = window.setTimeout(reveal, innerDelayMs)
       return () => {
         clearTimeout(timer)
+        clearTimeout(coverTimer)
         clearTimeout(fadeTimer.current)
       }
     }
-    // Buffer the <video> ~1 viewport before the slot scrolls in, so it plays with no poster
-    // gap when the reveal fires (instead of starting to load only at the reveal).
+    // Preload the video EARLY: during the first idle window after the hero loads (NOT when the
+    // slot is displayed), so every scene is already buffered and plays instantly at its reveal.
+    // Low priority (idle) so it never competes with the hero. The approach observer is a
+    // fallback for a scroll that beats the idle callback.
+    const supportsIdle = typeof requestIdleCallback === "function"
+    const idleId = supportsIdle
+      ? requestIdleCallback(() => setPreload(true), { timeout: 2500 })
+      : window.setTimeout(() => setPreload(true), 1500)
     const preloadIo = new IntersectionObserver(
       ([e]) => {
         if (e?.isIntersecting) {
@@ -77,9 +90,12 @@ export function SceneVideo({
       timer = window.setTimeout(reveal, innerDelayMs)
     })
     return () => {
+      if (supportsIdle) cancelIdleCallback(idleId)
+      else clearTimeout(idleId)
       preloadIo.disconnect()
       stop()
       clearTimeout(timer)
+      clearTimeout(coverTimer)
       clearTimeout(fadeTimer.current)
     }
   }, [innerDelayMs, immediate])
