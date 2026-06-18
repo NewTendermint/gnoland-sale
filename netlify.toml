@@ -24,6 +24,14 @@
     Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
     Strict-Transport-Security = "max-age=63072000; includeSubDomains; preload"
 
+# Versioned media (?v=N cache-busted): the file at a given URL never changes, so cache it
+# immutably - repeat visits and re-views never re-fetch or revalidate the videos/posters.
+# (Bump ?v= when re-baking an asset, as the scene-video pipeline already does.)
+[[headers]]
+  for = "/sprites/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
 # State-preview overrides (?phase / ?registration / ?journey + /dev/states) in
 # production builds. Active in EVERY context while the site is a staging
 # preview so states are reviewable on the shared URL.
