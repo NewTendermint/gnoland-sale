@@ -47,7 +47,10 @@ body {
   font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
 }
 
-body {
+/* The editorial frame is un-framed (full-bleed) until the page is ready, then grows in: on
+   desktop the moment the loading cover is removed (data-app-ready), elsewhere on mount. Default
+   state matches each animation's `from`, so arming the grow never snaps. */
+html[data-app-ready] body {
   padding: var(--reveal-padding);
   animation: frame-pad-in 1000ms var(--ease-reveal) both;
 }
@@ -64,12 +67,16 @@ body {
 .screen {
   background-color: var(--background);
   color: var(--foreground);
-  height: calc(100vh - var(--reveal-padding) * 2);
+  height: 100vh;
   border-radius: var(--frame-radius);
   position: relative;
   z-index: 1;
   overflow: hidden auto;
   scrollbar-width: none;
+}
+
+html[data-app-ready] .screen {
+  height: calc(100vh - var(--reveal-padding) * 2);
   animation: frame-screen-in 1000ms var(--ease-reveal) both;
 }
 
@@ -82,19 +89,48 @@ body {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  body,
-  .screen {
-    animation: none;
-  }
-}
-
 .screen::-webkit-scrollbar {
   display: none;
 }
 
+/* Scroll frozen while the desktop loading cover is up. */
+.screen.is-loading {
+  overflow: hidden;
+}
+
+/* Desktop loading cover (Loader.tsx): opaque, theme-coloured, on top of everything until the
+   hero buffers. */
+.loader-cover {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background-color: var(--background);
+  /* Failsafe: the JS path removes it well before this fires; if hydration ever crashes on
+     desktop, this still hides it so the page is never permanently blocked. */
+  animation: loader-failsafe 200ms linear 5s forwards;
+}
+
+@keyframes loader-failsafe {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+/* Desktop-only (mirrors shouldAnimate): never paint the cover on touch / coarse pointer /
+   reduced-motion / below lg, so those contexts reveal immediately with no cover flash. */
+@media (hover: none), (pointer: coarse), (prefers-reduced-motion: reduce), (max-width: 63.999rem) {
+  .loader-cover {
+    display: none;
+  }
+}
+
 @supports (height: 100dvh) {
   .screen {
+    height: 100dvh;
+  }
+
+  html[data-app-ready] .screen {
     height: calc(100dvh - var(--reveal-padding) * 2);
     animation: frame-screen-in-dvh 1000ms var(--ease-reveal) both;
   }
@@ -106,6 +142,15 @@ body {
     to {
       height: calc(100dvh - var(--reveal-padding) * 2);
     }
+  }
+}
+
+/* Reduced-motion: no frame-grow. Placed after every animation rule (incl. the dvh one above) so
+   it wins on equal specificity. */
+@media (prefers-reduced-motion: reduce) {
+  html[data-app-ready] body,
+  html[data-app-ready] .screen {
+    animation: none;
   }
 }
 

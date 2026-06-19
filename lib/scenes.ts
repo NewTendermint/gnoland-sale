@@ -7,7 +7,7 @@ export const sceneVideos = {
       { src: "/sprites/vault-spin-2s.webm?v=4", type: "video/webm; codecs=vp9" },
       { src: "/sprites/vault-spin-2s.mp4?v=4", type: "video/mp4; codecs=avc1.640020" },
     ],
-    poster: "/sprites/vault-spin-2s.poster.jpg?v=7",
+    poster: "/sprites/vault-spin-2s.poster.jpg?v=8",
     innerDelayMs: 1100,
   },
   narrativeA: {
@@ -16,7 +16,7 @@ export const sceneVideos = {
       { src: "/sprites/village-spin-2s.webm?v=4", type: "video/webm; codecs=vp9" },
       { src: "/sprites/village-spin-2s.mp4?v=4", type: "video/mp4; codecs=avc1.640020" },
     ],
-    poster: "/sprites/village-spin-2s.poster.jpg?v=7",
+    poster: "/sprites/village-spin-2s.poster.jpg?v=8",
   },
   narrativeB: {
     sources: [
@@ -24,7 +24,7 @@ export const sceneVideos = {
       { src: "/sprites/village-macro-2s.webm?v=5", type: "video/webm; codecs=vp9" },
       { src: "/sprites/village-macro-2s.mp4?v=5", type: "video/mp4; codecs=avc1.640020" },
     ],
-    poster: "/sprites/village-macro-2s.poster.jpg?v=7",
+    poster: "/sprites/village-macro-2s.poster.jpg?v=8",
   },
   features: {
     sources: [
@@ -32,7 +32,7 @@ export const sceneVideos = {
       { src: "/sprites/mine-spin-2s.webm?v=4", type: "video/webm; codecs=vp9" },
       { src: "/sprites/mine-spin-2s.mp4?v=4", type: "video/mp4; codecs=avc1.640020" },
     ],
-    poster: "/sprites/mine-spin-2s.poster.jpg?v=7",
+    poster: "/sprites/mine-spin-2s.poster.jpg?v=8",
   },
   gnotUtility: {
     sources: [
@@ -40,7 +40,7 @@ export const sceneVideos = {
       { src: "/sprites/bridge-spin-2s.webm?v=5", type: "video/webm; codecs=vp9" },
       { src: "/sprites/bridge-spin-2s.mp4?v=5", type: "video/mp4; codecs=avc1.640020" },
     ],
-    poster: "/sprites/bridge-spin-2s.poster.jpg?v=7",
+    poster: "/sprites/bridge-spin-2s.poster.jpg?v=8",
   },
   partnersA: {
     sources: [
@@ -48,7 +48,7 @@ export const sceneVideos = {
       { src: "/sprites/tree-spin-cubic.webm?v=1", type: "video/webm; codecs=vp9" },
       { src: "/sprites/tree-spin-cubic.mp4?v=1", type: "video/mp4; codecs=avc1.640020" },
     ],
-    poster: "/sprites/tree-spin-cubic.poster.jpg?v=7",
+    poster: "/sprites/tree-spin-cubic.poster.jpg?v=8",
   },
   partnersB: {
     sources: [
@@ -56,6 +56,6 @@ export const sceneVideos = {
       { src: "/sprites/tree-macro-cubic.webm?v=1", type: "video/webm; codecs=vp9" },
       { src: "/sprites/tree-macro-cubic.mp4?v=1", type: "video/mp4; codecs=avc1.640020" },
     ],
-    poster: "/sprites/tree-macro-cubic.poster.jpg?v=7",
+    poster: "/sprites/tree-macro-cubic.poster.jpg?v=8",
   },
 } satisfies Record<string, SceneVideoProps>

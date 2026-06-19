@@ -1,6 +1,7 @@
 "use client"
 
 import { createContext, useContext, useEffect, useMemo, useRef } from "react"
+import { whenReady } from "./app-ready"
 import { shouldAnimate } from "./should-animate"
 
 // Coordinated scroll reveal: members share one trigger and cascade in visual order.
@@ -74,8 +75,12 @@ export function wireReveal(
   },
 ): () => void {
   if (o.immediate) {
-    const cancel = doubleRaf(() => reveal(0))
+    let cancel = () => {}
+    const off = whenReady(() => {
+      cancel = doubleRaf(() => reveal(0))
+    })
     return () => {
+      off()
       cancel()
       reset()
     }

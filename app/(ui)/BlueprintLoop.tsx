@@ -37,7 +37,7 @@ export function BlueprintLoop() {
           muted
           loop
           playsInline
-          poster="/sprites/blueprint-loop.poster.jpg?v=7"
+          poster="/sprites/blueprint-loop.poster.jpg?v=8"
           className="block w-full opacity-40 mix-blend-difference"
         >
           <source src="/sprites/blueprint-loop.mp4?v=6" type="video/mp4" />

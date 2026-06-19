@@ -3,6 +3,7 @@
 import { useContext, useEffect, useRef } from "react"
 import { LG_MEDIA_QUERY } from "../device/breakpoints"
 import { useMediaQuery } from "../device/use-media-query"
+import { whenReady } from "./app-ready"
 import { loadEngine } from "./engine"
 import { RevealGroupContext, doubleRaf, observeReveal, wireReveal } from "./reveal-group"
 import { shouldAnimate } from "./should-animate"
@@ -184,8 +185,17 @@ export function useReveal<T extends HTMLElement>({
     let played = false
     if (immediate) el.style.visibility = "hidden"
     loadEngine()
-      .then(({ SplitText }) => {
+      .then(async ({ SplitText }) => {
         if (killed || !ref.current) return
+        // Split AFTER fonts load. With display:swap the fallback font renders first, then Geist
+        // swaps in and autoSplit re-splits on the reflow; a re-split landing after the reveal has
+        // played drops into the `played` branch below and shows the text in its end state with no
+        // animation (intermittent, Firefox font-load timing). Capped so a hung fonts.ready never
+        // strands the text hidden.
+        if (document.fonts?.ready) {
+          await Promise.race([document.fonts.ready, new Promise((r) => setTimeout(r, 600))])
+          if (killed || !ref.current) return
+        }
         split = SplitText.create(el, {
           type: type,
           mask: type,
@@ -313,8 +323,12 @@ export function useStagger<T extends HTMLElement>({
       }
     }
     if (immediate) {
-      const cancel = doubleRaf(show)
+      let cancel = () => {}
+      const off = whenReady(() => {
+        cancel = doubleRaf(show)
+      })
       return () => {
+        off()
         cancel()
         reset()
       }
@@ -539,19 +553,23 @@ export function useClipOpen<T extends HTMLElement>({
       const opened = `inset(0 0 0 0 round ${rad})`
       el.style.clipPath = closed
       el.style.willChange = "clip-path"
-      const anim = el.animate([{ clipPath: closed }, { clipPath: opened }], {
-        duration: durationMs,
-        delay: delayMs,
-        easing: EASE_CLIP,
-        fill: "both",
+      let anim: Animation | undefined
+      const off = whenReady(() => {
+        anim = el.animate([{ clipPath: closed }, { clipPath: opened }], {
+          duration: durationMs,
+          delay: delayMs,
+          easing: EASE_CLIP,
+          fill: "both",
+        })
+        anim.onfinish = () => {
+          el.style.clipPath = opened
+          el.style.willChange = ""
+          anim?.cancel()
+        }
       })
-      anim.onfinish = () => {
-        el.style.clipPath = opened
-        el.style.willChange = ""
-        anim.cancel()
-      }
       return () => {
-        anim.cancel()
+        off()
+        anim?.cancel()
         el.style.clipPath = ""
         el.style.willChange = ""
       }
@@ -608,11 +626,14 @@ export function useCtaEntrance<T extends HTMLElement>({
       label.style.opacity = "0"
       label.style.transition = `opacity ${textDurationMs}ms ease ${delayMs + scaleDurationMs}ms`
     }
-    void btn.offsetWidth
-    btn.style.transform = "scale(1)"
-    btn.style.opacity = "1"
-    if (label) label.style.opacity = "1"
+    const off = whenReady(() => {
+      void btn.offsetWidth
+      btn.style.transform = "scale(1)"
+      btn.style.opacity = "1"
+      if (label) label.style.opacity = "1"
+    })
     return () => {
+      off()
       btn.style.transform = ""
       btn.style.opacity = ""
       btn.style.transition = ""

@@ -10,13 +10,13 @@ export function Hero() {
   return (
     <section
       id="hero"
-      className="relative flex min-h-[calc(100vh-32px)] flex-col items-center bg-background text-foreground"
+      className="relative flex flex-col items-center bg-background text-foreground lg:min-h-[calc(100vh-32px)]"
     >
       {/* Fetch the hero scene poster (the largest first-paint asset) as early as possible.
           React 19 hoists this <link> into <head>, ahead of the deep <img> in the DOM. */}
       <link rel="preload" as="image" href={sceneVideos.hero.poster} fetchPriority="high" />
 
-      <div className="page-container flex w-full flex-col items-center pt-28 lg:pt-[15vh]">
+      <div className="page-container flex w-full flex-col items-center pt-40 lg:pt-[15vh]">
         <Entrance className="flex w-full flex-col items-center text-center">
           <Reveal
             as="h1"

@@ -3,6 +3,7 @@ import localFont from "next/font/local"
 import type { ReactNode } from "react"
 import { Footer } from "./(layout)/Footer"
 import { Header } from "./(layout)/Header"
+import { Loader } from "./(layout)/Loader"
 import { ThemeProvider } from "./(layout)/ThemeProvider"
 import { Web3Provider } from "./(layout)/Web3Provider"
 
@@ -49,10 +50,15 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="en" className={`${geist.variable} ${geistMono.variable}`} suppressHydrationWarning>
       <head>
         <noscript>
-          <style>{"[data-entrance]{visibility:visible!important}"}</style>
+          <style>
+            {
+              "[data-entrance]{visibility:visible!important}.loader-cover{display:none!important}body{padding:var(--reveal-padding)!important}.screen{height:calc(100vh - var(--reveal-padding) * 2)!important}"
+            }
+          </style>
         </noscript>
       </head>
       <body>
+        <Loader />
         <ThemeProvider>
           <Web3Provider>
             <a href="#main" className="skip-link">

@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
+import { signalHeroMediaReady, whenReady } from "../../lib/motion/app-ready"
 import { observeReveal } from "../../lib/motion/reveal-group"
 import { shouldAnimate } from "../../lib/motion/should-animate"
 import { useInnerParallax } from "../../lib/motion/use-inner-parallax"
@@ -59,9 +60,14 @@ export function SceneVideo({
       coverTimer = window.setTimeout(() => setRevealed(true), COVER_LEAD_MS)
     }
     if (immediate) {
+      // Buffer the hero video NOW (the Loader waits on its canplaythrough), but hold the reveal
+      // until the loading cover dismisses (whenReady), so the spin plays on a clean stage.
       setPreload(true)
-      timer = window.setTimeout(reveal, innerDelayMs)
+      const off = whenReady(() => {
+        timer = window.setTimeout(reveal, innerDelayMs)
+      })
       return () => {
+        off()
         clearTimeout(timer)
         clearTimeout(coverTimer)
         clearTimeout(fadeTimer.current)
@@ -150,6 +156,7 @@ export function SceneVideo({
               playsInline
               preload="auto"
               onEnded={onEnded}
+              onCanPlayThrough={immediate ? () => signalHeroMediaReady() : undefined}
               style={{ opacity: videoShown ? 1 : 0, transition: `opacity ${FADE_MS}ms ease` }}
               className="absolute inset-0 h-full w-full object-cover"
             >
