@@ -17,7 +17,7 @@ export type SceneVideoProps = {
 }
 
 const EASE_CLIP = "cubic-bezier(0.22, 1, 0.36, 1)" // keep in sync with useClipOpen's EASE_CLIP
-const SCALE_REST = 1.3 // == SceneImage's scale-[1.3]
+const SCALE_REST = 1.25 // == SceneImage's scale-[1.25] (slight de-zoom; stays >= parallax headroom)
 const SCALE_FROM = 1.16
 const FADE_MS = 250
 // Start the video this long before sliding the grey cover, so a decoder cold-start stutters

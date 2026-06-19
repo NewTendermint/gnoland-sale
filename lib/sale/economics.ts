@@ -15,9 +15,9 @@ export const SALE_ECONOMICS = {
   bidIncrementUsd: 0.00645,
   mainnetIso: "2026-09-01T00:00:00Z",
   multipleWalletsPerEntity: true,
-  registrationOpensIso: process.env.NEXT_PUBLIC_REGISTRATION_OPENS ?? "2026-07-01T00:00:00Z",
-  saleOpensIso: process.env.NEXT_PUBLIC_SALE_OPENS ?? "2026-07-15T00:00:00Z", // TIME still TBD (param #14)
-  saleClosesIso: process.env.NEXT_PUBLIC_SALE_CLOSES ?? "2026-07-21T00:00:00Z",
+  registrationOpensIso: process.env.NEXT_PUBLIC_REGISTRATION_OPENS ?? "2026-07-06T00:00:00Z",
+  saleOpensIso: process.env.NEXT_PUBLIC_SALE_OPENS ?? "2026-07-20T00:00:00Z", // TIME still TBD (param #14)
+  saleClosesIso: process.env.NEXT_PUBLIC_SALE_CLOSES ?? "2026-07-26T00:00:00Z",
 } as const
 
 /** Display a sale ISO date, e.g. "July 15, 2026" (UTC-fixed so SSR and client agree). */

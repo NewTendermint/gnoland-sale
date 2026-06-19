@@ -32,7 +32,7 @@ export function Hero() {
             as="p"
             immediate
             delayMs={500}
-            className="mt-6 max-w-4xl text-2xl font-bold leading-snug text-foreground lg:mt-8 lg:text-3xl"
+            className="mt-6 max-w-4xl text-2xl font-bold leading-snug text-muted lg:mt-8 lg:text-3xl"
           >
             The native token of Gno.land, the next-generation smart contract platform powered by
             Gno.

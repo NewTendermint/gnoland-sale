@@ -5,6 +5,8 @@
  * copy. This module mirrors that copy for the build (dev-facing).
  */
 
+import { SALE_ECONOMICS, formatSaleDate } from "../../lib/sale/economics"
+
 export type PositionMetric = {
   icon: string
   value: string
@@ -38,7 +40,10 @@ export const termGroups: Array<{
       { label: "Sale allocation", value: "77,500,000 GNOT (~5.8% of supply)" },
       { label: "Sale format", value: "Uniform Price Auction (English Auction)" },
       { label: "Accepted currency", value: "USDC (Ethereum Mainnet)" },
-      { label: "Contribution window", value: "July 15 - July 21, 2026" },
+      {
+        label: "Contribution window",
+        value: `${formatSaleDate(SALE_ECONOMICS.saleOpensIso, false)} - ${formatSaleDate(SALE_ECONOMICS.saleClosesIso)}`,
+      },
       { label: "Expected mainnet launch", value: "Q3 2026" },
     ],
   },

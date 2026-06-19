@@ -127,8 +127,8 @@ Refined metric definitions (from the team xlsx, 2026-06-01), mapped to the Sonar
 | FDV at clearing | $86M to $172M (floor to hardcap) | ✅ confirmed 2026-06-13 |
 | Unlock schedule | 7% released on mainnet launch (the day GNOT becomes transferable), 7% released each subsequent month, and 9% in the final month - fully vested 13 months after mainnet launch | ✅ |
 | Allocation (% of total supply) | 31,000,000 GNOT (2.32% of the 1.333B total supply) | ✅ (see discrepancy note) |
-| Registration opens | July 1, 2026 | ✅ |
-| Contribution window | Opens July 15, 2026 · until close or hardcap | ✅ confirmed 2026-06-13 |
+| Registration opens | July 6, 2026 | ✅ |
+| Contribution window | Opens July 20, 2026 · until close or hardcap | ✅ confirmed 2026-06-13 |
 | Accepted currency | USDC (USDT technically supported by the contract; default USDC) | 🟡 |
 | Mainnet / distribution | September 1, 2026 (transfers enabled, listings, distribution) | ✅ confirmed 2026-06-13 |
 | US participants | Accredited investors only, 1-year lockup (stack vs overlay interaction OPEN, A.15) | ✅ confirmed 2026-06-13 |
@@ -192,7 +192,7 @@ Refined metric definitions (from the team xlsx, 2026-06-01), mapped to the Sonar
 3. **Bid** - Set your max price and commit USDC.
 4. **Distribution** - Tokens are distributed to your address. Token lockup is applied according to schedule.
 
-**Source xls note (2026-06-01)**: "Add link to Sonar registration website." The Verify step's CTA links to the Sonar registration/OAuth URL (the `#register` anchor today is a placeholder; real URL comes with the `clientUUID` from the Founder Dashboard, REQUIREMENTS A.2). Registration opens **July 1, 2026**, two weeks before the sale opens (July 15) - the pre-sale phase should push registration during this window.
+**Source xls note (2026-06-01)**: "Add link to Sonar registration website." The Verify step's CTA links to the Sonar registration/OAuth URL (the `#register` anchor today is a placeholder; real URL comes with the `clientUUID` from the Founder Dashboard, REQUIREMENTS A.2). Registration opens **July 6, 2026**, two weeks before the sale opens (July 20) - the pre-sale phase should push registration during this window.
 
 **Design note**: Each step is a card in a 4-col grid (uniform widths, NOT Bento), with an icon-in-circle on top + title + body. Layer 4 swaps the placeholder numbered circle for a detoured voxel icon per step.
 
@@ -437,9 +437,9 @@ AtomOne is a community-driven, constitutionally governed blockchain prioritizing
 
 1. **How does the auction work?** - This is a uniform price auction: every winner pays the same final clearing price. You set the maximum price you are willing to pay and the amount you commit; if the final clearing price ends at or below your maximum, you receive tokens at the clearing price, not at your maximum. Bidding stops early if the $0.129 hardcap is reached. (price dynamic from economics)
 2. **What happens if I get outbid?** - You can raise your bid at any time while the sale is open. If the final clearing price ends above your maximum, you do not receive tokens and your committed funds become refundable once the sale settles.
-3. **What is Sonar and why do I need to verify my identity?** - This is a regulated public sale, so every participant completes a one-time identity verification (about 3 minutes) with Sonar, the compliance platform by Echo. Reviews are asynchronous and can take time, so register early - registration opens July 1, 2026, two weeks before the sale. (dates dynamic from economics)
+3. **What is Sonar and why do I need to verify my identity?** - This is a regulated public sale, so every participant completes a one-time identity verification (about 3 minutes) with Sonar, the compliance platform by Echo. Reviews are asynchronous and can take time, so register early - registration opens July 6, 2026, two weeks before the sale. (dates dynamic from economics)
 4. **Who can participate?** - Eligibility depends on your jurisdiction and is checked during Sonar verification. The sale is not available in some regions; if yours is restricted, Sonar will tell you during registration. US participants: accredited investors only, with a one-year lockup.
-5. **What do I need to place a bid?** - A verified Sonar account, a self-custody wallet connected to Ethereum, and USDC to commit. Get these ready before the sale opens July 15 - funding a wallet on sale day is the most common delay. (date dynamic)
+5. **What do I need to place a bid?** - A verified Sonar account, a self-custody wallet connected to Ethereum, and USDC to commit. Get these ready before the sale opens July 20 - funding a wallet on sale day is the most common delay. (date dynamic)
 6. **How much can I commit?** - Bids run from $0.0645 to $0.129 per GNOT in $0.00645 steps - the form starts you at the cheapest price that is currently winning, and you move one step at a time. Commitments run between $100 and $100,000 per participant. (numbers dynamic from economics; min commitment $100 confirmed 2026-06-15; price band confirmed 2026-06-13)
 7. **When do I receive my tokens?** - Distribution begins September 1, 2026, when transfers are enabled at mainnet. Tokens are sent to your wallet with the unlock schedule applied: 7% unlocks at launch, then 7% each month, with the final 9% in month 13. No cliff. (date dynamic from economics; matches #4b vesting)
 8. **Can I withdraw my bid?** - No. A bid can be raised, never lowered or withdrawn while the sale runs. If your maximum ends below the final clearing price, your committed funds become refundable at settlement.
@@ -477,7 +477,7 @@ AtomOne is a community-driven, constitutionally governed blockchain prioritizing
 To finalize before launch, we need from the team:
 
 1. **Token economics** (#3): mostly IN as of 2026-06-01 (price $0.0645, raise $2M, FDV $86M, unlock schedule, allocation 31M / 2.32%). Still provisional: min/max commitment ($200 / $100k, await Dongwon).
-2. **Dates** (#3): registration opens July 1, sale opens July 15, 2026. End date intentionally vague (sale may be extended - REQUIREMENTS A.12.2).
+2. **Dates** (#3): registration opens July 6, sale opens July 20, 2026. End date intentionally vague (sale may be extended - REQUIREMENTS A.12.2).
 3. **Tokenomics pie chart** (#4): final allocation breakdown
 4. **Legal PDF** (#4, #16): ToS + token disclosure + risk disclosure
 5. **Audit PDF** (#4): smart contract audit (Sonar's contract - request from them)

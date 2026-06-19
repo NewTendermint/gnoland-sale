@@ -25,7 +25,7 @@ export function SceneImage({
   const objectPosition = `${focusX}% center`
   const loading = priority ? "eager" : "lazy"
   const fetchPriority = priority ? "high" : "auto"
-  const imgClass = "absolute inset-0 h-full w-full scale-[1.3] object-cover"
+  const imgClass = "absolute inset-0 h-full w-full scale-[1.25] object-cover"
   return (
     <div ref={driftRef} className="absolute inset-0">
       <img

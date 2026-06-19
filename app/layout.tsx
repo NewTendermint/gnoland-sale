@@ -1,4 +1,5 @@
 import "./globals.css"
+import { SALE_ECONOMICS, formatSaleDate } from "@/lib/sale/economics"
 import localFont from "next/font/local"
 import type { ReactNode } from "react"
 import { Footer } from "./(layout)/Footer"
@@ -21,10 +22,9 @@ const geistMono = localFont({
   display: "swap",
 })
 
-// OG image asset pending (REQUIREMENTS B23); add `images` to openGraph + twitter when it lands.
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://sale.gno.land"
-const TITLE = "GNOT Public Token Sale - Gno.land"
-const DESCRIPTION = "The native token for Gno.land - Layer 1 smart contract platform."
+const TITLE = "GNOT Token Sale | Gno.land"
+const DESCRIPTION = `GNOT is the native token of Gno.land, a transparent, composable smart contract platform by the makers of Cosmos and Tendermint. Join the public token sale starting ${formatSaleDate(SALE_ECONOMICS.saleOpensIso)}.`
 
 export const metadata = {
   metadataBase: new URL(SITE_URL),
@@ -37,12 +37,61 @@ export const metadata = {
     url: "/",
     siteName: "GNOT Public Token Sale",
     type: "website",
+    images: [
+      {
+        url: "/og.jpg",
+        width: 1200,
+        height: 630,
+        type: "image/jpeg",
+        alt: "GNOT Public Token Sale",
+      },
+    ],
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: TITLE,
     description: DESCRIPTION,
+    images: [{ url: "/og.jpg", alt: "GNOT Public Token Sale" }],
   },
+}
+
+export const viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
+  ],
+}
+
+// Structured data (Organization + WebSite). Rendered as a <script> text child, never via
+// dangerouslySetInnerHTML; values are clean (no HTML-special chars to escape).
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": `${SITE_URL}/#org`,
+      name: "NewTendermint",
+      url: "https://newtendermint.org",
+      subOrganization: { "@id": `${SITE_URL}/#product` },
+    },
+    {
+      "@type": "Organization",
+      "@id": `${SITE_URL}/#product`,
+      name: "gno.land",
+      url: "https://gno.land",
+      logo: `${SITE_URL}/icon-512x512.png`,
+      parentOrganization: { "@id": `${SITE_URL}/#org` },
+    },
+    {
+      "@type": "WebSite",
+      "@id": `${SITE_URL}/#website`,
+      name: TITLE,
+      url: SITE_URL,
+      description: DESCRIPTION,
+      inLanguage: "en",
+      publisher: { "@id": `${SITE_URL}/#org` },
+    },
+  ],
 }
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -56,6 +105,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             }
           </style>
         </noscript>
+        <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
       </head>
       <body>
         <Loader />

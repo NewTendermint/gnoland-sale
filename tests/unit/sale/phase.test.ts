@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest"
+import { SALE_ECONOMICS } from "../../../lib/sale/economics"
 import { resolvePreSaleStage, resolveSalePhase } from "../../../lib/sale/phase"
 
 describe("resolveSalePhase", () => {
@@ -28,12 +29,12 @@ describe("resolveSalePhase", () => {
 
 describe("resolvePreSaleStage", () => {
   it("is registration-open at or after registration opens", () => {
-    expect(resolvePreSaleStage(new Date("2026-07-01T00:00:00Z").getTime())).toBe(
+    expect(resolvePreSaleStage(new Date(SALE_ECONOMICS.registrationOpensIso).getTime())).toBe(
       "registration-open",
     )
-    expect(resolvePreSaleStage(new Date("2026-07-10T00:00:00Z").getTime())).toBe(
-      "registration-open",
-    )
+    expect(
+      resolvePreSaleStage(new Date(SALE_ECONOMICS.registrationOpensIso).getTime() + 86_400_000),
+    ).toBe("registration-open")
   })
   it("is registration-closed before registration opens", () => {
     expect(resolvePreSaleStage(new Date("2026-06-01T00:00:00Z").getTime())).toBe(

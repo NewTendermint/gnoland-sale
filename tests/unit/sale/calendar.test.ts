@@ -9,8 +9,8 @@ describe("buildMilestoneIcs", () => {
   it("builds the registration-opening all-day event", () => {
     const { filename, ics } = buildMilestoneIcs("registration", stampMs)
     expect(filename).toBe("gnot-registration-opens.ics")
-    expect(ics).toContain("DTSTART;VALUE=DATE:20260701")
-    expect(ics).toContain("DTEND;VALUE=DATE:20260702")
+    expect(ics).toContain("DTSTART;VALUE=DATE:20260706")
+    expect(ics).toContain("DTEND;VALUE=DATE:20260707")
     expect(ics).toContain("SUMMARY:GNOT sale registration opens")
     expect(ics).toContain("UID:gnot-registration@sale.gno.land")
   })
@@ -18,8 +18,8 @@ describe("buildMilestoneIcs", () => {
   it("builds the sale-opening all-day event", () => {
     const { filename, ics } = buildMilestoneIcs("sale", stampMs)
     expect(filename).toBe("gnot-sale-opens.ics")
-    expect(ics).toContain("DTSTART;VALUE=DATE:20260715")
-    expect(ics).toContain("DTEND;VALUE=DATE:20260716")
+    expect(ics).toContain("DTSTART;VALUE=DATE:20260720")
+    expect(ics).toContain("DTEND;VALUE=DATE:20260721")
     expect(ics).toContain("SUMMARY:GNOT public sale opens")
   })
 
