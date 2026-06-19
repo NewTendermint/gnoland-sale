@@ -48,7 +48,11 @@
 # Production targets sale.gno.land and Sonar prod + Ethereum mainnet.
 # Preview deploys hit Sonar sandbox + Sepolia (set per Netlify dashboard).
 [context.production.environment]
-  NEXT_PUBLIC_SITE_URL = "https://sale.gno.land"
+  # TEMP: the sale.gno.land custom domain is not attached yet; the prod build is served at
+  # gnoland-sonar.netlify.app, so OG image / canonical / og:url / sitemap / JSON-LD must use it
+  # or they resolve to a dead sale.gno.land. !! REVERT to "https://sale.gno.land" once the
+  # domain is attached (before public launch).
+  NEXT_PUBLIC_SITE_URL = "https://gnoland-sonar.netlify.app"
 
 [context.deploy-preview.environment]
   NEXT_PUBLIC_SITE_URL = "https://deploy-preview.netlify.app"
