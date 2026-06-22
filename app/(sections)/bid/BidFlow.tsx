@@ -1,8 +1,9 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import type { ReactNode } from "react"
-import { useConnect, useSwitchChain } from "wagmi"
+import { sepolia } from "viem/chains"
+import { useChainId, useConnect, useSwitchChain } from "wagmi"
 import { PRIMARY_CHAIN_ID } from "../../(layout)/web3"
 import { GnotCoin } from "../../(ui)/GnotCoin"
 import { Icon } from "../../(ui)/Icon"
@@ -13,8 +14,8 @@ import {
   validateBidPrice,
 } from "../../../lib/sale/calc"
 import { SALE_ECONOMICS } from "../../../lib/sale/economics"
-import { fmtGnot, fmtPrice, fmtUsd } from "../../../lib/sale/format"
-import { VERIFY_STATUS } from "../../../lib/sale/labels"
+import { fmtGnot, fmtPriceUsdc, fmtUsdc } from "../../../lib/sale/format"
+import { SUPPORT_CONTACT_HREF, VERIFY_STATUS, WELCOME_BACK } from "../../../lib/sale/labels"
 import { type BidParams, type BidResult, MockBidSubmitter } from "../../../lib/sale/submitter"
 import type { JourneyState, MyBid } from "../../../lib/sale/types"
 
@@ -39,65 +40,115 @@ const BRAND_ICONS: Record<string, ReactNode> = {
   ),
 }
 
+/** Block-explorer tx link for the receipt; null unless `hash` is a real 32-byte tx hash. */
+function txExplorerUrl(hash: string, chainId: number): string | null {
+  if (!/^0x[0-9a-fA-F]{64}$/.test(hash)) return null
+  const base = chainId === sepolia.id ? "https://sepolia.etherscan.io" : "https://etherscan.io"
+  return `${base}/tx/${hash}`
+}
+
+// Dev-only pacing so the approve/sign steps are visible before the contract is wired;
+// once wired, the wallet interactions provide the real timing and this is a no-op in prod.
+const devStepPause = () =>
+  process.env.NODE_ENV === "production"
+    ? Promise.resolve()
+    : new Promise<void>((resolve) => setTimeout(resolve, 650))
+
+type SubmitState = "idle" | "confirming" | "approving" | "signing" | "submitted"
+
+/** Dev-only: seed BidRow into a money-loop sub-state for the /dev/states gallery. */
+export type BidPreview = {
+  state: SubmitState
+  amountUsd: number
+  priceUsd?: number
+  txHash?: string
+  error?: string
+}
+
 export function BidFlow({
   journey,
+  returning,
   clearingPriceUsd,
   myBid,
   onConnectSonar,
   onBid,
   walletButton,
+  preview,
 }: {
   journey: JourneyState
+  returning?: boolean
   clearingPriceUsd: number | null
   myBid: MyBid
   onConnectSonar?: () => void
   onBid?: (p: BidParams) => Promise<BidResult>
   walletButton?: ReactNode
+  preview?: BidPreview
 }) {
   return (
     <StateContent
       journey={journey}
+      returning={returning}
       clearingPriceUsd={clearingPriceUsd}
       myBid={myBid}
       onConnectSonar={onConnectSonar}
       onBid={onBid}
       walletButton={walletButton}
+      preview={preview}
     />
   )
 }
 
 function StateContent({
   journey,
+  returning,
   clearingPriceUsd,
   myBid,
   onConnectSonar,
   onBid,
   walletButton,
+  preview,
 }: {
   journey: JourneyState
+  returning?: boolean
   clearingPriceUsd: number | null
   myBid: MyBid
   onConnectSonar?: () => void
   onBid?: (p: BidParams) => Promise<BidResult>
   walletButton?: ReactNode
+  preview?: BidPreview
 }) {
   if (journey === "ready") {
-    return <BidRow clearingPriceUsd={clearingPriceUsd} onBid={onBid} walletButton={walletButton} />
-  }
-  if (journey === "has-bid-winning" || journey === "has-bid-outbid") {
     return (
       <BidRow
         clearingPriceUsd={clearingPriceUsd}
-        prevBid={myBid}
         onBid={onBid}
         walletButton={walletButton}
+        preview={preview}
       />
     )
   }
+  if (journey === "has-bid-winning" || journey === "has-bid-outbid") {
+    return (
+      <div className="flex w-full flex-col gap-2">
+        {journey === "has-bid-outbid" ? (
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-danger" role="alert">
+            You've been outbid - raise to stay in
+          </p>
+        ) : null}
+        <BidRow
+          clearingPriceUsd={clearingPriceUsd}
+          prevBid={myBid}
+          onBid={onBid}
+          walletButton={walletButton}
+          preview={preview}
+        />
+      </div>
+    )
+  }
   return (
-    <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4">
+    <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4">
       <div className="min-w-0 flex-1">
-        <GateContent journey={journey} onConnectSonar={onConnectSonar} />
+        <GateContent journey={journey} returning={returning} onConnectSonar={onConnectSonar} />
       </div>
       {walletButton}
     </div>
@@ -106,16 +157,26 @@ function StateContent({
 
 function GateContent({
   journey,
+  returning,
   onConnectSonar,
 }: {
   journey: JourneyState
+  returning?: boolean
   onConnectSonar?: () => void
 }) {
   switch (journey) {
     case "wrong-network":
       return <SwitchNetworkGate />
     case "kyc-required":
-      return (
+      return returning ? (
+        <GateRow
+          icon={WELCOME_BACK.icon}
+          title={WELCOME_BACK.title}
+          body={WELCOME_BACK.body}
+          cta={WELCOME_BACK.cta}
+          onCta={onConnectSonar}
+        />
+      ) : (
         <GateRow
           icon="shield-check"
           title="Verify your identity"
@@ -127,7 +188,7 @@ function GateContent({
     case "kyc-pending":
       return (
         <GateRow
-          icon="clock"
+          icon={VERIFY_STATUS.pending.icon}
           title={VERIFY_STATUS.pending.title}
           body={VERIFY_STATUS.pending.body}
         />
@@ -135,18 +196,19 @@ function GateContent({
     case "kyc-failed":
       return (
         <GateRow
-          icon="shield-check"
-          tone="danger"
+          icon={VERIFY_STATUS.failed.icon}
+          tone={VERIFY_STATUS.failed.tone}
           title={VERIFY_STATUS.failed.title}
           body={VERIFY_STATUS.failed.body}
-          cta="Contact support"
+          cta={SUPPORT_CONTACT_HREF ? "Contact support" : undefined}
+          ctaHref={SUPPORT_CONTACT_HREF ?? undefined}
         />
       )
     case "not-eligible":
       return (
         <GateRow
-          icon="shield-check"
-          tone="danger"
+          icon={VERIFY_STATUS["not-eligible"].icon}
+          tone={VERIFY_STATUS["not-eligible"].tone}
           title={VERIFY_STATUS["not-eligible"].title}
           body={VERIFY_STATUS["not-eligible"].body}
         />
@@ -162,6 +224,7 @@ function GateRow({
   body,
   cta,
   onCta,
+  ctaHref,
   tone = "default",
 }: {
   icon: string
@@ -169,10 +232,11 @@ function GateRow({
   body: string
   cta?: string
   onCta?: () => void
+  ctaHref?: string
   tone?: "default" | "danger"
 }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-4">
+    <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4">
       <div className="flex items-center gap-3">
         <Icon
           name={icon}
@@ -180,11 +244,15 @@ function GateRow({
           className={`h-5 w-5 shrink-0 ${tone === "danger" ? "text-danger" : "text-foreground"}`}
         />
         <p className="text-sm">
-          <span className="font-medium text-foreground">{title}.</span>{" "}
-          <span className="text-muted">{body}</span>
+          <span className="font-medium text-foreground">{title}.</span>
+          <span className="ml-1.5 text-muted">{body}</span>
         </p>
       </div>
-      {cta ? (
+      {ctaHref && cta ? (
+        <a href={ctaHref} target="_blank" rel="noreferrer" className="btn-pan bid-pill">
+          <span className="inline-flex items-center gap-2">{cta}</span>
+        </a>
+      ) : cta ? (
         <button type="button" onClick={onCta} className="btn-pan bid-pill">
           <span className="inline-flex items-center gap-2">{cta}</span>
         </button>
@@ -206,12 +274,12 @@ export function ConnectChoices({
     return true
   })
   return (
-    <div className="flex flex-wrap items-center justify-between gap-4">
+    <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4">
       <div className="flex items-center gap-3">
         <Icon name="wallet" draw={false} className="h-5 w-5 shrink-0 text-foreground" />
         <p className="text-sm">
-          <span className="font-medium text-foreground">Connect your wallet.</span>{" "}
-          <span className={error ? "text-danger" : "text-muted"}>
+          <span className="font-medium text-foreground">Connect your wallet.</span>
+          <span className={`ml-1.5 ${error ? "text-danger" : "text-muted"}`}>
             {error ? "Connection failed. Try again." : prompt}
           </span>
         </p>
@@ -249,12 +317,12 @@ export function ConnectChoices({
 function SwitchNetworkGate() {
   const { switchChain, isPending, error } = useSwitchChain()
   return (
-    <div className="flex flex-wrap items-center justify-between gap-4">
+    <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4">
       <div className="flex items-center gap-3">
         <Icon name="network" draw={false} className="h-5 w-5 shrink-0 text-foreground" />
         <p className="text-sm">
-          <span className="font-medium text-foreground">Wrong network.</span>{" "}
-          <span className={error ? "text-danger" : "text-muted"}>
+          <span className="font-medium text-foreground">Wrong network.</span>
+          <span className={`ml-1.5 ${error ? "text-danger" : "text-muted"}`}>
             {error
               ? "Could not switch. Try again."
               : "This sale runs on Ethereum. Switch your wallet to continue."}
@@ -293,11 +361,13 @@ function BidRow({
   prevBid,
   onBid,
   walletButton,
+  preview,
 }: {
   clearingPriceUsd: number | null
   prevBid?: MyBid
   onBid?: (p: BidParams) => Promise<BidResult>
   walletButton?: ReactNode
+  preview?: BidPreview
 }) {
   const minPrice = SALE_ECONOMICS.startingPriceUsd
   const maxPrice = SALE_ECONOMICS.maxPriceUsd
@@ -307,15 +377,22 @@ function BidRow({
     Math.max(clearingPriceUsd ?? minPrice, prevBid?.priceUsd ?? 0, minPrice),
     band,
   )
-  const [price, setPrice] = useState(String(floor))
-  const [touched, setTouched] = useState(false)
-  const [amount, setAmount] = useState(prevBid ? String(prevBid.committedUsd) : "")
+  const [price, setPrice] = useState(
+    preview?.priceUsd != null ? String(preview.priceUsd) : String(floor),
+  )
+  const [touched, setTouched] = useState(Boolean(preview))
+  const [amount, setAmount] = useState(
+    preview ? String(preview.amountUsd) : prevBid ? String(prevBid.committedUsd) : "",
+  )
   function onAmountChange(v: string) {
     setTouched(true)
     setAmount(v)
   }
-  const [submitState, setSubmitState] = useState<"idle" | "submitting" | "submitted">("idle")
-  const [submitError, setSubmitError] = useState<string | null>(null)
+  const chainId = useChainId()
+  const [submitState, setSubmitState] = useState<SubmitState>(preview?.state ?? "idle")
+  const [txHash, setTxHash] = useState<string | null>(preview?.txHash ?? null)
+  const [submitError, setSubmitError] = useState<string | null>(preview?.error ?? null)
+  const aliveRef = useRef(true)
 
   const priceNum = Number(price)
   const amountNum = Number(amount)
@@ -348,6 +425,12 @@ function BidRow({
   useEffect(() => {
     if (!touched) setPrice(String(floor))
   }, [floor, touched])
+  useEffect(
+    () => () => {
+      aliveRef.current = false
+    },
+    [],
+  )
   const priceValid = priceShown && priceCheck === "ok"
   const amountValid = amountShown && amountCheck === "ok"
   const canSubmit = priceValid && amountValid && submitState === "idle"
@@ -355,17 +438,17 @@ function BidRow({
 
   const priceError =
     priceShown && priceCheck === "below-min"
-      ? `Min price ${fmtPrice(minPrice)}.`
+      ? `Min price ${fmtPriceUsdc(minPrice)}.`
       : priceShown && priceCheck === "above-max"
-        ? `Max price ${fmtPrice(maxPrice)} - the hardcap.`
+        ? `Max price ${fmtPriceUsdc(maxPrice)} - the hardcap.`
         : priceShown && priceCheck === "off-increment"
-          ? `Bids move in $${increment} steps.`
+          ? `Bids move in ${increment} USDC steps.`
           : priceShown && priceCheck === "below-previous" && prevBid
-            ? `Raise above your current ${fmtPrice(prevBid.priceUsd)}.`
+            ? `Raise above your current ${fmtPriceUsdc(prevBid.priceUsd)}.`
             : null
   const amountError =
     amountShown && amountCheck === "too-low"
-      ? `Min ${fmtUsd(SALE_ECONOMICS.minCommitmentUsd)}.`
+      ? `Min ${fmtUsdc(SALE_ECONOMICS.minCommitmentUsd)}.`
       : null
 
   const clearingNote =
@@ -373,22 +456,32 @@ function BidRow({
       ? priceNum < clearingPriceUsd
         ? {
             tone: "warn" as const,
-            text: `This price would be outbid (below ${fmtPrice(clearingPriceUsd)}).`,
+            text: `This price would be outbid (below ${fmtPriceUsdc(clearingPriceUsd)}).`,
           }
         : {
             tone: "ok" as const,
-            text: `This price would be winning (clears ${fmtPrice(clearingPriceUsd)}).`,
+            text: `This price would be winning (clears ${fmtPriceUsdc(clearingPriceUsd)}).`,
           }
       : null
 
-  async function onSubmit() {
-    setSubmitState("submitting")
+  async function runSubmit() {
     setSubmitError(null)
-    // TODO(real-data): lockup is hardcoded false - expose a real lockup choice in the form.
     const params: BidParams = { priceUsd: priceNum, amountUsd: amountNum, lockup: false }
+    // Approve/sign preview runs in dev only; in prod we go straight to the seam so we never
+    // imply a wallet step the stub can't deliver. TODO(real-data): drive these from the real
+    // replaceBidWith{Approval,Permit} flow (approve only when the allowance is short, then the
+    // bid tx) and stop hardcoding lockup=false.
+    if (process.env.NODE_ENV !== "production") {
+      setSubmitState("approving")
+      await devStepPause()
+      if (!aliveRef.current) return
+      setSubmitState("signing")
+    }
     if (onBid) {
       const result = await onBid(params)
+      if (!aliveRef.current) return
       if (result.status === "submitted") {
+        setTxHash(result.txHash)
         setSubmitState("submitted")
       } else {
         setSubmitState("idle")
@@ -397,22 +490,98 @@ function BidRow({
       return
     }
     const pre = await submitter.preflight(params)
+    if (!aliveRef.current) return
     if (!pre.ok) {
       setSubmitState("idle")
       return
     }
     await submitter.submit(params)
+    if (!aliveRef.current) return
     setSubmitState("submitted")
   }
 
-  if (submitState === "submitted") {
+  if (submitState === "confirming") {
     return (
-      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4">
+        <div className="min-w-0 flex-1">
+          <p className="text-sm">
+            <span className="font-medium text-foreground">
+              Commit {fmtUsdc(amountNum)} at max {fmtPriceUsdc(priceNum)} / GNOT?
+            </span>{" "}
+            <span className="text-muted">
+              You pay the final clearing price, not your max, and receive ~{fmtGnot(est)} GNOT. You
+              can raise later, but you can't lower or cancel.
+            </span>
+          </p>
+          {prevBid ? (
+            <p className="mt-1 text-xs text-muted">
+              {amountNum > prevBid.committedUsd
+                ? `Only the added ${fmtUsdc(amountNum - prevBid.committedUsd)} is charged - your committed USDC carries over.`
+                : "No extra USDC - your committed funds carry over, you just sign."}
+            </p>
+          ) : null}
+        </div>
+        <div className="flex flex-wrap items-center gap-4">
+          <button type="button" onClick={runSubmit} className="btn-pan bid-pill">
+            <span>{prevBid ? "Confirm raise" : "Confirm bid"}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setSubmitState("idle")}
+            className="text-xs font-bold uppercase tracking-[0.2em] text-muted underline-offset-4 hover:text-foreground hover:underline"
+          >
+            Back
+          </button>
+          {walletButton}
+        </div>
+      </div>
+    )
+  }
+
+  if (submitState === "approving" || submitState === "signing") {
+    return (
+      <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4">
+        <div className="flex items-center gap-3" aria-live="polite">
+          <Icon name="clock" draw={false} className="h-5 w-5 shrink-0 text-foreground" />
+          <p className="text-sm">
+            <span className="font-medium text-foreground">
+              {submitState === "approving" ? "Approving USDC..." : "Signing..."}
+            </span>{" "}
+            <span className="text-muted">
+              {submitState === "approving"
+                ? "Approve the USDC spending in your wallet."
+                : "Confirm and sign the bid in your wallet."}
+            </span>
+          </p>
+        </div>
+        {walletButton}
+      </div>
+    )
+  }
+
+  if (submitState === "submitted") {
+    const explorer = txHash ? txExplorerUrl(txHash, chainId) : null
+    return (
+      <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4">
         <div className="flex flex-wrap items-center gap-3">
           <Icon name="shield-check" draw={false} className="h-5 w-5 shrink-0 text-mint" />
           <p className="text-sm text-foreground">
-            Bid submitted - {fmtUsd(amountNum)} at {fmtPrice(priceNum)} / GNOT.
+            Bid submitted - {fmtUsdc(amountNum)} at {fmtPriceUsdc(priceNum)} / GNOT.
           </p>
+          {explorer ? (
+            <a
+              href={explorer}
+              target="_blank"
+              rel="noreferrer"
+              className="text-xs text-muted underline underline-offset-2 hover:text-foreground"
+            >
+              View transaction
+            </a>
+          ) : txHash ? (
+            <span className="font-mono text-[11px] text-muted">tx {txHash}</span>
+          ) : null}
+        </div>
+        <div className="flex flex-wrap items-center gap-4">
           <button
             type="button"
             onClick={() => setSubmitState("idle")}
@@ -420,8 +589,8 @@ function BidRow({
           >
             Raise your bid
           </button>
+          {walletButton}
         </div>
-        {walletButton}
       </div>
     )
   }
@@ -445,11 +614,10 @@ function BidRow({
             downLabel: "Lower the price one step",
           }}
           invalid={priceShown && priceCheck !== "ok"}
-          hint={`You win at or above the final clearing price and pay the clearing price, not your max. Moves in $${increment} steps up to the ${fmtPrice(maxPrice)} hardcap; raise-only.`}
-          prefix="$"
-          suffix="/ GNOT"
+          hint={`You win at or above the final clearing price and pay the clearing price, not your max. Moves in ${increment} USDC steps up to the ${fmtPriceUsdc(maxPrice)} hardcap; raise-only.`}
+          suffix="USDC / GNOT"
           error={priceError}
-          className="w-28"
+          className="w-24"
         />
         <InputCell
           id="bid-amount"
@@ -458,8 +626,7 @@ function BidRow({
           onChange={onAmountChange}
           invalid={amountShown && amountCheck !== "ok"}
           placeholder={String(SALE_ECONOMICS.minCommitmentUsd)}
-          hint={`The total USDC you pay if filled (refunded if outbid). GNOT received = amount / clearing price. Min ${fmtUsd(SALE_ECONOMICS.minCommitmentUsd)}, no maximum.`}
-          prefix="$"
+          hint={`The total USDC you pay if filled (refunded if outbid). GNOT received = amount / clearing price. Min ${fmtUsdc(SALE_ECONOMICS.minCommitmentUsd)}, no maximum.`}
           error={amountError}
           className="w-32"
         />
@@ -484,12 +651,12 @@ function BidRow({
           <div className="flex h-12 items-center gap-4">
             <button
               type="button"
-              onClick={onSubmit}
+              onClick={() => setSubmitState("confirming")}
               disabled={!canSubmit}
               className="btn-pan bid-pill"
             >
               <span className="inline-flex items-center gap-2">
-                {submitState === "submitting" ? "Signing..." : prevBid ? "Raise bid" : "Place bid"}
+                {prevBid ? "Raise bid" : "Place bid"}
               </span>
             </button>
             {walletButton}
@@ -497,7 +664,9 @@ function BidRow({
         </div>
       </div>
       {priceError || amountError ? null : submitError ? (
-        <p className="max-w-md truncate text-xs font-medium text-danger">{submitError}</p>
+        <p className="max-w-md truncate text-xs font-medium text-danger" role="alert">
+          {submitError}
+        </p>
       ) : clearingNote ? (
         <p
           className={`max-w-md truncate text-xs ${
@@ -651,7 +820,7 @@ function FieldHint({ text }: { text: string }) {
       </button>
       <span
         aria-hidden="true"
-        className="pointer-events-none absolute left-0 top-full z-[var(--z-modal)] mt-2 w-max max-w-[22rem] rounded-[var(--radius-md)] bg-on-contrast px-3 py-2 text-xs font-normal normal-case leading-snug tracking-normal text-surface-contrast opacity-0 shadow-lg transition-opacity duration-100 group-focus-within/hint:opacity-100"
+        className="pointer-events-none absolute left-0 top-full z-[var(--z-modal)] mt-2 w-max max-w-[22rem] rounded-[var(--radius-md)] bg-on-contrast px-3 py-2 text-xs font-normal normal-case leading-snug tracking-normal text-surface-contrast opacity-0 shadow-lg transition-opacity duration-100 group-hover/hint:opacity-100 group-focus-within/hint:opacity-100"
       >
         {text}
       </span>

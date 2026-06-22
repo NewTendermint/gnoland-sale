@@ -16,7 +16,13 @@ import { postSonarLogout, redirectToSonarLogin } from "../../lib/sale/api"
 import { SALE_ECONOMICS, formatSaleDate } from "../../lib/sale/economics"
 import { useBid, useClaim } from "../../lib/sale/hooks"
 import { derivePreSaleBar } from "../../lib/sale/journey"
-import { VERIFY_STATUS, bidCtaLabel } from "../../lib/sale/labels"
+import {
+  SUPPORT_CONTACT_HREF,
+  VERIFY_STATUS,
+  WELCOME_BACK,
+  bidCtaLabel,
+} from "../../lib/sale/labels"
+import { useSonarSeen } from "../../lib/sale/returning"
 import type { PreSaleBarState } from "../../lib/sale/types"
 import { AddToCalendarButton } from "./AddToCalendarButton"
 import {
@@ -48,6 +54,7 @@ export function BidPanelDesktop() {
   } = useSale()
   const bid = useBid()
   const claim = useClaim()
+  const sonarSeen = useSonarSeen()
   const queryClient = useQueryClient()
   const panelRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
@@ -63,6 +70,11 @@ export function BidPanelDesktop() {
       },
       () => {},
     )
+  }
+
+  // Re-poll the Sonar entity so a pending reviewer can re-check status without re-auth.
+  function handleRefresh() {
+    queryClient.invalidateQueries({ queryKey: ["sale", "entity"] })
   }
 
   useEffect(() => {
@@ -86,7 +98,7 @@ export function BidPanelDesktop() {
     return (
       <BarShell>
         <DrawLine immediate />
-        <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4 pb-6 pt-4 sm:pb-8 sm:pt-6">
+        <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4 py-4 sm:py-6">
           <BarCountdown
             targetIso={
               countToSale ? SALE_ECONOMICS.saleOpensIso : SALE_ECONOMICS.registrationOpensIso
@@ -99,8 +111,10 @@ export function BidPanelDesktop() {
           />
           <PreSaleRight
             state={barState}
+            returning={sonarSeen}
             onRegister={redirectToSonarLogin}
             onSignOut={handleSignOut}
+            onRefresh={handleRefresh}
           />
         </div>
       </BarShell>
@@ -111,7 +125,7 @@ export function BidPanelDesktop() {
     return (
       <BarShell>
         <DrawLine immediate />
-        <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4 pb-6 pt-4 sm:pb-8 sm:pt-6">
+        <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4 py-4 sm:py-6">
           <div className="flex flex-wrap items-center gap-x-7 gap-y-3 sm:gap-x-9">
             <span className="status-pill">Closed</span>
             {finalMetrics(commitment).map((c) => (
@@ -172,7 +186,7 @@ export function BidPanelDesktop() {
         <div className="bar-content-enter grid grid-cols-12 gap-6 px-6 lg:px-0">
           <Entrance className="band-10">
             <DrawLine immediate delayMs={200} />
-            <div className="pb-6 pt-4 sm:pb-8 sm:pt-6">
+            <div className="py-4 sm:py-6">
               <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4">
                 <Stagger
                   as="div"
@@ -259,6 +273,7 @@ export function BidPanelDesktop() {
                   >
                     <BidFlow
                       journey={journey}
+                      returning={sonarSeen}
                       clearingPriceUsd={commitment.clearingPriceUsd}
                       myBid={myBid}
                       onConnectSonar={redirectToSonarLogin}
@@ -298,14 +313,80 @@ function CloseButton({ onClick }: { onClick: () => void }) {
   )
 }
 
-function PreSaleRight({
-  state,
-  onRegister,
+function SignOutLink({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="text-[11px] text-muted underline underline-offset-2 transition-colors hover:text-foreground"
+    >
+      Sign out of Sonar
+    </button>
+  )
+}
+
+// Verification-status row: status + discreet sign-out link, with the calendar CTA set off right.
+function StatusRow({
+  icon,
+  tone = "default",
+  title,
+  body,
   onSignOut,
+  onRefresh,
+  withCalendar = false,
+  contactHref,
+}: {
+  icon: string
+  tone?: "default" | "danger" | "ok"
+  title: string
+  body?: string
+  onSignOut: () => void
+  onRefresh?: () => void
+  withCalendar?: boolean
+  contactHref?: string
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+        <BarStatus icon={icon} tone={tone} title={title} body={body} />
+        {contactHref ? (
+          <a
+            href={contactHref}
+            target="_blank"
+            rel="noreferrer"
+            className="text-[11px] font-semibold text-foreground underline underline-offset-2 transition-opacity hover:opacity-70"
+          >
+            Contact support
+          </a>
+        ) : null}
+        {onRefresh ? (
+          <button
+            type="button"
+            onClick={onRefresh}
+            className="text-[11px] text-muted underline underline-offset-2 transition-colors hover:text-foreground"
+          >
+            Refresh
+          </button>
+        ) : null}
+        <SignOutLink onClick={onSignOut} />
+      </div>
+      {withCalendar ? <AddToCalendarButton milestone="sale" variant="bar" /> : null}
+    </div>
+  )
+}
+
+export function PreSaleRight({
+  state,
+  returning,
+  onRegister = () => {},
+  onSignOut = () => {},
+  onRefresh = () => {},
 }: {
   state: PreSaleBarState
-  onRegister: () => void
-  onSignOut: () => void
+  returning: boolean
+  onRegister?: () => void
+  onSignOut?: () => void
+  onRefresh?: () => void
 }) {
   switch (state) {
     case "notify":
@@ -318,7 +399,21 @@ function PreSaleRight({
         <p className="text-sm text-muted">{`Sale opens ${formatSaleDate(SALE_ECONOMICS.saleOpensIso)}`}</p>
       )
     case "register":
-      return (
+      return returning ? (
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+          <BarStatus
+            icon={WELCOME_BACK.icon}
+            title={`${WELCOME_BACK.title}.`}
+            body={WELCOME_BACK.body}
+          />
+          <button type="button" onClick={onRegister} className={CTA_PILL}>
+            <span className="inline-flex items-center gap-2">
+              <span>{WELCOME_BACK.cta}</span>
+              <CtaArrow />
+            </span>
+          </button>
+        </div>
+      ) : (
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
           <p className="text-sm text-muted">Registration is open</p>
           <button type="button" onClick={onRegister} className={CTA_PILL}>
@@ -331,48 +426,48 @@ function PreSaleRight({
       )
     case "pending":
       return (
-        <BarStatus
-          icon="clock"
+        <StatusRow
+          icon={VERIFY_STATUS.pending.icon}
+          tone={VERIFY_STATUS.pending.tone}
           title={`${VERIFY_STATUS.pending.title}.`}
           body={VERIFY_STATUS.pending.body}
+          onSignOut={onSignOut}
+          onRefresh={onRefresh}
+          withCalendar
         />
       )
     case "failed":
       return (
-        <BarStatus
-          icon="shield-check"
-          tone="danger"
+        <StatusRow
+          icon={VERIFY_STATUS.failed.icon}
+          tone={VERIFY_STATUS.failed.tone}
           title={`${VERIFY_STATUS.failed.title}.`}
           body={VERIFY_STATUS.failed.body}
+          onSignOut={onSignOut}
+          withCalendar
+          contactHref={SUPPORT_CONTACT_HREF ?? undefined}
         />
       )
     case "not-eligible":
       return (
-        <BarStatus
-          icon="shield-check"
-          tone="danger"
+        <StatusRow
+          icon={VERIFY_STATUS["not-eligible"].icon}
+          tone={VERIFY_STATUS["not-eligible"].tone}
           title={`${VERIFY_STATUS["not-eligible"].title}.`}
           body={VERIFY_STATUS["not-eligible"].body}
+          onSignOut={onSignOut}
+          withCalendar
         />
       )
     case "registered":
       return (
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-          <BarStatus
-            icon="shield-check"
-            tone="ok"
-            title="You're registered."
-            body={`The sale opens ${formatSaleDate(SALE_ECONOMICS.saleOpensIso)}.`}
-          />
-          <AddToCalendarButton milestone="sale" variant="bar" />
-          <button
-            type="button"
-            onClick={onSignOut}
-            className="text-xs font-bold uppercase tracking-[0.2em] text-muted underline-offset-4 hover:text-foreground hover:underline"
-          >
-            Sign out of Sonar
-          </button>
-        </div>
+        <StatusRow
+          icon={VERIFY_STATUS.verified.icon}
+          tone={VERIFY_STATUS.verified.tone}
+          title={`${VERIFY_STATUS.verified.title}.`}
+          onSignOut={onSignOut}
+          withCalendar
+        />
       )
     case "auth-error":
       return (

@@ -2,7 +2,8 @@ import { notFound } from "next/navigation"
 // Dev-only state harness: renders the sticky bar in every state. Gated out of production.
 import type { ReactNode } from "react"
 import { AwarenessBarBody } from "../../(layout)/BidPanelAwareness"
-import { BidFlow } from "../../(sections)/bid/BidFlow"
+import { PreSaleRight } from "../../(layout)/BidPanelDesktop"
+import { BidFlow, type BidPreview } from "../../(sections)/bid/BidFlow"
 import { BidStatusTag, FunnelSteps } from "../../(sections)/bid/FunnelSteps"
 import { CtaArrow } from "../../(ui)/CtaArrow"
 import { Icon } from "../../(ui)/Icon"
@@ -10,7 +11,7 @@ import { fmtCompactUsd, fmtCount, fmtPrice } from "../../../lib/sale/format"
 import { bidCtaLabel } from "../../../lib/sale/labels"
 import { MOCK_COMMITMENT_LIVE, MOCK_JOURNEY_INPUTS } from "../../../lib/sale/mock"
 import { stateOverridesEnabled } from "../../../lib/sale/overrides"
-import type { JourneyState } from "../../../lib/sale/types"
+import type { JourneyState, PreSaleBarState } from "../../../lib/sale/types"
 
 const METRICS = [
   {
@@ -51,7 +52,7 @@ function MetricsRow({
   right: ReactNode
 }) {
   return (
-    <div className="border-t border-border pb-6 pt-4">
+    <div className="border-t border-border py-4 sm:py-6">
       <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4">
         <div
           className={`flex flex-wrap items-center ${
@@ -98,7 +99,11 @@ function CollapsedBar({ journey }: { journey: JourneyState }) {
   )
 }
 
-function ExpandedBar({ journey }: { journey: JourneyState }) {
+function ExpandedBar({
+  journey,
+  returning = false,
+  preview,
+}: { journey: JourneyState; returning?: boolean; preview?: BidPreview }) {
   const input = MOCK_JOURNEY_INPUTS[journey]
   return (
     <div className="overflow-hidden rounded-[var(--frame-radius)] border border-border bg-background">
@@ -109,8 +114,10 @@ function ExpandedBar({ journey }: { journey: JourneyState }) {
         <div className="bid-capsule px-6 py-5">
           <BidFlow
             journey={journey}
+            returning={returning}
             clearingPriceUsd={input.clearingPriceUsd}
             myBid={input.myBid}
+            preview={preview}
           />
         </div>
       </div>
@@ -132,7 +139,7 @@ function CompactPreview({
   return (
     <div className="rounded-[var(--frame-radius)] border border-border bg-background">
       <div className="px-6 lg:px-8">
-        <div className="flex flex-wrap items-center justify-between gap-6 border-t border-border pb-6 pt-4">
+        <div className="flex flex-wrap items-center justify-between gap-6 border-t border-border py-4 sm:py-6">
           <div>
             <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted">{lead}</p>
             <p className="mt-1 text-2xl font-semibold tracking-tight text-foreground">{headline}</p>
@@ -150,6 +157,148 @@ function CompactPreview({
 function Caption({ children }: { children: string }) {
   return <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-faint">{children}</p>
 }
+
+// One framed view: title + an optional "see it live" URL, separated by an hr-like top border.
+function GallerySection({
+  title,
+  href,
+  children,
+}: {
+  title: string
+  href?: string
+  children: ReactNode
+}) {
+  return (
+    <section className="flex flex-col gap-3 border-t border-border pt-8">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
+        <p className="font-mono text-xs font-medium uppercase tracking-[0.2em] text-foreground">
+          {title}
+        </p>
+        {href ? (
+          <a
+            href={href}
+            className="text-xs text-muted underline underline-offset-2 hover:text-foreground"
+          >
+            see it live <code className="font-mono">{href}</code>
+          </a>
+        ) : null}
+      </div>
+      {children}
+    </section>
+  )
+}
+
+// The REAL pre-sale bar (PreSaleRight) inside a bar-like shell, for the gallery.
+function PreSaleBarPreview({
+  state,
+  returning = false,
+}: { state: PreSaleBarState; returning?: boolean }) {
+  return (
+    <div className="rounded-[var(--frame-radius)] border border-border bg-background px-6 lg:px-8">
+      <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4 border-t border-border py-4 sm:py-6">
+        <div>
+          <p className="font-mono text-2xl font-medium tabular-nums tracking-tight">28d 14:00:00</p>
+          <p className="mt-0.5 text-[10px] uppercase tracking-[0.2em] text-muted">
+            Opens July 20, 2026
+          </p>
+        </div>
+        <PreSaleRight state={state} returning={returning} />
+      </div>
+    </div>
+  )
+}
+
+const PRE_SALE_BAR_STATES: ReadonlyArray<{
+  label: string
+  state: PreSaleBarState
+  returning: boolean
+  href: string
+}> = [
+  {
+    label: "Notify (stage A, registration closed)",
+    state: "notify",
+    returning: false,
+    href: "/?phase=pre-sale&registration=closed&journey=kyc-required",
+  },
+  {
+    label: "Register (new visitor)",
+    state: "register",
+    returning: false,
+    href: "/?phase=pre-sale&registration=open&journey=kyc-required",
+  },
+  {
+    label: "Register - returning (Welcome back / Reconnect)",
+    state: "register",
+    returning: true,
+    href: "/?phase=pre-sale&registration=open&journey=kyc-required",
+  },
+  {
+    label: "Pending (in review)",
+    state: "pending",
+    returning: false,
+    href: "/?phase=pre-sale&registration=open&journey=kyc-pending",
+  },
+  {
+    label: "Failed (Contact support + shield-x)",
+    state: "failed",
+    returning: false,
+    href: "/?phase=pre-sale&registration=open&journey=kyc-failed",
+  },
+  {
+    label: "Not eligible (shield-x)",
+    state: "not-eligible",
+    returning: false,
+    href: "/?phase=pre-sale&registration=open&journey=not-eligible",
+  },
+  {
+    label: "Registered (Identity verified)",
+    state: "registered",
+    returning: false,
+    href: "/?phase=pre-sale&registration=open&journey=disconnected",
+  },
+  {
+    label: "Auth error",
+    state: "auth-error",
+    returning: false,
+    href: "/?phase=pre-sale&auth=error&journey=kyc-required",
+  },
+]
+
+// Money-loop sub-states. Reachable live by clicking "Place bid"; shown here as static snapshots
+// so every step is reviewable without driving the transient flow.
+const MONEY_LOOP: ReadonlyArray<{ label: string; journey: JourneyState; preview: BidPreview }> = [
+  {
+    label: "Confirm - binding review",
+    journey: "ready",
+    preview: { state: "confirming", amountUsd: 1000 },
+  },
+  { label: "Approving USDC", journey: "ready", preview: { state: "approving", amountUsd: 1000 } },
+  { label: "Signing the bid", journey: "ready", preview: { state: "signing", amountUsd: 1000 } },
+  {
+    label: "Submitted (receipt + View transaction)",
+    journey: "ready",
+    preview: { state: "submitted", amountUsd: 1000, txHash: `0x${"a1b2c3d4".repeat(8)}` },
+  },
+  {
+    label: "Submit failed (technical issue)",
+    journey: "ready",
+    preview: {
+      state: "idle",
+      amountUsd: 1000,
+      error: "Could not place your bid. Please try again.",
+    },
+  },
+  {
+    label: "Raise - adds USDC (only the delta is charged)",
+    journey: "has-bid-winning",
+    preview: { state: "confirming", amountUsd: 5000 },
+  },
+  {
+    label: "Raise - same amount (no extra USDC, just sign)",
+    journey: "has-bid-winning",
+    preview: { state: "confirming", amountUsd: 3200 },
+  },
+]
 
 export default function DevStatesPage() {
   if (!stateOverridesEnabled()) notFound()
@@ -171,35 +320,72 @@ export default function DevStatesPage() {
         </p>
       </header>
 
-      <div className="flex flex-col gap-10">
+      <div className="flex flex-col gap-14">
+        {PRE_SALE_BAR_STATES.map((row) => (
+          <GallerySection key={row.label} title={`Pre-sale · ${row.label}`} href={row.href}>
+            <PreSaleBarPreview state={row.state} returning={row.returning} />
+          </GallerySection>
+        ))}
+
         {states.map((s) => (
-          <section key={s} className="flex flex-col gap-3 border-t border-border pt-6">
-            <p className="font-mono text-xs font-medium uppercase tracking-[0.2em] text-foreground">
-              {s}
-            </p>
+          <GallerySection key={s} title={`Live · ${s}`} href={`/?journey=${s}`}>
             <Caption>Collapsed</Caption>
             <CollapsedBar journey={s} />
             <Caption>Expanded</Caption>
             <ExpandedBar journey={s} />
-          </section>
+          </GallerySection>
         ))}
 
-        <section className="flex flex-col gap-3 border-t border-border pt-6">
-          <p className="font-mono text-xs font-medium uppercase tracking-[0.2em] text-foreground">
-            phase bars
+        <GallerySection
+          title="Live · kyc-required (returning -> Welcome back)"
+          href="/?journey=kyc-required"
+        >
+          <Caption>Expanded</Caption>
+          <ExpandedBar journey="kyc-required" returning />
+        </GallerySection>
+
+        <GallerySection
+          title="Live · money-loop (commit -> approve -> sign -> receipt)"
+          href="/?journey=ready"
+        >
+          <p className="text-sm text-muted">
+            Live, this runs on click (Place bid). Approve/sign are dev-paced previews - in
+            production the wallet drives the timing and the on-chain seam returns the real tx hash.
           </p>
+          {MONEY_LOOP.map((m) => (
+            <div key={m.label} className="flex flex-col gap-1.5">
+              <Caption>{m.label}</Caption>
+              <ExpandedBar journey={m.journey} preview={m.preview} />
+            </div>
+          ))}
+        </GallerySection>
+
+        <GallerySection title="Ended · collapsed (metrics + View results)">
           <CompactPreview
             lead="Public sale"
             headline="Auction closed"
             sub="Final clearing $0.1161"
             cta="View results"
           />
-        </section>
+          <div className="flex flex-col gap-1.5">
+            <a
+              href="/?phase=ended&journey=has-bid-winning"
+              className="text-xs text-muted underline underline-offset-2 hover:text-foreground"
+            >
+              won - expand, connect, allocation{" "}
+              <code className="font-mono">{"/?phase=ended&journey=has-bid-winning"}</code>
+            </a>
+            <a
+              href="/?phase=ended&journey=has-bid-outbid"
+              className="text-xs text-muted underline underline-offset-2 hover:text-foreground"
+            >
+              outbid - expand, connect, claim{" "}
+              <code className="font-mono">{"/?phase=ended&journey=has-bid-outbid"}</code>
+            </a>
+          </div>
+        </GallerySection>
 
-        <section className="flex flex-col gap-3 border-t border-border pt-6">
-          <p className="font-mono text-xs font-medium uppercase tracking-[0.2em] text-foreground">
-            awareness bar (touch or &lt; lg) - read-only, per phase
-          </p>
+        <GallerySection title="Awareness bar (touch / < lg) - read-only, per phase">
           {(
             [
               ["pre-sale / notify (stage A)", "pre-sale", "registration-closed"],
@@ -221,38 +407,7 @@ export default function DevStatesPage() {
               </div>
             </div>
           ))}
-        </section>
-
-        <section className="flex flex-col gap-3 border-t border-border pt-6">
-          <p className="font-mono text-xs font-medium uppercase tracking-[0.2em] text-foreground">
-            pre-sale + ended bar states (drive the real bar)
-          </p>
-          <ul className="flex flex-col gap-1.5 text-sm text-muted">
-            {[
-              ["notify (stage A)", "/?phase=pre-sale&registration=closed&journey=kyc-required"],
-              ["register (stage B)", "/?phase=pre-sale&registration=open&journey=kyc-required"],
-              ["pending", "/?phase=pre-sale&registration=open&journey=kyc-pending"],
-              ["failed", "/?phase=pre-sale&registration=open&journey=kyc-failed"],
-              ["not eligible", "/?phase=pre-sale&registration=open&journey=not-eligible"],
-              ["registered", "/?phase=pre-sale&registration=open&journey=disconnected"],
-              ["auth error", "/?phase=pre-sale&auth=error&journey=kyc-required"],
-              [
-                "ended - won (expand -> connect -> allocation)",
-                "/?phase=ended&journey=has-bid-winning",
-              ],
-              [
-                "ended - outbid (expand -> connect -> claim)",
-                "/?phase=ended&journey=has-bid-outbid",
-              ],
-            ].map(([label, href]) => (
-              <li key={href}>
-                <a href={href} className="link-underline hover:text-foreground">
-                  {label} <code className="font-mono text-xs">{href}</code>
-                </a>
-              </li>
-            ))}
-          </ul>
-        </section>
+        </GallerySection>
       </div>
     </main>
   )

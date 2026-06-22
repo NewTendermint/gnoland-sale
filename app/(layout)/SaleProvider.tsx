@@ -10,6 +10,7 @@ import { deriveJourney } from "../../lib/sale/journey"
 import { MOCK_JOURNEY_INPUTS } from "../../lib/sale/mock"
 import { stateOverridesEnabled } from "../../lib/sale/overrides"
 import { resolvePreSaleStage, resolveSalePhase } from "../../lib/sale/phase"
+import { markSonarSeen } from "../../lib/sale/returning"
 import type {
   CommitmentData,
   JourneyInput,
@@ -61,6 +62,9 @@ export function SaleProvider({ children }: { children: ReactNode }) {
       window.history.replaceState(window.history.state, "", url)
       if (auth === "ok") {
         queryClient.invalidateQueries({ queryKey: ["sale", "entity"] })
+        // Returning from Sonar verification: open the funnel so the bidder continues
+        // straight into Connect/Bid instead of landing on a collapsed pill.
+        setBidPanelOpen(true)
       }
     }
     if (!stateOverridesEnabled()) return
@@ -85,6 +89,11 @@ export function SaleProvider({ children }: { children: ReactNode }) {
       document.removeEventListener("visibilitychange", resolve)
     }
   }, [stageOverride])
+
+  // Remember (non-PII) that we've seen the entity, so a return after the 2h session greets "welcome back".
+  useEffect(() => {
+    if (entity.data) markSonarSeen()
+  }, [entity.data])
 
   const value = useMemo<SaleContextValue>(() => {
     const onSupportedChain = chainId !== undefined && SUPPORTED_CHAIN_IDS.includes(chainId)

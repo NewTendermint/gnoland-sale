@@ -6,9 +6,9 @@
  * dates are pulled from SALE_ECONOMICS so the answers can never drift from the
  * terms table. An answer may be a single string or an array of paragraphs.
  *
- * Footgun: the worked outbid examples below are illustrative - the GNOT figures
- * (1,550.38 / 775.19) are hand-pinned to the $0.0645 / $0.129 price band, so they
- * stay literal. Re-write them by hand if that band ever moves.
+ * Footgun: the worked examples below are illustrative literals - the refund example
+ * ($1,000 / $0.0774 clearing) and the oversubscription example ($20M / $10M / 50%)
+ * stay literal. Re-write them by hand if the band or supply ever moves.
  */
 import {
   SALE_ECONOMICS,
@@ -18,15 +18,10 @@ import {
 } from "../../lib/sale/economics"
 import { fmtPrice, fmtUsd } from "../../lib/sale/format"
 
-const hardcap = fmtPrice(SALE_ECONOMICS.maxPriceUsd)
-
 export const faq: Array<{ q: string; a: string | string[] }> = [
   {
     q: "How does the auction work?",
-    a: [
-      "The token sale takes place as a uniform price auction (English auction) where every winner pays the same clearing price per token. You can bid at or above the current clearing price and set the amount you want to commit in USDC. If the final clearing price is the same as your bid price, you receive tokens at the clearing price. If the final clearing price is below your bid price, you receive tokens at the clearing price and receive a refund of the price difference.",
-      `The hard cap price for the auction is ${hardcap}, which means the maximum clearing price for this auction is ${hardcap}. Bidding may continue after the hard cap price of ${hardcap} is reached. If the total bids exceed the amount of tokens available at the hard cap price, tokens will be distributed pro rata among all participants. Refunds will be issued after the sale is over.`,
-    ],
+    a: `The GNOT token sale takes place as a uniform-price auction (English auction) with a minimum price (starting price) of ${fmtPrice(SALE_ECONOMICS.startingPriceUsd)} and a maximum price (cap) of ${fmtPrice(SALE_ECONOMICS.maxPriceUsd)}. Participants submit bids in increments of $${SALE_ECONOMICS.bidIncrementUsd}, specifying the price they're willing to pay and the amount. After the auction closes, a single clearing price is determined, and everyone pays that same price. All bids at or above the clearing price are successful.`,
   },
   {
     q: "When is the token sale date?",
@@ -39,9 +34,23 @@ export const faq: Array<{ q: string; a: string | string[] }> = [
     q: "What happens if I get outbid?",
     a: [
       "If you are outbid during the sale, you can do one of three things.",
-      "1. You can wait until the end of the sale settlement to receive your refund. If the final clearing price ends above your bid price, you do not receive tokens, and your committed USDC is refunded after the sale settles.",
-      "2. You can bid again at a modified price with your current USDC deposit. Let's say you commit 100 USDC at $0.0645 for 1,550.38 GNOT and are outbid. The current clearing price is $0.129. You can bid again with the 100 USDC at $0.129 for 775.19 GNOT. You won't need to add more USDC - all you need to do is sign with your wallet.",
-      "3. You can bid again at a modified price with your current USDC deposit + added USDC. Let's say you commit 100 USDC at $0.0645 for 1,550.38 GNOT and are outbid. The current clearing price is $0.129. You can deposit 100 more USDC and bid again. Your total commitment is 200 USDC at $0.129 for 1,550.38 GNOT.",
+      "1. You can wait until the sale ends and receive a full refund of your committed USDC.",
+      "2. You can raise your bid with your current USDC commitment. You won't need to add more USDC - all you need to do is sign with your wallet.",
+      "3. You can increase your commitment by depositing more USDC and placing a higher bid.",
+    ],
+  },
+  {
+    q: "If the clearing price is lower than my bid price, do I get a refund on the difference?",
+    a: [
+      "No. If the clearing price is lower than your bid, then your committed USDC will buy tokens at the clearing price.",
+      `Example: A participant bids $1,000 at a maximum price of ${fmtPrice(SALE_ECONOMICS.maxPriceUsd)} per token. The clearing price is $0.0774. The participant receives tokens at $0.0774 (spending $1,000).`,
+    ],
+  },
+  {
+    q: "What happens if the sale is oversubscribed?",
+    a: [
+      "If total commitments exceed the available token supply, allocations are settled on a pro rata basis. Every participant's commitment is scaled down by the same percentage so that the total matches the sale supply.",
+      "Example: If $20M is committed but only $10M worth of tokens are available, everyone receives 50% of their commitment. The rest is refunded after the sale is over.",
     ],
   },
   {

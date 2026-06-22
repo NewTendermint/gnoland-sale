@@ -39,7 +39,7 @@ export function AwarenessBarBody({
   if (phase === "pre-sale") {
     const registrationOpen = preSaleStage === "registration-open"
     return (
-      <div className="flex flex-col gap-4 pb-5 pt-4 sm:pb-6 sm:pt-5">
+      <div className="flex flex-col gap-4 py-4 sm:py-5">
         <BarCountdown
           targetIso={
             registrationOpen ? SALE_ECONOMICS.saleOpensIso : SALE_ECONOMICS.registrationOpensIso
@@ -73,7 +73,7 @@ export function AwarenessBarBody({
 
   if (phase === "ended") {
     return (
-      <div className="flex flex-col gap-3 pb-5 pt-4 sm:pb-6 sm:pt-5">
+      <div className="flex flex-col gap-3 py-4 sm:py-5">
         <div className="flex items-center">
           <span className="status-pill">Closed</span>
           {finalMetrics(commitment)
@@ -93,7 +93,7 @@ export function AwarenessBarBody({
   }
 
   return (
-    <div className="flex flex-col gap-3 pb-5 pt-4 sm:pb-6 sm:pt-5">
+    <div className="flex flex-col gap-3 py-4 sm:py-5">
       <div className="flex items-stretch">
         {liveKeyMetrics(commitment).map((m, i) => (
           <MetricCell

@@ -15,7 +15,7 @@ export function FunnelSteps({ journey }: { journey: JourneyState }) {
         return (
           <li key={step.label} className="flex items-center gap-3">
             {i > 0 ? (
-              <span className={`h-px w-6 ${i <= current ? "bg-border" : "bg-foreground"}`} />
+              <span className={`h-px w-6 ${i <= current ? "bg-foreground" : "bg-border"}`} />
             ) : null}
             <span className="flex items-center gap-2">
               <span
@@ -23,15 +23,15 @@ export function FunnelSteps({ journey }: { journey: JourneyState }) {
                   phase === "current"
                     ? "border-foreground bg-foreground text-background"
                     : phase === "done"
-                      ? "border-border text-faint"
-                      : "border-foreground text-foreground"
+                      ? "border-foreground text-foreground"
+                      : "border-border text-faint"
                 }`}
               >
                 {i + 1}
               </span>
               <span
                 className={`text-[10px] font-medium uppercase tracking-[0.2em] ${
-                  phase === "done" ? "text-faint" : "text-foreground"
+                  phase === "upcoming" ? "text-faint" : "text-foreground"
                 }`}
               >
                 {step.label}

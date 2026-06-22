@@ -18,18 +18,42 @@ export function bidCtaLabel(journey: JourneyState): string {
 /** Verification-status copy shared across surfaces. Titles carry no trailing period. */
 export const VERIFY_STATUS = {
   pending: {
+    icon: "clock",
+    tone: "default",
     title: "Verification in progress",
-    body: "We will let you know as soon as Sonar has reviewed it.",
+    body: "Sonar is reviewing it.",
   },
   failed: {
-    title: "Verification did not pass",
-    body: "Contact support if you believe this is an error.",
+    icon: "shield-x",
+    tone: "danger",
+    title: "Verification didn't pass",
+    body: "",
   },
   "not-eligible": {
+    icon: "shield-x",
+    tone: "danger",
     title: "Not eligible",
-    body: "This sale is not available in your region.",
+    body: "This sale isn't available to you.",
+  },
+  verified: {
+    icon: "shield-check",
+    tone: "ok",
+    title: "Identity verified",
+    body: "",
   },
 } as const
+
+/** Returning visitor whose Sonar session expired: recognized, prompted to reconnect (status is re-fetched live, never shown from cache). */
+export const WELCOME_BACK = {
+  icon: "shield-check",
+  tone: "default",
+  title: "Welcome back",
+  body: "Reconnect to see your verification status.",
+  cta: "Reconnect",
+} as const
+
+/** Support contact for a failed verification. TODO: TEMP placeholder - swap for the real support address before launch. null hides the CTA. */
+export const SUPPORT_CONTACT_HREF: string | null = "mailto:support@newtendermint.org"
 
 /** Awareness-mode "continue on desktop" copy. Copy: placeholder, pending team validation. */
 export const DESKTOP_ONLY = {

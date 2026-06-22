@@ -7,6 +7,14 @@ export const fmtPrice = (n: number) =>
 /** Whole-dollar USD amount, e.g. "$3,200". */
 export const fmtUsd = (n: number) => `$${n.toLocaleString("en-US", { maximumFractionDigits: 0 })}`
 
+/** Whole USDC amount, e.g. "3,200 USDC". */
+export const fmtUsdc = (n: number) =>
+  `${n.toLocaleString("en-US", { maximumFractionDigits: 0 })} USDC`
+
+/** USDC price with 2-4 decimals, e.g. "0.1226 USDC". */
+export const fmtPriceUsdc = (n: number) =>
+  `${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 4 })} USDC`
+
 /** Compact USD, e.g. "$1.2M" (deterministic across JS engines, unlike Intl compact). */
 export const fmtCompactUsd = (n: number) => {
   const sign = n < 0 ? "-" : ""

@@ -86,7 +86,7 @@ export function BarStatus({
       <Icon name={icon} draw={false} className={`h-5 w-5 shrink-0 ${iconColor}`} />
       <p className="text-sm">
         <span className="font-medium text-foreground">{title}</span>
-        {body ? <span className="text-muted"> {body}</span> : null}
+        {body ? <span className="ml-1.5 text-muted">{body}</span> : null}
       </p>
     </div>
   )
@@ -167,7 +167,7 @@ export function PausedBar() {
   return (
     <BarShell>
       <DrawLine immediate />
-      <div className="flex flex-wrap items-center gap-3 pb-6 pt-4 sm:pb-8 sm:pt-6">
+      <div className="flex flex-wrap items-center gap-3 py-4 sm:py-6">
         <Icon name="clock" draw={false} className="h-5 w-5 shrink-0 text-foreground" />
         <p className="text-sm">
           <span className="font-medium text-foreground">Bidding is paused.</span>{" "}

@@ -10,6 +10,12 @@ const PATHS: Record<string, ReactNode> = {
       <polyline points="8 12 11 15 16 9" />
     </>
   ),
+  "shield-x": (
+    <>
+      <path d="M12 3l8 3v6c0 5-3.5 9-8 9s-8-4-8-9V6l8-3z" />
+      <path d="M9.5 9.5l5 5M14.5 9.5l-5 5" />
+    </>
+  ),
   wallet: (
     <>
       <rect x="3" y="7" width="18" height="13" rx="2" />
