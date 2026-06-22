@@ -507,8 +507,8 @@ function BidRow({
           <p className="text-sm">
             <span className="font-medium text-foreground">
               Commit {fmtUsdc(amountNum)} at max {fmtPriceUsdc(priceNum)} / GNOT?
-            </span>{" "}
-            <span className="text-muted">
+            </span>
+            <span className="ml-1.5 text-muted">
               You pay the final clearing price, not your max, and receive ~{fmtGnot(est)} GNOT. You
               can raise later, but you can't lower or cancel.
             </span>
@@ -546,8 +546,8 @@ function BidRow({
           <p className="text-sm">
             <span className="font-medium text-foreground">
               {submitState === "approving" ? "Approving USDC..." : "Signing..."}
-            </span>{" "}
-            <span className="text-muted">
+            </span>
+            <span className="ml-1.5 text-muted">
               {submitState === "approving"
                 ? "Approve the USDC spending in your wallet."
                 : "Confirm and sign the bid in your wallet."}
@@ -582,12 +582,8 @@ function BidRow({
           ) : null}
         </div>
         <div className="flex flex-wrap items-center gap-4">
-          <button
-            type="button"
-            onClick={() => setSubmitState("idle")}
-            className="text-xs font-bold uppercase tracking-[0.2em] text-muted underline-offset-4 hover:text-foreground hover:underline"
-          >
-            Raise your bid
+          <button type="button" onClick={() => setSubmitState("idle")} className="btn-pan bid-pill">
+            <span>Raise your bid</span>
           </button>
           {walletButton}
         </div>
@@ -687,7 +683,7 @@ function sanitizeDecimal(v: string): string {
 }
 
 const STEP_BTN =
-  "flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full font-mono text-base text-muted transition-colors hover:text-foreground disabled:pointer-events-none disabled:opacity-30"
+  "flex shrink-0 cursor-pointer items-center justify-center rounded-md px-3 py-2 font-mono text-base leading-none disabled:pointer-events-none disabled:opacity-30"
 
 function InputCell({
   id,
@@ -725,6 +721,26 @@ function InputCell({
   }
   className?: string
 }) {
+  const [hintFlash, setHintFlash] = useState(false)
+  const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(
+    () => () => {
+      if (flashTimer.current) clearTimeout(flashTimer.current)
+    },
+    [],
+  )
+  // Focusing the read-only price field flashes the steppers, so it reads as "use these".
+  function flashStepper() {
+    if (!stepper) return
+    setHintFlash(true)
+    if (flashTimer.current) clearTimeout(flashTimer.current)
+    flashTimer.current = setTimeout(() => setHintFlash(false), 400)
+  }
+  const stepBtnCls = `${STEP_BTN} ${
+    hintFlash
+      ? "bg-on-contrast text-surface-contrast"
+      : "bg-border text-muted hover:bg-border-strong hover:text-foreground"
+  }`
   return (
     <div className="relative flex flex-col gap-1.5">
       <div className="flex items-center gap-1.5">
@@ -734,10 +750,38 @@ function InputCell({
         {hint ? <FieldHint text={hint} /> : null}
       </div>
       <div
-        className={`flex h-12 items-center rounded-[var(--radius-md)] border bg-surface-alt px-3.5 transition-colors ${
-          invalid ? "border-danger" : "border-border focus-within:border-faint"
+        className={`flex h-12 items-center rounded-[var(--radius-md)] border bg-surface-alt ${
+          stepper ? "pl-2" : "pl-3.5"
+        } pr-3.5 transition-colors ${
+          invalid
+            ? "border-danger"
+            : readOnly
+              ? "border-border"
+              : "border-border focus-within:border-faint"
         }`}
       >
+        {stepper ? (
+          <div className="mr-2 flex items-center gap-0.5">
+            <button
+              type="button"
+              aria-label={stepper.downLabel}
+              onClick={stepper.onDown}
+              disabled={stepper.downDisabled}
+              className={stepBtnCls}
+            >
+              -
+            </button>
+            <button
+              type="button"
+              aria-label={stepper.upLabel}
+              onClick={stepper.onUp}
+              disabled={stepper.upDisabled}
+              className={stepBtnCls}
+            >
+              +
+            </button>
+          </div>
+        ) : null}
         {prefix ? (
           <span aria-hidden="true" className="mr-1 font-mono text-lg text-muted">
             {prefix}
@@ -751,6 +795,7 @@ function InputCell({
           placeholder={placeholder}
           readOnly={readOnly}
           onChange={(e) => onChange(sanitizeDecimal(e.target.value))}
+          onFocus={flashStepper}
           onKeyDown={
             stepper
               ? (e) => {
@@ -772,28 +817,6 @@ function InputCell({
           <span aria-hidden="true" className="ml-1 whitespace-nowrap font-mono text-sm text-muted">
             {suffix}
           </span>
-        ) : null}
-        {stepper ? (
-          <div className="ml-1.5 flex items-center gap-0.5">
-            <button
-              type="button"
-              aria-label={stepper.downLabel}
-              onClick={stepper.onDown}
-              disabled={stepper.downDisabled}
-              className={STEP_BTN}
-            >
-              -
-            </button>
-            <button
-              type="button"
-              aria-label={stepper.upLabel}
-              onClick={stepper.onUp}
-              disabled={stepper.upDisabled}
-              className={STEP_BTN}
-            >
-              +
-            </button>
-          </div>
         ) : null}
       </div>
       {error ? (

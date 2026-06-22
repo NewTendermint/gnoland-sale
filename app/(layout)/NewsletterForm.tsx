@@ -52,7 +52,9 @@ export function NewsletterForm({
   }
 
   return (
-    <div className={align === "center" ? "text-center" : ""}>
+    <div
+      className={`${variant === "bar" ? "relative " : ""}${align === "center" ? "text-center" : ""}`}
+    >
       {state === "success" ? (
         <div className="border border-transparent py-1">
           <div
@@ -106,9 +108,9 @@ export function NewsletterForm({
         </form>
       )}
       <output
-        className={`mt-1.5 block h-4 text-[10px] uppercase tracking-[0.2em] ${
-          state === "error" ? "text-danger" : muted
-        }`}
+        className={`${
+          variant === "bar" ? "absolute left-0 top-full mt-1" : "mt-1.5 block"
+        } h-4 text-[10px] uppercase tracking-[0.2em] ${state === "error" ? "text-danger" : muted}`}
       >
         {state === "error" ? (
           "Could not subscribe. Please try again."

@@ -391,7 +391,7 @@ export function PreSaleRight({
   switch (state) {
     case "notify":
       return newsletterEnabled() ? (
-        <div className="flex flex-wrap items-start gap-5">
+        <div className="flex flex-wrap items-center gap-5">
           <NewsletterForm variant="bar" inputId="newsletter-email-bar" />
           <AddToCalendarButton milestone="registration" variant="bar" />
         </div>

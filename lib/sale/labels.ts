@@ -3,8 +3,9 @@ import type { JourneyState } from "./types"
 /** Collapsed sticky-bar CTA action label. Copy: placeholder, pending team validation. */
 export function bidCtaLabel(journey: JourneyState): string {
   switch (journey) {
-    case "has-bid-outbid":
     case "has-bid-winning":
+      return "Manage bid"
+    case "has-bid-outbid":
       return "Raise bid"
     case "kyc-failed":
       return "Verification failed"
