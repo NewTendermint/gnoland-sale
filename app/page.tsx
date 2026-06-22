@@ -1,5 +1,6 @@
 import { BidPanel } from "./(layout)/BidPanel"
 import { SaleProvider } from "./(layout)/SaleProvider"
+import { Backers } from "./(sections)/backers/Backers"
 import { Ecosystem } from "./(sections)/ecosystem/Ecosystem"
 import { Faq } from "./(sections)/faq/Faq"
 import { Features } from "./(sections)/features/Features"
@@ -31,6 +32,7 @@ export default function Home() {
         <Roadmap />
         <Ecosystem />
         <Partners />
+        <Backers />
         <Faq />
         <PreFooterCta />
       </main>

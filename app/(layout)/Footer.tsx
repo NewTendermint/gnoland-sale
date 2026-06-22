@@ -98,7 +98,7 @@ export function Footer() {
           </div>
 
           <div className="col-span-6 sm:col-span-4 lg:col-span-2 lg:col-start-10">
-            <p className="mb-4 text-xl font-semibold">External</p>
+            <p className="mb-4 text-xl font-semibold">Links</p>
             <DrawLine />
             <Stagger as="ul" className="space-y-2 pt-4 text-lg text-muted lg:text-xl">
               {externalLinks.map((link) => (

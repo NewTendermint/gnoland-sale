@@ -22,7 +22,7 @@ export const steps: Array<{ title: string; body: string; icon: string }> = [
     icon: "scale",
   },
   {
-    title: "Distribution",
+    title: "Receive",
     body: "Tokens are sent to your address with lockup applied.",
     icon: "send",
   },

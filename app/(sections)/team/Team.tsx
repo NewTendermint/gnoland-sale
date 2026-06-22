@@ -17,8 +17,8 @@ export function Team() {
       >
         <SectionHeading eyebrow="Core team" title="The Team Behind Gno.land" />
         <Reveal as="p" className="mt-4 max-w-xl text-base text-muted md:text-lg">
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt
-          ut labore.
+          The engineers, researchers, and operators building Gno.land in the open, from the makers
+          of Cosmos and Tendermint.
         </Reveal>
       </RevealGroup>
 

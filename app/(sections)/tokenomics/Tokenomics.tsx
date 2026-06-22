@@ -31,7 +31,7 @@ export function Tokenomics() {
 
   return (
     <Section id="tokenomics" gridClassName="-mt-6 lg:-mt-14">
-      <RevealGroup inline staggerMs={100}>
+      <RevealGroup inline staggerMs={70} fromBottomPct={0}>
         <h2 className="sr-only">How GNOT is distributed</h2>
 
         <RevealGroup
@@ -40,7 +40,7 @@ export function Tokenomics() {
           className="col-span-12 flex flex-col lg:col-span-5 lg:col-start-2"
         >
           <ClipOpen
-            index={5}
+            index={1}
             className="flex flex-1 flex-col rounded-[var(--frame-radius)] bg-surface-alt p-6 text-foreground sm:p-8 lg:p-10"
           >
             <FadeIn as="div" index={8} className="mb-4 flex items-baseline justify-between gap-3">
@@ -107,7 +107,7 @@ export function Tokenomics() {
           className="col-span-12 flex flex-col lg:col-span-5 lg:col-start-7"
         >
           <ClipOpen
-            index={5}
+            index={1}
             className="flex flex-1 flex-col rounded-[var(--frame-radius)] bg-surface-alt p-6 text-foreground sm:p-8 lg:p-10"
           >
             <FadeIn as="div" index={8} className="mb-4 flex items-baseline justify-between gap-3">

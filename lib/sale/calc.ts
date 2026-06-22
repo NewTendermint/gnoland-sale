@@ -16,11 +16,11 @@ export function bidStatus(
 export function validateBidAmount(
   amountUsd: number,
   minUsd: number,
-  maxUsd: number,
+  maxUsd: number | null,
 ): "ok" | "too-low" | "too-high" {
   if (!Number.isFinite(amountUsd)) return "too-low"
   if (amountUsd < minUsd) return "too-low"
-  if (amountUsd > maxUsd) return "too-high"
+  if (maxUsd != null && amountUsd > maxUsd) return "too-high"
   return "ok"
 }
 

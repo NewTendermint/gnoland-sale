@@ -60,7 +60,7 @@ export function StatementList({
                       <Icon
                         name={item.icon}
                         index={1}
-                        className="h-10 w-10 shrink-0 text-foreground md:mr-2 md:h-12 md:w-12"
+                        className="h-9 w-9 shrink-0 text-foreground md:mr-2 md:h-12 md:w-12"
                       />
                       <Reveal
                         as="h3"

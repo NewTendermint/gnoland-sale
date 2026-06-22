@@ -366,9 +366,7 @@ function BidRow({
   const amountError =
     amountShown && amountCheck === "too-low"
       ? `Min ${fmtUsd(SALE_ECONOMICS.minCommitmentUsd)}.`
-      : amountShown && amountCheck === "too-high"
-        ? `Max ${fmtUsd(SALE_ECONOMICS.maxCommitmentUsd)}.`
-        : null
+      : null
 
   const clearingNote =
     priceValid && clearingPriceUsd != null
@@ -460,7 +458,7 @@ function BidRow({
           onChange={onAmountChange}
           invalid={amountShown && amountCheck !== "ok"}
           placeholder={String(SALE_ECONOMICS.minCommitmentUsd)}
-          hint={`The total USDC you pay if filled (refunded if outbid). GNOT received = amount / clearing price. Min ${fmtUsd(SALE_ECONOMICS.minCommitmentUsd)}, max ${fmtUsd(SALE_ECONOMICS.maxCommitmentUsd)}.`}
+          hint={`The total USDC you pay if filled (refunded if outbid). GNOT received = amount / clearing price. Min ${fmtUsd(SALE_ECONOMICS.minCommitmentUsd)}, no maximum.`}
           prefix="$"
           error={amountError}
           className="w-32"

@@ -24,8 +24,8 @@ export const communityLinks: NavLink[] = [
 ]
 
 export const externalLinks: NavLink[] = [
-  { label: "gno.land", href: "https://gno.land" },
-  { label: "Adena", href: "https://adena.app" },
-  { label: "GitHub", href: "https://github.com/gnolang" },
+  { label: "Gno.land", href: "https://gno.land" },
   { label: "NewTendermint", href: "https://newtendermint.org" },
+  { label: "GitHub", href: "https://github.com/gnolang" },
+  { label: "Adena", href: "https://adena.app" },
 ]

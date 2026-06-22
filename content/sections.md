@@ -109,6 +109,8 @@ Refined metric definitions (from the team xlsx, 2026-06-01), mapped to the Sonar
 >
 > **2026-06-15 amendment (doc revision, owner-validated): chain + economics updated.** The sale runs on **Ethereum mainnet** (preview: Sepolia), accepting USDC - the earlier Base pin is superseded (code + ADR migrated 2026-06-15). Offered amount is **77,500,000 GNOT (~5.8% of supply)**, superseding the recorded 31M. **Soft cap $2,000,000 / hard cap $10,000,000**, **minimum commitment $100**, **contribution window July 15-21, 2026**. The terms table is now two sections (Sale Overview + Pricing and Caps) instead of four. Roadmap Q1 2026 now states the first GNOT (genesis/beta) distribution. Wherever the fields and notes below still show 31M / $200 / Base / a vague end date, they are superseded by this amendment.
 
+> **2026-06-21 amendment (owner-validated, final-form copy): schedule, caps, audit, FAQ, backers.** Exact schedule with times (single source = `lib/sale/economics.ts`): **Registration opens Monday, July 6, 2026 at 6:00 PM EST**; **sale starts Monday, July 20, 2026 at 6:00 PM EST**; **sale ends Monday, July 27, 2026 at 5:59 PM EST** (close was July 26, now July 27). **Soft cap removed** (no `targetRaiseUsd` / floor; hard cap $10,000,000 stays). **No maximum commitment** (the $100,000 whale cap is dropped; minimum $100 stays). **Security audit: Oak Security only** (already the single auditor shown). Unlock final tranche is **9% in month 14** (corrects the earlier "month 13"; matches the #4b vesting module, distribution months 1-14). The **FAQ copy is rewritten to the owner's final wording** (new "When is the token sale date?" question; the "What happens if I get outbid?" answer now lists the three raise options with worked GNOT examples). Footer External links reordered: **Gno.land -> NewTendermint -> GitHub -> Adena** (and the gno.land label is now "Gno.land"). New **"Our Backers" section** added (see #13). Superseding rows in the table below: min commitment $200 -> $100, max commitment $100,000 -> none, "month 13" -> "month 14", end date -> July 27.
+
 **Status**: Updated 2026-06-01 from the team xlsx + the 2026-05-30 Sonar call recap (see `docs/REQUIREMENTS_FROM_TEAMS.md` A.12.2). Values marked 🟡 were filled from Friday's meeting and still need Dongwon to finalize. The contribution-window end date is deliberately left vague because the sale may be extended (A.12.2).
 
 **Source xls note**: "I filled out the numbers based on our meeting on Friday, but I will need to talk to Dongwon to finalize some numbers."
@@ -180,7 +182,7 @@ Refined metric definitions (from the team xlsx, 2026-06-01), mapped to the Sonar
 
 ## #5 - How to Participate  ✅
 
-**Status**: Updated 2026-06-12 (reordered to Verify / Connect / Bid: Sonar verification is wallet-independent and opens ~2 weeks before the sale, so it leads; verified returning users auto-skip it. 4th step Distribution kept.)
+**Status**: Updated 2026-06-12 (reordered to Verify / Connect / Bid: Sonar verification is wallet-independent and opens ~2 weeks before the sale, so it leads; verified returning users auto-skip it. 4th step Distribution kept; renamed to Receive 2026-06-22 - action verb, matches Verify / Connect / Bid.)
 
 **Title**: `How to participate`
 **Eyebrow**: `How it works`
@@ -190,7 +192,7 @@ Refined metric definitions (from the team xlsx, 2026-06-01), mapped to the Sonar
 1. **Verify** - Complete identity verification with Sonar, Echo's compliance platform. (Sonar one-liner added 2026-06-13, owner-requested)
 2. **Connect** - Connect your wallet to join the sale.
 3. **Bid** - Set your max price and commit USDC.
-4. **Distribution** - Tokens are distributed to your address. Token lockup is applied according to schedule.
+4. **Receive** - Tokens are distributed to your address. Token lockup is applied according to schedule.
 
 **Source xls note (2026-06-01)**: "Add link to Sonar registration website." The Verify step's CTA links to the Sonar registration/OAuth URL (the `#register` anchor today is a placeholder; real URL comes with the `clientUUID` from the Founder Dashboard, REQUIREMENTS A.2). Registration opens **July 6, 2026**, two weeks before the sale opens (July 20) - the pre-sale phase should push registration during this window.
 
@@ -285,10 +287,11 @@ Gno.land automatically saves and manages data for developers, eliminating some o
 
 ## #10 - Team (& Advisors)  ⚠️ TBD
 
-**Status**: TBD - people list still pending (the heading copy below shipped)
+**Status**: Filled - roster + roles confirmed 2026-06-22, maintained in `content/sections/team.ts` (11 members, all bios provided; Maxwell Lutz replaced by Liu Tianzhao).
 
 **Eyebrow**: `Core team`
 **Title**: `The Team Behind Gno.land`
+**Lead**: `The engineers, researchers, and operators building Gno.land in the open, from the makers of Cosmos and Tendermint.`
 
 **Source xls note**: "Need updated list of team and advisors"
 
@@ -379,13 +382,25 @@ A community-led GitHub organization for builders in the Gno.land ecosystem. A ho
 
 ---
 
-## #13 - Investors  ⚠️ TBD
+## #13 - Our Backers  ✅ (added 2026-06-21, owner-provided)
 
-**Status**: TBD - placeholder, may be removed
+**Status**: Ready. Owner-confirmed 2026-06-21. Mirrored into `content/sections/backers.ts`; rendered by `app/(sections)/backers/Backers.tsx`, placed after Partners and before the FAQ.
 
-**Source xls note**: "If we get investors, list their logos here"
+**Eyebrow**: `Backers`
+**Title**: `Our Backers`
 
-**Decision needed**: Keep section or drop? If kept, need logos + 1-line descriptions per investor.
+**Backers** (name -> external link, opens in a new tab):
+
+### 1Confirmation
+https://www.1confirmation.com/portfolio
+
+### All in Bits
+https://allinbits.com/
+
+### Onbloc
+https://www.onbloc.xyz/
+
+**Asset note**: no logos provided yet, so the section renders the names as outbound text links. Swap to a logo wall when SVGs arrive.
 
 ---
 
@@ -435,14 +450,18 @@ AtomOne is a community-driven, constitutionally governed blockchain prioritizing
 
 **Format**: hairline-separated rows (Team credits pattern), question as full-width button, answer expands on click (grid-rows trick, single-open, reduced-motion safe).
 
-1. **How does the auction work?** - This is a uniform price auction: every winner pays the same final clearing price. You set the maximum price you are willing to pay and the amount you commit; if the final clearing price ends at or below your maximum, you receive tokens at the clearing price, not at your maximum. Bidding stops early if the $0.129 hardcap is reached. (price dynamic from economics)
-2. **What happens if I get outbid?** - You can raise your bid at any time while the sale is open. If the final clearing price ends above your maximum, you do not receive tokens and your committed funds become refundable once the sale settles.
-3. **What is Sonar and why do I need to verify my identity?** - This is a regulated public sale, so every participant completes a one-time identity verification (about 3 minutes) with Sonar, the compliance platform by Echo. Reviews are asynchronous and can take time, so register early - registration opens July 6, 2026, two weeks before the sale. (dates dynamic from economics)
-4. **Who can participate?** - Eligibility depends on your jurisdiction and is checked during Sonar verification. The sale is not available in some regions; if yours is restricted, Sonar will tell you during registration. US participants: accredited investors only, with a one-year lockup.
-5. **What do I need to place a bid?** - A verified Sonar account, a self-custody wallet connected to Ethereum, and USDC to commit. Get these ready before the sale opens July 20 - funding a wallet on sale day is the most common delay. (date dynamic)
-6. **How much can I commit?** - Bids run from $0.0645 to $0.129 per GNOT in $0.00645 steps - the form starts you at the cheapest price that is currently winning, and you move one step at a time. Commitments run between $100 and $100,000 per participant. (numbers dynamic from economics; min commitment $100 confirmed 2026-06-15; price band confirmed 2026-06-13)
-7. **When do I receive my tokens?** - Distribution begins September 1, 2026, when transfers are enabled at mainnet. Tokens are sent to your wallet with the unlock schedule applied: 7% unlocks at launch, then 7% each month, with the final 9% in month 13. No cliff. (date dynamic from economics; matches #4b vesting)
-8. **Can I withdraw my bid?** - No. A bid can be raised, never lowered or withdrawn while the sale runs. If your maximum ends below the final clearing price, your committed funds become refundable at settlement.
+> **2026-06-21: rewritten to the owner's final-form copy.** Mirrored verbatim into `content/sections/faq.ts`. Prices/dates still derive from `lib/sale/economics.ts`; the worked GNOT figures in #3 are illustrative literals pinned to the $0.0645 / $0.129 band. Answers may be multiple paragraphs (the FAQ component renders a string or an array of paragraphs).
+
+1. **How does the auction work?** - The token sale takes place as a uniform price auction (English auction) where every winner pays the same clearing price per token. You can bid at or above the current clearing price and set the amount you want to commit in USDC. If the final clearing price is the same as your bid price, you receive tokens at the clearing price. If the final clearing price is below your bid price, you receive tokens at the clearing price and receive a refund of the price difference.
+   The hard cap price for the auction is $0.129, which means the maximum clearing price for this auction is $0.129. Bidding may continue after the hard cap price of $0.129 is reached. If the total bids exceed the amount of tokens available at the hard cap price, tokens will be distributed pro rata among all participants. Refunds will be issued after the sale is over. (price dynamic from economics)
+2. **When is the token sale date?** (NEW) - Registration with Sonar opens Monday, July 6, 2026 at 6:00 PM EST. The token sale starts Monday, July 20, 2026 at 6:00 PM EST. The sale ends Monday, July 27, 2026 at 5:59 PM EST. (dates + times dynamic from economics)
+3. **What happens if I get outbid?** - If you are outbid during the sale, you can do one of three things. 1) Wait until the end of the sale settlement to receive your refund (if the final clearing price ends above your bid price, you do not receive tokens, and your committed USDC is refunded after the sale settles). 2) Bid again at a modified price with your current USDC deposit (e.g. you commit 100 USDC at $0.0645 for 1,550.38 GNOT and are outbid; the clearing price is $0.129; you can bid again with the same 100 USDC at $0.129 for 775.19 GNOT - no extra USDC, just sign with your wallet). 3) Bid again at a modified price with your current USDC deposit + added USDC (e.g. deposit 100 more USDC and bid again, for a total commitment of 200 USDC at $0.129 for 1,550.38 GNOT).
+4. **What is Sonar and why do I need to verify my identity?** - This is a regulated public sale, so every participant completes a one-time identity verification (about 3 minutes) with Sonar, the compliance platform by Echo. Reviews are asynchronous and can take time, so please register early. Registration opens July 6, 2026, two weeks before the sale. (date dynamic from economics)
+5. **Who can participate?** - Eligibility depends on your jurisdiction and is checked during Sonar verification. The sale is not available in some regions; if yours is restricted, Sonar will tell you during registration. US participants: only accredited investors can participate, with a one-year lockup applied.
+6. **What do I need to place a bid?** - To participate in the sale, you will need to complete Sonar verification, set up a self-custody Ethereum wallet, and hold USDC. We recommend completing your identity verification and funding your wallet well ahead of the sale date of July 20, 2026. (date dynamic)
+7. **How much can I commit?** - The minimum commitment requirement is $100 USDC, and there is no maximum commitment limit. You can bid anywhere between the starting price of $0.0645 and the maximum price of $0.129 in $0.00645 increments. (numbers dynamic from economics; no maximum confirmed 2026-06-21)
+8. **When do I receive my tokens?** - Token distribution is set to happen in September. After you receive your tokens, tokens will be transferable with an unlock schedule applied. The unlock schedule is as follows: 7% unlocks at token generation, then 7% each month, with the final 9% unlocked in month 14. There is no cliff. (month dynamic from economics; matches #4b vesting)
+9. **Can I withdraw my bid?** - No. You cannot lower or cancel a bid while the sale is running. If your bid ends below the final clearing price, your committed funds are refunded after settlement.
 
 ---
 

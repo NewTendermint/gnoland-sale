@@ -52,10 +52,11 @@ export const sceneVideos = {
   },
   partnersB: {
     sources: [
-      { src: "/sprites/tree-macro-cubic.av1.mp4?v=1", type: "video/mp4; codecs=av01.0.08M.08" },
-      { src: "/sprites/tree-macro-cubic.webm?v=1", type: "video/webm; codecs=vp9" },
-      { src: "/sprites/tree-macro-cubic.mp4?v=1", type: "video/mp4; codecs=avc1.640020" },
+      { src: "/sprites/tree-macro-cubic.av1.mp4?v=2", type: "video/mp4; codecs=av01.0.08M.08" },
+      { src: "/sprites/tree-macro-cubic.webm?v=2", type: "video/webm; codecs=vp9" },
+      { src: "/sprites/tree-macro-cubic.mp4?v=2", type: "video/mp4; codecs=avc1.640020" },
     ],
-    poster: "/sprites/tree-macro-cubic.poster.jpg?v=9",
+    poster: "/sprites/tree-macro-cubic.poster.jpg?v=12",
+    scaleRest: 1.4,
   },
 } satisfies Record<string, SceneVideoProps>

@@ -52,6 +52,10 @@ describe("validateBidAmount", () => {
   it("flags above max", () => {
     expect(validateBidAmount(100_001, 200, 100_000)).toBe("too-high")
   })
+  it("skips the max check when max is null (no maximum commitment)", () => {
+    expect(validateBidAmount(100_000_000, 200, null)).toBe("ok")
+    expect(validateBidAmount(100, 200, null)).toBe("too-low")
+  })
   it("rejects non-finite amounts (NaN, Infinity) instead of accepting them", () => {
     expect(validateBidAmount(Number.NaN, 200, 100_000)).not.toBe("ok")
     expect(validateBidAmount(Number.POSITIVE_INFINITY, 200, 100_000)).not.toBe("ok")

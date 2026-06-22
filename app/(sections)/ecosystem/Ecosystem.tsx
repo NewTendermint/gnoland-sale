@@ -28,7 +28,7 @@ export function Ecosystem() {
                   <div className="grid grid-cols-1 gap-2 md:grid-cols-10 md:gap-6">
                     <div className="flex flex-row-reverse items-start justify-between gap-3 md:col-span-3 md:flex-row md:self-start md:pr-4 md:pt-6">
                       <span className="shrink-0 text-faint">
-                        <Icon name={p.icon} index={1} className="h-10 w-10 md:h-12 md:w-12" />
+                        <Icon name={p.icon} index={1} className="h-9 w-9 md:h-12 md:w-12" />
                       </span>
                       <div>
                         <Reveal

@@ -7,12 +7,14 @@
 
 export const team: Array<{ name: string; bio: string }> = [
   { name: "Jae Kwon", bio: "Creator of Tendermint and Cosmos" },
-  { name: "Manfred Touron", bio: "Co-founded Scaleway and Berty" },
-  { name: "Morgan Bazalgette", bio: "Senior Go engineer" },
-  { name: "Alexis Colin", bio: "Senior frontend engineer, 10+ years" },
-  // Names spelled per best-guess French/English normalization,
-  // bios Lorem pending team confirmation.
-  { name: "Guilhem Fanton", bio: "Lorem ipsum dolor sit amet" },
-  { name: "Antoine Eddi", bio: "Consectetur adipiscing elit, sed do" },
-  { name: "Maxwell Lutz", bio: "Eiusmod tempor incididunt ut labore" },
+  { name: "Manfred Touron", bio: "VP of Engineering, co-founded Scaleway and Berty" },
+  { name: "Morgan Bazalgette", bio: "Golang Developer" },
+  { name: "Alexis Colin", bio: "Senior Front End Developer" },
+  { name: "Guilhem Fanton", bio: "Golang Developer" },
+  { name: "Antoine Eddi", bio: "Research & Development Engineer" },
+  { name: "Liu Tianzhao", bio: "Principal Software Engineer" },
+  { name: "Dongwon Shin", bio: "Chief Operating Officer" },
+  { name: "Ryan Lee", bio: "Marketing Lead" },
+  { name: "Nandika Hettiarachchi", bio: "Director of Finance" },
+  { name: "Carolyn Pehrson", bio: "Principal Paralegal and Executive Assistant" },
 ]

@@ -59,9 +59,11 @@ export function Faq() {
                   }`}
                 >
                   <div className="overflow-hidden" inert={!isOpen}>
-                    <p className="max-w-3xl pb-6 text-base text-muted md:text-lg lg:pb-8">
-                      {item.a}
-                    </p>
+                    <div className="max-w-3xl space-y-3 pb-6 text-base text-muted md:text-lg lg:pb-8">
+                      {(Array.isArray(item.a) ? item.a : [item.a]).map((para) => (
+                        <p key={para}>{para}</p>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </FadeIn>

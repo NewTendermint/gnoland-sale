@@ -9,7 +9,7 @@ import { sceneVideos } from "../../../lib/scenes"
 export function Partners() {
   const heading = { eyebrow: "Partners", title: "Our Collaborators" }
   return (
-    <Section id="partners">
+    <Section id="partners" className="pb-0 lg:pb-0">
       <RevealGroup inline staggerMs={250}>
         <div className="order-first col-span-12 lg:hidden">
           <SectionHeading eyebrow={heading.eyebrow} title={heading.title} index={0} />

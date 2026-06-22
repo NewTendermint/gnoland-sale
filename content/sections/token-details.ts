@@ -54,7 +54,6 @@ export const termGroups: Array<{
       { label: "Max price", value: "$0.129 per GNOT" },
       { label: "Bid increment", value: "$0.00645" },
       { label: "Minimum commitment", value: "$100" },
-      { label: "Soft cap", value: "$2,000,000" },
       { label: "Hard cap", value: "$10,000,000" },
     ],
   },
