@@ -9,6 +9,7 @@ import { Cta } from "../../(ui)/Cta"
 import { GnotCoin } from "../../(ui)/GnotCoin"
 import { Icon } from "../../(ui)/Icon"
 import {
+  bidHeadroomPct,
   gnotEstimate,
   snapBidPrice,
   validateBidAmount,
@@ -497,6 +498,11 @@ function BidRow({
   const amountValid = amountShown && amountCheck === "ok"
   const canSubmit = priceValid && amountValid && submitState === "idle"
   const est = gnotEstimate(amountValid ? amountNum : 0, clearingPriceUsd ?? minPrice)
+  // Second estimate at the bidder's own max price - only meaningful while winning with margin
+  // (bid > clearing). It is the floor of what they receive if the price climbs to their max.
+  const showAtBid =
+    amountValid && priceValid && clearingPriceUsd != null && priceNum > clearingPriceUsd
+  const estAtBid = showAtBid ? gnotEstimate(amountNum, priceNum) : null
 
   const priceError =
     priceShown && priceCheck === "below-min"
@@ -513,6 +519,8 @@ function BidRow({
       ? `Min ${fmtUsdc(SALE_ECONOMICS.minCommitmentUsd)}.`
       : null
 
+  const headroom =
+    priceValid && clearingPriceUsd != null ? bidHeadroomPct(priceNum, clearingPriceUsd) : null
   const clearingNote =
     priceValid && clearingPriceUsd != null
       ? priceNum < clearingPriceUsd
@@ -520,10 +528,15 @@ function BidRow({
             tone: "warn" as const,
             text: `This price would be outbid (below ${fmtPriceUsdc(clearingPriceUsd)}).`,
           }
-        : {
-            tone: "ok" as const,
-            text: `Valid bid. Current clearing price is $${fmtPriceUsdc(clearingPriceUsd)}.`,
-          }
+        : headroom && headroom > 0
+          ? {
+              tone: "ok" as const,
+              text: `Winning - the clearing can rise ${(headroom * 100).toFixed(1)}% before you're outbid (now ${fmtPriceUsdc(clearingPriceUsd)}).`,
+            }
+          : {
+              tone: "ok" as const,
+              text: `Winning at the clearing price ${fmtPriceUsdc(clearingPriceUsd)} - raise your max for headroom.`,
+            }
       : null
 
   async function runSubmit() {
@@ -696,11 +709,24 @@ function BidRow({
         />
 
         <div className="flex flex-col gap-1.5">
-          <span className="text-[10px] uppercase tracking-[0.2em] text-muted">You receive</span>
-          <div className="flex h-12 items-center gap-2">
-            <GnotCoin className="h-6 w-6 text-muted" />
-            <span className="font-mono text-lg tabular-nums text-foreground">
-              ~{fmtGnot(est)} <span className="text-muted">GNOT</span>
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] uppercase tracking-[0.2em] text-muted">You receive</span>
+            <FieldHint text="Estimated GNOT based on the current clearing price. If the final clearing price is higher, your GNOT allocation will be lower." />
+          </div>
+          <div className="flex min-h-12 items-center gap-3">
+            <div className="flex items-center gap-2">
+              <GnotCoin className="h-6 w-6 shrink-0 text-muted" />
+              <span className="font-mono text-lg tabular-nums text-foreground">
+                ~{fmtGnot(est)} <span className="text-muted">GNOT</span>
+              </span>
+            </div>
+            <span className="text-[11px] leading-snug text-muted">
+              at the current clearing price
+              {estAtBid != null ? (
+                <>
+                  <br />~{fmtGnot(estAtBid)} if the price rises to your max bid
+                </>
+              ) : null}
             </span>
           </div>
         </div>

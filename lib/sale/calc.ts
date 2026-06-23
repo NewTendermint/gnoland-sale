@@ -4,6 +4,16 @@ export function gnotEstimate(commitmentUsd: number, clearingPriceUsd: number | n
   return commitmentUsd / clearingPriceUsd
 }
 
+/** How much the clearing can still rise (as a fraction of itself) before this bid is outbid.
+ *  0 = at the clearing price (first to be outbid), >0 = headroom, null before anything clears. */
+export function bidHeadroomPct(
+  bidPriceUsd: number,
+  clearingPriceUsd: number | null,
+): number | null {
+  if (!clearingPriceUsd || clearingPriceUsd <= 0) return null
+  return (bidPriceUsd - clearingPriceUsd) / clearingPriceUsd
+}
+
 export function bidStatus(
   myPriceUsd: number | null,
   clearingPriceUsd: number | null,

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
 import {
+  bidHeadroomPct,
   bidStatus,
   gnotEstimate,
   priceUsdToMicroUsd,
@@ -20,6 +21,21 @@ describe("gnotEstimate", () => {
     expect(gnotEstimate(2000, 0)).toBe(0)
     expect(gnotEstimate(2000, null)).toBe(0)
     expect(gnotEstimate(2000, -1)).toBe(0)
+  })
+})
+
+describe("bidHeadroomPct", () => {
+  it("is the relative gap from the clearing price up to the bid price", () => {
+    expect(bidHeadroomPct(0.129, 0.12)).toBeCloseTo(0.075, 6)
+    expect(bidHeadroomPct(0.12255, 0.12)).toBeCloseTo(0.02125, 6)
+  })
+  it("is 0 when the bid sits exactly at the clearing price", () => {
+    expect(bidHeadroomPct(0.12, 0.12)).toBe(0)
+  })
+  it("is null before anything clears (clearing null, 0, or negative)", () => {
+    expect(bidHeadroomPct(0.12, null)).toBeNull()
+    expect(bidHeadroomPct(0.12, 0)).toBeNull()
+    expect(bidHeadroomPct(0.12, -1)).toBeNull()
   })
 })
 
