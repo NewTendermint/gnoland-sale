@@ -16,7 +16,7 @@ export function Hero() {
           React 19 hoists this <link> into <head>, ahead of the deep <img> in the DOM. */}
       <link rel="preload" as="image" href={sceneVideos.hero.poster} fetchPriority="high" />
 
-      <div className="page-container flex w-full flex-col items-center pt-40 lg:pt-[15vh]">
+      <div className="page-container flex w-full flex-col items-center pt-32 lg:pt-[12vh]">
         <Entrance className="flex w-full flex-col items-center text-center">
           <Reveal
             as="h1"
