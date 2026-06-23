@@ -22,6 +22,10 @@ const SUBMIT = {
   tile: "btn-pan inline-flex shrink-0 cursor-pointer items-center justify-center rounded-full bg-surface-contrast px-5 py-2.5 text-xs font-bold uppercase tracking-[0.2em] text-on-contrast ring-1 ring-faint ring-inset before:bg-on-contrast hover:text-surface-contrast disabled:pointer-events-none disabled:opacity-40",
 } as const
 
+// Client-side pre-check so a malformed email shows a clear inline error instead of the
+// generic upstream failure; the server (zod email) stays the authoritative validator.
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
 export function NewsletterForm({
   variant,
   inputId,
@@ -32,7 +36,9 @@ export function NewsletterForm({
   /** Block alignment; tiles center by default, "start" fits a left-aligned column. */
   align?: "center" | "start"
 }) {
-  const [state, setState] = useState<"idle" | "submitting" | "success" | "error">("idle")
+  const [state, setState] = useState<"idle" | "submitting" | "success" | "error" | "invalid">(
+    "idle",
+  )
   const [email, setEmail] = useState("")
   const [topic, setTopic] = useState("")
   if (!newsletterEnabled()) return null
@@ -42,9 +48,14 @@ export function NewsletterForm({
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
+    const trimmed = email.trim()
+    if (!EMAIL_RE.test(trimmed)) {
+      setState("invalid")
+      return
+    }
     setState("submitting")
     try {
-      await postNewsletterSubscribe(email, topic)
+      await postNewsletterSubscribe(trimmed, topic)
       setState("success")
     } catch {
       setState("error")
@@ -67,13 +78,17 @@ export function NewsletterForm({
           </div>
         </div>
       ) : (
-        <form onSubmit={onSubmit} className={align === "center" ? "inline-flex" : "flex"}>
+        <form
+          onSubmit={onSubmit}
+          noValidate
+          className={align === "center" ? "inline-flex" : "flex"}
+        >
           <label htmlFor={inputId} className="sr-only">
             Email address
           </label>
           <div
             className={`${CAPSULE[variant]} ${
-              state === "error" ? "border-danger" : CAPSULE_BORDER[variant]
+              state === "error" || state === "invalid" ? "border-danger" : CAPSULE_BORDER[variant]
             }`}
           >
             <input
@@ -85,8 +100,11 @@ export function NewsletterForm({
               maxLength={254}
               placeholder="you@example.com"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              aria-invalid={state === "error" || undefined}
+              onChange={(e) => {
+                setEmail(e.target.value)
+                if (state === "error" || state === "invalid") setState("idle")
+              }}
+              aria-invalid={state === "error" || state === "invalid" || undefined}
               className={FIELD_INPUT[variant]}
             />
             <button type="submit" disabled={state === "submitting"} className={SUBMIT[variant]}>
@@ -110,9 +128,13 @@ export function NewsletterForm({
       <output
         className={`${
           variant === "bar" ? "absolute left-0 top-full mt-1" : "mt-1.5 block"
-        } h-4 text-[10px] uppercase tracking-[0.2em] ${state === "error" ? "text-danger" : muted}`}
+        } h-4 text-[10px] uppercase tracking-[0.2em] ${
+          state === "error" || state === "invalid" ? "text-danger" : muted
+        }`}
       >
-        {state === "error" ? (
+        {state === "invalid" ? (
+          "Please enter a valid email address."
+        ) : state === "error" ? (
           "Could not subscribe. Please try again."
         ) : state === "success" ? (
           <span className="sr-only">Almost there - check your inbox to confirm.</span>

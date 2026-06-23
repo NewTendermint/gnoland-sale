@@ -54,7 +54,7 @@ export const termGroups: Array<{
       { label: "Max price", value: "$0.129 per GNOT" },
       { label: "Bid increment", value: "$0.00645" },
       { label: "Minimum commitment", value: "$100" },
-      { label: "Raise target", value: "$10,000,000" },
+      { label: "Raise target", value: "$5,000,000 - $10,000,000" },
     ],
   },
 ]

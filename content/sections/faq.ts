@@ -59,7 +59,10 @@ export const faq: Array<{ q: string; a: string | string[] }> = [
   },
   {
     q: "Who can participate?",
-    a: "Eligibility is determined by your jurisdiction and verified through Sonar during registration. The sale is unavailable in certain regions - if yours is restricted, Sonar will let you know. US participants must be accredited investors. A one-year lockup applies, with 91% of your allocation released in month 13 and the remaining 9% in month 14.",
+    a: [
+      "Eligibility is determined by your jurisdiction and verified through Sonar during registration. The sale is unavailable in certain regions - if yours is restricted, Sonar will let you know.",
+      "US participants must be accredited investors. A one-year lockup applies, with 91% of your allocation released in month 13 and the remaining 9% in month 14.",
+    ],
   },
   {
     q: "What do I need to place a bid?",

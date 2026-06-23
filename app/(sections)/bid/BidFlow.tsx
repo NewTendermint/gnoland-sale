@@ -137,15 +137,11 @@ function StateContent({
   if (journey === "ready" || journey === "has-bid-winning" || journey === "has-bid-outbid") {
     return (
       <div className="flex w-full flex-col gap-2">
-        {journey === "has-bid-outbid" ? (
-          <p className="text-xs font-bold text-danger" role="alert">
-            You've been outbid. Increase your bid to stay in the sale.
-          </p>
-        ) : null}
         <BidRow
           key="bid-row"
           clearingPriceUsd={clearingPriceUsd}
           prevBid={journey === "ready" ? undefined : myBid}
+          outbid={journey === "has-bid-outbid"}
           onBid={onBid}
           preview={preview}
         />
@@ -408,11 +404,13 @@ function DeltaCapsule({ added }: { added: number }) {
 function BidRow({
   clearingPriceUsd,
   prevBid,
+  outbid,
   onBid,
   preview,
 }: {
   clearingPriceUsd: number | null
   prevBid?: MyBid
+  outbid?: boolean
   onBid?: (p: BidParams) => Promise<BidResult>
   preview?: BidPreview
 }) {
@@ -667,6 +665,11 @@ function BidRow({
 
   return (
     <div className="flex flex-col gap-2">
+      {outbid ? (
+        <p className="text-xs font-bold text-danger" role="alert">
+          You've been outbid. Increase your bid to stay in the sale.
+        </p>
+      ) : null}
       <div className="flex flex-wrap items-start gap-x-8 gap-y-4">
         <InputCell
           id="bid-price"
