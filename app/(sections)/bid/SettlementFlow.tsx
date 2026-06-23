@@ -89,7 +89,7 @@ export function SettlementFlow({
 
       <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-5">
         <div className="flex flex-wrap items-end gap-x-8 gap-y-5">
-          <Cell label="Final clearing">
+          <Cell label="Final clearing price">
             {fmtPrice(clearingPriceUsd ?? 0)} <span className="text-sm text-muted">/ GNOT</span>
           </Cell>
           <Cell label="Your commitment">{fmtUsd(committedUsd)}</Cell>

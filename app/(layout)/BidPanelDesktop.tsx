@@ -126,7 +126,7 @@ export function BidPanelDesktop() {
         <DrawLine immediate />
         <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4 py-4 sm:py-6">
           <div className="flex flex-wrap items-center gap-x-7 gap-y-3 sm:gap-x-9">
-            <span className="status-pill">Closed</span>
+            <span className="status-pill">Ended</span>
             {finalMetrics(commitment).map((c) => (
               <MetricCell key={c.label} metric={c} />
             ))}

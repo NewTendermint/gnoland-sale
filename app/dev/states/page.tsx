@@ -362,8 +362,8 @@ export default function DevStatesPage() {
         <GallerySection title="Ended · collapsed (metrics + View results)">
           <CompactPreview
             lead="Public sale"
-            headline="Auction closed"
-            sub="Final clearing $0.1161"
+            headline="Ended"
+            sub="Final price $0.1161"
             cta="View results"
           />
           <div className="flex flex-col gap-1.5">

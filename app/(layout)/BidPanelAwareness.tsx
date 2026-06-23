@@ -75,7 +75,7 @@ export function AwarenessBarBody({
     return (
       <div className="flex flex-col gap-3 py-4 sm:py-5">
         <div className="flex items-center">
-          <span className="status-pill">Closed</span>
+          <span className="status-pill">Ended</span>
           {finalMetrics(commitment)
             .slice(0, 2)
             .map((c) => (

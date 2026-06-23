@@ -150,8 +150,8 @@ function StateContent({
     return (
       <div className="flex w-full flex-col gap-2">
         {journey === "has-bid-outbid" ? (
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-danger" role="alert">
-            You've been outbid - raise to stay in
+          <p className="text-xs font-bold text-danger" role="alert">
+            You've been outbid. Increase your bid to stay in the sale.
           </p>
         ) : null}
         <BidRow
@@ -379,7 +379,7 @@ function SwitchNetworkGate() {
           <span className={`ml-1.5 ${error ? "text-danger" : "text-muted"}`}>
             {error
               ? "Could not switch. Try again."
-              : "This sale runs on Ethereum. Switch your wallet to continue."}
+              : "This sale runs on Ethereum. Change your network to continue."}
           </span>
         </p>
       </div>
@@ -406,6 +406,16 @@ function reasonToMessage(reason: string): string {
     unknown: "Could not place your bid. Please try again.",
   }
   return messages[reason] ?? messages.unknown
+}
+
+/** Small "+amount" pill shown on the bid CTAs when a raise adds USDC over the prior commitment. */
+function DeltaCapsule({ added }: { added: number }) {
+  if (!Number.isFinite(added) || added <= 0) return null
+  return (
+    <span className="rounded-full border border-current px-1.5 py-px text-[0.65em] font-bold tracking-normal opacity-70">
+      +{fmtUsdc(added)}
+    </span>
+  )
 }
 
 function BidRow({
@@ -512,7 +522,7 @@ function BidRow({
           }
         : {
             tone: "ok" as const,
-            text: `This price would be winning (clears ${fmtPriceUsdc(clearingPriceUsd)}).`,
+            text: `Valid bid. Current clearing price is $${fmtPriceUsdc(clearingPriceUsd)}.`,
           }
       : null
 
@@ -558,24 +568,26 @@ function BidRow({
         <div className="min-w-0 flex-1">
           <p className="text-sm">
             <span className="font-medium text-foreground">
-              Commit {fmtUsdc(amountNum)} at max {fmtPriceUsdc(priceNum)} / GNOT?
+              Commit {fmtUsdc(amountNum)} at {fmtPriceUsdc(priceNum)} per GNOT?
             </span>
             <span className="ml-1.5 text-muted">
-              You pay the final clearing price, not your max, and receive ~{fmtGnot(est)} GNOT. You
-              can raise later, but you can't lower or cancel.
+              You'll pay the final clearing price and are estimated to receive {fmtGnot(est)} GNOT.
+              <br />
+              Bids can be raised but not cancelled.
             </span>
           </p>
           {prevBid ? (
             <p className="mt-1 text-xs text-muted">
               {amountNum > prevBid.committedUsd
-                ? `Only the added ${fmtUsdc(amountNum - prevBid.committedUsd)} is charged - your committed USDC carries over.`
-                : "No extra USDC - your committed funds carry over, you just sign."}
+                ? `Your existing commitment carries over - only the difference is charged. The additional amount charged is ${fmtUsdc(amountNum - prevBid.committedUsd)}.`
+                : "No additional USDC required. Your committed funds carry over - just sign to confirm."}
             </p>
           ) : null}
         </div>
         <div className="flex flex-wrap items-center gap-4">
           <Cta variant="solid-contrast" onClick={runSubmit}>
-            {prevBid ? "Confirm raise" : "Confirm bid"}
+            Confirm bid
+            <DeltaCapsule added={prevBid ? amountNum - prevBid.committedUsd : 0} />
           </Cta>
           <button
             type="button"
@@ -601,7 +613,7 @@ function BidRow({
             </span>
             <span className="ml-1.5 text-muted">
               {submitState === "approving"
-                ? "Approve the USDC spending in your wallet."
+                ? "Approve USDC spending in your wallet."
                 : "Confirm and sign the bid in your wallet."}
             </span>
           </p>
@@ -618,7 +630,7 @@ function BidRow({
         <div className="flex flex-wrap items-center gap-3">
           <Icon name="shield-check" draw={false} className="h-5 w-5 shrink-0 text-mint" />
           <p className="text-sm text-foreground">
-            Bid submitted - {fmtUsdc(amountNum)} at {fmtPriceUsdc(priceNum)} / GNOT.
+            Bid submitted - {fmtUsdc(amountNum)} at {fmtPriceUsdc(priceNum)} per GNOT.
           </p>
           {explorer ? (
             <a
@@ -648,7 +660,7 @@ function BidRow({
       <div className="flex flex-wrap items-start gap-x-8 gap-y-4">
         <InputCell
           id="bid-price"
-          label="Max price"
+          label="Bid price"
           value={price}
           onChange={setPrice}
           readOnly
@@ -662,8 +674,12 @@ function BidRow({
             downLabel: "Lower the price one step",
           }}
           invalid={priceShown && priceCheck !== "ok"}
-          hint={`You win at or above the final clearing price and pay the clearing price, not your max. Moves in ${increment} USDC steps up to the ${fmtPriceUsdc(maxPrice)} hardcap; raise-only.`}
-          suffix="USDC / GNOT"
+          hint={`If your bid meets or exceeds the final clearing price, it wins. You pay the clearing price, not your original bid. Bids are placed in $${increment} increments, from the $${minPrice} starting price up to the $${maxPrice} maximum.`}
+          suffix={
+            <>
+              USDC <span className="text-[0.7em] opacity-60">/ GNOT</span>
+            </>
+          }
           error={priceError}
           className="w-24"
         />
@@ -674,7 +690,7 @@ function BidRow({
           onChange={onAmountChange}
           invalid={amountShown && amountCheck !== "ok"}
           placeholder={String(SALE_ECONOMICS.minCommitmentUsd)}
-          hint={`The total USDC you pay if filled (refunded if outbid). GNOT received = amount / clearing price. Min ${fmtUsdc(SALE_ECONOMICS.minCommitmentUsd)}, no maximum.`}
+          hint={`The total USDC you commit is the amount you pay if your bid wins. If you're outbid, you're fully refunded after the sale. Your GNOT allocation is calculated as: Amount (USDC) / Clearing Price. Minimum commitment is $${fmtUsdc(SALE_ECONOMICS.minCommitmentUsd)}, with no maximum.`}
           error={amountError}
           className="w-32"
         />
@@ -703,6 +719,7 @@ function BidRow({
               disabled={!canSubmit}
             >
               {prevBid ? "Raise bid" : "Place bid"}
+              <DeltaCapsule added={prevBid ? amountNum - prevBid.committedUsd : 0} />
             </Cta>
             {walletButton}
           </div>
@@ -755,7 +772,7 @@ function InputCell({
   onChange: (v: string) => void
   readOnly?: boolean
   prefix?: string
-  suffix?: string
+  suffix?: ReactNode
   error?: string | null
   invalid: boolean
   placeholder?: string
