@@ -1,7 +1,6 @@
 import { notFound } from "next/navigation"
 // Dev-only state harness: renders the sticky bar in every state. Gated out of production.
-import type { ReactNode } from "react"
-import { AwarenessBarBody } from "../../(layout)/BidPanelAwareness"
+import { Fragment, type ReactNode } from "react"
 import { BidSectionHeader, PreSaleRight } from "../../(layout)/BidPanelDesktop"
 import { BidFlow, type BidPreview } from "../../(sections)/bid/BidFlow"
 import { BidStatusTag, FunnelSteps } from "../../(sections)/bid/FunnelSteps"
@@ -364,37 +363,44 @@ export default function DevStatesPage() {
         ))}
 
         {states.map((s) => (
-          <GallerySection key={s} title={`Live · ${s}`} href={`/?journey=${s}`}>
-            <Caption>Collapsed</Caption>
-            <CollapsedBar journey={s} />
-            <Caption>Expanded</Caption>
-            <ExpandedBar journey={s} />
-          </GallerySection>
+          <Fragment key={s}>
+            <GallerySection title={`Live · ${s}`} href={`/?journey=${s}`}>
+              <Caption>Collapsed</Caption>
+              <CollapsedBar journey={s} />
+              <Caption>Expanded</Caption>
+              <ExpandedBar journey={s} />
+            </GallerySection>
+
+            {s === "kyc-required" ? (
+              <GallerySection
+                title="Live · kyc-required (returning -> Welcome back)"
+                href="/?journey=kyc-required"
+              >
+                <Caption>Expanded</Caption>
+                <ExpandedBar journey="kyc-required" returning />
+              </GallerySection>
+            ) : null}
+
+            {s === "ready" ? (
+              <GallerySection
+                title="Live · money-loop (commit -> approve -> sign -> receipt)"
+                href="/?journey=ready"
+              >
+                <p className="text-sm text-muted">
+                  Live, this runs on click (Place bid). Approve/sign are dev-paced previews - in
+                  production the wallet drives the timing and the on-chain seam returns the real tx
+                  hash.
+                </p>
+                {MONEY_LOOP.map((m) => (
+                  <div key={m.label} className="flex flex-col gap-1.5">
+                    <Caption>{m.label}</Caption>
+                    <ExpandedBar journey={m.journey} preview={m.preview} />
+                  </div>
+                ))}
+              </GallerySection>
+            ) : null}
+          </Fragment>
         ))}
-
-        <GallerySection
-          title="Live · kyc-required (returning -> Welcome back)"
-          href="/?journey=kyc-required"
-        >
-          <Caption>Expanded</Caption>
-          <ExpandedBar journey="kyc-required" returning />
-        </GallerySection>
-
-        <GallerySection
-          title="Live · money-loop (commit -> approve -> sign -> receipt)"
-          href="/?journey=ready"
-        >
-          <p className="text-sm text-muted">
-            Live, this runs on click (Place bid). Approve/sign are dev-paced previews - in
-            production the wallet drives the timing and the on-chain seam returns the real tx hash.
-          </p>
-          {MONEY_LOOP.map((m) => (
-            <div key={m.label} className="flex flex-col gap-1.5">
-              <Caption>{m.label}</Caption>
-              <ExpandedBar journey={m.journey} preview={m.preview} />
-            </div>
-          ))}
-        </GallerySection>
 
         <GallerySection title="Ended · collapsed (metrics + View results)">
           <CompactPreview
@@ -419,30 +425,6 @@ export default function DevStatesPage() {
               <code className="font-mono">{"/?phase=ended&journey=has-bid-outbid"}</code>
             </a>
           </div>
-        </GallerySection>
-
-        <GallerySection title="Awareness bar (touch / < lg) - read-only, per phase">
-          {(
-            [
-              ["pre-sale / notify (stage A)", "pre-sale", "registration-closed"],
-              ["pre-sale / registration open (stage B)", "pre-sale", "registration-open"],
-              ["live", "live", "registration-closed"],
-              ["ended", "ended", "registration-closed"],
-            ] as const
-          ).map(([label, phase, stage]) => (
-            <div key={label} className="flex flex-col gap-3">
-              <Caption>{label}</Caption>
-              <div className="rounded-[var(--frame-radius)] border border-border bg-background px-6 lg:px-8">
-                <div className="border-t border-border">
-                  <AwarenessBarBody
-                    phase={phase}
-                    preSaleStage={stage}
-                    commitment={MOCK_COMMITMENT_LIVE}
-                  />
-                </div>
-              </div>
-            </div>
-          ))}
         </GallerySection>
       </div>
     </main>

@@ -515,16 +515,16 @@ function BidRow({
       ? priceNum < clearingPriceUsd
         ? {
             tone: "warn" as const,
-            text: `This price would be outbid (below ${fmtPriceUsdc(clearingPriceUsd)}).`,
+            text: "Below the clearing price - would lose.",
           }
         : headroom && headroom > 0
           ? {
               tone: "ok" as const,
-              text: `Winning - the clearing can rise ${(headroom * 100).toFixed(1)}% before you're outbid (now ${fmtPriceUsdc(clearingPriceUsd)}).`,
+              text: `Clearing can rise ${(headroom * 100).toFixed(1)}% before you're outbid.`,
             }
           : {
               tone: "ok" as const,
-              text: `Winning at the clearing price ${fmtPriceUsdc(clearingPriceUsd)} - raise your max for headroom.`,
+              text: "At clearing - raise for headroom.",
             }
       : null
 
