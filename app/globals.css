@@ -55,6 +55,24 @@ html[data-app-ready] body {
   animation: frame-pad-in 1000ms var(--ease-reveal) both;
 }
 
+/* Frame overlay: paints the dark frame border ON TOP of the fixed sticky bar so the bar tucks UNDER
+   the frame as it slides up. A background can't be raised above foreground via z-index, so this
+   positioned layer is the clean fix. Border-width grows in sync with the body padding above; inner
+   radius = --frame-radius (outer = frame-radius + reveal-padding) so the corners match .screen. */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  border: 0 solid var(--frame);
+  border-radius: calc(var(--frame-radius) + var(--reveal-padding));
+  pointer-events: none;
+  z-index: calc(var(--z-sticky) + 1);
+}
+
+html[data-app-ready] body::after {
+  border-width: var(--reveal-padding);
+}
+
 @keyframes frame-pad-in {
   from {
     padding: 0;
@@ -158,6 +176,10 @@ html[data-app-ready] .screen {
 @media (prefers-reduced-motion: no-preference) {
   .screen {
     scroll-behavior: smooth;
+  }
+  /* Frame overlay grows in sync with the body padding (frame-pad-in) when data-app-ready lands. */
+  body::after {
+    transition: border-width 1000ms var(--ease-reveal);
   }
 }
 
