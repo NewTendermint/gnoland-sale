@@ -5,7 +5,7 @@ import { useEffect, useRef } from "react"
 import { BidFlow } from "../(sections)/bid/BidFlow"
 import { BidStatusTag, FunnelSteps } from "../(sections)/bid/FunnelSteps"
 import { SettlementFlow } from "../(sections)/bid/SettlementFlow"
-import { CtaArrow } from "../(ui)/CtaArrow"
+import { Cta } from "../(ui)/Cta"
 import { DrawLine } from "../(ui)/DrawLine"
 import { Entrance } from "../(ui)/Entrance"
 import { Icon } from "../(ui)/Icon"
@@ -30,7 +30,6 @@ import {
   BarShell,
   BarStatus,
   CARD,
-  CTA_PILL,
   MetricCell,
   SHELL,
   finalMetrics,
@@ -135,18 +134,15 @@ export function BidPanelDesktop() {
           {expanded ? (
             <CloseButton onClick={() => setExpanded(false)} />
           ) : (
-            <button
-              type="button"
-              ref={triggerRef}
+            <Cta
+              variant="solid"
+              arrow
               onClick={() => setExpanded(true)}
-              aria-expanded={expanded}
-              className={CTA_PILL}
+              buttonRef={triggerRef}
+              ariaExpanded={expanded}
             >
-              <span className="inline-flex items-center gap-2">
-                <span>View results</span>
-                <CtaArrow />
-              </span>
-            </button>
+              <span>View results</span>
+            </Cta>
           )}
         </div>
 
@@ -233,19 +229,18 @@ export function BidPanelDesktop() {
                     </div>
                   ) : (
                     <span ref={ctaRef} className="inline-flex">
-                      <button
-                        type="button"
-                        ref={triggerRef}
+                      <Cta
+                        variant="solid"
+                        arrow
                         onClick={() => setExpanded(true)}
-                        aria-expanded={expanded}
-                        className={CTA_PILL}
+                        buttonRef={triggerRef}
+                        ariaExpanded={expanded}
                       >
                         <span data-cta-label className="inline-flex items-center gap-2">
                           <BidStatusTag journey={journey} />
                           <span>{bidCtaLabel(journey)}</span>
-                          <CtaArrow />
                         </span>
-                      </button>
+                      </Cta>
                     </span>
                   )}
                 </div>
@@ -406,22 +401,16 @@ export function PreSaleRight({
             title={`${WELCOME_BACK.title}.`}
             body={WELCOME_BACK.body}
           />
-          <button type="button" onClick={onRegister} className={CTA_PILL}>
-            <span className="inline-flex items-center gap-2">
-              <span>{WELCOME_BACK.cta}</span>
-              <CtaArrow />
-            </span>
-          </button>
+          <Cta variant="solid" arrow onClick={onRegister}>
+            <span>{WELCOME_BACK.cta}</span>
+          </Cta>
         </div>
       ) : (
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
           <p className="text-sm text-muted">Registration is open</p>
-          <button type="button" onClick={onRegister} className={CTA_PILL}>
-            <span className="inline-flex items-center gap-2">
-              <span>Register now</span>
-              <CtaArrow />
-            </span>
-          </button>
+          <Cta variant="solid" arrow onClick={onRegister}>
+            <span>Register now</span>
+          </Cta>
         </div>
       )
     case "pending":
@@ -478,12 +467,9 @@ export function PreSaleRight({
             title="Could not connect to Sonar."
             body="Please try again."
           />
-          <button type="button" onClick={onRegister} className={CTA_PILL}>
-            <span className="inline-flex items-center gap-2">
-              <span>Try again</span>
-              <CtaArrow />
-            </span>
-          </button>
+          <Cta variant="solid" arrow onClick={onRegister}>
+            <span>Try again</span>
+          </Cta>
         </div>
       )
     default:

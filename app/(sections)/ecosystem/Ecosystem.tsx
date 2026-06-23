@@ -1,4 +1,4 @@
-import { ArrowLink } from "../../(ui)/ArrowLink"
+import { Cta } from "../../(ui)/Cta"
 import { DrawLine } from "../../(ui)/DrawLine"
 import { FadeIn } from "../../(ui)/FadeIn"
 import { Icon } from "../../(ui)/Icon"
@@ -53,13 +53,14 @@ export function Ecosystem() {
                       </Reveal>
                       {p.href ? (
                         <FadeIn as="div" index={3} className="mt-5 flex justify-start">
-                          <ArrowLink
+                          <Cta
                             href={p.href}
                             external
                             arrow="diagonal"
                             label="Explore"
                             ariaLabel={`Explore ${p.name}`}
                             variant="ghost"
+                            size="sm"
                           />
                         </FadeIn>
                       ) : null}
@@ -108,11 +109,13 @@ export function Ecosystem() {
 
         <RevealBoundary>
           <FadeIn as="div" className="col-span-12 mt-12 text-center lg:col-span-10 lg:col-start-2">
-            <ArrowLink
+            <Cta
               href="https://github.com/gnoverse"
               external
+              arrow="diagonal"
               label="Find other ecosystem projects"
               variant="ghost"
+              size="sm"
             />
           </FadeIn>
         </RevealBoundary>

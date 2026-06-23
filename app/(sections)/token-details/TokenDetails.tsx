@@ -3,7 +3,7 @@
 import { Fragment } from "react"
 import { Countdown } from "../../(layout)/Countdown"
 import { useSale } from "../../(layout)/SaleProvider"
-import { ArrowLink } from "../../(ui)/ArrowLink"
+import { Cta } from "../../(ui)/Cta"
 import { DrawLine } from "../../(ui)/DrawLine"
 import { FadeIn } from "../../(ui)/FadeIn"
 import { Icon } from "../../(ui)/Icon"
@@ -225,12 +225,13 @@ export function TokenDetails() {
             <div className="col-span-12 mt-6 flex flex-wrap items-center justify-end gap-3 lg:col-span-10 lg:col-start-2">
               {documents.map((d, di) => (
                 <FadeIn as="div" index={di} key={d.label}>
-                  <ArrowLink
+                  <Cta
                     href={d.href}
                     external={!d.href.startsWith("#")}
                     arrow="diagonal"
                     label={d.value}
                     variant="ghost"
+                    size="sm"
                   />
                 </FadeIn>
               ))}

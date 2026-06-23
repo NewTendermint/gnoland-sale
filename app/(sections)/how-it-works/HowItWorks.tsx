@@ -2,7 +2,7 @@
 
 import { NewsletterForm } from "../../(layout)/NewsletterForm"
 import { useSale } from "../../(layout)/SaleProvider"
-import { ArrowLink } from "../../(ui)/ArrowLink"
+import { Cta } from "../../(ui)/Cta"
 import { FadeIn } from "../../(ui)/FadeIn"
 import { Icon } from "../../(ui)/Icon"
 import { Reveal } from "../../(ui)/Reveal"
@@ -109,10 +109,12 @@ export function HowItWorks() {
             registrationOpen ? (
               <>
                 <div className="hidden funnel:block">
-                  <ArrowLink
+                  <Cta
                     onClick={redirectToSonarLogin}
                     label="Register now"
+                    arrow
                     variant="ghost-contrast"
+                    size="sm"
                   />
                 </div>
                 <p className="text-base text-on-contrast-muted funnel:hidden">
@@ -131,10 +133,12 @@ export function HowItWorks() {
           ) : (
             <>
               <div className="hidden funnel:block">
-                <ArrowLink
+                <Cta
                   onClick={() => setBidPanelOpen(true)}
                   label={liveCtaLabel(journeyState)}
+                  arrow
                   variant="ghost-contrast"
+                  size="sm"
                 />
               </div>
               <p className="text-base text-on-contrast-muted funnel:hidden">

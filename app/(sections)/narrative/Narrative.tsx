@@ -1,5 +1,5 @@
-import { ArrowLink } from "../../(ui)/ArrowLink"
 import { CountUp } from "../../(ui)/CountUp"
+import { Cta } from "../../(ui)/Cta"
 import { DrawLine } from "../../(ui)/DrawLine"
 import { FadeIn } from "../../(ui)/FadeIn"
 import { ParallaxBox } from "../../(ui)/ParallaxBox"
@@ -113,11 +113,13 @@ export function Narrative() {
                 building the foundation for a more open and accountable decentralized internet.
               </Reveal>
               <FadeIn as="div" className="mt-8">
-                <ArrowLink
+                <Cta
                   href="https://docs.gno.land"
                   external
+                  arrow="diagonal"
                   label="Discover Gno.land"
                   variant="ghost"
+                  size="sm"
                 />
               </FadeIn>
             </RevealGroup>

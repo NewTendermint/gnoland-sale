@@ -5,7 +5,7 @@ import { AwarenessBarBody } from "../../(layout)/BidPanelAwareness"
 import { PreSaleRight } from "../../(layout)/BidPanelDesktop"
 import { BidFlow, type BidPreview } from "../../(sections)/bid/BidFlow"
 import { BidStatusTag, FunnelSteps } from "../../(sections)/bid/FunnelSteps"
-import { CtaArrow } from "../../(ui)/CtaArrow"
+import { Cta } from "../../(ui)/Cta"
 import { Icon } from "../../(ui)/Icon"
 import { fmtCompactUsd, fmtCount, fmtPrice } from "../../../lib/sale/format"
 import { bidCtaLabel } from "../../../lib/sale/labels"
@@ -36,11 +36,10 @@ const METRICS = [
 
 function CtaPill({ journey }: { journey: JourneyState }) {
   return (
-    <span className="inline-flex items-center gap-2 rounded-full bg-surface-contrast px-6 py-3 text-xs font-bold uppercase tracking-[0.2em] text-on-contrast">
+    <Cta variant="solid" arrow>
       <BidStatusTag journey={journey} />
       {bidCtaLabel(journey)}
-      <CtaArrow />
-    </span>
+    </Cta>
   )
 }
 
@@ -145,9 +144,9 @@ function CompactPreview({
             <p className="mt-1 text-2xl font-semibold tracking-tight text-foreground">{headline}</p>
             <p className="mt-1 text-sm text-muted">{sub}</p>
           </div>
-          <span className="rounded-full bg-surface-contrast px-6 py-3 text-xs font-bold uppercase tracking-[0.2em] text-on-contrast">
+          <Cta variant="solid" arrow>
             {cta}
-          </span>
+          </Cta>
         </div>
       </div>
     </div>

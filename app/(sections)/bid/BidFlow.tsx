@@ -5,6 +5,7 @@ import type { ReactNode } from "react"
 import { sepolia } from "viem/chains"
 import { useChainId, useConnect, useSwitchChain } from "wagmi"
 import { PRIMARY_CHAIN_ID } from "../../(layout)/web3"
+import { Cta } from "../../(ui)/Cta"
 import { GnotCoin } from "../../(ui)/GnotCoin"
 import { Icon } from "../../(ui)/Icon"
 import {
@@ -249,13 +250,13 @@ function GateRow({
         </p>
       </div>
       {ctaHref && cta ? (
-        <a href={ctaHref} target="_blank" rel="noreferrer" className="btn-pan bid-pill">
-          <span className="inline-flex items-center gap-2">{cta}</span>
-        </a>
+        <Cta variant="solid-contrast" href={ctaHref} external>
+          {cta}
+        </Cta>
       ) : cta ? (
-        <button type="button" onClick={onCta} className="btn-pan bid-pill">
-          <span className="inline-flex items-center gap-2">{cta}</span>
-        </button>
+        <Cta variant="solid-contrast" onClick={onCta}>
+          {cta}
+        </Cta>
       ) : null}
     </div>
   )
@@ -329,15 +330,13 @@ function SwitchNetworkGate() {
           </span>
         </p>
       </div>
-      <button
-        type="button"
+      <Cta
+        variant="solid-contrast"
         onClick={() => switchChain({ chainId: PRIMARY_CHAIN_ID })}
         disabled={isPending}
-        className="btn-pan bid-pill"
       >
-        {/* .btn-pan requires the <span>: bare text paints under the panel. */}
-        <span>{isPending ? "Switching..." : "Switch to Ethereum"}</span>
-      </button>
+        {isPending ? "Switching..." : "Switch to Ethereum"}
+      </Cta>
     </div>
   )
 }
@@ -522,9 +521,9 @@ function BidRow({
           ) : null}
         </div>
         <div className="flex flex-wrap items-center gap-4">
-          <button type="button" onClick={runSubmit} className="btn-pan bid-pill">
-            <span>{prevBid ? "Confirm raise" : "Confirm bid"}</span>
-          </button>
+          <Cta variant="solid-contrast" onClick={runSubmit}>
+            {prevBid ? "Confirm raise" : "Confirm bid"}
+          </Cta>
           <button
             type="button"
             onClick={() => setSubmitState("idle")}
@@ -582,9 +581,9 @@ function BidRow({
           ) : null}
         </div>
         <div className="flex flex-wrap items-center gap-4">
-          <button type="button" onClick={() => setSubmitState("idle")} className="btn-pan bid-pill">
-            <span>Raise your bid</span>
-          </button>
+          <Cta variant="solid-contrast" onClick={() => setSubmitState("idle")}>
+            Raise your bid
+          </Cta>
           {walletButton}
         </div>
       </div>
@@ -645,16 +644,13 @@ function BidRow({
             .
           </span>
           <div className="flex h-12 items-center gap-4">
-            <button
-              type="button"
+            <Cta
+              variant="solid-contrast"
               onClick={() => setSubmitState("confirming")}
               disabled={!canSubmit}
-              className="btn-pan bid-pill"
             >
-              <span className="inline-flex items-center gap-2">
-                {prevBid ? "Raise bid" : "Place bid"}
-              </span>
-            </button>
+              {prevBid ? "Raise bid" : "Place bid"}
+            </Cta>
             {walletButton}
           </div>
         </div>

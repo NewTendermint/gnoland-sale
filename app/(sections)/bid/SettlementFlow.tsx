@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { useAccount } from "wagmi"
 import { WalletButton } from "../../(layout)/WalletButton"
+import { Cta } from "../../(ui)/Cta"
 import { GnotCoin } from "../../(ui)/GnotCoin"
 import { Icon } from "../../(ui)/Icon"
 import { SALE_ECONOMICS, formatSaleDate } from "../../../lib/sale/economics"
@@ -110,16 +111,13 @@ export function SettlementFlow({
               Refund sent
             </span>
           ) : canClaim ? (
-            <button
-              type="button"
+            <Cta
+              variant="solid-contrast"
               onClick={onClaimClick}
               disabled={claimState === "claiming"}
-              className="btn-pan bid-pill"
             >
-              <span>
-                {claimState === "claiming" ? "Claiming..." : `Claim ${fmtUsd(refundableUsd)}`}
-              </span>
-            </button>
+              {claimState === "claiming" ? "Claiming..." : `Claim ${fmtUsd(refundableUsd)}`}
+            </Cta>
           ) : null}
           <WalletButton />
         </div>

@@ -4,8 +4,8 @@ import { AddToCalendarButton } from "../../(layout)/AddToCalendarButton"
 import { Countdown } from "../../(layout)/Countdown"
 import { NewsletterForm } from "../../(layout)/NewsletterForm"
 import { useSale } from "../../(layout)/SaleProvider"
-import { ArrowLink } from "../../(ui)/ArrowLink"
 import { ClipOpen } from "../../(ui)/ClipOpen"
+import { Cta } from "../../(ui)/Cta"
 import { FadeIn } from "../../(ui)/FadeIn"
 import { Reveal } from "../../(ui)/Reveal"
 import { RevealGroup } from "../../(ui)/RevealGroup"
@@ -80,10 +80,10 @@ export function PreFooterCta() {
                   registrationOpen ? (
                     <div className="flex flex-col items-center gap-6">
                       <div className="hidden funnel:block">
-                        <ArrowLink
+                        <Cta
                           onClick={redirectToSonarLogin}
                           label="Register now"
-                          arrow="slide"
+                          arrow
                           variant="solid-contrast"
                           size="lg"
                         />
@@ -106,20 +106,20 @@ export function PreFooterCta() {
                     </p>
                   )
                 ) : ended ? (
-                  <ArrowLink
+                  <Cta
                     href="#token-details"
                     label="View results"
-                    arrow="slide"
+                    arrow
                     variant="solid-contrast"
                     size="lg"
                   />
                 ) : (
                   <>
                     <div className="hidden funnel:block">
-                      <ArrowLink
+                      <Cta
                         onClick={() => setBidPanelOpen(true)}
                         label="Place a bid"
-                        arrow="slide"
+                        arrow
                         variant="solid-contrast"
                         size="lg"
                       />
@@ -127,10 +127,10 @@ export function PreFooterCta() {
                     <p className="w-full text-sm text-on-contrast-muted funnel:hidden">
                       {`${DESKTOP_ONLY.live.title}. ${DESKTOP_ONLY.live.body}`}
                     </p>
-                    <ArrowLink
+                    <Cta
                       href="#how-it-works"
                       label="How it works"
-                      arrow="slide"
+                      arrow
                       variant="ghost-contrast"
                       size="lg"
                     />

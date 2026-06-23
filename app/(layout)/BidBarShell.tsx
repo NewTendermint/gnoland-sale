@@ -15,8 +15,6 @@ export const SHELL =
   "bar-enter fixed bottom-[var(--reveal-padding)] left-[var(--reveal-padding)] right-[var(--reveal-padding)] z-[var(--z-sticky)]"
 export const CARD =
   "overflow-hidden rounded-[var(--frame-radius)] bg-background lg:mx-auto lg:max-w-[calc(var(--max-width-container)_-_4rem)] lg:rounded-b-none"
-export const CTA_PILL =
-  "btn-pan group inline-flex cursor-pointer items-center justify-center rounded-full border border-faint bg-foreground px-7 py-3.5 text-xs font-bold uppercase tracking-[0.2em] text-background before:bg-background hover:text-foreground"
 
 const BAR_GROW_INSET = 4.25
 const BAR_GROW_PX = 300

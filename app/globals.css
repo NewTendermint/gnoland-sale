@@ -227,11 +227,6 @@ main > section {
     @apply mx-auto max-w-[var(--max-width-container)] px-6 lg:px-8;
   }
 
-  /* Pair with `btn-pan` for the hover; btn-pan owns the ::before pan @apply can't pull in. */
-  .bid-pill {
-    @apply inline-flex cursor-pointer items-center justify-center rounded-full border border-faint bg-on-contrast px-6 py-3 text-xs font-bold uppercase tracking-[0.2em] text-surface-contrast before:bg-surface-contrast hover:text-on-contrast disabled:pointer-events-none disabled:opacity-40;
-  }
-
   .link-underline {
     position: relative;
   }

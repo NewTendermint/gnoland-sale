@@ -53,8 +53,8 @@ export const WELCOME_BACK = {
   cta: "Reconnect",
 } as const
 
-/** Support contact for a failed verification. TODO: TEMP placeholder - swap for the real support address before launch. null hides the CTA. */
-export const SUPPORT_CONTACT_HREF: string | null = "mailto:support@newtendermint.org"
+/** Support contact (mailto) shown on a failed verification. null hides the CTA. */
+export const SUPPORT_CONTACT_HREF: string | null = "mailto:tokensale@newtendermint.org"
 
 /** Awareness-mode "continue on desktop" copy. Copy: placeholder, pending team validation. */
 export const DESKTOP_ONLY = {
