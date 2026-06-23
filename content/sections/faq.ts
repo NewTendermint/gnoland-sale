@@ -66,6 +66,13 @@ export const faq: Array<{ q: string; a: string | string[] }> = [
     a: `To participate in the sale, you will need to complete Sonar verification, set up a self-custody Ethereum wallet, and hold USDC. We recommend completing your identity verification and funding your wallet well ahead of the sale date of ${formatSaleDate(SALE_ECONOMICS.saleOpensIso)}.`,
   },
   {
+    q: "Which wallets can I use?",
+    a: [
+      "You can take part with any self-custody Ethereum wallet that holds USDC and can sign on Ethereum mainnet. The wallets we recommend are MetaMask, Coinbase Wallet, and Rabby, plus any wallet you connect through WalletConnect, such as Rainbow, Trust, or Ledger.",
+      "When you go to connect, you'll only see the wallets you already have installed in your browser, so set one up before the sale. New to wallets? You can compare and choose one at ethereum.org.",
+    ],
+  },
+  {
     q: "How much can I commit?",
     a: `The minimum commitment requirement is ${fmtUsd(SALE_ECONOMICS.minCommitmentUsd)} USDC, and there is no maximum commitment limit. You can bid anywhere between the starting price of ${fmtPrice(SALE_ECONOMICS.startingPriceUsd)} and the maximum price of ${fmtPrice(SALE_ECONOMICS.maxPriceUsd)} in $${SALE_ECONOMICS.bidIncrementUsd} increments.`,
   },

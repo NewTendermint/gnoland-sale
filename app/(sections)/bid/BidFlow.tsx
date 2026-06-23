@@ -22,23 +22,41 @@ import type { JourneyState, MyBid } from "../../../lib/sale/types"
 
 const submitter = new MockBidSubmitter()
 
-const BRAND_ICONS: Record<string, ReactNode> = {
-  coinbaseWalletSDK: (
-    <svg viewBox="0 0 32 32" className="h-6 w-6" aria-hidden="true">
-      <rect width="32" height="32" rx="7" fill="#0052FF" />
-      <circle cx="16" cy="16" r="8" fill="#fff" />
-      <rect x="13" y="13" width="6" height="6" rx="1.5" fill="#0052FF" />
-    </svg>
-  ),
-  walletConnect: (
-    <svg viewBox="0 0 32 32" className="h-6 w-6" aria-hidden="true">
-      <rect width="32" height="32" rx="7" fill="#3396FF" />
-      <path
-        fill="#fff"
-        d="M10.2 13.4c3.2-3.13 8.4-3.13 11.6 0l.39.38a.4.4 0 0 1 0 .57l-1.33 1.3a.21.21 0 0 1-.29 0l-.53-.52c-2.24-2.19-5.87-2.19-8.11 0l-.57.56a.21.21 0 0 1-.29 0l-1.33-1.3a.4.4 0 0 1 0-.57l.46-.42zm14.33 2.67 1.18 1.16a.4.4 0 0 1 0 .57l-5.33 5.22a.42.42 0 0 1-.58 0l-3.78-3.7a.1.1 0 0 0-.15 0l-3.78 3.7a.42.42 0 0 1-.58 0l-5.33-5.22a.4.4 0 0 1 0-.57l1.18-1.16a.42.42 0 0 1 .58 0l3.78 3.7a.1.1 0 0 0 .15 0l3.78-3.7a.42.42 0 0 1 .58 0l3.78 3.7a.1.1 0 0 0 .15 0l3.78-3.7a.42.42 0 0 1 .58 0z"
-      />
-    </svg>
-  ),
+// Wallets we promote in the picker even when the visitor has not installed them (shown greyed with
+// an install link). Match against a live connector by wagmi connector id OR EIP-6963 rdns; the
+// lowercased-name check is a fallback for rdns values we could not confirm against the running app.
+// FOOTGUN: the rdns/id values are best-effort - confirm them in-app (log connector.rdns) and verify
+// each wallet end-to-end on the real bid flow before launch; this list IS a public "supported" claim.
+type RecommendedWallet = { id: string; name: string; installUrl: string }
+const RECOMMENDED_WALLETS: RecommendedWallet[] = [
+  { id: "io.metamask", name: "MetaMask", installUrl: "https://metamask.io/download/" },
+  {
+    id: "coinbaseWalletSDK",
+    name: "Coinbase Wallet",
+    installUrl: "https://www.coinbase.com/wallet/downloads",
+  },
+  { id: "io.rabby", name: "Rabby", installUrl: "https://rabby.io/" },
+]
+
+const FIND_WALLET_URL = "https://ethereum.org/wallets/find-wallet/"
+
+// Official wallet logos, served locally from public/wallets/. Keyed by wagmi connector id / EIP-6963
+// rdns. Installed EIP-6963 wallets already supply their own icon; this map covers the connectors that
+// don't (Coinbase SDK, WalletConnect) plus the greyed not-installed recommendations.
+const WALLET_ICON_SRC: Record<string, string> = {
+  "io.metamask": "/wallets/metamask.svg",
+  coinbaseWalletSDK: "/wallets/coinbase.svg",
+  "io.rabby": "/wallets/rabby.svg",
+  walletConnect: "/wallets/walletconnect.svg",
+}
+
+/** Renders the wallet's local SVG, falling back to a generic wallet glyph if it is missing/unknown. */
+function WalletIcon({ src }: { src?: string }) {
+  const [failed, setFailed] = useState(false)
+  if (!src || failed) {
+    return <Icon name="wallet" draw={false} className="h-5 w-5 text-muted" />
+  }
+  return <img src={src} alt="" className="h-6 w-6 rounded-md" onError={() => setFailed(true)} />
 }
 
 /** Block-explorer tx link for the receipt; null unless `hash` is a real 32-byte tx hash. */
@@ -269,11 +287,23 @@ export function ConnectChoices({
   const pendingUid =
     variables?.connector && "uid" in variables.connector ? variables.connector.uid : undefined
   const seen = new Set<string>()
-  const uniqueConnectors = connectors.filter((c) => {
+  // Live = Coinbase SDK (always) + installed EIP-6963 wallets (+ WalletConnect once its projectId is
+  // set). These are ready to use; recommended wallets not found here render greyed with an install link.
+  const live = connectors.filter((c) => {
     if (seen.has(c.name)) return false
     seen.add(c.name)
     return true
   })
+  const isLive = (rec: RecommendedWallet) =>
+    live.some((c) => {
+      const rdnsList = typeof c.rdns === "string" ? [c.rdns] : (c.rdns ?? [])
+      return (
+        c.id === rec.id ||
+        rdnsList.includes(rec.id) ||
+        c.name.toLowerCase() === rec.name.toLowerCase()
+      )
+    })
+  const missing = RECOMMENDED_WALLETS.filter((rec) => !isLive(rec))
   return (
     <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4">
       <div className="flex items-center gap-3">
@@ -285,8 +315,33 @@ export function ConnectChoices({
           </span>
         </p>
       </div>
-      <div className="flex flex-wrap items-center gap-2">
-        {uniqueConnectors.map((connector) => {
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        {/* Discreet escape hatch, inline to the left of the wallet buttons. */}
+        <a
+          href={FIND_WALLET_URL}
+          target="_blank"
+          rel="noreferrer noopener"
+          className="mr-1 inline-flex items-center gap-1 text-xs text-muted underline-offset-4 transition-colors hover:text-foreground hover:underline focus-visible:text-foreground focus-visible:underline"
+        >
+          Don't have one? Find a wallet
+          <span aria-hidden="true">↗</span>
+        </a>
+        {/* Greyed: recommended wallets not detected on this browser -> open the install page. */}
+        {missing.map((rec) => (
+          <a
+            key={rec.id}
+            href={rec.installUrl}
+            target="_blank"
+            rel="noreferrer noopener"
+            aria-label={`Get ${rec.name} (opens in a new tab)`}
+            title={`${rec.name} - not installed, click to get it`}
+            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-dashed border-faint bg-surface-alt opacity-70 transition-all hover:opacity-100 focus-visible:opacity-100"
+          >
+            <WalletIcon src={WALLET_ICON_SRC[rec.id]} />
+          </a>
+        ))}
+        {/* Ready: live connectors, grouped to the right. */}
+        {live.map((connector) => {
           const pending = isPending && pendingUid === connector.uid
           return (
             <button
@@ -303,9 +358,7 @@ export function ConnectChoices({
               {connector.icon ? (
                 <img src={connector.icon} alt="" className="h-6 w-6 rounded-md" />
               ) : (
-                (BRAND_ICONS[connector.id] ?? (
-                  <Icon name="wallet" draw={false} className="h-5 w-5 text-muted" />
-                ))
+                <WalletIcon src={WALLET_ICON_SRC[connector.id]} />
               )}
             </button>
           )
