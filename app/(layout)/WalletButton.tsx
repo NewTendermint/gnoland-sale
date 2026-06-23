@@ -21,16 +21,16 @@ export function WalletButton() {
       onClick={() => disconnect()}
       aria-label={`Disconnect wallet ${truncate(address)}`}
       title="Disconnect"
-      className="group inline-flex h-11 items-center gap-2.5 rounded-full border border-border px-4 font-mono text-xs tabular-nums text-foreground transition-colors hover:border-border-strong"
+      className="group inline-flex h-8 items-center gap-2 rounded-full border border-border px-3 font-mono text-[11px] tabular-nums text-foreground transition-colors hover:border-border-strong"
     >
-      <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-foreground" />
+      <span aria-hidden="true" className="h-1 w-1 rounded-full bg-foreground" />
       {truncate(address)}
       <svg
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
         strokeWidth="1.5"
-        className="h-4 w-4 text-muted transition-colors group-hover:text-foreground"
+        className="h-3.5 w-3.5 text-muted transition-colors group-hover:text-foreground"
         aria-hidden="true"
       >
         <path d="M18.36 6.64a9 9 0 1 1-12.73 0" />

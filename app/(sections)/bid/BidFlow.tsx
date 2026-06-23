@@ -6,7 +6,6 @@ import { sepolia } from "viem/chains"
 import { useChainId, useConnect, useSwitchChain } from "wagmi"
 import { PRIMARY_CHAIN_ID } from "../../(layout)/web3"
 import { Cta } from "../../(ui)/Cta"
-import { GnotCoin } from "../../(ui)/GnotCoin"
 import { Icon } from "../../(ui)/Icon"
 import {
   bidHeadroomPct,
@@ -92,7 +91,6 @@ export function BidFlow({
   myBid,
   onConnectSonar,
   onBid,
-  walletButton,
   preview,
 }: {
   journey: JourneyState
@@ -101,7 +99,6 @@ export function BidFlow({
   myBid: MyBid
   onConnectSonar?: () => void
   onBid?: (p: BidParams) => Promise<BidResult>
-  walletButton?: ReactNode
   preview?: BidPreview
 }) {
   return (
@@ -112,7 +109,6 @@ export function BidFlow({
       myBid={myBid}
       onConnectSonar={onConnectSonar}
       onBid={onBid}
-      walletButton={walletButton}
       preview={preview}
     />
   )
@@ -125,7 +121,6 @@ function StateContent({
   myBid,
   onConnectSonar,
   onBid,
-  walletButton,
   preview,
 }: {
   journey: JourneyState
@@ -134,20 +129,12 @@ function StateContent({
   myBid: MyBid
   onConnectSonar?: () => void
   onBid?: (p: BidParams) => Promise<BidResult>
-  walletButton?: ReactNode
   preview?: BidPreview
 }) {
-  if (journey === "ready") {
-    return (
-      <BidRow
-        clearingPriceUsd={clearingPriceUsd}
-        onBid={onBid}
-        walletButton={walletButton}
-        preview={preview}
-      />
-    )
-  }
-  if (journey === "has-bid-winning" || journey === "has-bid-outbid") {
+  // ready + has-bid share one render path so BidRow keeps the SAME tree position across the
+  // ready -> has-bid transition (after a first bid). Otherwise React remounts it and the freshly
+  // set "submitted" receipt is lost. The stable key reinforces that identity.
+  if (journey === "ready" || journey === "has-bid-winning" || journey === "has-bid-outbid") {
     return (
       <div className="flex w-full flex-col gap-2">
         {journey === "has-bid-outbid" ? (
@@ -156,10 +143,10 @@ function StateContent({
           </p>
         ) : null}
         <BidRow
+          key="bid-row"
           clearingPriceUsd={clearingPriceUsd}
-          prevBid={myBid}
+          prevBid={journey === "ready" ? undefined : myBid}
           onBid={onBid}
-          walletButton={walletButton}
           preview={preview}
         />
       </div>
@@ -170,7 +157,6 @@ function StateContent({
       <div className="min-w-0 flex-1">
         <GateContent journey={journey} returning={returning} onConnectSonar={onConnectSonar} />
       </div>
-      {walletButton}
     </div>
   )
 }
@@ -423,13 +409,11 @@ function BidRow({
   clearingPriceUsd,
   prevBid,
   onBid,
-  walletButton,
   preview,
 }: {
   clearingPriceUsd: number | null
   prevBid?: MyBid
   onBid?: (p: BidParams) => Promise<BidResult>
-  walletButton?: ReactNode
   preview?: BidPreview
 }) {
   const minPrice = SALE_ECONOMICS.startingPriceUsd
@@ -465,11 +449,12 @@ function BidRow({
     incrementUsd: increment,
     prevPriceUsd: prevBid ? Math.min(prevBid.priceUsd, maxPrice) : undefined,
   })
-  const amountCheck = validateBidAmount(
-    amountNum,
-    SALE_ECONOMICS.minCommitmentUsd,
-    SALE_ECONOMICS.maxCommitmentUsd,
-  )
+  // A raise can only keep or increase the committed amount, never reduce it. With a prior bid the
+  // floor is the existing commitment; otherwise the global minimum.
+  const minCommit = prevBid
+    ? Math.max(SALE_ECONOMICS.minCommitmentUsd, prevBid.committedUsd)
+    : SALE_ECONOMICS.minCommitmentUsd
+  const amountCheck = validateBidAmount(amountNum, minCommit, SALE_ECONOMICS.maxCommitmentUsd)
   const priceShown = price !== "" && !Number.isNaN(priceNum)
   const amountShown = amount !== "" && !Number.isNaN(amountNum)
 
@@ -488,15 +473,19 @@ function BidRow({
   useEffect(() => {
     if (!touched) setPrice(String(floor))
   }, [floor, touched])
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    aliveRef.current = true
+    return () => {
       aliveRef.current = false
-    },
-    [],
-  )
+    }
+  }, [])
   const priceValid = priceShown && priceCheck === "ok"
   const amountValid = amountShown && amountCheck === "ok"
-  const canSubmit = priceValid && amountValid && submitState === "idle"
+  // A raise must increase something: a higher price OR more committed USDC. Re-signing the exact
+  // same bid (both unchanged) is a no-op, so the button stays disabled until one of them grows.
+  const raisesSomething =
+    !prevBid || priceNum > prevBid.priceUsd || amountNum > prevBid.committedUsd
+  const canSubmit = priceValid && amountValid && raisesSomething && submitState === "idle"
   const est = gnotEstimate(amountValid ? amountNum : 0, clearingPriceUsd ?? minPrice)
   // Second estimate at the bidder's own max price - only meaningful while winning with margin
   // (bid > clearing). It is the floor of what they receive if the price climbs to their max.
@@ -516,7 +505,9 @@ function BidRow({
             : null
   const amountError =
     amountShown && amountCheck === "too-low"
-      ? `Min ${fmtUsdc(SALE_ECONOMICS.minCommitmentUsd)}.`
+      ? prevBid
+        ? `Can’t go below your committed ${fmtUsdc(prevBid.committedUsd)}.`
+        : `Min ${fmtUsdc(SALE_ECONOMICS.minCommitmentUsd)}.`
       : null
 
   const headroom =
@@ -539,6 +530,12 @@ function BidRow({
             }
       : null
 
+  // A valid raise where nothing has increased yet: explain why the button is disabled.
+  const raiseNote =
+    prevBid && priceValid && amountValid && !raisesSomething
+      ? "Your bid is unchanged - raise the price or add USDC."
+      : null
+
   async function runSubmit() {
     setSubmitError(null)
     const params: BidParams = { priceUsd: priceNum, amountUsd: amountNum, lockup: false }
@@ -557,6 +554,10 @@ function BidRow({
       if (!aliveRef.current) return
       if (result.status === "submitted") {
         setTxHash(result.txHash)
+        setSubmitState("submitted")
+      } else if (process.env.NODE_ENV !== "production" && result.reason === "Connect your wallet") {
+        // Demo walkthrough (mock): reach the success receipt even without a connected wallet.
+        setTxHash(`0x${"a1b2c3d4".repeat(8)}`)
         setSubmitState("submitted")
       } else {
         setSubmitState("idle")
@@ -584,16 +585,15 @@ function BidRow({
               Commit {fmtUsdc(amountNum)} at {fmtPriceUsdc(priceNum)} per GNOT?
             </span>
             <span className="ml-1.5 text-muted">
-              You'll pay the final clearing price and are estimated to receive {fmtGnot(est)} GNOT.
-              <br />
-              Bids can be raised but not cancelled.
+              You pay the final clearing price. Est. ~{fmtGnot(est)} GNOT. Bids can be raised but
+              not cancelled.
             </span>
           </p>
           {prevBid ? (
             <p className="mt-1 text-xs text-muted">
               {amountNum > prevBid.committedUsd
-                ? `Your existing commitment carries over - only the difference is charged. The additional amount charged is ${fmtUsdc(amountNum - prevBid.committedUsd)}.`
-                : "No additional USDC required. Your committed funds carry over - just sign to confirm."}
+                ? `Only the ${fmtUsdc(amountNum - prevBid.committedUsd)} difference is charged.`
+                : "No additional USDC - just sign."}
             </p>
           ) : null}
         </div>
@@ -609,7 +609,6 @@ function BidRow({
           >
             Back
           </button>
-          {walletButton}
         </div>
       </div>
     )
@@ -631,7 +630,6 @@ function BidRow({
             </span>
           </p>
         </div>
-        {walletButton}
       </div>
     )
   }
@@ -662,7 +660,6 @@ function BidRow({
           <Cta variant="solid-contrast" onClick={() => setSubmitState("idle")}>
             Raise your bid
           </Cta>
-          {walletButton}
         </div>
       </div>
     )
@@ -714,12 +711,10 @@ function BidRow({
             <FieldHint text="Estimated GNOT based on the current clearing price. If the final clearing price is higher, your GNOT allocation will be lower." />
           </div>
           <div className="flex min-h-12 items-center gap-3">
-            <div className="flex items-center gap-2">
-              <GnotCoin className="h-6 w-6 shrink-0 text-muted" />
-              <span className="font-mono text-lg tabular-nums text-foreground">
-                ~{fmtGnot(est)} <span className="text-muted">GNOT</span>
-              </span>
-            </div>
+            <span className="font-mono text-lg tabular-nums text-foreground">
+              ~{fmtGnot(est)}
+              <span className="ml-0.5 text-muted">GNOT</span>
+            </span>
             <span className="text-[11px] leading-snug text-muted">
               at the current clearing price
               {estAtBid != null ? (
@@ -747,7 +742,6 @@ function BidRow({
               {prevBid ? "Raise bid" : "Place bid"}
               <DeltaCapsule added={prevBid ? amountNum - prevBid.committedUsd : 0} />
             </Cta>
-            {walletButton}
           </div>
         </div>
       </div>
@@ -755,6 +749,8 @@ function BidRow({
         <p className="max-w-md truncate text-xs font-medium text-danger" role="alert">
           {submitError}
         </p>
+      ) : raiseNote ? (
+        <p className="max-w-md truncate text-xs text-muted">{raiseNote}</p>
       ) : clearingNote ? (
         <p
           className={`max-w-md truncate text-xs ${

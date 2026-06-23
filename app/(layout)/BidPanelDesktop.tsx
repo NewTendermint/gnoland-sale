@@ -1,7 +1,8 @@
 "use client"
 
 import { useQueryClient } from "@tanstack/react-query"
-import { useEffect, useRef } from "react"
+import { type ReactNode, useEffect, useRef, useState } from "react"
+import { useAccount } from "wagmi"
 import { BidFlow } from "../(sections)/bid/BidFlow"
 import { BidStatusTag, FunnelSteps } from "../(sections)/bid/FunnelSteps"
 import { SettlementFlow } from "../(sections)/bid/SettlementFlow"
@@ -13,7 +14,9 @@ import { Stagger } from "../(ui)/Stagger"
 import { useCtaEntrance } from "../../lib/motion/use-motion"
 import { newsletterEnabled } from "../../lib/newsletter/config"
 import { postSonarLogout, redirectToSonarLogin } from "../../lib/sale/api"
+import { gnotEstimate } from "../../lib/sale/calc"
 import { SALE_ECONOMICS, formatSaleDate } from "../../lib/sale/economics"
+import { fmtGnot, fmtPriceUsdc, fmtUsdc } from "../../lib/sale/format"
 import { useBid, useClaim } from "../../lib/sale/hooks"
 import { derivePreSaleBar } from "../../lib/sale/journey"
 import {
@@ -21,9 +24,10 @@ import {
   VERIFY_STATUS,
   WELCOME_BACK,
   bidCtaLabel,
+  bidSectionTitle,
 } from "../../lib/sale/labels"
 import { useSonarSeen } from "../../lib/sale/returning"
-import type { PreSaleBarState } from "../../lib/sale/types"
+import type { JourneyState, MyBid, PreSaleBarState } from "../../lib/sale/types"
 import { AddToCalendarButton } from "./AddToCalendarButton"
 import {
   BarCountdown,
@@ -54,12 +58,25 @@ export function BidPanelDesktop() {
   const bid = useBid()
   const claim = useClaim()
   const sonarSeen = useSonarSeen()
+  const { isConnected } = useAccount()
   const queryClient = useQueryClient()
   const panelRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const wasExpanded = useRef(false)
   const ctaRef = useCtaEntrance<HTMLSpanElement>({ delayMs: 1250 })
   const cardRef = useBarGrow<HTMLDivElement>()
+  // Dismiss a stale "submitted" receipt by remounting BidFlow once the panel has finished
+  // collapsing, so reopening lands on the raise form. Driven by the real collapse transitionEnd
+  // (below) so it never swaps content mid-animation and stays in sync if the duration changes.
+  // Under reduced-motion there's no transition (so no transitionEnd), but the collapse is instant,
+  // so reset immediately - there's no mid-animation swap to avoid.
+  const [bidFlowEpoch, setBidFlowEpoch] = useState(0)
+  useEffect(() => {
+    if (expanded) return
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setBidFlowEpoch((n) => n + 1)
+    }
+  }, [expanded])
 
   function handleSignOut() {
     postSonarLogout().then(
@@ -255,6 +272,15 @@ export function BidPanelDesktop() {
               className={`grid transition-[grid-template-rows] duration-500 ease-reveal motion-reduce:transition-none ${
                 expanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
               }`}
+              onTransitionEnd={(e) => {
+                if (
+                  e.target === e.currentTarget &&
+                  e.propertyName === "grid-template-rows" &&
+                  !expanded
+                ) {
+                  setBidFlowEpoch((n) => n + 1)
+                }
+              }}
             >
               <div className="overflow-hidden">
                 <div className="pb-4 sm:pb-6">
@@ -266,14 +292,22 @@ export function BidPanelDesktop() {
                       expanded ? "opacity-100" : "opacity-0"
                     }`}
                   >
+                    {isConnected ? (
+                      <BidSectionHeader
+                        journey={journey}
+                        myBid={myBid}
+                        clearingPriceUsd={commitment.clearingPriceUsd}
+                        wallet={<WalletButton />}
+                      />
+                    ) : null}
                     <BidFlow
+                      key={bidFlowEpoch}
                       journey={journey}
                       returning={sonarSeen}
                       clearingPriceUsd={commitment.clearingPriceUsd}
                       myBid={myBid}
                       onConnectSonar={redirectToSonarLogin}
                       onBid={bid.submit}
-                      walletButton={<WalletButton />}
                     />
                   </div>
                 </div>
@@ -283,6 +317,69 @@ export function BidPanelDesktop() {
         </div>
       </div>
     </aside>
+  )
+}
+
+// Bid-panel section header at the top of the sticky's content. For has-bid states it shows the
+// current commitment as inline cells (status + committed + max price + allocation); otherwise the
+// dynamic step title. `wallet` is the live WalletButton in the app, a static chip in /dev/states.
+export function BidSectionHeader({
+  journey,
+  myBid,
+  clearingPriceUsd,
+  wallet,
+}: {
+  journey: JourneyState
+  myBid: MyBid
+  clearingPriceUsd: number | null
+  wallet: ReactNode
+}) {
+  const hasBid = journey === "has-bid-winning" || journey === "has-bid-outbid"
+  return (
+    <div className="mb-4 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-b border-border pb-3">
+      {hasBid && myBid ? (
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+          <span className="mr-3 text-sm font-semibold tracking-tight text-foreground">
+            Your bid
+          </span>
+          <HeaderCell label="Committed" value={fmtUsdc(myBid.committedUsd)} />
+          <HeaderCell label="Your max price" value={`${fmtPriceUsdc(myBid.priceUsd)} / GNOT`} />
+          <HeaderCell
+            label="Est. allocation"
+            value={`~${fmtGnot(gnotEstimate(myBid.committedUsd, clearingPriceUsd))} GNOT`}
+          />
+          <HeaderCell
+            label="Current status"
+            value={journey === "has-bid-winning" ? "Winning" : "Outbid"}
+            tone={journey === "has-bid-winning" ? "ok" : "warn"}
+          />
+        </div>
+      ) : (
+        <span className="text-sm font-semibold tracking-tight text-foreground">
+          {bidSectionTitle(journey)}
+        </span>
+      )}
+      {wallet}
+    </div>
+  )
+}
+
+function HeaderCell({
+  label,
+  value,
+  tone,
+}: { label: string; value: string; tone?: "ok" | "warn" }) {
+  return (
+    <div>
+      <p className="text-[10px] uppercase tracking-[0.2em] text-muted">{label}</p>
+      <p
+        className={`mt-0.5 font-mono text-sm tabular-nums ${
+          tone === "ok" ? "text-mint" : tone === "warn" ? "text-amber" : "text-foreground"
+        }`}
+      >
+        {value}
+      </p>
+    </div>
   )
 }
 

@@ -16,6 +16,29 @@ export function bidCtaLabel(journey: JourneyState): string {
   }
 }
 
+/** Dynamic title for the bid-panel section header (shown beside the connected wallet),
+ *  per journey state. Copy: placeholder, pending team validation. */
+export function bidSectionTitle(journey: JourneyState): string {
+  switch (journey) {
+    case "kyc-required":
+      return "Verify your identity"
+    case "kyc-pending":
+      return "Verification in progress"
+    case "kyc-failed":
+      return "Verification didn't pass"
+    case "not-eligible":
+      return "Not eligible"
+    case "wrong-network":
+      return "Switch network"
+    case "has-bid-winning":
+      return "Your bid is winning"
+    case "has-bid-outbid":
+      return "Your bid was outbid"
+    default:
+      return "Place your bid"
+  }
+}
+
 /** Verification-status copy shared across surfaces. Titles carry no trailing period. */
 export const VERIFY_STATUS = {
   pending: {

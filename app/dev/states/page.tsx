@@ -2,7 +2,7 @@ import { notFound } from "next/navigation"
 // Dev-only state harness: renders the sticky bar in every state. Gated out of production.
 import type { ReactNode } from "react"
 import { AwarenessBarBody } from "../../(layout)/BidPanelAwareness"
-import { PreSaleRight } from "../../(layout)/BidPanelDesktop"
+import { BidSectionHeader, PreSaleRight } from "../../(layout)/BidPanelDesktop"
 import { BidFlow, type BidPreview } from "../../(sections)/bid/BidFlow"
 import { BidStatusTag, FunnelSteps } from "../../(sections)/bid/FunnelSteps"
 import { Cta } from "../../(ui)/Cta"
@@ -98,6 +98,35 @@ function CollapsedBar({ journey }: { journey: JourneyState }) {
   )
 }
 
+// Journey states where a wallet is connected (the bid-panel header strip shows).
+const WALLET_CONNECTED_STATES: JourneyState[] = [
+  "ready",
+  "wrong-network",
+  "has-bid-winning",
+  "has-bid-outbid",
+]
+
+// Static stand-in for the live WalletButton (the gallery has no wagmi connection).
+function MockWalletChip() {
+  return (
+    <span className="inline-flex h-8 items-center gap-2 rounded-full border border-border px-3 font-mono text-[11px] text-foreground">
+      <span aria-hidden="true" className="h-1 w-1 rounded-full bg-foreground" />
+      0x2074…491f
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        className="h-3.5 w-3.5 text-muted"
+        aria-hidden="true"
+      >
+        <path d="M18.36 6.64a9 9 0 1 1-12.73 0" />
+        <line x1="12" y1="2" x2="12" y2="12" />
+      </svg>
+    </span>
+  )
+}
+
 function ExpandedBar({
   journey,
   returning = false,
@@ -111,6 +140,14 @@ function ExpandedBar({
       </div>
       <div className="px-6 py-6 lg:px-8">
         <div className="bid-capsule px-6 py-5">
+          {WALLET_CONNECTED_STATES.includes(journey) ? (
+            <BidSectionHeader
+              journey={journey}
+              myBid={input.myBid}
+              clearingPriceUsd={input.clearingPriceUsd}
+              wallet={<MockWalletChip />}
+            />
+          ) : null}
           <BidFlow
             journey={journey}
             returning={returning}

@@ -9,13 +9,13 @@ const FUNNEL: { label: string; states: JourneyState[] }[] = [
 export function FunnelSteps({ journey }: { journey: JourneyState }) {
   const current = FUNNEL.findIndex((s) => s.states.includes(journey))
   return (
-    <ol className="flex flex-wrap items-center gap-x-3 gap-y-2">
+    <ol className="flex flex-wrap items-center gap-x-2.5 gap-y-2">
       {FUNNEL.map((step, i) => {
         const phase = i < current ? "done" : i === current ? "current" : "upcoming"
         return (
-          <li key={step.label} className="flex items-center gap-3">
+          <li key={step.label} className="flex items-center gap-2.5">
             {i > 0 ? (
-              <span className={`h-px w-6 ${i <= current ? "bg-foreground" : "bg-border"}`} />
+              <span className={`h-px w-4 ${i <= current ? "bg-foreground" : "bg-border"}`} />
             ) : null}
             <span className="flex items-center gap-2">
               <span
