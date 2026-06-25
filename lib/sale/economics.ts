@@ -4,7 +4,7 @@
 // gates derive from these, so the time-of-day is intentional, not midnight.
 export const SALE_ECONOMICS = {
   startingPriceUsd: 0.0645, // = minimum price
-  maxPriceUsd: 0.129, // hardcap; no further bids once reached
+  maxPriceUsd: 0.129, // price ceiling on bids/clearing; reaching it does NOT close the sale - bidding runs to saleClosesIso (Sonar 2026-06-25)
   saleSupplyGnot: 77_500_000,
   totalSupplyGnot: 1_333_000_000,
   hardCapUsd: 10_000_000,

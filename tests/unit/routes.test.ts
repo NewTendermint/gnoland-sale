@@ -71,6 +71,7 @@ const entitySnap: EntitySnapshot = {
   entityId: "server-entity",
   setupState: "complete",
   eligibility: "eligible",
+  investingRegion: "other",
 }
 
 afterEach(() => {

@@ -1,6 +1,11 @@
 import "server-only"
 import { env } from "../env"
-import type { EntitySetupState, EntitySnapshot, SaleEligibility } from "../sale/types"
+import type {
+  EntitySetupState,
+  EntitySnapshot,
+  InvestingRegion,
+  SaleEligibility,
+} from "../sale/types"
 import { createSonarClient } from "./client"
 import { ensureFreshTokens, withSonarAuth } from "./permit"
 
@@ -32,6 +37,11 @@ function normalizeEligibility(value: string): SaleEligibility {
     : "unknown-setup-incomplete"
 }
 
+const REGIONS: readonly InvestingRegion[] = ["unknown", "other", "us", "eu"]
+function normalizeRegion(value: string): InvestingRegion {
+  return (REGIONS as readonly string[]).includes(value) ? (value as InvestingRegion) : "unknown"
+}
+
 /** Resolve the session's entity (id server-derived, never client-supplied); null if none. */
 export async function getEntity(sessionId: string): Promise<EntitySnapshot | null> {
   const tokens = await ensureFreshTokens(sessionId)
@@ -48,5 +58,6 @@ export async function getEntity(sessionId: string): Promise<EntitySnapshot | nul
     entityId: entity.EntityID,
     setupState: normalizeSetup(entity.EntitySetupState),
     eligibility: normalizeEligibility(entity.SaleEligibility),
+    investingRegion: normalizeRegion(entity.InvestingRegion),
   }
 }

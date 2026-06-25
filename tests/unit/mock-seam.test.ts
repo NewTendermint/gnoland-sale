@@ -37,6 +37,7 @@ describe("Sonar mock-fetch seam (real SDK + fixtures)", () => {
       entityId: "11111111-1111-1111-1111-111111111111",
       setupState: "complete",
       eligibility: "eligible",
+      investingRegion: "other",
     })
   })
 

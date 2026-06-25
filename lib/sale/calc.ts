@@ -1,3 +1,5 @@
+import type { InvestingRegion } from "./types"
+
 /** Upper GNOT estimate; pro-rata settlement may reduce it. */
 export function gnotEstimate(commitmentUsd: number, clearingPriceUsd: number | null): number {
   if (!clearingPriceUsd || clearingPriceUsd <= 0) return 0
@@ -21,6 +23,13 @@ export function bidStatus(
   if (myPriceUsd == null) return "none"
   if (clearingPriceUsd == null) return "winning"
   return myPriceUsd >= clearingPriceUsd ? "winning" : "outbid"
+}
+
+/** US entities must carry the on-chain Bid.lockup flag when the sale forces it (Sonar A.17.8);
+ *  the contract rejects a US commitment without it (BidMustHaveLockup). Region is server-derived
+ *  (EntitySnapshot.investingRegion), never client-claimed. */
+export function forceLockupForRegion(region: InvestingRegion | null | undefined): boolean {
+  return region === "us"
 }
 
 export function validateBidAmount(

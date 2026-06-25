@@ -16,6 +16,9 @@ export type EntitySetupState =
 // Mirrors sonar-core SaleEligibility
 export type SaleEligibility = "eligible" | "not-eligible" | "unknown-setup-incomplete"
 
+// Mirrors sonar-core InvestingRegion enum (string values). "us" drives the forced lockup (A.17.8).
+export type InvestingRegion = "unknown" | "other" | "us" | "eu"
+
 // Mirrors sonar-core PrePurchaseFailureReason (7 reasons)
 export type PrePurchaseFailureReason =
   | "unknown"
@@ -43,6 +46,8 @@ export type EntitySnapshot = {
   entityId: string
   setupState: EntitySetupState
   eligibility: SaleEligibility
+  // Server-derived from Sonar EntityDetails.InvestingRegion; drives the forced US lockup at bid time.
+  investingRegion: InvestingRegion
 }
 
 // Derived from filtering Commitments[] by my SaleSpecificEntityID

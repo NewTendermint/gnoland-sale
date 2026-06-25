@@ -11,9 +11,10 @@ import {
   postGeneratePermit,
   postPrePurchase,
 } from "./api"
+import { forceLockupForRegion } from "./calc"
 import { type ClaimResult, claimRefundOnChain, submitBidOnChain } from "./onchain"
 import type { BidParams, BidResult } from "./submitter"
-import type { CommitmentData, MyBid } from "./types"
+import type { CommitmentData, EntitySnapshot, MyBid } from "./types"
 
 // Neutral zeros until the first fetch resolves; as initialData, types `data` as always-defined.
 const EMPTY_COMMITMENT: CommitmentData = {
@@ -83,15 +84,23 @@ export function useBid() {
         }
         return { status: "reverted", reason: pre.failureReason }
       }
+      // Compliance: a US entity must carry the on-chain lockup flag (Sonar A.17.8) - read the
+      // region from the trusted server entity snapshot (query cache), never from client UI state,
+      // and force it on. The contract rejects a US commitment without it (BidMustHaveLockup).
+      const entity = queryClient.getQueryData<EntitySnapshot>(["sale", "entity"])
+      const bidParams: BidParams = {
+        ...params,
+        lockup: forceLockupForRegion(entity?.investingRegion) || params.lockup,
+      }
       const permit = await postGeneratePermit(address)
-      const result = await submitBidOnChain({ params, permit, wallet: address })
+      const result = await submitBidOnChain({ params: bidParams, permit, wallet: address })
       if (result.status === "submitted") {
         // Optimistic: reflect the just-placed bid as the session's position.
         // TODO(real-data): also invalidate ["sale","my-bid"] to refetch the confirmed commitment from Sonar once it indexes.
         const optimistic: MyBid = {
-          priceUsd: params.priceUsd,
-          committedUsd: params.amountUsd,
-          lockup: params.lockup,
+          priceUsd: bidParams.priceUsd,
+          committedUsd: bidParams.amountUsd,
+          lockup: bidParams.lockup,
         }
         queryClient.setQueryData(["sale", "my-bid"], optimistic)
       }

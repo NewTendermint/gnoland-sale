@@ -39,13 +39,14 @@ describe("getEntity", () => {
     })
   })
 
-  it("normalizes the session's first entity (id + setup + eligibility)", async () => {
+  it("normalizes the session's first entity (id + setup + eligibility + region)", async () => {
     listAvailableEntitiesMock.mockResolvedValue({
       Entities: [
         {
           EntityID: "11111111-1111-1111-1111-111111111111",
           EntitySetupState: "complete",
           SaleEligibility: "eligible",
+          InvestingRegion: "us",
         },
       ],
     })
@@ -53,6 +54,7 @@ describe("getEntity", () => {
       entityId: "11111111-1111-1111-1111-111111111111",
       setupState: "complete",
       eligibility: "eligible",
+      investingRegion: "us",
     })
   })
 
@@ -68,6 +70,7 @@ describe("getEntity", () => {
           EntityID: "22222222-2222-2222-2222-222222222222",
           EntitySetupState: "brand-new-state",
           SaleEligibility: "brand-new-eligibility",
+          InvestingRegion: "brand-new-region",
         },
       ],
     })
@@ -75,6 +78,7 @@ describe("getEntity", () => {
       entityId: "22222222-2222-2222-2222-222222222222",
       setupState: "not-started",
       eligibility: "unknown-setup-incomplete",
+      investingRegion: "unknown",
     })
   })
 

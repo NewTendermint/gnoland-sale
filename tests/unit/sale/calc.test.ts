@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 import {
   bidHeadroomPct,
   bidStatus,
+  forceLockupForRegion,
   gnotEstimate,
   priceUsdToMicroUsd,
   snapBidPrice,
@@ -9,6 +10,19 @@ import {
   validateBidAmount,
   validateBidPrice,
 } from "../../../lib/sale/calc"
+
+describe("forceLockupForRegion", () => {
+  it("forces the lockup flag for US entities (Sonar A.17.8: the contract rejects a US bid without it)", () => {
+    expect(forceLockupForRegion("us")).toBe(true)
+  })
+  it("does not force it for non-US, unknown, or an absent region", () => {
+    expect(forceLockupForRegion("eu")).toBe(false)
+    expect(forceLockupForRegion("other")).toBe(false)
+    expect(forceLockupForRegion("unknown")).toBe(false)
+    expect(forceLockupForRegion(null)).toBe(false)
+    expect(forceLockupForRegion(undefined)).toBe(false)
+  })
+})
 
 describe("gnotEstimate", () => {
   it("is commitment / clearing price", () => {

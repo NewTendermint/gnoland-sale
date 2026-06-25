@@ -536,11 +536,12 @@ function BidRow({
 
   async function runSubmit() {
     setSubmitError(null)
+    // lockup:false here = the user opt-in (no toggle surfaced). The compliance-forced US lockup
+    // is applied in useBid from the trusted server entity region (Sonar A.17.8), not in the form.
     const params: BidParams = { priceUsd: priceNum, amountUsd: amountNum, lockup: false }
     // Approve/sign preview runs in dev only; in prod we go straight to the seam so we never
     // imply a wallet step the stub can't deliver. TODO(real-data): drive these from the real
-    // replaceBidWith{Approval,Permit} flow (approve only when the allowance is short, then the
-    // bid tx) and stop hardcoding lockup=false.
+    // replaceBidWith{Approval,Permit} flow (approve only when the allowance is short, then the bid tx).
     if (process.env.NODE_ENV !== "production") {
       setSubmitState("approving")
       await devStepPause()

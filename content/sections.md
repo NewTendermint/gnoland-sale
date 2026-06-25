@@ -80,8 +80,8 @@ When a section is `⚠️ TBD`, please replace the `[TBD: ...]` placeholders wit
 
 Refined metric definitions (from the team xlsx, 2026-06-01), mapped to the Sonar `readCommitmentData` fields (see `docs/specs/2026-06-01-sonar-feasibility-and-sale-states.md` §2):
 
-- **Total Committed** - the $ amount committed so far. Worked example from the team: if the price rises to $0.20 (which means 100% filled), total committed = $0.20 x 31,000,000 = $6,200,000. (SDK: `TotalCommitmentAmount`.)
-- **Percent Filled** - the % of the 31M GNOT allocation that is filled. (NOT a direct SDK field - derived, see feasibility doc G1.)
+- **Total Committed** - the $ amount committed so far. Worked example (corrected 2026-06-25 to the current band + 77.5M supply; the old "$0.20 x 31,000,000 = $6.2M" used a stale cap and supply): at the $0.129 ceiling (100% filled, hard-cap outcome) total committed = $0.129 x 77,500,000 ~= $10.0M; at the $0.0645 floor (full subscription) ~= $5.0M. (SDK: `TotalCommitmentAmount`.)
+- **Percent Filled** - the % of the 77,500,000 GNOT allocation that is filled (31M was superseded 2026-06-15; Sonar-confirmed A.17.3). (NOT a direct SDK field - derived as `TotalCommitmentAmount / (clearingPrice x 77,500,000)`, see feasibility doc G1.)
 - **Total Number of Participants** - live count of people who have placed a bid. (SDK: `UniqueCommitmentCount`.)
 - **Cutoff Price** - the minimum price a participant can bid and still get an allocation. NOTE: this is the same number the SDK calls the **clearing price** (`ClearingPriceMicroUSD`); the page must use ONE label for it, not present cutoff and clearing as two metrics.
 - **My Bids** - my bid price and the amount I contributed. Team-provided outbid copy (verbatim): "You've been outbid! Place another bid above the current auction price." (SDK: filter `Commitments[]` by my `SaleSpecificEntityID`, compare my price to the clearing price.)
@@ -105,7 +105,7 @@ Refined metric definitions (from the team xlsx, 2026-06-01), mapped to the Sonar
 
 ## #3 - Token Sale Details  🟡 Partial (numbers in, some provisional)
 
-> **2026-06-13 confirmations (Jae + Ryan, via owner)**: hardcap English auction - floor $0.0645 ($86M FDV), **maximum price $0.1290** ($172M FDV), no further bids once the hardcap is reached; **bid increment $0.00645** (no price levels; any off-step bid must show a UI error); **US accredited investors enabled with a 1-year lockup**; pre-registration July 1, sale July 15 (unchanged); **September 1, 2026 = transfers enabled / listings / distribution (mainnet)**. Reflected the same day in the terms table, bid validation, FAQ and Roadmap. The 31M vs 77,499,999 offered-amount discrepancy below is now RESOLVED - see the 2026-06-15 amendment.
+> **2026-06-13 confirmations (Jae + Ryan, via owner)**: hardcap English auction - floor $0.0645 ($86M FDV), **maximum price $0.1290** ($172M FDV) - a price ceiling on bids/clearing (~~no further bids once the hardcap is reached~~ **CORRECTED 2026-06-25: the sale does NOT auto-close at the cap; bidding runs until the close time - Sonar, REQUIREMENTS A.17.5**); **bid increment $0.00645** (no price levels; any off-step bid must show a UI error); **US accredited investors enabled with a 1-year lockup**; pre-registration July 1, sale July 15 (unchanged); **September 1, 2026 = transfers enabled / listings / distribution (mainnet)**. Reflected the same day in the terms table, bid validation, FAQ and Roadmap. The 31M vs 77,499,999 offered-amount discrepancy below is now RESOLVED - see the 2026-06-15 amendment.
 >
 > **2026-06-15 amendment (doc revision, owner-validated): chain + economics updated.** The sale runs on **Ethereum mainnet** (preview: Sepolia), accepting USDC - the earlier Base pin is superseded (code + ADR migrated 2026-06-15). Offered amount is **77,500,000 GNOT (~5.8% of supply)**, superseding the recorded 31M. **Soft cap $2,000,000 / hard cap $10,000,000**, **minimum commitment $100**, **contribution window July 15-21, 2026**. The terms table is now two sections (Sale Overview + Pricing and Caps) instead of four. Roadmap Q1 2026 now states the first GNOT (genesis/beta) distribution. Wherever the fields and notes below still show 31M / $200 / Base / a vague end date, they are superseded by this amendment.
 
@@ -121,16 +121,16 @@ Refined metric definitions (from the team xlsx, 2026-06-01), mapped to the Sonar
 |---|---|---|
 | Token | GNOT | ✅ |
 | Starting price (= minimum price) | $0.0645 per GNOT | ✅ |
-| Maximum price | $0.129 per GNOT (hardcap; bidding stops if reached) | ✅ confirmed 2026-06-13 |
+| Maximum price | $0.129 per GNOT (price ceiling on bids/clearing; NOT an auto-close - bidding runs to the close time, Sonar A.17.5) | ✅ confirmed 2026-06-13, cap-close corrected 2026-06-25 |
 | Bid increment | $0.00645 (UI rejects any off-step bid) | ✅ confirmed 2026-06-13 |
 | Total raise | $2,000,000 at starting price (may grow if oversubscribed) | ✅ |
 | Minimum commitment | $200 per entity | 🟡 provisional |
 | Maximum commitment | $100,000 per entity (whale cap) | 🟡 provisional |
 | FDV at clearing | $86M to $172M (floor to hardcap) | ✅ confirmed 2026-06-13 |
 | Unlock schedule | 7% released on mainnet launch (the day GNOT becomes transferable), 7% released each subsequent month, and 9% in the final month - fully vested 13 months after mainnet launch | ✅ |
-| Allocation (% of total supply) | 31,000,000 GNOT (2.32% of the 1.333B total supply) | ✅ (see discrepancy note) |
+| Allocation (% of total supply) | ~~31,000,000 GNOT (2.32%)~~ -> **77,500,000 GNOT (~5.8%)** (superseded 2026-06-15; resolved note below + Sonar A.17.3) | SUPERSEDED -> 77.5M |
 | Registration opens | July 6, 2026 | ✅ |
-| Contribution window | Opens July 20, 2026 · until close or hardcap | ✅ confirmed 2026-06-13 |
+| Contribution window | Opens July 20, 2026 · until the close time (NOT "until hardcap" - the cap does not close the sale, Sonar A.17.5) | ✅ confirmed 2026-06-13, corrected 2026-06-25 |
 | Accepted currency | USDC (USDT technically supported by the contract; default USDC) | 🟡 |
 | Mainnet / distribution | September 1, 2026 (transfers enabled, listings, distribution) | ✅ confirmed 2026-06-13 |
 | US participants | Accredited investors only, 1-year lockup (stack vs overlay interaction OPEN, A.15) | ✅ confirmed 2026-06-13 |
@@ -180,7 +180,7 @@ Refined metric definitions (from the team xlsx, 2026-06-01), mapped to the Sonar
 
 **Unlock schedule (Vesting tile, identical for every allocation):** 7% at mainnet launch (TGE), 7% each subsequent month, 9% in the final month. 13 x 7% + 9% = 100%, fully vested 13 months after mainnet (distribution runs months 1-14). No cliff. Circulating at TGE = 93,310,000 GNOT (7%). Matches #3 above.
 
-**Note**: category labels (`Airdrop1 - Cosmos`, `NT,LLC`, ...) and purpose text are kept verbatim from the source sheet; the public-sale 31M / 2.32% figure from #3 is NOT a separate row here (the sheet does not break it out). The sheet's hypothetical price -> marketcap projections ($0.025 -> $10.00) are deliberately NOT published.
+**Note**: category labels (`Airdrop1 - Cosmos`, `NT,LLC`, ...) and purpose text are kept verbatim from the source sheet; the public-sale 77.5M / ~5.8% figure from #3 (31M superseded 2026-06-15) is NOT a separate row here (the sheet does not break it out). The sheet's hypothetical price -> marketcap projections ($0.025 -> $10.00) are deliberately NOT published.
 
 ---
 
