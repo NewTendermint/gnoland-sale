@@ -29,3 +29,8 @@ export const externalLinks: NavLink[] = [
   { label: "GitHub", href: "https://github.com/gnolang" },
   { label: "Adena", href: "https://adena.app" },
 ]
+
+// One-line header titles for non-home routes (the homepage section anchors don't apply there).
+export const pageTitles: Record<string, string> = {
+  "/us-investor-disclaimer": "Legal",
+}

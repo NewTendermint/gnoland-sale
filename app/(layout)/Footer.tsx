@@ -1,3 +1,4 @@
+import Link from "next/link"
 import { DrawLine } from "../(ui)/DrawLine"
 import { Stagger } from "../(ui)/Stagger"
 import { ThemeToggle } from "./ThemeToggle"
@@ -51,14 +52,6 @@ export function Footer() {
                 className="space-y-2 text-lg text-muted lg:text-xl lg:col-span-2 lg:col-start-5"
               >
                 <li>
-                  <a
-                    href="https://docs.gno.land"
-                    className="link-underline transition-colors hover:text-foreground"
-                  >
-                    Documentation
-                  </a>
-                </li>
-                <li>
                   {/* biome-ignore lint/a11y/useValidAnchor: legal page URL not yet provided */}
                   <a href="#" className="link-underline transition-colors hover:text-foreground">
                     Terms of Service
@@ -75,6 +68,14 @@ export function Footer() {
                   <a href="#" className="link-underline transition-colors hover:text-foreground">
                     Risk Disclosure
                   </a>
+                </li>
+                <li>
+                  <Link
+                    href="/us-investor-disclaimer"
+                    className="link-underline transition-colors hover:text-foreground"
+                  >
+                    U.S. Disclaimer
+                  </Link>
                 </li>
               </Stagger>
             </div>

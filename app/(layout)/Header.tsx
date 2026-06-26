@@ -1,12 +1,14 @@
 "use client"
 
+import { usePathname } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
 import { Logo } from "../(ui)/Logo"
 import { Stagger } from "../(ui)/Stagger"
 import { LG_MEDIA_QUERY } from "../../lib/device/breakpoints"
-import { navLinks } from "./nav.data"
+import { navLinks, pageTitles } from "./nav.data"
 
 export function Header() {
+  const pathname = usePathname()
   const [pastHero, setPastHero] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -60,6 +62,26 @@ export function Header() {
   const reveal = `transition-opacity duration-500 ${
     pastHero ? "opacity-100" : "pointer-events-none opacity-0"
   }`
+
+  // Off the homepage the section anchors (#hero, #faq...) point nowhere, so render a minimal
+  // header instead: logo back to home + a one-line page title. No section nav, no burger.
+  if (pathname !== "/") {
+    const title = pageTitles[pathname]
+    return (
+      <header className="fixed left-[var(--reveal-padding)] right-[var(--reveal-padding)] top-[var(--reveal-padding)] z-[var(--z-header)] bg-transparent">
+        <nav className="relative mx-auto grid max-w-[var(--max-width-container)] grid-cols-12 gap-6 px-6 py-4">
+          <div className="col-span-12 flex items-center justify-between lg:col-span-10 lg:col-start-2">
+            <a href="/" aria-label="Gno.land" className="shrink-0">
+              <Logo className="h-6 w-auto" />
+            </a>
+            {title ? (
+              <span className="text-sm font-medium tracking-tight text-muted">{title}</span>
+            ) : null}
+          </div>
+        </nav>
+      </header>
+    )
+  }
 
   return (
     <>
