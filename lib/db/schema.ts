@@ -1,4 +1,13 @@
-import { bigint, index, jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core"
+import {
+  bigint,
+  doublePrecision,
+  index,
+  jsonb,
+  pgTable,
+  text,
+  timestamp,
+  uuid,
+} from "drizzle-orm/pg-core"
 import { z } from "zod"
 import { evmAddress } from "../validation"
 
@@ -49,3 +58,27 @@ export const auditMetadataSchema = z
   .strict()
 
 export type AuditMetadata = z.infer<typeof auditMetadataSchema>
+
+// Web Push subscriptions, keyed by the push endpoint. Deliberately UN-traceable: no session id,
+// wallet, entity id, email, or IP - only the push channel + a price + status. Nothing here can be
+// joined back to a user or wallet. Purge after the sale closes.
+export const pushSubscriptions = pgTable("push_subscriptions", {
+  endpoint: text("endpoint").primaryKey(),
+  p256dh: text("p256dh").notNull(),
+  auth: text("auth").notNull(),
+  bidLimitUsd: doublePrecision("bid_limit_usd").notNull(),
+  lastStatus: text("last_status").notNull().default("winning"), // "winning" | "outbid"
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+})
+
+// Validates the client-sent subscription before insert. `.strict()` rejects any extra field, so no
+// wallet/session/PII can be smuggled into the row. Endpoint must be https (push services always are).
+export const pushSubscriptionInsertSchema = z
+  .object({
+    endpoint: z.string().startsWith("https://").max(2048),
+    p256dh: z.string().min(1).max(512),
+    auth: z.string().min(1).max(256),
+    bidLimitUsd: z.number().positive(),
+  })
+  .strict()

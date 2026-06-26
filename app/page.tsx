@@ -1,4 +1,5 @@
 import { BidPanel } from "./(layout)/BidPanel"
+import { PushLimitSync } from "./(layout)/PushLimitSync"
 import { SaleProvider } from "./(layout)/SaleProvider"
 import { TabAlert } from "./(layout)/TabAlert"
 import { Backers } from "./(sections)/backers/Backers"
@@ -21,6 +22,7 @@ export default function Home() {
   return (
     <SaleProvider>
       <TabAlert />
+      <PushLimitSync />
       <main id="main">
         <Hero />
         <TokenDetails />

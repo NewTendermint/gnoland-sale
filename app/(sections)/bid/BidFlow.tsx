@@ -19,6 +19,7 @@ import { fmtGnot, fmtPriceUsdc, fmtUsdc } from "../../../lib/sale/format"
 import { SUPPORT_CONTACT_HREF, VERIFY_STATUS, WELCOME_BACK } from "../../../lib/sale/labels"
 import { type BidParams, type BidResult, MockBidSubmitter } from "../../../lib/sale/submitter"
 import type { JourneyState, MyBid } from "../../../lib/sale/types"
+import { PushOptIn } from "./PushOptIn"
 
 const submitter = new MockBidSubmitter()
 
@@ -655,11 +656,7 @@ function BidRow({
             <span className="font-mono text-[11px] text-muted">tx {txHash}</span>
           ) : null}
         </div>
-        <div className="flex flex-wrap items-center gap-4">
-          <Cta variant="solid-contrast" onClick={() => setSubmitState("idle")}>
-            Raise your bid
-          </Cta>
-        </div>
+        <PushOptIn bidLimitUsd={priceNum} />
       </div>
     )
   }

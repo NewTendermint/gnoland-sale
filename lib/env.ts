@@ -18,6 +18,12 @@ const envSchema = z.object({
   // Optional; empty string is normalized to absent.
   MAILCHIMP_API_KEY: z.preprocess((v) => (v === "" ? undefined : v), z.string().optional()),
   MAILCHIMP_AUDIENCE_ID: z.preprocess((v) => (v === "" ? undefined : v), z.string().optional()),
+  // Web Push (VAPID). Optional: absent = push off. Private key server-only, never NEXT_PUBLIC_.
+  VAPID_PUBLIC_KEY: z.preprocess((v) => (v === "" ? undefined : v), z.string().optional()),
+  VAPID_PRIVATE_KEY: z.preprocess((v) => (v === "" ? undefined : v), z.string().optional()),
+  VAPID_SUBJECT: z.preprocess((v) => (v === "" ? undefined : v), z.string().optional()),
+  // Bearer secret protecting the scheduled outbid-cron route. Optional: absent = cron disabled.
+  CRON_SECRET: z.preprocess((v) => (v === "" ? undefined : v), z.string().optional()),
 })
 
 export type Env = z.infer<typeof envSchema>
