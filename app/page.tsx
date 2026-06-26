@@ -1,5 +1,6 @@
 import { BidPanel } from "./(layout)/BidPanel"
 import { SaleProvider } from "./(layout)/SaleProvider"
+import { TabAlert } from "./(layout)/TabAlert"
 import { Backers } from "./(sections)/backers/Backers"
 import { Ecosystem } from "./(sections)/ecosystem/Ecosystem"
 import { Faq } from "./(sections)/faq/Faq"
@@ -19,6 +20,7 @@ import { Tokenomics } from "./(sections)/tokenomics/Tokenomics"
 export default function Home() {
   return (
     <SaleProvider>
+      <TabAlert />
       <main id="main">
         <Hero />
         <TokenDetails />
