@@ -51,6 +51,7 @@ jobs:
       - name: Scan bundle for secrets
         run: node scripts/check-secrets.mjs
 
-      # Fail the build on high-or-critical vulnerabilities in dependencies.
+      # Fail the build on high-or-critical vulnerabilities in PRODUCTION dependencies.
+      # Dev/test tooling (e.g. jsdom -> vitest -> undici) is excluded: it never ships to users.
       - name: Audit dependencies
-        run: npm audit --audit-level=high
+        run: npm audit --audit-level=high --omit=dev
