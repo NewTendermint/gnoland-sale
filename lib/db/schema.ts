@@ -6,7 +6,6 @@ import {
   pgTable,
   text,
   timestamp,
-  uuid,
 } from "drizzle-orm/pg-core"
 import { z } from "zod"
 import { evmAddress } from "../validation"
@@ -32,7 +31,8 @@ export const auditLog = pgTable(
   {
     id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
     event: text("event").notNull(),
-    entityId: uuid("entity_id"),
+    // Sonar EntityID is an opaque string (e.g. "AUX-dSHI4...."), NOT a UUID - so this is text, not uuid.
+    entityId: text("entity_id"),
     wallet: text("wallet"),
     amountMinor: bigint("amount_minor", { mode: "number" }),
     ipHmac: text("ip_hmac"),

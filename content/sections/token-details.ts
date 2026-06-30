@@ -50,7 +50,7 @@ export const termGroups: Array<{
     eyebrow: "Pricing and Caps",
     rows: [
       { label: "Starting price", value: "$0.0645 per GNOT" },
-      { label: "Bid increment", value: "$0.01935" },
+      { label: "Bid increment", value: "$0.0215" },
       { label: "Minimum commitment", value: "$100" },
       { label: "Soft cap", value: "$2,500,000" },
     ],

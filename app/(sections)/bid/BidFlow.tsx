@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react"
 import type { ReactNode } from "react"
 import { sepolia } from "viem/chains"
 import { useChainId, useConnect, useSwitchChain } from "wagmi"
-import { PRIMARY_CHAIN_ID } from "../../(layout)/web3"
 import { Cta } from "../../(ui)/Cta"
 import { Icon } from "../../(ui)/Icon"
 import {
@@ -14,11 +13,16 @@ import {
   validateBidAmount,
   validateBidPrice,
 } from "../../../lib/sale/calc"
+import { SALE_CHAIN } from "../../../lib/sale/contracts"
 import { SALE_ECONOMICS } from "../../../lib/sale/economics"
 import { fmtGnot, fmtPriceUsdc, fmtUsdc } from "../../../lib/sale/format"
-import { useLimits } from "../../../lib/sale/hooks"
 import { SUPPORT_CONTACT_HREF, VERIFY_STATUS, WELCOME_BACK } from "../../../lib/sale/labels"
-import { type BidParams, type BidResult, MockBidSubmitter } from "../../../lib/sale/submitter"
+import {
+  type BidParams,
+  type BidResult,
+  type BidStage,
+  MockBidSubmitter,
+} from "../../../lib/sale/submitter"
 import type { JourneyState, MyBid } from "../../../lib/sale/types"
 import { PushOptIn } from "./PushOptIn"
 
@@ -74,7 +78,7 @@ const devStepPause = () =>
     ? Promise.resolve()
     : new Promise<void>((resolve) => setTimeout(resolve, 650))
 
-type SubmitState = "idle" | "confirming" | "approving" | "signing" | "submitted"
+type SubmitState = "idle" | "confirming" | "submitting" | "approving" | "signing" | "submitted"
 
 /** Dev-only: seed BidRow into a money-loop sub-state for the /dev/states gallery. */
 export type BidPreview = {
@@ -99,7 +103,7 @@ export function BidFlow({
   clearingPriceUsd: number | null
   myBid: MyBid
   onConnectSonar?: () => void
-  onBid?: (p: BidParams) => Promise<BidResult>
+  onBid?: (p: BidParams, opts?: { onStage?: (s: BidStage) => void }) => Promise<BidResult>
   preview?: BidPreview
 }) {
   return (
@@ -129,7 +133,7 @@ function StateContent({
   clearingPriceUsd: number | null
   myBid: MyBid
   onConnectSonar?: () => void
-  onBid?: (p: BidParams) => Promise<BidResult>
+  onBid?: (p: BidParams, opts?: { onStage?: (s: BidStage) => void }) => Promise<BidResult>
   preview?: BidPreview
 }) {
   // Shared render path keeps BidRow's tree position across ready -> has-bid (stable key preserves the receipt).
@@ -356,16 +360,16 @@ function SwitchNetworkGate() {
           <span className={`ml-1.5 ${error ? "text-danger" : "text-muted"}`}>
             {error
               ? "Could not switch. Try again."
-              : "This sale runs on Ethereum. Change your network to continue."}
+              : `This sale runs on ${SALE_CHAIN.name}. Change your network to continue.`}
           </span>
         </p>
       </div>
       <Cta
         variant="solid-contrast"
-        onClick={() => switchChain({ chainId: PRIMARY_CHAIN_ID })}
+        onClick={() => switchChain({ chainId: SALE_CHAIN.id })}
         disabled={isPending}
       >
-        {isPending ? "Switching..." : "Switch to Ethereum"}
+        {isPending ? "Switching..." : `Switch to ${SALE_CHAIN.name}`}
       </Cta>
     </div>
   )
@@ -380,9 +384,12 @@ function reasonToMessage(reason: string): string {
     "wallet-not-linked": "Link this wallet to your Sonar account first.",
     "outside-time-window": "Bidding is closed right now.",
     "session-expired": "Your Sonar session expired. Reconnect to continue.",
+    "Connect your wallet": "Connect your wallet to bid.",
+    "wrong-chain": `Switch to ${SALE_CHAIN.name} to bid.`,
     unknown: "Could not place your bid. Please try again.",
   }
-  return messages[reason] ?? messages.unknown
+  // On-chain reasons (bidRevertReason) are already messages; pass through if not a known code.
+  return messages[reason] ?? reason
 }
 
 /** Small "+amount" pill shown on the bid CTAs when a raise adds USDC over the prior commitment. */
@@ -405,7 +412,7 @@ function BidRow({
   clearingPriceUsd: number | null
   prevBid?: MyBid
   outbid?: boolean
-  onBid?: (p: BidParams) => Promise<BidResult>
+  onBid?: (p: BidParams, opts?: { onStage?: (s: BidStage) => void }) => Promise<BidResult>
   preview?: BidPreview
 }) {
   const minPrice = SALE_ECONOMICS.startingPriceUsd
@@ -428,7 +435,6 @@ function BidRow({
     setAmount(v)
   }
   const chainId = useChainId()
-  const limits = useLimits()
   const [submitState, setSubmitState] = useState<SubmitState>(preview?.state ?? "idle")
   const [txHash, setTxHash] = useState<string | null>(preview?.txHash ?? null)
   const [submitError, setSubmitError] = useState<string | null>(preview?.error ?? null)
@@ -441,8 +447,8 @@ function BidRow({
     incrementUsd: increment,
     prevPriceUsd: prevBid?.priceUsd,
   })
-  const minCommitFloor = limits.data?.minUsd ?? SALE_ECONOMICS.minCommitmentUsd
-  const maxCommit = limits.data?.maxUsd ?? SALE_ECONOMICS.maxCommitmentUsd
+  const minCommitFloor = SALE_ECONOMICS.minCommitmentUsd
+  const maxCommit = SALE_ECONOMICS.maxCommitmentUsd
   const minCommit = prevBid ? Math.max(minCommitFloor, prevBid.committedUsd) : minCommitFloor
   const amountCheck = validateBidAmount(amountNum, minCommit, maxCommit)
   const priceShown = price !== "" && !Number.isNaN(priceNum)
@@ -526,23 +532,16 @@ function BidRow({
     // lockup:false here = the user opt-in (no toggle surfaced). The compliance-forced US lockup
     // is applied in useBid from the trusted server entity region (Sonar A.17.8), not in the form.
     const params: BidParams = { priceUsd: priceNum, amountUsd: amountNum, lockup: false }
-    // TODO(real-data): drive these from the real replaceBidWith{Approval,Permit} flow
-    // (approve only when the allowance is short, then the bid tx).
-    if (process.env.NODE_ENV !== "production") {
-      setSubmitState("approving")
-      await devStepPause()
-      if (!aliveRef.current) return
-      setSubmitState("signing")
-    }
     if (onBid) {
-      const result = await onBid(params)
+      setSubmitState("submitting")
+      const result = await onBid(params, {
+        onStage: (s) => {
+          if (aliveRef.current) setSubmitState(s)
+        },
+      })
       if (!aliveRef.current) return
       if (result.status === "submitted") {
         setTxHash(result.txHash)
-        setSubmitState("submitted")
-      } else if (process.env.NODE_ENV !== "production" && result.reason === "Connect your wallet") {
-        // mock: force success receipt when wallet not connected
-        setTxHash(`0x${"a1b2c3d4".repeat(8)}`)
         setSubmitState("submitted")
       } else {
         setSubmitState("idle")
@@ -550,6 +549,11 @@ function BidRow({
       }
       return
     }
+    // /dev/states gallery (no real submitter): keep the paced approve/sign animation.
+    setSubmitState("approving")
+    await devStepPause()
+    if (!aliveRef.current) return
+    setSubmitState("signing")
     const pre = await submitter.preflight(params)
     if (!aliveRef.current) return
     if (!pre.ok) {
@@ -599,19 +603,25 @@ function BidRow({
     )
   }
 
-  if (submitState === "approving" || submitState === "signing") {
+  if (submitState === "submitting" || submitState === "approving" || submitState === "signing") {
     return (
       <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4">
         <div className="flex items-center gap-3" aria-live="polite">
           <Icon name="clock" draw={false} className="h-5 w-5 shrink-0 text-foreground" />
           <p className="text-sm">
             <span className="font-medium text-foreground">
-              {submitState === "approving" ? "Approving USDC..." : "Signing..."}
+              {submitState === "submitting"
+                ? "Placing your bid..."
+                : submitState === "approving"
+                  ? "Approving USDC..."
+                  : "Signing..."}
             </span>
             <span className="ml-1.5 text-muted">
-              {submitState === "approving"
-                ? "Approve USDC spending in your wallet."
-                : "Confirm and sign the bid in your wallet."}
+              {submitState === "submitting"
+                ? "Preparing your bid - check your wallet in a moment."
+                : submitState === "approving"
+                  ? "Approve USDC spending in your wallet."
+                  : "Confirm and sign the bid in your wallet."}
             </span>
           </p>
         </div>
