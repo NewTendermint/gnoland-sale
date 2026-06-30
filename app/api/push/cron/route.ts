@@ -10,8 +10,7 @@ import { NextResponse } from "next/server"
 
 export const runtime = "nodejs"
 
-// POST /api/push/cron - triggered by the Netlify scheduled function (bearer CRON_SECRET). Reads the
-// public clearing, detects winning->outbid transitions, pushes, prunes expired, records statuses.
+// POST /api/push/cron - Netlify scheduled function; bearer CRON_SECRET required.
 export async function POST(req: Request) {
   if (!env.CRON_SECRET || req.headers.get("authorization") !== `Bearer ${env.CRON_SECRET}`) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 })

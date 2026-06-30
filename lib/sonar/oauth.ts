@@ -5,7 +5,7 @@ import { pkceStates } from "../db/schema"
 import { env } from "../env"
 import { sonarCore } from "./server-only"
 
-// PKCE state in Postgres (Sonar recommends a database; replaces Netlify Blobs).
+// PKCE state in Postgres.
 // 10-min TTL stamped on insert, enforced on read; single-use via atomic delete-returning.
 const PKCE_TTL_MS = 10 * 60 * 1000
 

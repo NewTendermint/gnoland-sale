@@ -8,7 +8,7 @@ import type { Config } from "@netlify/edge-functions"
  * and the request never reaches Next.js; under the limit this empty handler returns
  * nothing and the request passes through unchanged.
  *
- * Limit per ADR 4.5: 10 req/min/IP. (OAuth init has its own tighter 3/min cap in
+ * Limit: 10 req/min/IP. (OAuth init has its own tighter 3/min cap in
  * auth-init-rate-limit.ts.) This is coarse cross-instance abuse protection; it
  * complements, not replaces, the per-wallet permit dedup (lib/sonar/permit.ts) and
  * the authoritative on-chain replay guard (single-use + ECDSA + expiry). Verified

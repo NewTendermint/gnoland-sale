@@ -25,8 +25,8 @@ export function bidStatus(
   return myPriceUsd >= clearingPriceUsd ? "winning" : "outbid"
 }
 
-/** US entities must carry the on-chain Bid.lockup flag when the sale forces it (Sonar A.17.8);
- *  the contract rejects a US commitment without it (BidMustHaveLockup). Region is server-derived
+/** US entities must carry the on-chain Bid.lockup flag when the sale forces it; the contract
+ *  rejects a US commitment without it (BidMustHaveLockup). Region is server-derived
  *  (EntitySnapshot.investingRegion), never client-claimed. */
 export function forceLockupForRegion(region: InvestingRegion | null | undefined): boolean {
   return region === "us"
@@ -51,12 +51,11 @@ export function validateBidPrice(
     prevPriceUsd?: number
   },
 ): "ok" | "below-min" | "off-increment" | "below-previous" {
-  // No upper price cap (team-confirmed 2026-06-30, the old $0.129 ceiling is removed).
+  // No upper price cap.
   if (!Number.isFinite(priceUsd)) return "below-min"
   if (priceUsd < opts.minPriceUsd) return "below-min"
   if (opts.incrementUsd != null) {
-    // FLOOR-ANCHORED grid: valid prices are minPrice + k*increment (Ryan Lee 2026-06-30: the
-    // on-chain price is a step index from the floor). Integer micro-USD math dodges float drift.
+    // FLOOR-ANCHORED grid: valid prices are minPrice + k*increment. Integer micro-USD math dodges float drift.
     const micro = Math.round(priceUsd * 100_000)
     const min = Math.round(opts.minPriceUsd * 100_000)
     const step = Math.round(opts.incrementUsd * 100_000)
@@ -83,12 +82,10 @@ export function usdToTokenUnits(amountUsd: number, decimals: number): bigint {
   return BigInt(units)
 }
 
-/** USD price -> SettlementSale `uint64` on-chain price = STEP INDEX from the floor.
- *  Team-confirmed (Ryan Lee 2026-06-30): the on-chain price is a step index from the floor
- *  (minPrice $0.0645 = step 0), incremented by 1 per bidIncrement ($0.01935). So step =
- *  (priceUsd - minPrice) / increment. Integer micro-USD math keeps it float-drift exact; callers
- *  pass an on-grid price (validateBidPrice), an off-grid value rounds to the nearest step.
- *  TODO verify this encoding against the deployed SettlementSale via scripts/probe-sale.mjs before launch. */
+/** USD price -> SettlementSale `uint64` on-chain price = STEP INDEX from the floor:
+ *  step = (priceUsd - minPrice) / increment (minPrice = step 0). Integer micro-USD math keeps it
+ *  float-drift exact; callers pass an on-grid price (validateBidPrice), off-grid rounds to nearest.
+ *  TODO: verify this encoding against the deployed SettlementSale via scripts/probe-sale.mjs before launch. */
 export function priceUsdToStepIndex(
   priceUsd: number,
   minPriceUsd: number,

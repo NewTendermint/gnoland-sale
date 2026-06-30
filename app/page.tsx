@@ -19,8 +19,7 @@ import { Team } from "./(sections)/team/Team"
 import { TokenDetails } from "./(sections)/token-details/TokenDetails"
 import { Tokenomics } from "./(sections)/tokenomics/Tokenomics"
 
-// Phase from the sale clock (the 3 economics dates), resolved server-side so it renders directly.
-// ISR-revalidated so the static page still flips within ~30s of an open/close boundary.
+// Server-resolved phase from the sale clock; ISR revalidate flips it within ~30s of a boundary.
 export const revalidate = 30
 
 export default function Home() {

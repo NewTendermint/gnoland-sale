@@ -187,11 +187,10 @@ export function useReveal<T extends HTMLElement>({
     loadEngine()
       .then(async ({ SplitText }) => {
         if (killed || !ref.current) return
-        // Split AFTER fonts load. With display:swap the fallback font renders first, then Geist
-        // swaps in and autoSplit re-splits on the reflow; a re-split landing after the reveal has
-        // played drops into the `played` branch below and shows the text in its end state with no
-        // animation (intermittent, Firefox font-load timing). Capped so a hung fonts.ready never
-        // strands the text hidden.
+        // Split AFTER fonts load. With display:swap the fallback renders first, then Geist swaps
+        // in and autoSplit re-splits on the reflow; a re-split after the reveal has played would
+        // show the text in its end state with no animation (intermittent, Firefox font-load timing).
+        // Capped so a hung fonts.ready never strands the text hidden.
         if (document.fonts?.ready) {
           await Promise.race([document.fonts.ready, new Promise((r) => setTimeout(r, 600))])
           if (killed || !ref.current) return

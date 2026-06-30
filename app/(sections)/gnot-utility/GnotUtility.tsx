@@ -1,4 +1,4 @@
-// GNOT utility (demand side: what GNOT does), rendered via the shared StatementList.
+// GNOT utility - demand side: what GNOT does.
 import { StatementList } from "../../(ui)/StatementList"
 import { uses } from "../../../content/sections/gnot-utility"
 import { sceneVideos } from "../../../lib/scenes"

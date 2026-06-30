@@ -5,7 +5,7 @@ import type { Config } from "@netlify/edge-functions"
  * into Netlify Blobs. A tighter cap than the permit routes: a legitimate user
  * starts login rarely, whereas spam would fill the PKCE store.
  *
- * Limit per ADR 4.5: 3 req/min/IP. Enforced at the edge (HTTP 429 "block" past the
+ * Limit: 3 req/min/IP. Enforced at the edge (HTTP 429 "block" past the
  * limit, before Next.js); the empty handler passes allowed requests through. Same
  * tune-for-NAT and validate-on-deploy-preview caveats as sonar-rate-limit.ts.
  */

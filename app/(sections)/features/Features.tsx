@@ -1,4 +1,4 @@
-// Five-pillar pitch (why gno.land), rendered via the shared StatementList.
+// Five-pillar pitch for why gno.land.
 import { StatementList } from "../../(ui)/StatementList"
 import { features } from "../../../content/sections/features"
 import { sceneVideos } from "../../../lib/scenes"

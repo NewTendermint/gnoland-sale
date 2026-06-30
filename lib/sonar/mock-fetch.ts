@@ -12,7 +12,7 @@ function liveCommitmentData(): ReadCommitmentDataResponse {
     ...base,
     TotalCommitmentAmount: String(Math.round((1_200_000 + t * 400) * unit)),
     UniqueCommitmentCount: 1247 + Math.floor(t / 20),
-    // Capped at $0.1161, below the $0.1290 hardcap.
+    // Capped below the starting ceiling for the demo.
     ClearingPriceMicroUSD: String(Math.min(100_000 + Math.floor(t / 60) * 500, 116_100)),
   }
 }

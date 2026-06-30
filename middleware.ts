@@ -2,7 +2,7 @@ import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
 
 /**
- * Security headers + Content-Security-Policy (ADR security model).
+ * Security headers + Content-Security-Policy.
  *
  * The hard headers are enforced. The nonce-based CSP ships Report-Only first so it
  * logs violations without blocking the wallet stack (WalletConnect relays over wss,
@@ -20,7 +20,7 @@ export function middleware(request: NextRequest) {
     "default-src 'self'",
     // 'wasm-unsafe-eval' for crypto/wallet libs; strict-dynamic + nonce, never unsafe-inline.
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'wasm-unsafe-eval'`,
-    // Styles allow inline (Next/Tailwind); the ADR forbids unsafe-inline for scripts only.
+    // Styles allow inline (Next/Tailwind); unsafe-inline is forbidden for scripts only.
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https:",
     "font-src 'self' data:",

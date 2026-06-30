@@ -58,8 +58,7 @@ export function Hero() {
         </Entrance>
 
         <div className="mt-10 w-full lg:mt-14">
-          {/* Gate the scene slot against FOUC: hidden (opacity 0) on first paint until mount,
-              so the grey slot bg never flashes before the clip-open reveal. */}
+          {/* anti-FOUC: hide slot until mount */}
           <Entrance className="w-full">
             <ParallaxBox
               className="aspect-[2/1]"

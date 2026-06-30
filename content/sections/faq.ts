@@ -1,8 +1,7 @@
 /**
  * Content data for the FAQ section.
  *
- * `content/sections.md` is the human source of truth for marketing/legal
- * copy. This module mirrors that copy for the build (dev-facing). Numbers and
+ * Section copy for the build (dev-facing). Numbers and
  * dates are pulled from SALE_ECONOMICS so the answers can never drift from the
  * terms table. An answer may be a single string or an array of paragraphs.
  *

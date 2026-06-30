@@ -20,8 +20,7 @@ export async function POST(request: Request) {
     if (err instanceof SonarAuthError) {
       return NextResponse.json({ error: "unauthenticated" }, { status: 401 })
     }
-    // No Sentry in the stack (ADR D): log so the failure is visible in the dev terminal / Netlify
-    // function logs. The message is a Sonar APIError (status + code), no PII.
+    // No Sentry here; log so failures show in function logs. Sonar APIError only, no PII.
     console.error(
       "[/api/sonar/limits] readLimits failed:",
       err instanceof Error ? `${err.name}: ${err.message}` : err,

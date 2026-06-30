@@ -24,9 +24,9 @@ export function needsRefresh(expiresAt: Date, now: number = Date.now()): boolean
 /** Thrown when a wallet requests permits faster than the dedup window allows. */
 export class PermitDedupError extends Error {}
 
-// Server-side replay guard (ADR threat model), keyed by wallet. Per-instance only:
+// Server-side replay guard, keyed by wallet. Per-instance only:
 // a best-effort fast-path, not cluster-wide; on-chain controls are authoritative.
-// Durable cross-instance limiter + Edge rate-limit tracked for pre-launch hardening.
+// TODO: add a durable cross-instance limiter and Edge rate-limit before launch.
 const lastPermitAt = new Map<string, number>()
 export function checkPermitDedup(wallet: string, now: number = Date.now()): void {
   // Opportunistic eviction so the Map cannot grow unbounded over a long sale.
@@ -45,7 +45,7 @@ export function checkPermitDedup(wallet: string, now: number = Date.now()): void
 }
 
 // Coalesce load-and-maybe-refresh per session: two parallel refreshes would rotate
-// and invalidate each other's refresh token (ADR threat: token-refresh race).
+// and invalidate each other's refresh token (token-refresh race).
 const ensureInFlight = new Map<string, Promise<StoredTokens>>()
 
 /** Thrown when Sonar rejects the token (401); the session must re-authenticate. */

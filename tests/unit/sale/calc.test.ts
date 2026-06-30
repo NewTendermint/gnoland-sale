@@ -116,7 +116,7 @@ describe("validateBidPrice", () => {
   })
 })
 
-// Floor-anchored increment grid (Ryan Lee 2026-06-30): valid bids are $0.0645 + k*$0.01935,
+// Floor-anchored increment grid: valid bids are $0.0645 + k*$0.01935,
 // NO upper cap. The on-chain price is a step index from the floor.
 describe("validateBidPrice - floor-anchored increment grid", () => {
   const band = { minPriceUsd: 0.0645, incrementUsd: 0.01935 }
@@ -154,7 +154,7 @@ describe("on-chain unit conversions", () => {
     expect(() => usdToTokenUnits(-1, 6)).toThrow()
     expect(() => usdToTokenUnits(1, 19)).toThrow()
   })
-  // The SettlementSale uint64 `price` is a STEP INDEX from the floor (Ryan Lee 2026-06-30):
+  // The SettlementSale uint64 `price` is a STEP INDEX from the floor:
   // floor $0.0645 = step 0, then +1 per $0.01935 increment.
   it("priceUsdToStepIndex maps a USD price to a step index from the floor (floor = step 0)", () => {
     expect(priceUsdToStepIndex(0.0645, 0.0645, 0.01935)).toBe(0n)

@@ -1,6 +1,6 @@
 import type { JourneyState } from "./types"
 
-/** Collapsed sticky-bar CTA action label. Copy: placeholder, pending team validation. */
+/** Collapsed sticky-bar CTA action label. */
 export function bidCtaLabel(journey: JourneyState): string {
   switch (journey) {
     case "has-bid-winning":
@@ -17,7 +17,7 @@ export function bidCtaLabel(journey: JourneyState): string {
 }
 
 /** Dynamic title for the bid-panel section header (shown beside the connected wallet),
- *  per journey state. Copy: placeholder, pending team validation. */
+ *  per journey state. */
 export function bidSectionTitle(journey: JourneyState): string {
   switch (journey) {
     case "kyc-required":
@@ -79,7 +79,7 @@ export const WELCOME_BACK = {
 /** Support contact (mailto) shown on a failed verification. null hides the CTA. */
 export const SUPPORT_CONTACT_HREF: string | null = "mailto:tokensale@newtendermint.org"
 
-/** Awareness-mode "continue on desktop" copy. Copy: placeholder, pending team validation. */
+/** Awareness-mode "continue on desktop" copy. */
 export const DESKTOP_ONLY = {
   register: {
     title: "Registration is open",

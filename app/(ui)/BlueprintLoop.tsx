@@ -40,6 +40,11 @@ export function BlueprintLoop() {
           poster="/sprites/blueprint-loop.poster.jpg?v=8"
           className="block w-full opacity-40 mix-blend-difference"
         >
+          <source
+            src="/sprites/blueprint-loop.av1.mp4?v=6"
+            type="video/mp4; codecs=av01.0.08M.08"
+          />
+          <source src="/sprites/blueprint-loop.webm?v=6" type="video/webm; codecs=vp9" />
           <source src="/sprites/blueprint-loop.mp4?v=6" type="video/mp4" />
         </video>
       </div>

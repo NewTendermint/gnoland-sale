@@ -6,8 +6,8 @@ import { createSonarClient } from "./client"
 import { readSaleDecimals } from "./commitments"
 import { SonarAuthError, ensureFreshTokens, withSonarAuth } from "./permit"
 
-// Sonar fetchLimits returns commitment min/max as strings in the payment token's smallest units
-// (A.17.7). The decimals are read dynamically from the sale's commitment data, never hardcoded.
+// fetchLimits returns commitment min/max as strings in the payment token's smallest units;
+// decimals are read dynamically from the sale's commitment data, never hardcoded.
 
 /** Normalize Sonar's LimitsResponse to USD using the payment token's decimals. 0 max = no cap. */
 export function mapLimits(res: LimitsResponse, decimals: number): LimitsSnapshot {
@@ -36,9 +36,7 @@ export async function readLimits(
     )
   } catch (err) {
     if (err instanceof SonarAuthError) throw err
-    // No per-wallet limits available (e.g. the wallet isn't linked to a Sonar entity yet ->
-    // "entity not found"). fetchLimits is a best-effort enhancement, so fall back to the sale
-    // defaults instead of erroring - the on-chain minAmount is the authoritative gate anyway.
+    // fetchLimits is best-effort; fall back to sale defaults, on-chain minAmount is the gate.
     return null
   }
   const decimals = await readSaleDecimals()

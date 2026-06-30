@@ -16,7 +16,7 @@ export type EntitySetupState =
 // Mirrors sonar-core SaleEligibility
 export type SaleEligibility = "eligible" | "not-eligible" | "unknown-setup-incomplete"
 
-// Mirrors sonar-core InvestingRegion enum (string values). "us" drives the forced lockup (A.17.8).
+// Mirrors sonar-core InvestingRegion enum (string values). "us" drives the forced lockup.
 export type InvestingRegion = "unknown" | "other" | "us" | "eu"
 
 // Mirrors sonar-core PrePurchaseFailureReason (7 reasons)

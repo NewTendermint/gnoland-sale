@@ -8,8 +8,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from "node:fs"
 import { join } from "node:path"
 
 /**
- * Names that must never appear in built static/client output.
- * Server-only secrets per spec §4.2 (data minimization + non-reconstructability).
+ * Server-only secret names that must never appear in built static/client output.
  *
  * Patterns are anchored with `\b` (word boundaries) so a forbidden name
  * matches only as a standalone token. This avoids false positives when a
@@ -25,9 +24,10 @@ const FORBIDDEN_PATTERNS = [
   /\bIP_HMAC_PEPPER\b/,
   /\bSESSION_PASSWORD\b/,
   /\bDATABASE_URL\b/,
-  /\bNETLIFY_BLOBS_TOKEN\b/,
   /\bMAILCHIMP_API_KEY\b/,
   /\bMAILCHIMP_AUDIENCE_ID\b/,
+  /\bVAPID_PRIVATE_KEY\b/,
+  /\bCRON_SECRET\b/,
 ]
 
 /**

@@ -193,7 +193,6 @@ function Caption({ children }: { children: string }) {
   return <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-faint">{children}</p>
 }
 
-// One framed view: title + an optional "see it live" URL, separated by an hr-like top border.
 function GallerySection({
   title,
   href,
@@ -299,8 +298,7 @@ const PRE_SALE_BAR_STATES: ReadonlyArray<{
   },
 ]
 
-// Money-loop sub-states. Reachable live by clicking "Place bid"; shown here as static snapshots
-// so every step is reviewable without driving the transient flow.
+// Money-loop sub-states: static snapshots of each bid-flow step.
 const MONEY_LOOP: ReadonlyArray<{ label: string; journey: JourneyState; preview: BidPreview }> = [
   {
     label: "Confirm - binding review",
