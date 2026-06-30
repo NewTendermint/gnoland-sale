@@ -15,6 +15,9 @@ export const SALE_ECONOMICS = {
   bidIncrementUsd: 0.00645,
   mainnetIso: "2026-09-01T00:00:00Z",
   multipleWalletsPerEntity: true,
+  // The 3 dates drive the page PHASE (pre-sale/live/ended, lib/sale/phase.ts) + the countdowns.
+  // Bidding is still enforced on-chain (the contract stage + permit window), so these dates never
+  // gate money. Keep in sync with the Sonar dashboard (no SDK endpoint exposes them).
   registrationOpensIso: process.env.NEXT_PUBLIC_REGISTRATION_OPENS ?? "2026-07-06T23:00:00Z", // Mon Jul 6, 6:00 PM EST
   saleOpensIso: process.env.NEXT_PUBLIC_SALE_OPENS ?? "2026-07-20T23:00:00Z", // Mon Jul 20, 6:00 PM EST
   saleClosesIso: process.env.NEXT_PUBLIC_SALE_CLOSES ?? "2026-07-27T22:59:00Z", // Mon Jul 27, 5:59 PM EST

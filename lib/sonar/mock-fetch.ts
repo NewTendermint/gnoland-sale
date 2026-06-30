@@ -23,6 +23,7 @@ function fixtureForPath(path: string): unknown {
   if (path.endsWith("PrePurchaseCheck")) return mockFixtures.prePurchase
   if (path.endsWith("GenerateSalePurchasePermit")) return mockFixtures.permit
   if (path.endsWith("ListAvailableEntities")) return mockFixtures.entities
+  if (path.endsWith("Limits")) return mockFixtures.limits
   if (path.endsWith("ExchangeAuthorizationCodeV2") || path.endsWith("RefreshAccessToken")) {
     return mockFixtures.token
   }

@@ -1,29 +1,23 @@
 import { SALE_ECONOMICS } from "./economics"
 import type { PreSaleStage, SalePhase } from "./types"
 
-export type OnChainStage = "PreOpen" | "Commitment" | "Cancellation" | "Settlement" | "Done"
-
 const VALID_PHASES: readonly SalePhase[] = ["pre-sale", "live", "ended"]
 const DEV_DEFAULT: SalePhase = "live"
 
-const STAGE_TO_PHASE: Record<OnChainStage, SalePhase> = {
-  PreOpen: "pre-sale",
-  Commitment: "live",
-  Cancellation: "ended",
-  Settlement: "ended",
-  Done: "ended",
-}
-
-/** Resolution order (first match wins): explicit override -> on-chain stage -> dev default. */
-export function resolveSalePhase(args: {
-  override?: string | null
-  onChainStage?: OnChainStage | null
-}): SalePhase {
-  const { override, onChainStage } = args
+/** Resolution order (first match wins): explicit env override -> the sale clock (the 3 economics
+ *  dates) -> dev default. pre-sale before it opens, live during the window, ended after it closes. */
+export function resolveSalePhase(args: { override?: string | null; now?: number }): SalePhase {
+  const { override, now } = args
   if (override && (VALID_PHASES as readonly string[]).includes(override)) {
     return override as SalePhase
   }
-  if (onChainStage) return STAGE_TO_PHASE[onChainStage]
+  if (now != null) {
+    const opensMs = new Date(SALE_ECONOMICS.saleOpensIso).getTime()
+    const closesMs = new Date(SALE_ECONOMICS.saleClosesIso).getTime()
+    if (now < opensMs) return "pre-sale"
+    if (now < closesMs) return "live"
+    return "ended"
+  }
   return DEV_DEFAULT
 }
 

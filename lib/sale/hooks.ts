@@ -7,6 +7,7 @@ import {
   HttpError,
   getCommitments,
   getEntity,
+  getLimits,
   getMyPosition,
   postGeneratePermit,
   postPrePurchase,
@@ -63,6 +64,17 @@ function isSafeHttpUrl(value: string | undefined): value is string {
   } catch {
     return false
   }
+}
+
+/** The connected wallet's Sonar commitment limits (per-wallet); `data` undefined until fetched,
+ *  so callers fall back to the published economics default (SDK first, then the static minimum). */
+export function useLimits() {
+  const { address, isConnected } = useAccount()
+  return useQuery({
+    queryKey: ["sale", "limits", address],
+    queryFn: () => getLimits(address as string),
+    enabled: isConnected && !!address,
+  })
 }
 
 /** Bid submission: Sonar pre-purchase + permit gates, then submitBidOnChain. */

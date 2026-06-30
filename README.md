@@ -2,7 +2,7 @@
 
 Frontend for the GNOT public token sale (`sale.gno.land`), running on [Sonar by Echo](https://docs.echo.xyz/). Uniform-price (English) auction, USDC on Ethereum, KYC via Sonar OAuth.
 
-One Next.js app serves every stage of the sale. Nothing is redeployed between stages: the page reads its phase from configuration and the clock, and renders the right surfaces (see "Sale phases" below).
+One Next.js app serves every stage of the sale. Nothing is redeployed between stages: the page reads its phase from the sale clock (the 3 dates in `economics.ts`, with an optional env override), and renders the right surfaces (see "Sale phases" below).
 
 ## Stack
 
@@ -45,16 +45,16 @@ Three phases drive every surface (`lib/sale/phase.ts`):
 
 Resolution order (first match wins):
 
-1. **`NEXT_PUBLIC_SALE_PHASE` env** (`pre-sale` | `live` | `ended`) - the operator override. **This is how phase changes happen in production today: edit the env var in Netlify and redeploy.**
-2. **On-chain `Stage`** of the `SettlementSale` contract (`PreOpen` -> pre-sale, `Commitment` -> live, `Cancellation/Settlement/Done` -> ended). Designed and implemented in the resolver, but not yet fed: the contract is not deployed (REQUIREMENTS A.1). Once wired, prod can drop the env override and the phase flips itself with the chain - no deploy, no clock guess (the sale window can be extended by the sale manager, so we never derive "ended" from a hardcoded date).
+1. **`NEXT_PUBLIC_SALE_PHASE` env** (`pre-sale` | `live` | `ended`) - an operator OVERRIDE. Leave it UNSET in production so the phase follows the clock (below); set it only for staging, screenshots, or to force a phase during an incident.
+2. **The sale clock** - the three dates in `lib/sale/economics.ts` (`saleOpensIso`, `saleClosesIso`): `pre-sale` before it opens, `live` during the window, `ended` after it closes. **This is the production default: set the 3 dates and the page serves the right version itself - no deploy, no manual flip.** Resolved server-side (`app/page.tsx`, ISR ~30s) so it renders directly, and re-resolved client-side every 60s so a visitor with the page open sees pre-sale -> live -> ended flip without a reload.
 3. Dev default: `live`.
 
 ### The two pre-sale stages (automatic flip)
 
 `pre-sale` covers two distinct stages (`lib/sale/phase.ts` + dates in `lib/sale/economics.ts`):
 
-- **Stage A - `registration-closed`** (before July 1, 2026). Sonar registration is NOT open yet. The only asks are **newsletter capture** ("Get notified", our own form -> Mailchimp double opt-in) and add-to-calendar. Countdown targets July 1.
-- **Stage B - `registration-open`** (July 1 -> sale opens July 15). **"Register now" -> Sonar OAuth KYC** is the single primary ask (bar + How-to). The pre-footer keeps a secondary newsletter + calendar capture below its Register CTA, for visitors not ready to KYC yet. A registered user parks on a "You're registered" state; pending / failed / not-eligible verification statuses surface in the bar and the How-to section. Countdown targets July 15.
+- **Stage A - `registration-closed`** (before registration opens). Sonar registration is NOT open yet. The only asks are **newsletter capture** ("Get notified", our own form -> Mailchimp double opt-in) and add-to-calendar. Countdown targets `registrationOpensIso`.
+- **Stage B - `registration-open`** (registration opens -> sale opens). **"Register now" -> Sonar OAuth KYC** is the single primary ask (bar + How-to). The pre-footer keeps a secondary newsletter + calendar capture below its Register CTA, for visitors not ready to KYC yet. A registered user parks on a "You're registered" state; pending / failed / not-eligible verification statuses surface in the bar and the How-to section. Countdown targets `saleOpensIso`.
 
 **The A -> B flip is fully automatic.** `SaleProvider` re-resolves the stage against the clock every 60s and on tab refocus, so visitors with the page already open see it flip without a reload, and no deploy is needed. The milestone dates are env-overridable (`NEXT_PUBLIC_REGISTRATION_OPENS`, `NEXT_PUBLIC_SALE_OPENS`, `NEXT_PUBLIC_SALE_CLOSES`, ISO strings) if the schedule moves.
 
@@ -70,11 +70,12 @@ Inside a phase, each visitor gets a derived funnel state (`lib/sale/journey.ts`,
 
 | When | What you do | What is automatic |
 |---|---|---|
-| Pre-sale launch | Set `NEXT_PUBLIC_SALE_PHASE=pre-sale`, `NEXT_PUBLIC_NEWSLETTER_ENABLED=1`, Mailchimp creds; **delete the `NEXT_PUBLIC_STATE_OVERRIDES` block from `netlify.toml [build.environment]`** (hardening checklist M3 - the public page must not be flippable from a crafted `?phase=` link); deploy | Stage A renders (newsletter + countdown) |
-| July 1 (registration) | Nothing | Stage A -> B by clock, "Register now" appears |
-| July 15 (sale opens) | Set `NEXT_PUBLIC_SALE_PHASE=live`; deploy (until the on-chain Stage feed is wired, then nothing) | Live metrics + bid funnel |
-| Sale closes | Set `NEXT_PUBLIC_SALE_PHASE=ended`; deploy (same caveat) | Final clearing + results |
-| Incident | Set `SALE_PAUSED=true` | Bid routes 503, UI shows paused |
+| Pre-sale launch | Confirm the 3 dates in `economics.ts` (or env), `NEXT_PUBLIC_NEWSLETTER_ENABLED=1`, Mailchimp creds; **delete the `NEXT_PUBLIC_STATE_OVERRIDES` block from `netlify.toml [build.environment]`** (hardening checklist M3 - the public page must not be flippable from a crafted `?phase=` link); deploy. Do NOT set `NEXT_PUBLIC_SALE_PHASE` - the clock drives it. | Pre-sale renders; pre-sale -> live -> ended all flip by the dates |
+| Registration opens | Nothing | Stage A -> B by clock, "Register now" appears |
+| Sale opens | Nothing | Page flips to `live` by the clock (ISR ~30s) - metrics + bid funnel |
+| Sale closes | Nothing | Page flips to `ended` by the clock - final clearing + results |
+| Schedule moves | Update the 3 ISO dates in `economics.ts` (or the `NEXT_PUBLIC_*` env overrides); deploy | Phase + countdowns follow the new dates |
+| Incident | `SALE_PAUSED=true` (kill switch); optionally `NEXT_PUBLIC_SALE_PHASE` to force a phase | Bid routes 503; UI shows paused / the forced phase |
 | Schedule slips | Update the `NEXT_PUBLIC_*` date envs | All countdowns, copy dates, stage flips follow |
 
 Newsletter kill switch: unset `NEXT_PUBLIC_NEWSLETTER_ENABLED` and the capture UI disappears (surfaces fall back to a date line).

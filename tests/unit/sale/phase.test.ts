@@ -12,18 +12,21 @@ describe("resolveSalePhase", () => {
     expect(resolveSalePhase({ override: "bogus" })).toBe("live")
     expect(resolveSalePhase({ override: null })).toBe("live")
   })
-  it("defaults to live when no override and no on-chain stage", () => {
+  it("defaults to live when no override and no clock given", () => {
     expect(resolveSalePhase({})).toBe("live")
   })
-  it("derives from on-chain stage when present and no override", () => {
-    expect(resolveSalePhase({ onChainStage: "PreOpen" })).toBe("pre-sale")
-    expect(resolveSalePhase({ onChainStage: "Commitment" })).toBe("live")
-    expect(resolveSalePhase({ onChainStage: "Cancellation" })).toBe("ended")
-    expect(resolveSalePhase({ onChainStage: "Settlement" })).toBe("ended")
-    expect(resolveSalePhase({ onChainStage: "Done" })).toBe("ended")
+  it("derives the phase from the sale clock (the 3 economics dates)", () => {
+    const opens = new Date(SALE_ECONOMICS.saleOpensIso).getTime()
+    const closes = new Date(SALE_ECONOMICS.saleClosesIso).getTime()
+    expect(resolveSalePhase({ now: opens - 1000 })).toBe("pre-sale")
+    expect(resolveSalePhase({ now: opens })).toBe("live")
+    expect(resolveSalePhase({ now: closes - 1000 })).toBe("live")
+    expect(resolveSalePhase({ now: closes })).toBe("ended")
+    expect(resolveSalePhase({ now: closes + 1000 })).toBe("ended")
   })
-  it("override beats on-chain stage", () => {
-    expect(resolveSalePhase({ override: "pre-sale", onChainStage: "Commitment" })).toBe("pre-sale")
+  it("override beats the clock", () => {
+    const closes = new Date(SALE_ECONOMICS.saleClosesIso).getTime()
+    expect(resolveSalePhase({ override: "pre-sale", now: closes + 1000 })).toBe("pre-sale")
   })
 })
 

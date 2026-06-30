@@ -23,6 +23,13 @@ export async function readCommitments(): Promise<CommitmentMetrics> {
   return mapCommitmentData(res)
 }
 
+/** The sale's payment-token decimals from Sonar (public). The source of truth for converting
+ *  smallest-units amounts (limits, commitments) to USD - read, never hardcoded. */
+export async function readSaleDecimals(): Promise<number> {
+  const res = await createSonarClient().readCommitmentData({ saleUUID: env.SONAR_SALE_UUID })
+  return res.PaymentTokenDecimals
+}
+
 /**
  * Extract the session entity's own position from the commitment set, by per-sale id.
  * null when no commitment; lockup defaults to false (absent from the Sonar shape).

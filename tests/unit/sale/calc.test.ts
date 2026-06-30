@@ -4,7 +4,7 @@ import {
   bidStatus,
   forceLockupForRegion,
   gnotEstimate,
-  priceUsdToMicroUsd,
+  priceUsdToTickUnits,
   snapBidPrice,
   usdToTokenUnits,
   validateBidAmount,
@@ -154,15 +154,24 @@ describe("on-chain unit conversions", () => {
     expect(() => usdToTokenUnits(-1, 6)).toThrow()
     expect(() => usdToTokenUnits(1, 19)).toThrow()
   })
-  it("priceUsdToMicroUsd is exact on every grid step (the 0.12255 float trap)", () => {
-    expect(priceUsdToMicroUsd(0.12255)).toBe(122_550n)
+  // The SettlementSale `uint64 price` is in BID-INCREMENT tick units, not micro-USD
+  // (SettlementSale.sol l.91/271 + docs.echo.xyz: "price 100 = $1.00 if increment $0.01").
+  // So price = priceUsd / bidIncrementUsd. For our band: floor $0.0645 -> 10, ceiling $0.129 -> 20.
+  it("priceUsdToTickUnits maps a USD price to bid-increment tick units (floor=10, ceiling=20)", () => {
+    const increment = 0.00645
+    expect(priceUsdToTickUnits(0.0645, increment)).toBe(10n)
+    expect(priceUsdToTickUnits(0.129, increment)).toBe(20n)
     for (let k = 10; k <= 20; k++) {
-      expect(priceUsdToMicroUsd((k * 645) / 100_000)).toBe(BigInt(k * 6450))
+      expect(priceUsdToTickUnits((k * 645) / 100_000, increment)).toBe(BigInt(k))
     }
   })
-  it("priceUsdToMicroUsd rejects garbage", () => {
-    expect(() => priceUsdToMicroUsd(Number.POSITIVE_INFINITY)).toThrow()
-    expect(() => priceUsdToMicroUsd(-0.01)).toThrow()
+  it("priceUsdToTickUnits is float-drift safe on the 0.12255 trap (= 19 ticks exactly)", () => {
+    expect(priceUsdToTickUnits(0.12255, 0.00645)).toBe(19n)
+  })
+  it("priceUsdToTickUnits rejects garbage (NaN/Infinity/negative price, zero increment)", () => {
+    expect(() => priceUsdToTickUnits(Number.POSITIVE_INFINITY, 0.00645)).toThrow()
+    expect(() => priceUsdToTickUnits(-0.01, 0.00645)).toThrow()
+    expect(() => priceUsdToTickUnits(0.0645, 0)).toThrow()
   })
 })
 

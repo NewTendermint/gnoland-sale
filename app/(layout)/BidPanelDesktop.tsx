@@ -26,7 +26,7 @@ import {
   bidCtaLabel,
   bidSectionTitle,
 } from "../../lib/sale/labels"
-import { useSonarSeen } from "../../lib/sale/returning"
+import { clearSonarSeen, useSonarSeen } from "../../lib/sale/returning"
 import type { JourneyState, MyBid, PreSaleBarState } from "../../lib/sale/types"
 import { AddToCalendarButton } from "./AddToCalendarButton"
 import {
@@ -81,6 +81,8 @@ export function BidPanelDesktop() {
   function handleSignOut() {
     postSonarLogout().then(
       () => {
+        // Forget the "returning" flag too, so the bar resets to the first-time Verify state.
+        clearSonarSeen()
         queryClient.invalidateQueries({ queryKey: ["sale", "entity"] })
         queryClient.invalidateQueries({ queryKey: ["sale", "my-bid"] })
       },
@@ -89,8 +91,9 @@ export function BidPanelDesktop() {
   }
 
   // Re-poll the Sonar entity so a pending reviewer can re-check status without re-auth.
+  // Returns the refetch promise so RefreshButton can show a discreet pending state.
   function handleRefresh() {
-    queryClient.invalidateQueries({ queryKey: ["sale", "entity"] })
+    return queryClient.invalidateQueries({ queryKey: ["sale", "entity"] })
   }
 
   useEffect(() => {
@@ -417,6 +420,30 @@ function SignOutLink({ onClick }: { onClick: () => void }) {
   )
 }
 
+// Discreet refresh affordance: a muted "Refreshing…" while the entity re-fetches, so a no-change
+// poll still gives visible feedback. Owns its pending state (no prop drilling).
+function RefreshButton({ onRefresh }: { onRefresh: () => void | Promise<void> }) {
+  const [pending, setPending] = useState(false)
+  return (
+    <button
+      type="button"
+      disabled={pending}
+      aria-busy={pending}
+      onClick={async () => {
+        setPending(true)
+        try {
+          await onRefresh()
+        } finally {
+          setPending(false)
+        }
+      }}
+      className="text-[11px] text-muted underline underline-offset-2 transition-colors hover:text-foreground disabled:opacity-60"
+    >
+      {pending ? "Refreshing…" : "Refresh"}
+    </button>
+  )
+}
+
 // Verification-status row: status + discreet sign-out link, with the calendar CTA set off right.
 function StatusRow({
   icon,
@@ -433,7 +460,7 @@ function StatusRow({
   title: string
   body?: string
   onSignOut: () => void
-  onRefresh?: () => void
+  onRefresh?: () => void | Promise<void>
   withCalendar?: boolean
   contactHref?: string
 }) {
@@ -451,15 +478,7 @@ function StatusRow({
             Contact support
           </a>
         ) : null}
-        {onRefresh ? (
-          <button
-            type="button"
-            onClick={onRefresh}
-            className="text-[11px] text-muted underline underline-offset-2 transition-colors hover:text-foreground"
-          >
-            Refresh
-          </button>
-        ) : null}
+        {onRefresh ? <RefreshButton onRefresh={onRefresh} /> : null}
         <SignOutLink onClick={onSignOut} />
       </div>
       {withCalendar ? <AddToCalendarButton milestone="sale" variant="bar" /> : null}
@@ -478,7 +497,7 @@ export function PreSaleRight({
   returning: boolean
   onRegister?: () => void
   onSignOut?: () => void
-  onRefresh?: () => void
+  onRefresh?: () => void | Promise<void>
 }) {
   switch (state) {
     case "notify":

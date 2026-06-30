@@ -82,18 +82,24 @@ export function usdToTokenUnits(amountUsd: number, decimals: number): bigint {
   return BigInt(units)
 }
 
-/** USD price -> integer micro-USD (1e-6 USD).
- *  NOTE: the SettlementSale Bid.price uint64 SCALE is still unconfirmed (A.12.1) -
- *  re-map here once the contract source pins it, never inline at the call site. */
-export function priceUsdToMicroUsd(priceUsd: number): bigint {
+/** USD price -> SettlementSale `uint64` price, in BID-INCREMENT tick units.
+ *  Source-confirmed (SettlementSale.sol l.91/271 + docs.echo.xyz): the on-chain price is
+ *  priceUsd / bidIncrementUsd (increment $0.00645 -> floor $0.0645 = 10, ceiling $0.129 = 20),
+ *  NOT micro-USD. Integer micro-USD math keeps it float-drift exact; callers pass an on-grid price
+ *  (validateBidPrice), an off-grid value rounds to the nearest tick. */
+export function priceUsdToTickUnits(priceUsd: number, incrementUsd: number): bigint {
   if (!Number.isFinite(priceUsd) || priceUsd < 0) {
-    throw new Error("priceUsdToMicroUsd: price must be a finite positive number")
+    throw new Error("priceUsdToTickUnits: price must be a finite positive number")
   }
-  const micro = Math.round(priceUsd * 1_000_000)
-  if (!Number.isSafeInteger(micro)) {
-    throw new Error("priceUsdToMicroUsd: price exceeds safe integer range")
+  if (!Number.isFinite(incrementUsd) || incrementUsd <= 0) {
+    throw new Error("priceUsdToTickUnits: increment must be a finite positive number")
   }
-  return BigInt(micro)
+  const microPrice = Math.round(priceUsd * 1_000_000)
+  const microIncrement = Math.round(incrementUsd * 1_000_000)
+  if (!Number.isSafeInteger(microPrice)) {
+    throw new Error("priceUsdToTickUnits: price exceeds safe integer range")
+  }
+  return BigInt(Math.round(microPrice / microIncrement))
 }
 
 /** Clamp into [min, max] and snap UP onto the increment grid (never past max). */

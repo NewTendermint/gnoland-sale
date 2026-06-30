@@ -1,3 +1,4 @@
+import { resolveSalePhase } from "@/lib/sale/phase"
 import { BidPanel } from "./(layout)/BidPanel"
 import { PushLimitSync } from "./(layout)/PushLimitSync"
 import { SaleProvider } from "./(layout)/SaleProvider"
@@ -18,9 +19,17 @@ import { Team } from "./(sections)/team/Team"
 import { TokenDetails } from "./(sections)/token-details/TokenDetails"
 import { Tokenomics } from "./(sections)/tokenomics/Tokenomics"
 
+// Phase from the sale clock (the 3 economics dates), resolved server-side so it renders directly.
+// ISR-revalidated so the static page still flips within ~30s of an open/close boundary.
+export const revalidate = 30
+
 export default function Home() {
+  const initialPhase = resolveSalePhase({
+    override: process.env.NEXT_PUBLIC_SALE_PHASE,
+    now: Date.now(),
+  })
   return (
-    <SaleProvider>
+    <SaleProvider initialPhase={initialPhase}>
       <TabAlert />
       <PushLimitSync />
       <main id="main">

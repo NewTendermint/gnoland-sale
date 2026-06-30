@@ -16,6 +16,7 @@ import {
 } from "../../../lib/sale/calc"
 import { SALE_ECONOMICS } from "../../../lib/sale/economics"
 import { fmtGnot, fmtPriceUsdc, fmtUsdc } from "../../../lib/sale/format"
+import { useLimits } from "../../../lib/sale/hooks"
 import { SUPPORT_CONTACT_HREF, VERIFY_STATUS, WELCOME_BACK } from "../../../lib/sale/labels"
 import { type BidParams, type BidResult, MockBidSubmitter } from "../../../lib/sale/submitter"
 import type { JourneyState, MyBid } from "../../../lib/sale/types"
@@ -435,6 +436,7 @@ function BidRow({
     setAmount(v)
   }
   const chainId = useChainId()
+  const limits = useLimits()
   const [submitState, setSubmitState] = useState<SubmitState>(preview?.state ?? "idle")
   const [txHash, setTxHash] = useState<string | null>(preview?.txHash ?? null)
   const [submitError, setSubmitError] = useState<string | null>(preview?.error ?? null)
@@ -450,10 +452,11 @@ function BidRow({
   })
   // A raise can only keep or increase the committed amount, never reduce it. With a prior bid the
   // floor is the existing commitment; otherwise the global minimum.
-  const minCommit = prevBid
-    ? Math.max(SALE_ECONOMICS.minCommitmentUsd, prevBid.committedUsd)
-    : SALE_ECONOMICS.minCommitmentUsd
-  const amountCheck = validateBidAmount(amountNum, minCommit, SALE_ECONOMICS.maxCommitmentUsd)
+  // SDK first (Sonar fetchLimits, per-wallet); fallback to the published economics default ($100).
+  const minCommitFloor = limits.data?.minUsd ?? SALE_ECONOMICS.minCommitmentUsd
+  const maxCommit = limits.data?.maxUsd ?? SALE_ECONOMICS.maxCommitmentUsd
+  const minCommit = prevBid ? Math.max(minCommitFloor, prevBid.committedUsd) : minCommitFloor
+  const amountCheck = validateBidAmount(amountNum, minCommit, maxCommit)
   const priceShown = price !== "" && !Number.isNaN(priceNum)
   const amountShown = amount !== "" && !Number.isNaN(amountNum)
 
@@ -506,7 +509,7 @@ function BidRow({
     amountShown && amountCheck === "too-low"
       ? prevBid
         ? `Can’t go below your committed ${fmtUsdc(prevBid.committedUsd)}.`
-        : `Min ${fmtUsdc(SALE_ECONOMICS.minCommitmentUsd)}.`
+        : `Min ${fmtUsdc(minCommitFloor)}.`
       : null
 
   const headroom =
@@ -700,8 +703,8 @@ function BidRow({
           value={amount}
           onChange={onAmountChange}
           invalid={amountShown && amountCheck !== "ok"}
-          placeholder={String(SALE_ECONOMICS.minCommitmentUsd)}
-          hint={`The total USDC you commit is the amount you pay if your bid wins. If you're outbid, you're fully refunded after the sale. Your GNOT allocation is calculated as: Amount (USDC) / Clearing Price. Minimum commitment is $${fmtUsdc(SALE_ECONOMICS.minCommitmentUsd)}, with no maximum.`}
+          placeholder={String(minCommitFloor)}
+          hint={`The total USDC you commit is the amount you pay if your bid wins. If you're outbid, you're fully refunded after the sale. Your GNOT allocation is calculated as: Amount (USDC) / Clearing Price. Minimum commitment is $${fmtUsdc(minCommitFloor)}, with no maximum.`}
           error={amountError}
           className="w-32"
         />

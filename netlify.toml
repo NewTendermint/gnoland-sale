@@ -54,13 +54,10 @@
   # domain is attached (before public launch).
   NEXT_PUBLIC_SITE_URL = "https://gnoland-sonar.netlify.app"
 
-  # Sale phase for the live deploy. Forced to "pre-sale" until the auction opens: the homepage
-  # shows the countdown + newsletter capture (Stage A), then auto-advances to "Register now"
-  # (Stage B) on registrationOpensIso by DATE alone (resolvePreSaleStage) - no redeploy needed.
-  # The top-level pre-sale -> live -> ended transition is still MANUAL: no on-chain/date
-  # automation is wired in SaleProvider yet, so flip this to "live" when bidding opens and
-  # "ended" at settlement. !! REPLACE with phase automation before relying on it for launch.
-  NEXT_PUBLIC_SALE_PHASE = "pre-sale"
+  # Sale phase is DATE-DRIVEN (2026-06-29): the 3 dates in lib/sale/economics.ts drive
+  # pre-sale -> live -> ended (resolved server-side in app/page.tsx + re-resolved on the clock).
+  # Leaving NEXT_PUBLIC_SALE_PHASE UNSET here lets the page flip itself at saleOpensIso /
+  # saleClosesIso with NO redeploy. Set it only as a temporary override (staging / incident).
 
 [context.deploy-preview.environment]
   NEXT_PUBLIC_SITE_URL = "https://deploy-preview.netlify.app"
