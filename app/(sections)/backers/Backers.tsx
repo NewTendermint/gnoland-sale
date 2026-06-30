@@ -7,7 +7,6 @@ import { SectionHeading } from "../../(ui)/SectionHeading"
 import { backers } from "../../../content/sections/backers"
 
 // Real SVG (never the U+2197 char, which Windows substitutes with a color emoji).
-// On hover it travels up AND right by the same amount, along its own diagonal.
 function UpRightArrow() {
   return (
     <svg

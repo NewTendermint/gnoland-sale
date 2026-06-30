@@ -1,8 +1,7 @@
 /**
  * Content data for the Features section.
  *
- * `content/sections.md` is the human source of truth for marketing/legal
- * copy. This module mirrors that copy for the build (dev-facing). `icon` keys
+ * Section copy for the build (dev-facing). `icon` keys
  * into the shared Icon registry (app/(ui)/Icon.tsx) and is presentational.
  */
 

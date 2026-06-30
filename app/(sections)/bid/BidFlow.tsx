@@ -68,8 +68,7 @@ function txExplorerUrl(hash: string, chainId: number): string | null {
   return `${base}/tx/${hash}`
 }
 
-// Dev-only pacing so the approve/sign steps are visible before the contract is wired;
-// once wired, the wallet interactions provide the real timing and this is a no-op in prod.
+// Dev-only pacing so the approve/sign steps are visible before the contract is wired.
 const devStepPause = () =>
   process.env.NODE_ENV === "production"
     ? Promise.resolve()
@@ -133,9 +132,7 @@ function StateContent({
   onBid?: (p: BidParams) => Promise<BidResult>
   preview?: BidPreview
 }) {
-  // ready + has-bid share one render path so BidRow keeps the SAME tree position across the
-  // ready -> has-bid transition (after a first bid). Otherwise React remounts it and the freshly
-  // set "submitted" receipt is lost. The stable key reinforces that identity.
+  // Shared render path keeps BidRow's tree position across ready -> has-bid (stable key preserves the receipt).
   if (journey === "ready" || journey === "has-bid-winning" || journey === "has-bid-outbid") {
     return (
       <div className="flex w-full flex-col gap-2">
@@ -272,8 +269,6 @@ export function ConnectChoices({
   const pendingUid =
     variables?.connector && "uid" in variables.connector ? variables.connector.uid : undefined
   const seen = new Set<string>()
-  // Live = Coinbase SDK (always) + installed EIP-6963 wallets (+ WalletConnect once its projectId is
-  // set). These are ready to use; recommended wallets not found here render greyed with an install link.
   const live = connectors.filter((c) => {
     if (seen.has(c.name)) return false
     seen.add(c.name)
@@ -301,7 +296,6 @@ export function ConnectChoices({
         </p>
       </div>
       <div className="flex flex-wrap items-center justify-end gap-2">
-        {/* Discreet escape hatch, inline to the left of the wallet buttons. */}
         <a
           href={FIND_WALLET_URL}
           target="_blank"
@@ -311,7 +305,6 @@ export function ConnectChoices({
           Don't have one? Find a wallet
           <span aria-hidden="true">↗</span>
         </a>
-        {/* Greyed: recommended wallets not detected on this browser -> open the install page. */}
         {missing.map((rec) => (
           <a
             key={rec.id}
@@ -325,7 +318,6 @@ export function ConnectChoices({
             <WalletIcon src={WALLET_ICON_SRC[rec.id]} />
           </a>
         ))}
-        {/* Ready: live connectors, grouped to the right. */}
         {live.map((connector) => {
           const pending = isPending && pendingUid === connector.uid
           return (
@@ -418,7 +410,7 @@ function BidRow({
 }) {
   const minPrice = SALE_ECONOMICS.startingPriceUsd
   const increment = SALE_ECONOMICS.bidIncrementUsd
-  // No upper price cap (team-confirmed 2026-06-30); the grid is floor-anchored: minPrice + k*increment.
+  // no upper price cap; grid is floor-anchored: minPrice + k*increment
   const band = { minPriceUsd: minPrice, incrementUsd: increment }
   const floor = snapBidPrice(
     Math.max(clearingPriceUsd ?? minPrice, prevBid?.priceUsd ?? 0, minPrice),
@@ -449,9 +441,6 @@ function BidRow({
     incrementUsd: increment,
     prevPriceUsd: prevBid?.priceUsd,
   })
-  // A raise can only keep or increase the committed amount, never reduce it. With a prior bid the
-  // floor is the existing commitment; otherwise the global minimum.
-  // SDK first (Sonar fetchLimits, per-wallet); fallback to the published economics default ($100).
   const minCommitFloor = limits.data?.minUsd ?? SALE_ECONOMICS.minCommitmentUsd
   const maxCommit = limits.data?.maxUsd ?? SALE_ECONOMICS.maxCommitmentUsd
   const minCommit = prevBid ? Math.max(minCommitFloor, prevBid.committedUsd) : minCommitFloor
@@ -482,8 +471,6 @@ function BidRow({
   }, [])
   const priceValid = priceShown && priceCheck === "ok"
   const amountValid = amountShown && amountCheck === "ok"
-  // A raise must increase something: a higher price OR more committed USDC. Re-signing the exact
-  // same bid (both unchanged) is a no-op, so the button stays disabled until one of them grows.
   const raisesSomething =
     !prevBid || priceNum > prevBid.priceUsd || amountNum > prevBid.committedUsd
   const canSubmit = priceValid && amountValid && raisesSomething && submitState === "idle"
@@ -529,7 +516,6 @@ function BidRow({
             }
       : null
 
-  // A valid raise where nothing has increased yet: explain why the button is disabled.
   const raiseNote =
     prevBid && priceValid && amountValid && !raisesSomething
       ? "Your bid is unchanged - raise the price or add USDC."
@@ -540,9 +526,8 @@ function BidRow({
     // lockup:false here = the user opt-in (no toggle surfaced). The compliance-forced US lockup
     // is applied in useBid from the trusted server entity region (Sonar A.17.8), not in the form.
     const params: BidParams = { priceUsd: priceNum, amountUsd: amountNum, lockup: false }
-    // Approve/sign preview runs in dev only; in prod we go straight to the seam so we never
-    // imply a wallet step the stub can't deliver. TODO(real-data): drive these from the real
-    // replaceBidWith{Approval,Permit} flow (approve only when the allowance is short, then the bid tx).
+    // TODO(real-data): drive these from the real replaceBidWith{Approval,Permit} flow
+    // (approve only when the allowance is short, then the bid tx).
     if (process.env.NODE_ENV !== "production") {
       setSubmitState("approving")
       await devStepPause()
@@ -556,7 +541,7 @@ function BidRow({
         setTxHash(result.txHash)
         setSubmitState("submitted")
       } else if (process.env.NODE_ENV !== "production" && result.reason === "Connect your wallet") {
-        // Demo walkthrough (mock): reach the success receipt even without a connected wallet.
+        // mock: force success receipt when wallet not connected
         setTxHash(`0x${"a1b2c3d4".repeat(8)}`)
         setSubmitState("submitted")
       } else {
@@ -818,7 +803,6 @@ function InputCell({
     },
     [],
   )
-  // Focusing the read-only price field flashes the steppers, so it reads as "use these".
   function flashStepper() {
     if (!stepper) return
     setHintFlash(true)

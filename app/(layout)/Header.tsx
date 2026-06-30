@@ -63,8 +63,7 @@ export function Header() {
     pastHero ? "opacity-100" : "pointer-events-none opacity-0"
   }`
 
-  // Off the homepage the section anchors (#hero, #faq...) point nowhere, so render a minimal
-  // header instead: logo back to home + a one-line page title. No section nav, no burger.
+  // On sub-pages, section anchors point nowhere; render logo + page title only.
   if (pathname !== "/") {
     const title = pageTitles[pathname]
     return (

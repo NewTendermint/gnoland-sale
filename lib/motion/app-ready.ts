@@ -1,15 +1,12 @@
 "use client"
 
-// Gate between the desktop loading cover (Loader.tsx) and the page-load reveal: every immediate
-// reveal waits on whenReady (fired when the cover dismisses); the Loader waits on
-// whenHeroMediaReady (hero video buffered). On non-desktop the Loader signals ready instantly,
-// so reveals behave exactly as before.
+// Ready gate: reveals wait on whenReady (cover dismissed); the Loader waits on whenHeroMediaReady
+// (hero video buffered).
 
 let appReady = false
 const readyWaiters = new Set<() => void>()
 
-// Runs cb once the cover is gone (synchronously if already gone). Returns an unsubscribe so a
-// component unmounting before ready drops its waiter.
+// Runs cb once the cover is gone (synchronously if already); returns an unsubscribe.
 export function whenReady(cb: () => void): () => void {
   if (appReady) {
     cb()

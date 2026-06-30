@@ -1,11 +1,9 @@
 "use client"
 
 import { wagmiConfig } from "@/app/(layout)/web3"
-// The on-chain steps of the sale: the single swap point for going live (REQUIREMENTS A.18).
-// Real path = @wagmi/core actions against the deployed SettlementSale; falls back to emulation when
-// no contract is configured for the connected chain (so /dev/states + offline dev keep working).
-// Scales + ABI source-verified: see lib/sale/abi.ts and
-// docs/specs/2026-06-29-onchain-bid-claim-integration-design.md.
+// The on-chain steps of the sale: the single swap point for going live. Real path = @wagmi/core
+// actions against the deployed SettlementSale; falls back to emulation when no contract is
+// configured for the connected chain (so /dev/states + offline dev keep working).
 import {
   getAccount,
   readContract,
@@ -61,7 +59,7 @@ function bidRevertReason(err: unknown): string {
 
 // The sale's payment token is immutable, so read (address + decimals) from the contract once per
 // (chain, sale) and cache. Reading paymentTokens() means we bid in EXACTLY the token the deployed
-// contract accepts - no hardcoded address/decimals to drift out of sync (a $2M-path safety win).
+// contract accepts - no hardcoded address/decimals to drift out of sync.
 const paymentTokenCache = new Map<string, { address: `0x${string}`; decimals: number }>()
 
 async function resolvePaymentToken(

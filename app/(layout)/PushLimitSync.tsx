@@ -4,8 +4,7 @@ import { refreshPushLimit } from "@/lib/push/subscribe"
 import { useEffect } from "react"
 import { useSale } from "./SaleProvider"
 
-// Headless: when the bidder raises, re-post the new limit so a live subscription's stored limit
-// stays accurate for the outbid cron. No-op for non-subscribers. Mounted home-only in SaleProvider.
+// Headless: keeps push subscription bid-limit in sync; no-op for non-subscribers.
 export function PushLimitSync() {
   const { myBid } = useSale()
   const price = myBid?.priceUsd ?? null

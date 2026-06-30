@@ -116,8 +116,7 @@ html[data-app-ready] .screen {
   overflow: hidden;
 }
 
-/* Desktop loading cover (Loader.tsx): opaque, theme-coloured, on top of everything until the
-   hero buffers. */
+/* Desktop loading cover (Loader.tsx). JS removes it once the hero buffers. */
 .loader-cover {
   position: fixed;
   inset: 0;
@@ -135,8 +134,7 @@ html[data-app-ready] .screen {
   }
 }
 
-/* Desktop-only (mirrors shouldAnimate): never paint the cover on touch / coarse pointer /
-   reduced-motion / below lg, so those contexts reveal immediately with no cover flash. */
+/* Keep in sync with shouldAnimate() in Loader.tsx. */
 @media (hover: none), (pointer: coarse), (prefers-reduced-motion: reduce), (max-width: 63.999rem) {
   .loader-cover {
     display: none;
@@ -238,9 +236,7 @@ main > section {
     @apply rounded-full border border-border px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-muted;
   }
 
-  /* Desktop: inset the dark box by the same 2rem (px-8) side gutter the .page-container content
-     uses, so the tile lines up with the 12-col grid instead of overshooting it. Mobile keeps its
-     full-bleed width (no lg: utilities apply). */
+  /* keep in sync with .page-container px-8 gutter. */
   .contrast-tile {
     @apply rounded-[var(--frame-radius)] bg-surface-contrast text-on-contrast lg:mx-auto lg:w-[calc(100%_-_4rem)] lg:max-w-[calc(var(--max-width-container)_-_4rem)];
   }
@@ -271,7 +267,6 @@ main > section {
     transform: scaleX(1);
   }
 
-  /* Underline the text when the whole link (.group) is hovered/focused, e.g. a logo above its name. */
   .group:hover .link-underline-group::after,
   .group:focus-visible .link-underline-group::after {
     transform: scaleX(1);

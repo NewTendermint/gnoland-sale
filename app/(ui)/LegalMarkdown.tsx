@@ -14,8 +14,7 @@ function Anchor({ href = "", children }: { href?: string; children?: ReactNode }
   )
 }
 
-// Google Docs export needs cleanup before a parser: de-indent (4-space = code block), promote
-// bold numbered lines to H2, drop escape backslashes. Deep list nesting flattens (fine for legal).
+// Cleans up Google Docs markdown exports before parsing.
 function normalizeLegalMarkdown(md: string): string {
   return md
     .split("\n")

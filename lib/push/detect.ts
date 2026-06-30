@@ -1,6 +1,6 @@
 // Pure outbid detection for the cron. A bid is "outbid" once the clearing price passes its limit.
-// We notify only on the winning -> outbid transition (debounced via the stored lastStatus), and
-// record any status change so a later raise (limit back above clearing) re-arms a future alert.
+// Notify only on the winning -> outbid transition (debounced via lastStatus); record any status
+// change so a later raise re-arms a future alert.
 export type DetectSub = { endpoint: string; bidLimitUsd: number; lastStatus: string }
 
 export type Detection = {

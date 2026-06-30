@@ -2,11 +2,11 @@
 
 Frontend for the GNOT public token sale (`sale.gno.land`), running on [Sonar by Echo](https://docs.echo.xyz/). Uniform-price (English) auction, USDC on Ethereum, KYC via Sonar OAuth.
 
-One Next.js app serves every stage of the sale. Nothing is redeployed between stages: the page reads its phase from the sale clock (the 3 dates in `economics.ts`, with an optional env override), and renders the right surfaces (see "Sale phases" below).
+One Next.js app serves every stage of the sale. Nothing is redeployed between stages: the page reads its phase from the sale clock (the 3 dates in `lib/sale/economics.ts`, with an optional env override) and renders the right surfaces (see "How the site works").
 
 ## Stack
 
-Next.js 15 (App Router) · TypeScript strict · Tailwind v4 · next-themes (light/dark) · Biome · wagmi v2 + RainbowKit + viem (Ethereum mainnet / Sepolia only) · `@echoxyz/sonar-core` (server-only) + `sonar-react` · iron-session + libsodium · Drizzle on Netlify DB (Neon) · Netlify Blobs · Vitest + Playwright + MSW v2.
+Next.js 15 (App Router) · TypeScript strict · Tailwind v4 · next-themes (light/dark) · Biome · wagmi v3 + viem (Ethereum mainnet / Sepolia only) with bespoke connectors (Coinbase Wallet SDK, WalletConnect, injected EIP-6963) · `@echoxyz/sonar-core` (server-only) · iron-session + libsodium · Drizzle on Netlify DB (Neon Postgres) · GSAP + baked scene-slot videos · Vitest. Hosted on Netlify (Next.js Runtime + DB). No Sentry, no analytics.
 
 ## Run locally
 
@@ -15,7 +15,12 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000. Zero config needed: with no env set, development runs fully mocked (Sonar fixtures + Mailchimp mock + phase `live`). Copy `.env.example` to `.env.local` only when you need real services or a specific phase.
+Open http://localhost:3000. With no env set, development runs fully mocked (Sonar fixtures + Mailchimp mock + phase `live`), enough to work on every UI surface.
+
+Two cases need real config (copy `.env.example` to `.env.local`):
+
+- **A specific phase or real services**: set the relevant vars (see "Environment").
+- **The Sonar OAuth / login flow**: set `DATABASE_URL` to a Postgres instance and run `npm run db:migrate`. PKCE state is stored in the `pkce_states` table, so the login flow throws at boot without a database. Mocked sale metrics and the newsletter do not need it.
 
 ## Scripts
 
@@ -25,7 +30,6 @@ npm run build        production build (includes the client-bundle secret scan)
 npm run lint         Biome
 npm run typecheck    tsc strict
 npm run test         Vitest unit suite
-npm run test:e2e     Playwright on localhost
 npm run db:generate  generate a Drizzle migration from lib/db/schema.ts
 npm run db:migrate   apply migrations to DATABASE_URL
 npm run db:studio    Drizzle Studio against DATABASE_URL
@@ -45,22 +49,22 @@ Three phases drive every surface (`lib/sale/phase.ts`):
 
 Resolution order (first match wins):
 
-1. **`NEXT_PUBLIC_SALE_PHASE` env** (`pre-sale` | `live` | `ended`) - an operator OVERRIDE. Leave it UNSET in production so the phase follows the clock (below); set it only for staging, screenshots, or to force a phase during an incident.
-2. **The sale clock** - the three dates in `lib/sale/economics.ts` (`saleOpensIso`, `saleClosesIso`): `pre-sale` before it opens, `live` during the window, `ended` after it closes. **This is the production default: set the 3 dates and the page serves the right version itself - no deploy, no manual flip.** Resolved server-side (`app/page.tsx`, ISR ~30s) so it renders directly, and re-resolved client-side every 60s so a visitor with the page open sees pre-sale -> live -> ended flip without a reload.
+1. **`NEXT_PUBLIC_SALE_PHASE` env** (`pre-sale` | `live` | `ended`) - an operator OVERRIDE. Leave it UNSET in production so the phase follows the clock; set it only for staging, screenshots, or to force a phase during an incident.
+2. **The sale clock** - the dates in `lib/sale/economics.ts` (`saleOpensIso`, `saleClosesIso`): `pre-sale` before it opens, `live` during the window, `ended` after it closes. This is the production default: set the 3 dates and the page serves the right version itself, no deploy. Resolved server-side (`app/page.tsx`, ISR ~30s) and re-resolved client-side every 60s so an open tab flips without a reload.
 3. Dev default: `live`.
 
 ### The two pre-sale stages (automatic flip)
 
-`pre-sale` covers two distinct stages (`lib/sale/phase.ts` + dates in `lib/sale/economics.ts`):
+`pre-sale` covers two stages (`lib/sale/phase.ts` + dates in `lib/sale/economics.ts`):
 
-- **Stage A - `registration-closed`** (before registration opens). Sonar registration is NOT open yet. The only asks are **newsletter capture** ("Get notified", our own form -> Mailchimp double opt-in) and add-to-calendar. Countdown targets `registrationOpensIso`.
-- **Stage B - `registration-open`** (registration opens -> sale opens). **"Register now" -> Sonar OAuth KYC** is the single primary ask (bar + How-to). The pre-footer keeps a secondary newsletter + calendar capture below its Register CTA, for visitors not ready to KYC yet. A registered user parks on a "You're registered" state; pending / failed / not-eligible verification statuses surface in the bar and the How-to section. Countdown targets `saleOpensIso`.
+- **Stage A - `registration-closed`** (before registration opens). The only asks are newsletter capture ("Get notified", our own form to Mailchimp double opt-in) and add-to-calendar. Countdown targets `registrationOpensIso`.
+- **Stage B - `registration-open`** (registration opens to sale opens). "Register now" to Sonar OAuth KYC is the primary ask. A registered user parks on a "You're registered" state; pending / failed / not-eligible statuses surface in the bar and the How-to section. Countdown targets `saleOpensIso`.
 
-**The A -> B flip is fully automatic.** `SaleProvider` re-resolves the stage against the clock every 60s and on tab refocus, so visitors with the page already open see it flip without a reload, and no deploy is needed. The milestone dates are env-overridable (`NEXT_PUBLIC_REGISTRATION_OPENS`, `NEXT_PUBLIC_SALE_OPENS`, `NEXT_PUBLIC_SALE_CLOSES`, ISO strings) if the schedule moves.
+The A to B flip is automatic: `SaleProvider` re-resolves the stage against the clock every 60s and on tab refocus. Milestone dates are env-overridable (`NEXT_PUBLIC_REGISTRATION_OPENS`, `NEXT_PUBLIC_SALE_OPENS`, `NEXT_PUBLIC_SALE_CLOSES`, ISO strings).
 
 ### Per-user journey (automatic)
 
-Inside a phase, each visitor gets a derived funnel state (`lib/sale/journey.ts`, unit-tested): verify-first ordering, `Verify (Sonar KYC) -> Connect (wallet) -> Bid`. KYC status comes from the server-held Sonar session (entity polling), wallet status from wagmi, bid status from comparing the user's commitment to the clearing price (polled every 10s). All automatic.
+Inside a phase, each visitor gets a derived funnel state (`lib/sale/journey.ts`, unit-tested): verify-first ordering, `Verify (Sonar KYC) -> Connect (wallet) -> Bid`. KYC status comes from the server-held Sonar session (entity polling), wallet status from wagmi, bid status from comparing the user's commitment to the clearing price (polled every 10s).
 
 ### Emergency pause
 
@@ -70,13 +74,12 @@ Inside a phase, each visitor gets a derived funnel state (`lib/sale/journey.ts`,
 
 | When | What you do | What is automatic |
 |---|---|---|
-| Pre-sale launch | Confirm the 3 dates in `economics.ts` (or env), `NEXT_PUBLIC_NEWSLETTER_ENABLED=1`, Mailchimp creds; **delete the `NEXT_PUBLIC_STATE_OVERRIDES` block from `netlify.toml [build.environment]`** (hardening checklist M3 - the public page must not be flippable from a crafted `?phase=` link); deploy. Do NOT set `NEXT_PUBLIC_SALE_PHASE` - the clock drives it. | Pre-sale renders; pre-sale -> live -> ended all flip by the dates |
+| Pre-sale launch | Confirm the 3 dates in `economics.ts` (or env), `NEXT_PUBLIC_NEWSLETTER_ENABLED=1`, Mailchimp creds. Do NOT set `NEXT_PUBLIC_SALE_PHASE` - the clock drives it. | Pre-sale renders; pre-sale -> live -> ended all flip by the dates |
 | Registration opens | Nothing | Stage A -> B by clock, "Register now" appears |
-| Sale opens | Nothing | Page flips to `live` by the clock (ISR ~30s) - metrics + bid funnel |
+| Sale opens | Nothing | Page flips to `live` by the clock (ISR ~30s) |
 | Sale closes | Nothing | Page flips to `ended` by the clock - final clearing + results |
 | Schedule moves | Update the 3 ISO dates in `economics.ts` (or the `NEXT_PUBLIC_*` env overrides); deploy | Phase + countdowns follow the new dates |
-| Incident | `SALE_PAUSED=true` (kill switch); optionally `NEXT_PUBLIC_SALE_PHASE` to force a phase | Bid routes 503; UI shows paused / the forced phase |
-| Schedule slips | Update the `NEXT_PUBLIC_*` date envs | All countdowns, copy dates, stage flips follow |
+| Incident | `SALE_PAUSED=true`; optionally `NEXT_PUBLIC_SALE_PHASE` to force a phase | Bid routes 503; UI shows paused / the forced phase |
 
 Newsletter kill switch: unset `NEXT_PUBLIC_NEWSLETTER_ENABLED` and the capture UI disappears (surfaces fall back to a date line).
 
@@ -92,6 +95,8 @@ Copy `.env.example` to `.env.local`. Production secrets live in Netlify env, nev
 | `NEXT_PUBLIC_SALE_PHASE` | Phase override (see runbook) |
 | `NEXT_PUBLIC_REGISTRATION_OPENS` / `SALE_OPENS` / `SALE_CLOSES` | Milestone date overrides (ISO) |
 | `NEXT_PUBLIC_NEWSLETTER_ENABLED` | `1` renders the newsletter capture (dev defaults on) |
+| `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` | Public Reown/WalletConnect id (has a built-in default) |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | Web Push public key (same value as `VAPID_PUBLIC_KEY`) |
 
 **Server-only (never `NEXT_PUBLIC`, scanned out of the client bundle in CI):**
 
@@ -101,22 +106,23 @@ Copy `.env.example` to `.env.local`. Production secrets live in Netlify env, nev
 | `ENCRYPTION_KEY` | 32-byte hex, libsodium secretbox for OAuth tokens at rest |
 | `SESSION_PASSWORD` | iron-session cookie sealing |
 | `IP_HMAC_PEPPER` | 32-byte hex, irreversible IP hashing (audit + rate limit) |
-| `DATABASE_URL` | Netlify DB (Neon) connection string |
-| `NETLIFY_BLOBS_TOKEN` | Blobs access (PKCE state store) |
+| `DATABASE_URL` | Netlify DB (Neon). On Netlify it is injected as `NETLIFY_DATABASE_URL` and aliased automatically |
 | `SALE_PAUSED` | `true` = kill switch |
-| `SALE_CHAIN` | `base` (prod) / `base-sepolia` (preview); drives audit chain_id |
-| `MAILCHIMP_API_KEY` / `MAILCHIMP_AUDIENCE_ID` | Newsletter upstream (absent = dev mocks, prod fails closed with 502) |
+| `SALE_CHAIN` | `mainnet` (prod) / `sepolia` (preview); drives the audit chain_id and chain branching |
+| `MAILCHIMP_API_KEY` / `MAILCHIMP_AUDIENCE_ID` | Newsletter upstream (absent = dev mocks, prod fails closed) |
+| `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` | Web Push signing (outbid alerts) |
+| `CRON_SECRET` | Bearer for the scheduled outbid-cron route |
 | `SONAR_MOCK` / `MAILCHIMP_MOCK` | Dev-only: `1` serves local fixtures instead of the real APIs |
 
 ## Database and storage
 
-The site needs **Netlify DB (Neon Postgres)** and **Netlify Blobs** in production:
+The site needs **Netlify DB (Neon Postgres)** in production. Schema in `lib/db/schema.ts` (Drizzle):
 
-- `oauth_tokens` (Postgres): the libsodium-encrypted `{accessToken, refreshToken}` envelope per opaque session id. Plaintext tokens never touch the DB or the browser.
-- `audit_log` (Postgres): append-only trail of permit issuance and sensitive events. Wallets/entity ids in clear (already public on chain), IPs only as HMAC, metadata behind a strict allow-list.
-- PKCE state (Blobs): single-use OAuth state + code verifier, expiry checked on read (Blobs does not auto-expire).
+- `oauth_tokens`: the libsodium-encrypted `{accessToken, refreshToken}` envelope per opaque session id. Plaintext tokens never touch the DB or the browser.
+- `audit_log`: append-only trail of permit issuance and sensitive events. Wallets/entity ids in clear (already public on chain), IPs only as HMAC, metadata behind a strict allow-list.
+- `pkce_states`: single-use OAuth state + code verifier, expiry checked on read.
 
-Schema lives in `lib/db/schema.ts` (Drizzle). New deploy target: run `npm run db:migrate` against its `DATABASE_URL` once (Netlify DB previews get their own branch DB). The newsletter stores NOTHING here: emails go straight to Mailchimp, which is the only data holder.
+New deploy target: run `npm run db:migrate` against its `DATABASE_URL` once (Netlify DB previews get their own branch DB). The newsletter stores nothing here: emails go straight to Mailchimp.
 
 ## API surface
 
@@ -130,30 +136,58 @@ Our routes only - the browser never talks to Sonar or Mailchimp directly:
 | `/api/sonar/pre-purchase` | POST | Sonar pre-purchase check for a wallet |
 | `/api/sonar/generate-permit` | POST | Signed purchase permit (audited, server-side only) |
 | `/api/auth/sonar/init` | POST | Start OAuth: mints PKCE state, returns the authorization URL |
-| `/api/auth/sonar/callback` | GET | OAuth return: validates the state (session-bound, single-use), exchanges the code, stores tokens encrypted, redirects to `/?auth=ok\|error` (read + stripped by the UI, display-only) |
+| `/api/auth/sonar/callback` | GET | OAuth return: validates the state (session-bound, single-use), exchanges the code, stores tokens encrypted, redirects to `/?auth=ok\|error` |
 | `/api/auth/sonar/logout` | POST | Destroys the session + deletes stored tokens (204) |
-| `/api/newsletter` | POST | Newsletter capture -> Mailchimp upsert (double opt-in). Anti-enumeration uniform 202, honeypot, HMAC-keyed IP rate limit; the email is never logged or stored on our side |
+| `/api/newsletter` | POST | Newsletter capture to Mailchimp (double opt-in). Anti-enumeration uniform 202, honeypot, HMAC-keyed IP rate limit; the email is never logged or stored on our side |
+| `/api/push/subscribe` | POST | Register a Web Push subscription for outbid alerts (no PII) |
+| `/api/push/cron` | POST | Scheduled (Netlify) outbid-alert sweep, bearer `CRON_SECRET` |
 
-The one on-chain write (submitting the signed bid with the permit) happens client-side via wagmi; `lib/sale/onchain.ts` is the seam (emulated until `SettlementSale` is deployed - see the file header for the go-live steps).
+The one on-chain write (submitting the signed bid with the permit) happens client-side via wagmi; `lib/sale/onchain.ts` is the seam (emulated until the `SettlementSale` mainnet address is wired in `lib/sale/contracts.ts`).
+
+## Deploy and environments
+
+Deploys are driven by **Netlify**, not GitHub Actions. There are no GitHub deployment environments to configure; the environment split is handled by Netlify deploy contexts (`netlify.toml`) plus context-scoped env in the Netlify dashboard.
+
+| Git branch | Netlify context | Targets |
+|---|---|---|
+| `main` | production | `sale.gno.land`, Sonar prod, Ethereum mainnet |
+| `staging` / other branches | branch-deploy | Sonar sandbox, Sepolia (per dashboard env) |
+| Pull requests | deploy-preview | Sonar sandbox, Sepolia |
+
+`NEXT_PUBLIC_STATE_OVERRIDES` (dev state-preview) is set only in the dashboard, scoped to branch + preview contexts, never production, and not committed.
+
+CI (`.github/workflows/ci.yml`) runs on every PR and on push to `main`: Biome lint, secretlint source scan, typecheck, Vitest, build, client-bundle secret scan (`scripts/check-secrets.mjs`), and `npm audit --audit-level=high`. Protecting `main` with a required-CI rule is recommended before opening the repo.
+
+## Before public launch
+
+Tracked items that must be set when going live (most are config, not code):
+
+- Attach the `sale.gno.land` domain and revert `NEXT_PUBLIC_SITE_URL` in the `netlify.toml` production context (currently a temporary Netlify subdomain).
+- Wire the mainnet `SettlementSale` address in `lib/sale/contracts.ts`.
+- Flip CSP from Report-Only to enforce in `middleware.ts` after wallet testing.
+- Set the Reown/WalletConnect AllowList to `sale.gno.land`.
+- Set `SALE_CHAIN=mainnet` on the production context, plus `SECRETS_SCAN_OMIT_KEYS=SALE_CHAIN` (the value `mainnet` trips Netlify's secret scanner otherwise).
+- Provision the server-only secrets above on the production context.
 
 ## Development and review
 
-- `SONAR_MOCK=1` (auto-behavior in dev with no creds): the whole Sonar surface runs on local fixtures (`lib/sonar/mock-*`), including a slowly climbing mock clearing price.
+- `SONAR_MOCK=1` (the default in dev with no creds): the whole Sonar surface runs on local fixtures (`lib/sonar/mock-*`), including a slowly climbing mock clearing price.
 - `/dev/states`: every funnel state, collapsed + expanded, without a wallet or Sonar.
 - URL overrides: `?phase=pre-sale|live|ended`, `?registration=open|closed`, `?journey=<state>` preview any combination on the real page.
-- Both are gated by `stateOverridesEnabled()` (`lib/sale/overrides.ts`): always on in dev; on in production builds only while `netlify.toml` sets `NEXT_PUBLIC_STATE_OVERRIDES=1` (the staging URL is reviewable by the whole team). **That flag MUST be removed from `[build.environment]` before the public launch** - tracked as hardening checklist M3, also flagged in the runbook above.
+- Both are gated by `stateOverridesEnabled()` (`lib/sale/overrides.ts`): always on in dev; in production builds only while `NEXT_PUBLIC_STATE_OVERRIDES=1` is set (dashboard, non-production contexts).
 
 ## Layout
 
 - `app/` App Router: `(sections)` page sections, `(layout)` chrome (bar, provider, forms), `(ui)` primitives, `api/` route handlers, `dev/states` harness
-- `content/sections.md` canonical copy (edit here; `content/sections/*.ts` mirror it for the build)
-- `lib/` `sale/` (phase, journey, calc, economics, on-chain seam), `sonar/` (server client, OAuth, mocks), `newsletter/`, `security/`, `db/`
-- `docs/specs/` ADR + dated design docs (start with `2026-05-19-gnot-ico-landing-design.md`); `docs/REQUIREMENTS_FROM_TEAMS.md` tracks external blockers
-- `tests/` unit + e2e; `scripts/` build guards (client-bundle secret scan)
+- `content/sections/*.ts` section copy (edit here), `content/legal/*.ts` legal text
+- `lib/` `sale/` (phase, journey, calc, economics, on-chain seam), `sonar/` (server client, OAuth, mocks), `newsletter/`, `push/`, `security/`, `db/`
+- `tests/` Vitest unit suites; `scripts/` build guards (client-bundle secret scan, on-chain probe)
 
-## Security invariants (full model: ADR §4)
+Design and architecture decision records live in `docs/` (internal, not committed); this README is the canonical doc for the shipped repo.
+
+## Security invariants
 
 - All Sonar API calls, OAuth tokens and secrets are server-side; the client gets derived JSON only.
 - OAuth tokens encrypted at rest (libsodium envelope), sessions HttpOnly/Secure/Lax, PKCE state single-use and session-bound.
-- CSP nonce-based via middleware (Report-Only pending enforcement), CI build fails if a secret name appears in client output.
+- CSP nonce-based via middleware (Report-Only pending enforcement); CI build fails if a server-only secret name appears in client output.
 - No PII in logs: IPs HMAC-peppered, newsletter emails pass through without persistence.

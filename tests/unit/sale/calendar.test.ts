@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { buildMilestoneIcs } from "../../../lib/sale/calendar"
 
-// Pins the exact ICS shape: all-day events (the opening TIME is TBD, param #14),
+// Pins the exact ICS shape: all-day events (the opening TIME is TBD),
 // exclusive DTEND, CRLF endings, stable UIDs.
 describe("buildMilestoneIcs", () => {
   const stampMs = Date.UTC(2026, 5, 13, 10, 15, 30) // 2026-06-13T10:15:30Z

@@ -1,8 +1,6 @@
 import "server-only"
-// OG/Twitter social card SOURCE. Not shipped at runtime: baked once to public/og.jpg
-// (the metadata references the static file). To re-bake after a copy/design change, hit a
-// throwaway route that returns renderOgCardJpeg() and save it over public/og.jpg.
-// Background = the crisp clean vault render; fonts = static Geist TTFs (Satori can't read woff2).
+// OG/Twitter social card source, baked once to public/og.jpg (not shipped at runtime).
+// Fonts are static Geist TTFs (Satori can't read woff2).
 import { readFile } from "node:fs/promises"
 import { join } from "node:path"
 import { ImageResponse } from "next/og"

@@ -57,8 +57,6 @@ export function SceneVideo({
     let timer = 0
     let coverTimer = 0
     const reveal = () => {
-      // Play first, then slide the grey cover a beat later (COVER_LEAD_MS) so a decoder
-      // cold-start stutters behind the cover, not in view.
       setVideoShown(true)
       setPlaying(true)
       coverTimer = window.setTimeout(() => setRevealed(true), COVER_LEAD_MS)
@@ -77,10 +75,7 @@ export function SceneVideo({
         clearTimeout(fadeTimer.current)
       }
     }
-    // Preload the video EARLY: during the first idle window after the hero loads (NOT when the
-    // slot is displayed), so every scene is already buffered and plays instantly at its reveal.
-    // Low priority (idle) so it never competes with the hero. The approach observer is a
-    // fallback for a scroll that beats the idle callback.
+    // Idle-callback preload with IntersectionObserver fallback; keeps pressure off the hero.
     const supportsIdle = typeof requestIdleCallback === "function"
     const idleId = supportsIdle
       ? requestIdleCallback(() => setPreload(true), { timeout: 2500 })
@@ -110,9 +105,6 @@ export function SceneVideo({
     }
   }, [innerDelayMs, immediate])
 
-  // Play the instant the reveal fires (the grey cover starts sliding). For the hero the
-  // <video> is already mounted + buffered, so play() is immediate - the spin starts in sync
-  // with the cover, with no static-poster gap.
   useEffect(() => {
     if (playing) videoRef.current?.play().catch(() => {})
   }, [playing])
@@ -143,16 +135,12 @@ export function SceneVideo({
             src={poster}
             alt=""
             draggable={false}
-            // Hero (immediate) is above the fold: load its poster eagerly + at high priority
-            // (it's the largest first-paint asset). Below-fold slots stay lazy.
             loading={immediate ? "eager" : "lazy"}
             fetchPriority={immediate ? "high" : "auto"}
             decoding="async"
             className="absolute inset-0 h-full w-full object-cover"
           />
-          {/* Mount + buffer the <video> AHEAD of the reveal (immediately for the hero, ~1
-              viewport early for scroll slots) so it plays the instant the cover slides - no
-              static-poster gap. Unmounts after the spin ends to free the decoder. */}
+          {/* Preloaded ahead of reveal; unmounted after spin to free the decoder. */}
           {preload && !ended && (
             <video
               ref={videoRef}

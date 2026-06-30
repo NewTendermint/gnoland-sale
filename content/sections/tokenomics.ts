@@ -1,12 +1,11 @@
 /**
  * Content data for the Tokenomics section.
  *
- * `content/sections.md` is the human source of truth for marketing/legal
- * copy. This module mirrors that copy for the build (dev-facing).
+ * Section copy for the build (dev-facing).
  *
  * Source of truth for the numbers below: the team "$GNOT Vesting Schedule -
- * Allocation & Distribution" sheet (genesis allocation + monthly distribution)
- * and `content/sections.md` #3 (unlock schedule, total supply). These are the
+ * Allocation & Distribution" sheet (genesis allocation, monthly distribution,
+ * unlock schedule, total supply). These are the
  * real, as-of-today figures, not placeholders. Verified: the seven category
  * quantities sum to 1,333,000,000 GNOT and each percent = quantity / total.
  */
@@ -84,7 +83,7 @@ export const allocation: AllocationRow[] = [
 // Unlock schedule. Identical for every allocation: 7% at mainnet launch (TGE,
 // the day GNOT becomes transferable), 7% each subsequent month, 9% in the
 // final month. 13 x 7% + 9% = 100%, fully vested 13 months after mainnet
-// (distribution runs months 1-14). No cliff. Mirrors sections.md #3.
+// (distribution runs months 1-14). No cliff.
 export const vesting = {
   tgeUnlockPct: 7,
   monthlyUnlockPct: 7,
@@ -114,7 +113,7 @@ export type CirculatingRow = {
   children?: Array<{ category: string; amount: number; highlight?: boolean }>
 }
 
-// Circulating supply at mainnet launch (TGE), team spec 2026-06-30. Tree: the Investor
+// Circulating supply at mainnet launch (TGE). Tree: the Investor
 // Pool circulates 156,000,000 - its listed children (Investors 111,240,000 + Token Sale
 // 38,760,000 = 150M) plus the 6M 4%-pool unlock that is NOT itemised. The other genesis
 // categories release ~4%. Top-level amounts sum to 197,320,000 (children are inside the pool).
@@ -136,7 +135,7 @@ export const circulatingBreakdown: CirculatingRow[] = [
 ]
 
 export const circulating = {
-  /** Sum of the breakdown top-level amounts = 197,320,000 (team 2026-06-30). */
+  /** Sum of the breakdown top-level amounts = 197,320,000. */
   total: circulatingBreakdown.reduce((sum, row) => sum + row.amount, 0),
   tokenSaleSupply: 38_760_000,
   /** Verbatim from the team sheet. */

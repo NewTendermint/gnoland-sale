@@ -45,7 +45,6 @@ export function SaleProvider({
   const sale = useSaleData()
   const entity = useEntity({ enabled: funnelCapable === true })
   const position = useMyBid({ enabled: funnelCapable === true })
-  // Initial phase is resolved server-side from the sale clock (page.tsx) so it renders directly.
   const [phase, setPhase] = useState<SalePhase>(initialPhase)
   const [phaseOverridden, setPhaseOverridden] = useState(false)
   const [journeyOverride, setJourneyOverride] = useState<JourneyState | null>(null)
@@ -65,8 +64,6 @@ export function SaleProvider({
       window.history.replaceState(window.history.state, "", url)
       if (auth === "ok") {
         queryClient.invalidateQueries({ queryKey: ["sale", "entity"] })
-        // Returning from Sonar verification: open the funnel so the bidder continues
-        // straight into Connect/Bid instead of landing on a collapsed pill.
         setBidPanelOpen(true)
       }
     }
@@ -85,8 +82,7 @@ export function SaleProvider({
     }
   }, [queryClient])
 
-  // Re-resolve the clock-driven phase + pre-sale sub-stage every minute (and on tab refocus), so a
-  // visitor with the page open sees pre-sale -> live -> ended flip without a reload. Dev overrides win.
+  // Re-resolves phase every minute and on tab refocus. Dev overrides win.
   useEffect(() => {
     const resolve = () => {
       if (!stageOverride) setPreSaleStage(resolvePreSaleStage(Date.now()))

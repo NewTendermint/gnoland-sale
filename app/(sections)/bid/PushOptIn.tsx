@@ -5,8 +5,7 @@ import { useEffect, useState } from "react"
 import { Cta } from "../../(ui)/Cta"
 import { Icon } from "../../(ui)/Icon"
 
-// Opt-in for outbid push alerts, shown inline next to the bid receipt (the "right moment"). Desktop
-// push only; renders nothing where unsupported. Stores only the bid limit (no PII).
+// Outbid push opt-in. Desktop only; no-ops where unsupported. Stores only bid limit (no PII).
 export function PushOptIn({ bidLimitUsd }: { bidLimitUsd: number }) {
   const [supported, setSupported] = useState(false)
   const [status, setStatus] = useState<"idle" | "working" | PushOptInResult>("idle")
@@ -23,7 +22,6 @@ export function PushOptIn({ bidLimitUsd }: { bidLimitUsd: number }) {
       setStatus("denied")
       return
     }
-    // Already subscribed (e.g. after a raise): show the confirmation, not the offer.
     hasPushSubscription().then((subbed) => {
       if (subbed) setStatus("granted")
     })
@@ -45,8 +43,6 @@ export function PushOptIn({ bidLimitUsd }: { bidLimitUsd: number }) {
     )
   }
 
-  // Blocked at the browser level: the offer can't work (a denied permission can't be re-prompted),
-  // so guide the user to re-enable instead of hiding silently.
   if (status === "denied") {
     return (
       <p className="text-xs text-muted sm:text-right">

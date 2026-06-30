@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest"
 import { mapLimits } from "../../lib/sonar/limits"
 
-// Sonar fetchLimits returns commitment min/max as strings in the payment token's smallest units
-// (A.17.7). The decimals are read dynamically (not hardcoded): USDC = 6 -> "2000000" = $2.
+// Sonar fetchLimits returns commitment min/max as strings in the payment token's smallest units.
+// The decimals are read dynamically (not hardcoded): USDC = 6 -> "2000000" = $2.
 describe("mapLimits", () => {
   it("converts the USDC (6dp) minimum to USD - the sandbox $2", () => {
     expect(

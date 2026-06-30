@@ -96,9 +96,9 @@ export function useBid() {
         }
         return { status: "reverted", reason: pre.failureReason }
       }
-      // Compliance: a US entity must carry the on-chain lockup flag (Sonar A.17.8) - read the
-      // region from the trusted server entity snapshot (query cache), never from client UI state,
-      // and force it on. The contract rejects a US commitment without it (BidMustHaveLockup).
+      // Compliance: a US entity must carry the on-chain lockup flag - read the region from the
+      // trusted server entity snapshot (query cache), never from client UI state, and force it on.
+      // The contract rejects a US commitment without it (BidMustHaveLockup).
       const entity = queryClient.getQueryData<EntitySnapshot>(["sale", "entity"])
       const bidParams: BidParams = {
         ...params,

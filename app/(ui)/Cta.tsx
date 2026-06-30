@@ -1,9 +1,7 @@
 import type { ReactNode, Ref } from "react"
 import { CtaArrow } from "./CtaArrow"
 
-// Single source for every pill CTA (sticky bar, bid capsule, page sections). Variant owns the
-// color, size owns the dimensions, `arrow` toggles the trailing chevron. btn-pan owns the
-// ::before panel-slide hover (Tailwind @apply can't pull it in, so it stays a class here).
+// Single source for every CTA pill. btn-pan owns the ::before panel-slide hover (Tailwind @apply can't pull it in).
 const VARIANTS = {
   solid:
     "border border-faint bg-foreground text-background before:bg-background hover:text-foreground",

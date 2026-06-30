@@ -17,7 +17,6 @@ export function Tokenomics() {
   const circulatingPct = ((circulating.total / TOTAL_SUPPLY) * 100).toFixed(1)
   const lockedPct = (100 - Number(circulatingPct)).toFixed(1)
 
-  // Heterogeneous facts (text + $) kept OUT of the number table.
   const circFacts: Array<{ label: string; value: string; light?: boolean }> = [
     { label: "Lockup", value: circulating.lockup, light: true },
     { label: "FDV (at $0.0645)", value: `$${circulating.fdvUsd.toLocaleString("en-US")}` },

@@ -65,11 +65,7 @@ export function BidPanelDesktop() {
   const wasExpanded = useRef(false)
   const ctaRef = useCtaEntrance<HTMLSpanElement>({ delayMs: 1250 })
   const cardRef = useBarGrow<HTMLDivElement>()
-  // Dismiss a stale "submitted" receipt by remounting BidFlow once the panel has finished
-  // collapsing, so reopening lands on the raise form. Driven by the real collapse transitionEnd
-  // (below) so it never swaps content mid-animation and stays in sync if the duration changes.
-  // Under reduced-motion there's no transition (so no transitionEnd), but the collapse is instant,
-  // so reset immediately - there's no mid-animation swap to avoid.
+  // Remount BidFlow after collapse so reopening lands on the raise form.
   const [bidFlowEpoch, setBidFlowEpoch] = useState(0)
   useEffect(() => {
     if (expanded) return
@@ -81,7 +77,6 @@ export function BidPanelDesktop() {
   function handleSignOut() {
     postSonarLogout().then(
       () => {
-        // Forget the "returning" flag too, so the bar resets to the first-time Verify state.
         clearSonarSeen()
         queryClient.invalidateQueries({ queryKey: ["sale", "entity"] })
         queryClient.invalidateQueries({ queryKey: ["sale", "my-bid"] })
@@ -90,7 +85,6 @@ export function BidPanelDesktop() {
     )
   }
 
-  // Re-poll the Sonar entity so a pending reviewer can re-check status without re-auth.
   // Returns the refetch promise so RefreshButton can show a discreet pending state.
   function handleRefresh() {
     return queryClient.invalidateQueries({ queryKey: ["sale", "entity"] })
@@ -323,9 +317,7 @@ export function BidPanelDesktop() {
   )
 }
 
-// Bid-panel section header at the top of the sticky's content. For has-bid states it shows the
-// current commitment as inline cells (status + committed + max price + allocation); otherwise the
-// dynamic step title. `wallet` is the live WalletButton in the app, a static chip in /dev/states.
+// wallet: live WalletButton, or a static chip in dev fixtures.
 export function BidSectionHeader({
   journey,
   myBid,
@@ -420,8 +412,6 @@ function SignOutLink({ onClick }: { onClick: () => void }) {
   )
 }
 
-// Discreet refresh affordance: a muted "Refreshing…" while the entity re-fetches, so a no-change
-// poll still gives visible feedback. Owns its pending state (no prop drilling).
 function RefreshButton({ onRefresh }: { onRefresh: () => void | Promise<void> }) {
   const [pending, setPending] = useState(false)
   return (
@@ -444,7 +434,6 @@ function RefreshButton({ onRefresh }: { onRefresh: () => void | Promise<void> })
   )
 }
 
-// Verification-status row: status + discreet sign-out link, with the calendar CTA set off right.
 function StatusRow({
   icon,
   tone = "default",

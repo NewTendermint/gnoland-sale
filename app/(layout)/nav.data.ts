@@ -30,7 +30,7 @@ export const externalLinks: NavLink[] = [
   { label: "Adena", href: "https://adena.app" },
 ]
 
-// One-line header titles for non-home routes (the homepage section anchors don't apply there).
+// Page titles for the minimal sub-page header.
 export const pageTitles: Record<string, string> = {
   "/us-investor-disclaimer": "Legal",
   "/privacy-policy": "Legal",

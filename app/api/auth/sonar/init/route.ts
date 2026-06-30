@@ -14,8 +14,7 @@ export async function POST() {
     await session.save()
   }
   if (sonarMockEnabled()) {
-    // TODO(real-data): mock login bypass - with SONAR_MOCK off this branch is skipped
-    // and the real PKCE OAuth URL (below) is returned instead.
+    // TODO: remove the mock login bypass when SONAR_MOCK is dropped
     return NextResponse.json({ authorizationUrl: "/?auth=ok" })
   }
   const authorizationUrl = await generatePkceAndStore(session.sessionId)

@@ -2,13 +2,10 @@ import { bidStatus, gnotEstimate } from "./calc"
 import type { MyBid } from "./types"
 
 /**
- * Per-bidder outcome at settlement. Reports every winner as 100% filled = an UPPER bound.
- * Settlement is two steps (Sonar 2026-06-25): the clearing price decides who wins (>= clearing),
- * then allocation among winners is our settlement-strategy choice. Under pro-rata (our pick), an
- * oversubscribed sale scales EVERY winner down by the same fill ratio - not just the bid sitting
- * at clearing - so any winner can carry a partial refund this derivation shows as zero. The SDK
- * exposes no per-commitment fill field, so we can't size it here; claimRefund() refunds the true
- * amount on-chain regardless.
+ * Per-bidder outcome at settlement. Reports every winner as 100% filled = an UPPER bound: under
+ * pro-rata an oversubscribed sale scales EVERY winner down by the same fill ratio, so any winner
+ * can carry a partial refund this derivation shows as zero. The SDK exposes no per-commitment fill
+ * field; claimRefund() refunds the true amount on-chain regardless.
  * TODO(real-data): once SettlementSale is deployed, read the real claimable refund from the
  * contract at Stage.Done (a view, not this derivation) and gate the claim button on it.
  */

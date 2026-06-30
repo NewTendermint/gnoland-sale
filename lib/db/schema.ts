@@ -60,8 +60,7 @@ export const auditMetadataSchema = z
 export type AuditMetadata = z.infer<typeof auditMetadataSchema>
 
 // Web Push subscriptions, keyed by the push endpoint. Deliberately UN-traceable: no session id,
-// wallet, entity id, email, or IP - only the push channel + a price + status. Nothing here can be
-// joined back to a user or wallet. Purge after the sale closes.
+// wallet, entity id, email, or IP - only the push channel + a price + status. Purge after the sale closes.
 export const pushSubscriptions = pgTable("push_subscriptions", {
   endpoint: text("endpoint").primaryKey(),
   p256dh: text("p256dh").notNull(),
@@ -83,8 +82,8 @@ export const pushSubscriptionInsertSchema = z
   })
   .strict()
 
-// Ephemeral OAuth PKCE state (Sonar recommends a DB store; replaces Netlify Blobs). Single-use
-// (deleted on consume), TTL enforced on read via expires_at. No PII; verifier is a throwaway nonce.
+// Ephemeral OAuth PKCE state. Single-use (deleted on consume), TTL enforced on read via expires_at.
+// No PII; verifier is a throwaway nonce.
 // TODO(prod): periodic sweep of expired/abandoned rows (consumed rows self-delete on consume).
 export const pkceStates = pgTable(
   "pkce_states",

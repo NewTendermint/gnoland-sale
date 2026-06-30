@@ -1,4 +1,3 @@
-// Core team: 5 names verified, 3 pending team confirmation on spelling and bios.
 import { Fragment } from "react"
 import { DrawLine } from "../../(ui)/DrawLine"
 import { FadeIn } from "../../(ui)/FadeIn"

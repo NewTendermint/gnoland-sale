@@ -1,7 +1,6 @@
 import type { MetadataRoute } from "next"
 
-// Web manifest. name/description reuse the approved strings (app/layout.tsx); theme/bg
-// white per the charter light default. short_name "GNOT Sale" is the one new string (flagged).
+// Web manifest; keep name/description in sync with app/layout.tsx.
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "GNOT Public Token Sale",

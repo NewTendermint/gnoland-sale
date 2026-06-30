@@ -59,8 +59,7 @@ export async function enablePushAlerts(bidLimitUsd: number): Promise<PushOptInRe
       applicationServerKey: urlBase64ToUint8Array(key),
     })
     if (!(await postSubscription(sub, bidLimitUsd)).ok) return "error"
-    // Fire a confirmation so the user immediately sees whether OS notifications actually display
-    // (there is no API to detect OS-level blocking; if they see nothing, the UI hint tells them).
+    // Confirmation notification: there is no API to detect OS-level blocking, so this is the only signal.
     reg
       .showNotification("Outbid alerts on", {
         body: "We'll notify you here if you're outbid.",
