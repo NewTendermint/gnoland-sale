@@ -4,7 +4,7 @@ import {
   bidStatus,
   forceLockupForRegion,
   gnotEstimate,
-  priceUsdToStepIndex,
+  priceUsdToOnchainPrice,
   snapBidPrice,
   usdToTokenUnits,
   validateBidAmount,
@@ -116,13 +116,12 @@ describe("validateBidPrice", () => {
   })
 })
 
-// Floor-anchored increment grid: valid bids are $0.0645 + k*$0.01935,
-// NO upper cap. The on-chain price is a step index from the floor.
+// Floor-anchored increment grid: valid bids are $0.0645 + k*$0.0215, no upper cap.
 describe("validateBidPrice - floor-anchored increment grid", () => {
-  const band = { minPriceUsd: 0.0645, incrementUsd: 0.01935 }
+  const band = { minPriceUsd: 0.0645, incrementUsd: 0.0215 }
   it("has no upper cap (a high on-grid price is accepted)", () => {
-    expect(validateBidPrice((6450 + 6 * 1935) / 100_000, band)).toBe("ok")
-    expect(validateBidPrice((6450 + 50 * 1935) / 100_000, band)).toBe("ok")
+    expect(validateBidPrice((6450 + 6 * 2150) / 100_000, band)).toBe("ok")
+    expect(validateBidPrice((6450 + 50 * 2150) / 100_000, band)).toBe("ok")
   })
   it("rejects off-increment prices", () => {
     expect(validateBidPrice(0.07, band)).toBe("off-increment")
@@ -130,7 +129,7 @@ describe("validateBidPrice - floor-anchored increment grid", () => {
   })
   it("accepts the floor and every step above it (float-drift safe)", () => {
     for (let k = 0; k <= 8; k++) {
-      expect(validateBidPrice((6450 + k * 1935) / 100_000, band)).toBe("ok")
+      expect(validateBidPrice((6450 + k * 2150) / 100_000, band)).toBe("ok")
     }
   })
   it("checks the floor before the monotonic-raise rule", () => {
@@ -154,37 +153,37 @@ describe("on-chain unit conversions", () => {
     expect(() => usdToTokenUnits(-1, 6)).toThrow()
     expect(() => usdToTokenUnits(1, 19)).toThrow()
   })
-  // The SettlementSale uint64 `price` is a STEP INDEX from the floor:
-  // floor $0.0645 = step 0, then +1 per $0.01935 increment.
-  it("priceUsdToStepIndex maps a USD price to a step index from the floor (floor = step 0)", () => {
-    expect(priceUsdToStepIndex(0.0645, 0.0645, 0.01935)).toBe(0n)
+  // The SettlementSale uint64 `price` = increment count, round(priceUsd / increment). Zero-anchored
+  // (NOT from the floor): sandbox floor 0.0645 / 0.00645 = 10 (permit minPrice), cap 0.258 = 40.
+  it("priceUsdToOnchainPrice maps a USD price to the increment count (round(price/increment))", () => {
+    expect(priceUsdToOnchainPrice(0.0645, 0.00645)).toBe(10n) // floor = permit minPrice
+    expect(priceUsdToOnchainPrice(0.258, 0.00645)).toBe(40n) // cap = permit maxPrice
     for (let k = 0; k <= 8; k++) {
-      expect(priceUsdToStepIndex((6450 + k * 1935) / 100_000, 0.0645, 0.01935)).toBe(BigInt(k))
+      expect(priceUsdToOnchainPrice((6450 + k * 645) / 100_000, 0.00645)).toBe(BigInt(10 + k))
     }
   })
-  it("priceUsdToStepIndex is float-drift safe on the 0.12255 trap (= step 3 exactly)", () => {
-    expect(priceUsdToStepIndex(0.12255, 0.0645, 0.01935)).toBe(3n)
+  it("priceUsdToOnchainPrice is float-drift safe on the 0.12255 trap (= 19 exactly)", () => {
+    expect(priceUsdToOnchainPrice(0.12255, 0.00645)).toBe(19n)
   })
-  it("priceUsdToStepIndex rejects garbage (NaN/Infinity, zero increment, below the floor)", () => {
-    expect(() => priceUsdToStepIndex(Number.POSITIVE_INFINITY, 0.0645, 0.01935)).toThrow()
-    expect(() => priceUsdToStepIndex(-0.01, 0.0645, 0.01935)).toThrow()
-    expect(() => priceUsdToStepIndex(0.0645, 0.0645, 0)).toThrow()
-    expect(() => priceUsdToStepIndex(0.05, 0.0645, 0.01935)).toThrow()
+  it("priceUsdToOnchainPrice rejects garbage (NaN/Infinity, negative, zero increment)", () => {
+    expect(() => priceUsdToOnchainPrice(Number.POSITIVE_INFINITY, 0.00645)).toThrow()
+    expect(() => priceUsdToOnchainPrice(-0.01, 0.00645)).toThrow()
+    expect(() => priceUsdToOnchainPrice(0.0645, 0)).toThrow()
   })
 })
 
 describe("snapBidPrice", () => {
-  const band = { minPriceUsd: 0.0645, incrementUsd: 0.01935 }
+  const band = { minPriceUsd: 0.0645, incrementUsd: 0.0215 }
   it("snaps an off-grid candidate UP to the next step", () => {
-    expect(snapBidPrice(0.07, band)).toBeCloseTo(0.08385, 10) // floor + 1 step
+    expect(snapBidPrice(0.07, band)).toBeCloseTo(0.086, 10) // floor + 1 step
   })
   it("clamps a below-floor candidate up to the floor", () => {
     expect(snapBidPrice(0.01, band)).toBeCloseTo(0.0645, 10)
   })
   it("has no upper cap - snaps a high candidate up to its grid step", () => {
-    expect(snapBidPrice(0.13, band)).toBeCloseTo(0.1419, 10) // floor + 4 steps
+    expect(snapBidPrice(0.13, band)).toBeCloseTo(0.1505, 10) // floor + 4 steps
   })
   it("leaves on-grid prices untouched", () => {
-    expect(snapBidPrice(0.12255, band)).toBeCloseTo(0.12255, 10) // floor + 3 steps
+    expect(snapBidPrice(0.129, band)).toBeCloseTo(0.129, 10) // floor + 3 steps
   })
 })

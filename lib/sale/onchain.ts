@@ -6,6 +6,7 @@ import { wagmiConfig } from "@/app/(layout)/web3"
 // configured for the connected chain (so /dev/states + offline dev keep working).
 import {
   getAccount,
+  getPublicClient,
   readContract,
   signTypedData,
   simulateContract,
@@ -13,17 +14,18 @@ import {
   writeContract,
 } from "@wagmi/core"
 import { erc20Abi, settlementSaleAbi } from "./abi"
-import { priceUsdToStepIndex, usdToTokenUnits } from "./calc"
-import { saleContractsFor } from "./contracts"
+import { priceUsdToOnchainPrice, usdToTokenUnits } from "./calc"
+import { SALE_CHAIN, saleContractsFor } from "./contracts"
 import { SALE_ECONOMICS } from "./economics"
 import { toPurchasePermitV3 } from "./permit-map"
-import type { BidParams, BidResult } from "./submitter"
+import type { BidParams, BidResult, BidStage } from "./submitter"
 import type { SalePermit } from "./types"
 
 type OnChainBidArgs = {
   params: BidParams
   permit: SalePermit
   wallet: `0x${string}`
+  onStage?: (stage: BidStage) => void
 }
 
 export type ClaimResult =
@@ -52,8 +54,16 @@ function bidRevertReason(err: unknown): string {
   if (/BidPriceBelowMinPrice|BidPriceExceedsMaxPrice/i.test(msg)) {
     return "Your price is outside the allowed range"
   }
+  if (/BidBelowMinAmount|BidExceedsMaxAmount/i.test(msg)) {
+    return "Your amount is outside the allowed range"
+  }
   if (/BidMustHaveLockup/i.test(msg)) return "This bid must include the lockup"
   if (/CannotBeLowered/i.test(msg)) return "A bid can only be raised, not lowered"
+  if (/PurchasePermitExpired/i.test(msg)) return "Your authorization expired - please try again"
+  if (/BidOutsideAllowedWindow|SalePaused/i.test(msg)) return "The sale isn't open right now"
+  if (/WalletNotAssociatedWithEntity|InvalidSender|UnauthorizedSigner|NotInitialized/i.test(msg)) {
+    return "This wallet isn't linked to your verified identity"
+  }
   return "Could not place bid"
 }
 
@@ -94,13 +104,15 @@ export async function submitBidOnChain(args: OnChainBidArgs): Promise<BidResult>
   }
 
   const { chainId } = getAccount(wagmiConfig)
+  if (chainId == null) {
+    return { status: "reverted", reason: "Connect your wallet" }
+  }
+  if (chainId !== SALE_CHAIN.id) {
+    return { status: "reverted", reason: "wrong-chain" }
+  }
   const contracts = saleContractsFor(chainId)
-  // Emulation gate: never fake a placed bid on a real deploy, but keep dev/funnel testable.
-  if (!contracts || chainId == null) {
-    if (process.env.NODE_ENV !== "production") {
-      return { status: "submitted", txHash: "0xemulated-no-onchain-tx" }
-    }
-    return { status: "reverted", reason: "On-chain bidding is not available yet" }
+  if (!contracts) {
+    return { status: "reverted", reason: "wrong-chain" }
   }
 
   try {
@@ -108,11 +120,7 @@ export async function submitBidOnChain(args: OnChainBidArgs): Promise<BidResult>
     const payment = await resolvePaymentToken(contracts.settlementSale, chainId)
     const bid = {
       lockup: params.lockup,
-      price: priceUsdToStepIndex(
-        params.priceUsd,
-        SALE_ECONOMICS.startingPriceUsd,
-        SALE_ECONOMICS.bidIncrementUsd,
-      ),
+      price: priceUsdToOnchainPrice(params.priceUsd, SALE_ECONOMICS.bidIncrementUsd),
       amount: usdToTokenUnits(params.amountUsd, payment.decimals),
     }
 
@@ -152,6 +160,7 @@ export async function submitBidOnChain(args: OnChainBidArgs): Promise<BidResult>
         }),
       ])
       erc20PermitDeadline = BigInt(Math.floor(Date.now() / 1000) + PERMIT_TTL_S)
+      args.onStage?.("approving")
       erc20PermitSignature = await signTypedData(wagmiConfig, {
         domain: { name, version, chainId, verifyingContract: payment.address },
         types: EIP2612_PERMIT_TYPES,
@@ -182,7 +191,22 @@ export async function submitBidOnChain(args: OnChainBidArgs): Promise<BidResult>
     } as const
 
     await simulateContract(wagmiConfig, call) // pre-flight: surface reverts before the wallet popup
-    const txHash = await writeContract(wagmiConfig, call)
+    args.onStage?.("signing")
+
+    // Wallets (esp. Keplr's EVM path) under-estimate gas for this nested call - the permit + transferFrom
+    // hit the EIP-150 63/64 forwarding rule, which eth_estimateGas under-counts too. Set the limit
+    // explicitly from our own RPC (x3, generously floored). Unused gas is refunded, so a high ceiling is free.
+    let gas = 300_000n
+    try {
+      const publicClient = getPublicClient(wagmiConfig)
+      if (publicClient) {
+        const generous = (await publicClient.estimateContractGas(call)) * 3n
+        if (generous > gas) gas = generous
+      }
+    } catch {
+      // estimate failed (network/state); keep the floor
+    }
+    const txHash = await writeContract(wagmiConfig, { ...call, gas })
     const receipt = await waitForTransactionReceipt(wagmiConfig, { hash: txHash })
     if (receipt.status !== "success") {
       return { status: "reverted", reason: "The bid transaction failed on-chain" }
@@ -195,12 +219,15 @@ export async function submitBidOnChain(args: OnChainBidArgs): Promise<BidResult>
 
 export async function claimRefundOnChain(args: { wallet: `0x${string}` }): Promise<ClaimResult> {
   const { chainId } = getAccount(wagmiConfig)
+  if (chainId == null) {
+    return { status: "reverted", reason: "Connect your wallet" }
+  }
+  if (chainId !== SALE_CHAIN.id) {
+    return { status: "reverted", reason: "wrong-chain" }
+  }
   const contracts = saleContractsFor(chainId)
-  if (!contracts || chainId == null) {
-    if (process.env.NODE_ENV !== "production") {
-      return { status: "claimed", txHash: "0xemulated-no-onchain-tx" }
-    }
-    return { status: "reverted", reason: "Refund claims are not available yet" }
+  if (!contracts) {
+    return { status: "reverted", reason: "wrong-chain" }
   }
   try {
     const call = {

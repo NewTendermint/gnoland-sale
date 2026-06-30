@@ -142,7 +142,7 @@ Our routes only - the browser never talks to Sonar or Mailchimp directly:
 | `/api/push/subscribe` | POST | Register a Web Push subscription for outbid alerts (no PII) |
 | `/api/push/cron` | POST | Scheduled (Netlify) outbid-alert sweep, bearer `CRON_SECRET` |
 
-The one on-chain write (submitting the signed bid with the permit) happens client-side via wagmi; `lib/sale/onchain.ts` is the seam (emulated until the `SettlementSale` mainnet address is wired in `lib/sale/contracts.ts`).
+The one on-chain write (submitting the signed bid with the permit) happens client-side via wagmi; `lib/sale/onchain.ts` is the seam. It runs against the deployed `SettlementSale` on the active sale chain (Sepolia wired; mainnet address TBD in `lib/sale/contracts.ts`). With no contract configured for the connected chain the bid is blocked, never emulated, so the funnel cannot reach success without a real transaction.
 
 ## Deploy and environments
 

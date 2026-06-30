@@ -5,6 +5,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react"
 import type { ReactNode } from "react"
 import { useAccount } from "wagmi"
 import { useFunnelCapable } from "../../lib/device/funnel-gate"
+import { SALE_CHAIN } from "../../lib/sale/contracts"
 import { useEntity, useMyBid, useSaleData } from "../../lib/sale/hooks"
 import { deriveJourney } from "../../lib/sale/journey"
 import { MOCK_JOURNEY_INPUTS } from "../../lib/sale/mock"
@@ -20,7 +21,6 @@ import type {
   SalePhase,
   SonarReturn,
 } from "../../lib/sale/types"
-import { SUPPORTED_CHAIN_IDS } from "./web3"
 
 type SaleContextValue = {
   phase: SalePhase
@@ -106,10 +106,10 @@ export function SaleProvider({
   }, [entity.data])
 
   const value = useMemo<SaleContextValue>(() => {
-    const onSupportedChain = chainId !== undefined && SUPPORTED_CHAIN_IDS.includes(chainId)
+    const onSaleChain = chainId === SALE_CHAIN.id
     const journeyInput: JourneyInput = {
       isConnected,
-      isBaseChain: onSupportedChain,
+      isBaseChain: onSaleChain,
       setupState: entity.data?.setupState ?? null,
       eligibility: entity.data?.eligibility ?? null,
       myBid: position.data ?? null,

@@ -82,32 +82,22 @@ export function usdToTokenUnits(amountUsd: number, decimals: number): bigint {
   return BigInt(units)
 }
 
-/** USD price -> SettlementSale `uint64` on-chain price = STEP INDEX from the floor:
- *  step = (priceUsd - minPrice) / increment (minPrice = step 0). Integer micro-USD math keeps it
- *  float-drift exact; callers pass an on-grid price (validateBidPrice), off-grid rounds to nearest.
- *  TODO: verify this encoding against the deployed SettlementSale via scripts/probe-sale.mjs before launch. */
-export function priceUsdToStepIndex(
-  priceUsd: number,
-  minPriceUsd: number,
-  incrementUsd: number,
-): bigint {
+/** USD price -> SettlementSale `uint64` price = increment count, round(priceUsd / increment). Verified
+ *  against the deployed permit (sandbox): floor 0.0645 / 0.00645 = minPrice 10, cap 0.258 = maxPrice 40.
+ *  FOOTGUN: zero-anchored (the floor is increment*N), NOT floor-anchored - the floor-anchored bug sent 0. */
+export function priceUsdToOnchainPrice(priceUsd: number, incrementUsd: number): bigint {
   if (!Number.isFinite(priceUsd) || priceUsd < 0) {
-    throw new Error("priceUsdToStepIndex: price must be a finite positive number")
+    throw new Error("priceUsdToOnchainPrice: price must be a finite positive number")
   }
   if (!Number.isFinite(incrementUsd) || incrementUsd <= 0) {
-    throw new Error("priceUsdToStepIndex: increment must be a finite positive number")
+    throw new Error("priceUsdToOnchainPrice: increment must be a finite positive number")
   }
   const microPrice = Math.round(priceUsd * 1_000_000)
-  const microMin = Math.round(minPriceUsd * 1_000_000)
   const microIncrement = Math.round(incrementUsd * 1_000_000)
   if (!Number.isSafeInteger(microPrice)) {
-    throw new Error("priceUsdToStepIndex: price exceeds safe integer range")
+    throw new Error("priceUsdToOnchainPrice: price exceeds safe integer range")
   }
-  const step = Math.round((microPrice - microMin) / microIncrement)
-  if (step < 0) {
-    throw new Error("priceUsdToStepIndex: price is below the floor")
-  }
-  return BigInt(step)
+  return BigInt(Math.round(microPrice / microIncrement))
 }
 
 /** Clamp to >= min and snap UP onto the FLOOR-ANCHORED grid (minPrice + k*increment). No upper cap. */

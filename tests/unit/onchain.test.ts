@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 import { submitBidOnChain } from "../../lib/sale/onchain"
 
 // No wallet is connected in the unit env, so getAccount() has no chainId and saleContractsFor()
-// returns undefined -> the emulation gate decides the outcome (the real tx path needs a live chain).
+// returns undefined -> the submit reverts with "Connect your wallet", never a fake/emulated bid.
 const ARGS = {
   params: { priceUsd: 0.12, amountUsd: 100, lockup: false },
   permit: {
@@ -29,18 +29,24 @@ afterEach(() => {
 })
 
 describe("submitBidOnChain (on-chain seam)", () => {
-  it("reverts in production when no contract is configured for the chain (never fakes a placed bid)", async () => {
+  it("reverts with 'Connect your wallet' when no wallet is connected, in dev AND prod (never a fake bid)", async () => {
     vi.stubEnv("NODE_ENV", "production")
     expect(await submitBidOnChain(ARGS)).toEqual({
       status: "reverted",
-      reason: "On-chain bidding is not available yet",
+      reason: "Connect your wallet",
+    })
+    vi.stubEnv("NODE_ENV", "development")
+    expect(await submitBidOnChain(ARGS)).toEqual({
+      status: "reverted",
+      reason: "Connect your wallet",
     })
   })
 
-  it("emulates a submitted bid in local dev so the funnel can be exercised end to end", async () => {
+  it("never emulates a submitted bid - no fake success or txHash in any environment", async () => {
     vi.stubEnv("NODE_ENV", "development")
     const res = await submitBidOnChain(ARGS)
-    expect(res.status).toBe("submitted")
+    expect(res.status).toBe("reverted")
+    expect(res).not.toHaveProperty("txHash")
   })
 
   it("refuses when the purchase permit has no signature", async () => {

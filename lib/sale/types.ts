@@ -103,14 +103,6 @@ export type PrePurchaseResult =
       livenessCheckUrl?: string
     }
 
-// Per-wallet commitment limits from Sonar fetchLimits, normalized to USD. maxUsd null = no cap.
-// hasCustom = this entity has a per-entity override of the sale-wide default.
-export type LimitsSnapshot = {
-  minUsd: number
-  maxUsd: number | null
-  hasCustom: boolean
-}
-
 // Mirrors sonar-core BasicPermitV3 (dist/index.d.ts l.75-87). Sonar issues this for our V3 sale;
 // permit-map.ts maps it to the contract's PurchasePermitV3 struct. Hex fields are 0x strings,
 // amounts/prices/timestamps arrive as JSON numbers/strings and become bigints on the way in.

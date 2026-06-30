@@ -1,0 +1,7 @@
+# Block direct pushes to main; main is updated only via a PR from staging.
+while read -r _ _ remote_ref _; do
+  if [ "$remote_ref" = "refs/heads/main" ]; then
+    echo "Direct push to main is blocked - open a PR from staging instead (bypass: --no-verify)."
+    exit 1
+  fi
+done

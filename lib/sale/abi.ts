@@ -140,6 +140,47 @@ export const settlementSaleAbi = [
       { name: "max", type: "uint256" },
     ],
   },
+  // maxAmount==0 is a LITERAL cap on-chain (no "unlimited" special case) - the sale must set a max.
+  { type: "error", name: "BidBelowMinAmount", inputs: [{ type: "uint256" }, { type: "uint256" }] },
+  {
+    type: "error",
+    name: "BidExceedsMaxAmount",
+    inputs: [{ type: "uint256" }, { type: "uint256" }],
+  },
+  {
+    type: "error",
+    name: "BidPriceCannotBeLowered",
+    inputs: [{ type: "uint256" }, { type: "uint256" }],
+  },
+  {
+    type: "error",
+    name: "BidAmountCannotBeLowered",
+    inputs: [{ type: "uint256" }, { type: "uint256" }],
+  },
+  { type: "error", name: "BidLockupCannotBeUndone", inputs: [] },
+  { type: "error", name: "ZeroAmount", inputs: [] },
+  { type: "error", name: "SalePaused", inputs: [] },
+  {
+    type: "error",
+    name: "PurchasePermitExpired",
+    inputs: [{ type: "uint256" }, { type: "uint256" }],
+  },
+  {
+    type: "error",
+    name: "BidOutsideAllowedWindow",
+    inputs: [{ type: "uint64" }, { type: "uint64" }, { type: "uint256" }],
+  },
+  { type: "error", name: "InvalidSender", inputs: [{ type: "address" }, { type: "address" }] },
+  { type: "error", name: "UnauthorizedSigner", inputs: [{ type: "address" }] },
+  { type: "error", name: "InvalidPaymentToken", inputs: [{ type: "address" }] },
+  {
+    type: "error",
+    name: "WalletNotAssociatedWithEntity",
+    inputs: [{ type: "address" }, { type: "bytes16" }],
+  },
+  { type: "error", name: "EntityNotInitialized", inputs: [{ type: "bytes16" }] },
+  { type: "error", name: "WalletNotInitialized", inputs: [{ type: "address" }] },
+  { type: "error", name: "InvalidSaleUUID", inputs: [{ type: "bytes16" }, { type: "bytes16" }] },
 ] as const
 
 // ERC-20 + EIP-2612 reads needed to build the USDC permit (name/version -> domain, nonces -> message).

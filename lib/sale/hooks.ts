@@ -7,14 +7,13 @@ import {
   HttpError,
   getCommitments,
   getEntity,
-  getLimits,
   getMyPosition,
   postGeneratePermit,
   postPrePurchase,
 } from "./api"
 import { forceLockupForRegion } from "./calc"
 import { type ClaimResult, claimRefundOnChain, submitBidOnChain } from "./onchain"
-import type { BidParams, BidResult } from "./submitter"
+import type { BidParams, BidResult, BidStage } from "./submitter"
 import type { CommitmentData, EntitySnapshot, MyBid } from "./types"
 
 // Neutral zeros until the first fetch resolves; as initialData, types `data` as always-defined.
@@ -51,7 +50,8 @@ export function useMyBid(opts?: { enabled?: boolean }) {
     queryKey: ["sale", "my-bid"],
     queryFn: getMyPosition,
     enabled: isConnected && (opts?.enabled ?? true),
-    // TODO(real-data): invalidate this after a real bid so readMyBid confirms the indexed commitment.
+    // useBid marks this stale (refetchType:"none") after a submit; it reconciles with the indexed
+    // commitment on remount. Off window-focus to avoid churn while the panel stays mounted.
     refetchOnWindowFocus: false,
   })
 }
@@ -66,23 +66,15 @@ function isSafeHttpUrl(value: string | undefined): value is string {
   }
 }
 
-/** The connected wallet's Sonar commitment limits (per-wallet); `data` undefined until fetched,
- *  so callers fall back to the published economics default (SDK first, then the static minimum). */
-export function useLimits() {
-  const { address, isConnected } = useAccount()
-  return useQuery({
-    queryKey: ["sale", "limits", address],
-    queryFn: () => getLimits(address as string),
-    enabled: isConnected && !!address,
-  })
-}
-
 /** Bid submission: Sonar pre-purchase + permit gates, then submitBidOnChain. */
 export function useBid() {
   const { address } = useAccount()
   const queryClient = useQueryClient()
 
-  async function submit(params: BidParams): Promise<BidResult> {
+  async function submit(
+    params: BidParams,
+    opts?: { onStage?: (s: BidStage) => void },
+  ): Promise<BidResult> {
     if (!address) {
       return { status: "reverted", reason: "Connect your wallet" }
     }
@@ -105,16 +97,24 @@ export function useBid() {
         lockup: forceLockupForRegion(entity?.investingRegion) || params.lockup,
       }
       const permit = await postGeneratePermit(address)
-      const result = await submitBidOnChain({ params: bidParams, permit, wallet: address })
+      const result = await submitBidOnChain({
+        params: bidParams,
+        permit,
+        wallet: address,
+        onStage: opts?.onStage,
+      })
       if (result.status === "submitted") {
         // Optimistic: reflect the just-placed bid as the session's position.
-        // TODO(real-data): also invalidate ["sale","my-bid"] to refetch the confirmed commitment from Sonar once it indexes.
         const optimistic: MyBid = {
           priceUsd: bidParams.priceUsd,
           committedUsd: bidParams.amountUsd,
           lockup: bidParams.lockup,
         }
         queryClient.setQueryData(["sale", "my-bid"], optimistic)
+        // Mark the position stale so it reconciles with Sonar's indexed commitment on the next
+        // observe (remount), WITHOUT an immediate refetch that could clobber this optimistic value
+        // before indexing completes (indexing latency is unknown; no arbitrary timeout).
+        queryClient.invalidateQueries({ queryKey: ["sale", "my-bid"], refetchType: "none" })
       }
       return result
     } catch (err) {

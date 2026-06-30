@@ -8,12 +8,12 @@ export const SALE_ECONOMICS = {
   totalSupplyGnot: 1_333_000_000,
   softCapUsd: 2_500_000, // reintroduced 2026-06-30 (~ startingPrice x saleSupply = full subscription at the floor)
   fdvUsd: 86_000_000,
-  minCommitmentUsd: 100,
+  // Default = prod $100; NEXT_PUBLIC_MIN_COMMITMENT_USD overrides for staging/local (2).
+  minCommitmentUsd: Number(process.env.NEXT_PUBLIC_MIN_COMMITMENT_USD) || 100,
   maxCommitmentUsd: null, // no maximum commitment (team, 2026-06-21; prior $100k provisional cap dropped)
-  // NO upper price cap (the old $0.129 maxPrice was removed, team 2026-06-30). The on-chain price is a
-  // STEP INDEX from startingPriceUsd, +1 per bidIncrementUsd (Ryan Lee 2026-06-30; calc.priceUsdToStepIndex).
-  // TODO verify that encoding against the deployed SettlementSale via scripts/probe-sale.mjs before launch.
-  bidIncrementUsd: 0.01935,
+  // On-chain price = round(priceUsd / increment), zero-anchored (calc.priceUsdToOnchainPrice; verified
+  // vs the deployed permit). 0.0215 prod + sandbox (Dongwon 2026-06-30; divides the 0.0645 floor -> 3).
+  bidIncrementUsd: 0.0215,
   mainnetIso: "2026-09-01T00:00:00Z",
   multipleWalletsPerEntity: true,
   // The 3 dates drive the page PHASE (pre-sale/live/ended, lib/sale/phase.ts) + the countdowns.
