@@ -37,7 +37,7 @@ export const termGroups: Array<{
     eyebrow: "Sale Overview",
     rows: [
       { label: "Token", value: "GNOT" },
-      { label: "Sale allocation", value: "77,500,000 GNOT (~5.8% of supply)" },
+      { label: "Sale allocation", value: "38,760,000 GNOT (~2.9% of supply)" },
       { label: "Sale format", value: "Uniform Price Auction (English Auction)" },
       { label: "Accepted currency", value: "USDC (Ethereum Mainnet)" },
       {
@@ -51,10 +51,9 @@ export const termGroups: Array<{
     eyebrow: "Pricing and Caps",
     rows: [
       { label: "Starting price", value: "$0.0645 per GNOT" },
-      { label: "Max price", value: "$0.129 per GNOT" },
-      { label: "Bid increment", value: "$0.00645" },
+      { label: "Bid increment", value: "$0.01935" },
       { label: "Minimum commitment", value: "$100" },
-      { label: "Raise target", value: "$5,000,000 - $10,000,000" },
+      { label: "Soft cap", value: "$2,500,000" },
     ],
   },
 ]

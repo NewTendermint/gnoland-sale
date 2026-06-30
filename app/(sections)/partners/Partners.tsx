@@ -34,7 +34,18 @@ export function Partners() {
                     index={0}
                     className="text-lg font-semibold leading-tight tracking-tight text-foreground"
                   >
-                    {p.name}
+                    {p.href ? (
+                      <a
+                        href={p.href}
+                        target="_blank"
+                        rel="noreferrer noopener"
+                        className="link-underline"
+                      >
+                        {p.name}
+                      </a>
+                    ) : (
+                      p.name
+                    )}
                   </Reveal>
                   <Reveal as="p" index={1} className="mt-3 text-xl leading-snug text-foreground">
                     {p.body}

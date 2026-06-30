@@ -47,19 +47,20 @@ export function validateBidPrice(
   priceUsd: number,
   opts: {
     minPriceUsd: number
-    maxPriceUsd?: number
     incrementUsd?: number
     prevPriceUsd?: number
   },
-): "ok" | "below-min" | "above-max" | "off-increment" | "below-previous" {
+): "ok" | "below-min" | "off-increment" | "below-previous" {
+  // No upper price cap (team-confirmed 2026-06-30, the old $0.129 ceiling is removed).
   if (!Number.isFinite(priceUsd)) return "below-min"
   if (priceUsd < opts.minPriceUsd) return "below-min"
-  if (opts.maxPriceUsd != null && priceUsd > opts.maxPriceUsd) return "above-max"
   if (opts.incrementUsd != null) {
-    // Integer micro-USD math dodges float drift (0.0645 * 1e5 -> 6450.000000000001).
+    // FLOOR-ANCHORED grid: valid prices are minPrice + k*increment (Ryan Lee 2026-06-30: the
+    // on-chain price is a step index from the floor). Integer micro-USD math dodges float drift.
     const micro = Math.round(priceUsd * 100_000)
+    const min = Math.round(opts.minPriceUsd * 100_000)
     const step = Math.round(opts.incrementUsd * 100_000)
-    if (step > 0 && micro % step !== 0) return "off-increment"
+    if (step > 0 && (micro - min) % step !== 0) return "off-increment"
   }
   if (opts.prevPriceUsd != null && priceUsd < opts.prevPriceUsd) return "below-previous"
   return "ok"
@@ -82,34 +83,43 @@ export function usdToTokenUnits(amountUsd: number, decimals: number): bigint {
   return BigInt(units)
 }
 
-/** USD price -> SettlementSale `uint64` price, in BID-INCREMENT tick units.
- *  Source-confirmed (SettlementSale.sol l.91/271 + docs.echo.xyz): the on-chain price is
- *  priceUsd / bidIncrementUsd (increment $0.00645 -> floor $0.0645 = 10, ceiling $0.129 = 20),
- *  NOT micro-USD. Integer micro-USD math keeps it float-drift exact; callers pass an on-grid price
- *  (validateBidPrice), an off-grid value rounds to the nearest tick. */
-export function priceUsdToTickUnits(priceUsd: number, incrementUsd: number): bigint {
+/** USD price -> SettlementSale `uint64` on-chain price = STEP INDEX from the floor.
+ *  Team-confirmed (Ryan Lee 2026-06-30): the on-chain price is a step index from the floor
+ *  (minPrice $0.0645 = step 0), incremented by 1 per bidIncrement ($0.01935). So step =
+ *  (priceUsd - minPrice) / increment. Integer micro-USD math keeps it float-drift exact; callers
+ *  pass an on-grid price (validateBidPrice), an off-grid value rounds to the nearest step.
+ *  TODO verify this encoding against the deployed SettlementSale via scripts/probe-sale.mjs before launch. */
+export function priceUsdToStepIndex(
+  priceUsd: number,
+  minPriceUsd: number,
+  incrementUsd: number,
+): bigint {
   if (!Number.isFinite(priceUsd) || priceUsd < 0) {
-    throw new Error("priceUsdToTickUnits: price must be a finite positive number")
+    throw new Error("priceUsdToStepIndex: price must be a finite positive number")
   }
   if (!Number.isFinite(incrementUsd) || incrementUsd <= 0) {
-    throw new Error("priceUsdToTickUnits: increment must be a finite positive number")
+    throw new Error("priceUsdToStepIndex: increment must be a finite positive number")
   }
   const microPrice = Math.round(priceUsd * 1_000_000)
+  const microMin = Math.round(minPriceUsd * 1_000_000)
   const microIncrement = Math.round(incrementUsd * 1_000_000)
   if (!Number.isSafeInteger(microPrice)) {
-    throw new Error("priceUsdToTickUnits: price exceeds safe integer range")
+    throw new Error("priceUsdToStepIndex: price exceeds safe integer range")
   }
-  return BigInt(Math.round(microPrice / microIncrement))
+  const step = Math.round((microPrice - microMin) / microIncrement)
+  if (step < 0) {
+    throw new Error("priceUsdToStepIndex: price is below the floor")
+  }
+  return BigInt(step)
 }
 
-/** Clamp into [min, max] and snap UP onto the increment grid (never past max). */
+/** Clamp to >= min and snap UP onto the FLOOR-ANCHORED grid (minPrice + k*increment). No upper cap. */
 export function snapBidPrice(
   priceUsd: number,
-  opts: { minPriceUsd: number; maxPriceUsd: number; incrementUsd: number },
+  opts: { minPriceUsd: number; incrementUsd: number },
 ): number {
   const step = Math.round(opts.incrementUsd * 100_000)
   const min = Math.round(opts.minPriceUsd * 100_000)
-  const max = Math.round(opts.maxPriceUsd * 100_000)
-  const clamped = Math.min(Math.max(Math.round(priceUsd * 100_000), min), max)
-  return Math.min(Math.ceil(clamped / step) * step, max) / 100_000
+  const clamped = Math.max(Math.round(priceUsd * 100_000), min)
+  return (min + Math.ceil((clamped - min) / step) * step) / 100_000
 }

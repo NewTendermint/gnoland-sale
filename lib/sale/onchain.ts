@@ -15,7 +15,7 @@ import {
   writeContract,
 } from "@wagmi/core"
 import { erc20Abi, settlementSaleAbi } from "./abi"
-import { priceUsdToTickUnits, usdToTokenUnits } from "./calc"
+import { priceUsdToStepIndex, usdToTokenUnits } from "./calc"
 import { saleContractsFor } from "./contracts"
 import { SALE_ECONOMICS } from "./economics"
 import { toPurchasePermitV3 } from "./permit-map"
@@ -110,7 +110,11 @@ export async function submitBidOnChain(args: OnChainBidArgs): Promise<BidResult>
     const payment = await resolvePaymentToken(contracts.settlementSale, chainId)
     const bid = {
       lockup: params.lockup,
-      price: priceUsdToTickUnits(params.priceUsd, SALE_ECONOMICS.bidIncrementUsd),
+      price: priceUsdToStepIndex(
+        params.priceUsd,
+        SALE_ECONOMICS.startingPriceUsd,
+        SALE_ECONOMICS.bidIncrementUsd,
+      ),
       amount: usdToTokenUnits(params.amountUsd, payment.decimals),
     }
 

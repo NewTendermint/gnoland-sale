@@ -33,4 +33,6 @@ export const externalLinks: NavLink[] = [
 // One-line header titles for non-home routes (the homepage section anchors don't apply there).
 export const pageTitles: Record<string, string> = {
   "/us-investor-disclaimer": "Legal",
+  "/privacy-policy": "Legal",
+  "/terms-of-service": "Legal",
 }

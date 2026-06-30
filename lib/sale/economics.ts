@@ -3,16 +3,17 @@
 // the sale close is 5:59 PM EST (22:59Z). The Countdown to saleClosesIso and the phase
 // gates derive from these, so the time-of-day is intentional, not midnight.
 export const SALE_ECONOMICS = {
-  startingPriceUsd: 0.0645, // = minimum price
-  maxPriceUsd: 0.129, // price ceiling on bids/clearing; reaching it does NOT close the sale - bidding runs to saleClosesIso (Sonar 2026-06-25)
-  saleSupplyGnot: 77_500_000,
+  startingPriceUsd: 0.0645, // = minimum price (= step 0 of the on-chain bid grid)
+  saleSupplyGnot: 38_760_000, // ~2.9% of supply (was 77.5M / ~5.8%, halved 2026-06-30)
   totalSupplyGnot: 1_333_000_000,
-  hardCapUsd: 10_000_000,
+  softCapUsd: 2_500_000, // reintroduced 2026-06-30 (~ startingPrice x saleSupply = full subscription at the floor)
   fdvUsd: 86_000_000,
-  hardcapFdvUsd: 172_000_000,
   minCommitmentUsd: 100,
   maxCommitmentUsd: null, // no maximum commitment (team, 2026-06-21; prior $100k provisional cap dropped)
-  bidIncrementUsd: 0.00645,
+  // NO upper price cap (the old $0.129 maxPrice was removed, team 2026-06-30). The on-chain price is a
+  // STEP INDEX from startingPriceUsd, +1 per bidIncrementUsd (Ryan Lee 2026-06-30; calc.priceUsdToStepIndex).
+  // TODO verify that encoding against the deployed SettlementSale via scripts/probe-sale.mjs before launch.
+  bidIncrementUsd: 0.01935,
   mainnetIso: "2026-09-01T00:00:00Z",
   multipleWalletsPerEntity: true,
   // The 3 dates drive the page PHASE (pre-sale/live/ended, lib/sale/phase.ts) + the countdowns.

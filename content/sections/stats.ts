@@ -13,4 +13,5 @@ export const stats = [
   { value: "100+", label: "Open source repos" },
   { value: "2900+", label: "Commits" },
   { value: "1100+", label: "Issues closed" },
+  { value: "250k+", label: "Test13 transactions" },
 ]

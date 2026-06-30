@@ -1,15 +1,16 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { LegalMarkdown } from "../(ui)/LegalMarkdown"
-import { usInvestorDisclaimerMarkdown } from "../../content/legal/us-investor-disclaimer"
+import { privacyPolicyMarkdown } from "../../content/legal/privacy-policy"
 
 export const metadata: Metadata = {
-  title: "U.S. Investor Disclaimer | Gno.land",
-  description: "Regulation S notice and U.S. person restrictions for the GNOT public token sale.",
-  alternates: { canonical: "/us-investor-disclaimer" },
+  title: "Privacy Policy | Gno.land",
+  description:
+    "How NewTendermint collects, uses, and discloses personal information for the GNOT public token sale.",
+  alternates: { canonical: "/privacy-policy" },
 }
 
-export default function UsInvestorDisclaimerPage() {
+export default function PrivacyPolicyPage() {
   return (
     <main id="main" className="page-container py-24 lg:py-32">
       <div className="mx-auto max-w-3xl">
@@ -20,10 +21,13 @@ export default function UsInvestorDisclaimerPage() {
           Back to the sale
         </Link>
         <h1 className="mt-6 font-semibold text-3xl text-foreground tracking-tight md:text-4xl">
-          U.S. Investor Disclaimer
+          Privacy Policy
         </h1>
+        <p className="mt-3 text-muted text-sm">
+          Effective June 29, 2024 · Last updated June 29, 2026
+        </p>
         <div className="mt-8">
-          <LegalMarkdown>{usInvestorDisclaimerMarkdown}</LegalMarkdown>
+          <LegalMarkdown>{privacyPolicyMarkdown}</LegalMarkdown>
         </div>
       </div>
     </main>

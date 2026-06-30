@@ -7,8 +7,8 @@
  * terms table. An answer may be a single string or an array of paragraphs.
  *
  * Footgun: the worked examples below are illustrative literals - the refund example
- * ($1,000 / $0.0774 clearing) and the oversubscription example ($20M / $10M / 50%)
- * stay literal. Re-write them by hand if the band or supply ever moves.
+ * (1,000 USDC bid $0.1806 / $0.1419 clearing) and the oversubscription example
+ * ($20M / $10M / 50%) stay literal. Re-write them by hand if the band or supply moves.
  */
 import {
   SALE_ECONOMICS,
@@ -16,12 +16,12 @@ import {
   formatSaleDateTime,
   formatSaleMonth,
 } from "../../lib/sale/economics"
-import { fmtPrice, fmtUsd } from "../../lib/sale/format"
+import { fmtPrice } from "../../lib/sale/format"
 
 export const faq: Array<{ q: string; a: string | string[] }> = [
   {
     q: "How does the auction work?",
-    a: `The GNOT token sale takes place as a uniform-price auction (English auction) with a minimum price (starting price) of ${fmtPrice(SALE_ECONOMICS.startingPriceUsd)} and a maximum price (cap) of ${fmtPrice(SALE_ECONOMICS.maxPriceUsd)}. Participants submit bids in increments of $${SALE_ECONOMICS.bidIncrementUsd}, specifying the price they're willing to pay and the amount. After the auction closes, a single clearing price is determined, and everyone pays that same price. All bids at or above the clearing price are successful.`,
+    a: `The GNOT token sale takes place as a uniform-price auction (English auction) with a minimum price (starting price) of ${fmtPrice(SALE_ECONOMICS.startingPriceUsd)}. Participants submit bids in increments of $${SALE_ECONOMICS.bidIncrementUsd} at or above the clearing price. The price moves up when demand at or above a higher step is itself enough to buy the entire ${SALE_ECONOMICS.saleSupplyGnot.toLocaleString("en-US")} at that price. The clearing price is determined by demand at the end of the auction. All bids at or above the clearing price are successful.`,
   },
   {
     q: "When is the token sale date?",
@@ -42,8 +42,8 @@ export const faq: Array<{ q: string; a: string | string[] }> = [
   {
     q: "If the clearing price is lower than my bid price, do I get a refund on the difference?",
     a: [
-      "No. If the clearing price is lower than your bid, then your committed USDC will buy tokens at the clearing price.",
-      `Example: A participant bids $1,000 at a maximum price of ${fmtPrice(SALE_ECONOMICS.maxPriceUsd)} per token. The clearing price is $0.0774. The participant receives tokens at $0.0774 (spending $1,000).`,
+      "No. If the clearing price is lower than your bid, your committed USDC will buy tokens at that price.",
+      "Example: A participant bids 1,000 USDC at $0.1806 per token. The clearing price is $0.1419. The participant receives tokens at $0.1419, spending $1,000 USDC.",
     ],
   },
   {
@@ -61,7 +61,7 @@ export const faq: Array<{ q: string; a: string | string[] }> = [
     q: "Who can participate?",
     a: [
       "Eligibility is determined by your jurisdiction and verified through Sonar during registration. The sale is unavailable in certain regions - if yours is restricted, Sonar will let you know.",
-      "US participants must be accredited investors. A one-year lockup applies, with 91% of your allocation released in month 13 and the remaining 9% in month 14.",
+      "Participation is available to US residents who qualify as accredited investors.",
     ],
   },
   {
@@ -71,19 +71,19 @@ export const faq: Array<{ q: string; a: string | string[] }> = [
   {
     q: "Which wallets can I use?",
     a: [
-      "You can take part with any self-custody Ethereum wallet that holds USDC and can sign on Ethereum mainnet. The wallets we recommend are MetaMask, Coinbase Wallet, and Rabby, plus any wallet you connect through WalletConnect, such as Rainbow, Trust, or Ledger.",
-      "When you go to connect, you'll only see the wallets you already have installed in your browser, so set one up before the sale. New to wallets? You can compare and choose one at ethereum.org.",
+      "You can participate with any self-custody Ethereum wallet that holds USDC and can sign on Ethereum. We recommend MetaMask, Coinbase Wallet, and Rabby. You can also connect through WalletConnect and use Rainbow, Trust Wallet, or Ledger.",
+      "Install your wallet on your browser before connecting, as only installed wallets will appear. New to wallets? Check ethereum.org to compare and pick one.",
     ],
   },
   {
     q: "How much can I commit?",
-    a: `The minimum commitment requirement is ${fmtUsd(SALE_ECONOMICS.minCommitmentUsd)} USDC, and there is no maximum commitment limit. You can bid anywhere between the starting price of ${fmtPrice(SALE_ECONOMICS.startingPriceUsd)} and the maximum price of ${fmtPrice(SALE_ECONOMICS.maxPriceUsd)} in $${SALE_ECONOMICS.bidIncrementUsd} increments.`,
+    a: `The minimum commitment requirement is ${SALE_ECONOMICS.minCommitmentUsd} USDC, and there is no maximum commitment limit. You can bid at or above the starting price of ${fmtPrice(SALE_ECONOMICS.startingPriceUsd)} in $${SALE_ECONOMICS.bidIncrementUsd} increments.`,
   },
   {
     q: "When do I receive my tokens?",
     a: [
-      `Token distribution is set to happen in ${formatSaleMonth(SALE_ECONOMICS.mainnetIso)}. After you receive your tokens, tokens will be transferable with an unlock schedule applied.`,
-      "The unlock schedule is as follows: 7% unlocks at token generation, then 7% each month, with the final 9% unlocked in month 14. There is no cliff.",
+      `Token distribution is set to happen in ${formatSaleMonth(SALE_ECONOMICS.mainnetIso)}. There is no lockup for the public sale - 100% of your tokens will be transferable after distribution.`,
+      "US accredited investors are subject to a 12-month lock-up following TGE, during which tokens may not be transferred or sold.",
     ],
   },
   {

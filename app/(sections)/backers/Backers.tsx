@@ -1,3 +1,4 @@
+import { ClipOpen } from "../../(ui)/ClipOpen"
 import { DrawLine } from "../../(ui)/DrawLine"
 import { FadeIn } from "../../(ui)/FadeIn"
 import { RevealBoundary, RevealGroup } from "../../(ui)/RevealGroup"
@@ -37,7 +38,7 @@ export function Backers() {
         <SectionHeading eyebrow="Backers" title="Our Backers" />
       </RevealGroup>
 
-      <ul className="band-10 flex flex-wrap items-center justify-center gap-x-12 gap-y-6 pb-12 lg:gap-x-20 lg:pb-16">
+      <ul className="band-10 flex flex-wrap items-center justify-center gap-x-12 gap-y-8 pb-12 lg:gap-x-20 lg:pb-16">
         {backers.map((b) => (
           <RevealBoundary key={b.name}>
             <FadeIn as="li">
@@ -45,10 +46,25 @@ export function Backers() {
                 href={b.href}
                 target="_blank"
                 rel="noreferrer noopener"
-                className="group inline-flex items-center gap-2 text-2xl font-semibold tracking-tight text-foreground lg:text-3xl"
+                className="group flex flex-col items-center gap-5 text-2xl font-semibold tracking-tight text-foreground lg:text-3xl"
               >
-                <span className="link-underline">{b.name}</span>
-                <UpRightArrow />
+                {b.logo ? (
+                  <ClipOpen
+                    durationMs={700}
+                    className="flex h-11 w-28 items-center justify-center [--frame-radius:0px] lg:h-12 lg:w-32"
+                  >
+                    <img
+                      src={b.logo}
+                      alt={b.name}
+                      loading="lazy"
+                      className={`max-h-full max-w-full object-contain opacity-60 brightness-0 transition-opacity group-hover:opacity-100 dark:invert${b.logoClass ? ` ${b.logoClass}` : ""}`}
+                    />
+                  </ClipOpen>
+                ) : null}
+                <span className="inline-flex items-center gap-2">
+                  <span className="link-underline link-underline-group">{b.name}</span>
+                  <UpRightArrow />
+                </span>
               </a>
             </FadeIn>
           </RevealBoundary>

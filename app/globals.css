@@ -271,6 +271,12 @@ main > section {
     transform: scaleX(1);
   }
 
+  /* Underline the text when the whole link (.group) is hovered/focused, e.g. a logo above its name. */
+  .group:hover .link-underline-group::after,
+  .group:focus-visible .link-underline-group::after {
+    transform: scaleX(1);
+  }
+
   /* "Pan" CTA hover. Requires a rounded pill whose label is wrapped in a single <span>. */
   .btn-pan {
     position: relative;
