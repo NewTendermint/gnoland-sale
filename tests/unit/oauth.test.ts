@@ -1,64 +1,64 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
-// In-memory fake of the Netlify Blobs store, defined via vi.hoisted so the
-// vi.mock factory (hoisted above imports) can reference it.
-const { store } = vi.hoisted(() => {
-  const entries = new Map<string, { data: unknown; metadata: Record<string, unknown> }>()
+// oauth.ts now keeps PKCE state in Postgres (pkce_states), consumed via an atomic
+// DELETE ... RETURNING (the single-use guarantee). Mock the db client so the test drives
+// exactly that one query's result. Defined via vi.hoisted so the vi.mock factory can reference it.
+const { dbMock } = vi.hoisted(() => {
+  const state = { rows: [] as Array<Record<string, unknown>>, deleteCalls: 0 }
   return {
-    store: {
-      entries,
-      setJSON: async (
-        key: string,
-        data: unknown,
-        opts?: { metadata?: Record<string, unknown> },
-      ) => {
-        entries.set(key, { data, metadata: opts?.metadata ?? {} })
-      },
-      getWithMetadata: async (key: string) => entries.get(key) ?? null,
-      delete: async (key: string) => {
-        entries.delete(key)
+    dbMock: {
+      state,
+      db: {
+        delete: () => {
+          state.deleteCalls++
+          return { where: () => ({ returning: async () => state.rows }) }
+        },
       },
     },
   }
 })
 
-vi.mock("@netlify/blobs", () => ({ getStore: () => store }))
+vi.mock("../../lib/db/client", () => ({ db: dbMock.db }))
 
 import { consumePkceState } from "../../lib/sonar/oauth"
 
-describe("consumePkceState", () => {
-  beforeEach(() => store.entries.clear())
+describe("consumePkceState (Postgres pkce_states, single-use)", () => {
+  beforeEach(() => {
+    dbMock.state.rows = []
+    dbMock.state.deleteCalls = 0
+  })
 
-  it("returns the payload for a valid, unexpired state and consumes it (single-use)", async () => {
-    store.entries.set("state-1", {
-      data: { sessionId: "s1", codeVerifier: "v1" },
-      metadata: { expiresAt: Date.now() + 60_000 },
-    })
+  it("returns the payload for a valid, unexpired row and consumes it via an atomic delete", async () => {
+    dbMock.state.rows = [
+      {
+        state: "state-1",
+        sessionId: "s1",
+        codeVerifier: "v1",
+        expiresAt: new Date(Date.now() + 60_000),
+      },
+    ]
     const payload = await consumePkceState("state-1")
     expect(payload).toEqual({ sessionId: "s1", codeVerifier: "v1" })
-    // Single-use: the state must be gone after a successful consume.
-    expect(store.entries.has("state-1")).toBe(false)
+    // Single-use: consumed via DELETE ... RETURNING, never a read-then-delete.
+    expect(dbMock.state.deleteCalls).toBe(1)
   })
 
-  it("throws for an expired state and still deletes it", async () => {
-    store.entries.set("state-2", {
-      data: { sessionId: "s2", codeVerifier: "v2" },
-      metadata: { expiresAt: Date.now() - 1 },
-    })
+  it("throws for an expired row (already removed by the same atomic delete)", async () => {
+    dbMock.state.rows = [
+      {
+        state: "state-2",
+        sessionId: "s2",
+        codeVerifier: "v2",
+        expiresAt: new Date(Date.now() - 1),
+      },
+    ]
     await expect(consumePkceState("state-2")).rejects.toThrow(/expired/i)
-    expect(store.entries.has("state-2")).toBe(false)
+    expect(dbMock.state.deleteCalls).toBe(1)
   })
 
-  it("throws for a missing state", async () => {
+  it("throws for a missing or already-consumed state (no row returned)", async () => {
+    dbMock.state.rows = []
     await expect(consumePkceState("does-not-exist")).rejects.toThrow(/not found/i)
-  })
-
-  it("throws when the expiry metadata is absent or malformed", async () => {
-    store.entries.set("state-3", {
-      data: { sessionId: "s3", codeVerifier: "v3" },
-      metadata: {},
-    })
-    await expect(consumePkceState("state-3")).rejects.toThrow(/expired/i)
-    expect(store.entries.has("state-3")).toBe(false)
+    expect(dbMock.state.deleteCalls).toBe(1)
   })
 })

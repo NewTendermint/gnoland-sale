@@ -1,5 +1,12 @@
 // Typed fetchers to our own /api/sonar/* routes.
-import type { CommitmentData, EntitySnapshot, MyBid, PrePurchaseResult, SalePermit } from "./types"
+import type {
+  CommitmentData,
+  EntitySnapshot,
+  LimitsSnapshot,
+  MyBid,
+  PrePurchaseResult,
+  SalePermit,
+} from "./types"
 
 /** Thrown by the JSON fetchers on a non-2xx response; carries the HTTP status. */
 export class HttpError extends Error {
@@ -93,4 +100,19 @@ export function postPrePurchase(wallet: string): Promise<PrePurchaseResult> {
 /** Request a Sonar purchase permit for this wallet ({ PermitJSON, Signature }). */
 export function postGeneratePermit(wallet: string): Promise<SalePermit> {
   return postJson<SalePermit>("/api/sonar/generate-permit", { wallet })
+}
+
+/** The wallet's Sonar commitment limits; null on 401/404/409 so the caller falls back to defaults. */
+export async function getLimits(wallet: string): Promise<LimitsSnapshot | null> {
+  const res = await fetch("/api/sonar/limits", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ wallet }),
+  })
+  // Best-effort enhancement: ANY non-2xx -> null so the bid form falls back to the economics
+  // defaults and never breaks (the on-chain minAmount is the authoritative gate regardless).
+  if (!res.ok) {
+    return null
+  }
+  return res.json() as Promise<LimitsSnapshot>
 }

@@ -2,7 +2,7 @@ import type { Config } from "@netlify/edge-functions"
 
 /**
  * Edge rate-limit for the abuse-sensitive authenticated Sonar routes
- * (pre-purchase, generate-permit, entity, my-position) - the ones that burn Sonar
+ * (pre-purchase, generate-permit, entity, my-position, limits) - the ones that burn Sonar
  * quota; the permit routes also write audit rows. Netlify enforces the `rateLimit`
  * config below at the edge, before this handler: past the limit it returns HTTP 429
  * and the request never reaches Next.js; under the limit this empty handler returns
@@ -35,6 +35,7 @@ export const config: Config = {
     "/api/sonar/generate-permit",
     "/api/sonar/entity",
     "/api/sonar/my-position",
+    "/api/sonar/limits",
   ],
   rateLimit: {
     windowLimit: 10,

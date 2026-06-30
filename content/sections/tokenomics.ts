@@ -105,3 +105,42 @@ export const monthlyUnlocks: number[] = [
   ...Array(vesting.distributionMonths - 1).fill(vesting.monthlyUnlockPct),
   vesting.finalUnlockPct,
 ]
+
+export type CirculatingRow = {
+  category: string
+  /** GNOT liquid at mainnet launch (TGE). */
+  amount: number
+  /** Sub-allocations shown indented under the row (e.g. the Investor Pool). */
+  children?: Array<{ category: string; amount: number; highlight?: boolean }>
+}
+
+// Circulating supply at mainnet launch (TGE), team spec 2026-06-30. Tree: the Investor
+// Pool circulates 156,000,000 - its listed children (Investors 111,240,000 + Token Sale
+// 38,760,000 = 150M) plus the 6M 4%-pool unlock that is NOT itemised. The other genesis
+// categories release ~4%. Top-level amounts sum to 197,320,000 (children are inside the pool).
+export const circulatingBreakdown: CirculatingRow[] = [
+  {
+    category: "Investors Pool",
+    amount: 156_000_000,
+    children: [
+      { category: "Investors", amount: 111_240_000 },
+      { category: "Token Sale", amount: 38_760_000, highlight: true },
+    ],
+  },
+  { category: "Airdrop1 - Cosmos", amount: 14_000_000 },
+  { category: "NEWTENDERMINT, LLC", amount: 13_280_000 },
+  { category: "Airdrop2 - AtomOne", amount: 9_240_000 },
+  { category: "Ecosystem Treasury", amount: 2_400_000 },
+  { category: "Core Treasury", amount: 1_600_000 },
+  { category: "Validator Treasury", amount: 800_000 },
+]
+
+export const circulating = {
+  /** Sum of the breakdown top-level amounts = 197,320,000 (team 2026-06-30). */
+  total: circulatingBreakdown.reduce((sum, row) => sum + row.amount, 0),
+  tokenSaleSupply: 38_760_000,
+  /** Verbatim from the team sheet. */
+  lockup: "1-Year Lockup for US Investors Only",
+  /** = startingPrice $0.0645 x TOTAL_SUPPLY 1,333,000,000. */
+  fdvUsd: 85_948_500,
+}

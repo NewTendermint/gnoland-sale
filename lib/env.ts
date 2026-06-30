@@ -30,7 +30,9 @@ export type Env = z.infer<typeof envSchema>
 
 // Validate an environment source. Error stays terse: never echo the value (may be a secret).
 export function parseEnv(source: Record<string, string | undefined> = process.env): Env {
-  const parsed = envSchema.safeParse(source)
+  // Netlify Database (GA) injects NETLIFY_DATABASE_URL; alias it to our DATABASE_URL.
+  const normalized = { ...source, DATABASE_URL: source.DATABASE_URL ?? source.NETLIFY_DATABASE_URL }
+  const parsed = envSchema.safeParse(normalized)
   if (!parsed.success) {
     throw new Error("Invalid environment variables")
   }

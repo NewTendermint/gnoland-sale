@@ -39,18 +39,21 @@ export const featured: Project[] = [
     name: "Boards",
     category: "Forum",
     body: "Boards is an on-chain forum built natively on Gno.land. It enables structured, open dialogue and community-driven discussion, free from centralized moderation and external control.",
+    href: "https://gno.land/r/gnoland/boards2/v1:OpenDiscussions",
     icon: "forum",
   },
   {
     name: "Akkadia",
     category: "Game",
     body: "Akkadia is an on-chain sandbox game where players create their own worlds, expand them together, and leave their activities as persistent on-chain records.",
+    href: "https://abp.akkadia.land",
     icon: "globe",
   },
   {
     name: "Gno Playground",
     category: "Development",
     body: "Gno Playground is a browser-based environment for writing, testing, and experimenting with Gno code. Share your code, run unit tests, deploy realms and packages, and execute functions directly from the interface with no local setup required.",
+    href: "https://play.gno.land/",
     icon: "play",
   },
 ]

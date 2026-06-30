@@ -36,15 +36,18 @@ type SaleContextValue = {
 
 const SaleContext = createContext<SaleContextValue | null>(null)
 
-export function SaleProvider({ children }: { children: ReactNode }) {
+export function SaleProvider({
+  children,
+  initialPhase,
+}: { children: ReactNode; initialPhase: SalePhase }) {
   const { isConnected, chainId } = useAccount()
   const funnelCapable = useFunnelCapable()
   const sale = useSaleData()
   const entity = useEntity({ enabled: funnelCapable === true })
   const position = useMyBid({ enabled: funnelCapable === true })
-  const [phase, setPhase] = useState<SalePhase>(() =>
-    resolveSalePhase({ override: process.env.NEXT_PUBLIC_SALE_PHASE }),
-  )
+  // Initial phase is resolved server-side from the sale clock (page.tsx) so it renders directly.
+  const [phase, setPhase] = useState<SalePhase>(initialPhase)
+  const [phaseOverridden, setPhaseOverridden] = useState(false)
   const [journeyOverride, setJourneyOverride] = useState<JourneyState | null>(null)
   const [preSaleStage, setPreSaleStage] = useState<PreSaleStage>("registration-closed")
   const [stageOverride, setStageOverride] = useState<PreSaleStage | null>(null)
@@ -70,7 +73,10 @@ export function SaleProvider({ children }: { children: ReactNode }) {
     if (!stateOverridesEnabled()) return
     const params = url.searchParams
     const p = params.get("phase")
-    if (p) setPhase(resolveSalePhase({ override: p }))
+    if (p) {
+      setPhase(resolveSalePhase({ override: p }))
+      setPhaseOverridden(true)
+    }
     const j = params.get("journey")
     if (j && j in MOCK_JOURNEY_INPUTS) setJourneyOverride(j as JourneyState)
     const r = params.get("registration")
@@ -79,16 +85,24 @@ export function SaleProvider({ children }: { children: ReactNode }) {
     }
   }, [queryClient])
 
+  // Re-resolve the clock-driven phase + pre-sale sub-stage every minute (and on tab refocus), so a
+  // visitor with the page open sees pre-sale -> live -> ended flip without a reload. Dev overrides win.
   useEffect(() => {
-    if (stageOverride) return
-    const resolve = () => setPreSaleStage(resolvePreSaleStage(Date.now()))
+    const resolve = () => {
+      if (!stageOverride) setPreSaleStage(resolvePreSaleStage(Date.now()))
+      if (!phaseOverridden) {
+        setPhase(
+          resolveSalePhase({ override: process.env.NEXT_PUBLIC_SALE_PHASE, now: Date.now() }),
+        )
+      }
+    }
     const id = setInterval(resolve, 60_000)
     document.addEventListener("visibilitychange", resolve)
     return () => {
       clearInterval(id)
       document.removeEventListener("visibilitychange", resolve)
     }
-  }, [stageOverride])
+  }, [stageOverride, phaseOverridden])
 
   // Remember (non-PII) that we've seen the entity, so a return after the 2h session greets "welcome back".
   useEffect(() => {

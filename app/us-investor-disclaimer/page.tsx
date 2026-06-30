@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { usInvestorDisclaimer } from "../../content/sections/legal"
+import { LegalMarkdown } from "../(ui)/LegalMarkdown"
+import { usInvestorDisclaimerMarkdown } from "../../content/legal/us-investor-disclaimer"
 
 export const metadata: Metadata = {
   title: "U.S. Investor Disclaimer | Gno.land",
@@ -18,13 +19,11 @@ export default function UsInvestorDisclaimerPage() {
         >
           Back to the sale
         </Link>
-        <h1 className="mt-6 text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
-          {usInvestorDisclaimer.title}
+        <h1 className="mt-6 font-semibold text-3xl text-foreground tracking-tight md:text-4xl">
+          U.S. Investor Disclaimer
         </h1>
-        <div className="mt-8 space-y-5 text-base leading-relaxed text-muted md:text-lg">
-          {usInvestorDisclaimer.paragraphs.map((para) => (
-            <p key={para}>{para}</p>
-          ))}
+        <div className="mt-8">
+          <LegalMarkdown>{usInvestorDisclaimerMarkdown}</LegalMarkdown>
         </div>
       </div>
     </main>

@@ -16,6 +16,7 @@ import {
 } from "../../../lib/sale/calc"
 import { SALE_ECONOMICS } from "../../../lib/sale/economics"
 import { fmtGnot, fmtPriceUsdc, fmtUsdc } from "../../../lib/sale/format"
+import { useLimits } from "../../../lib/sale/hooks"
 import { SUPPORT_CONTACT_HREF, VERIFY_STATUS, WELCOME_BACK } from "../../../lib/sale/labels"
 import { type BidParams, type BidResult, MockBidSubmitter } from "../../../lib/sale/submitter"
 import type { JourneyState, MyBid } from "../../../lib/sale/types"
@@ -416,9 +417,9 @@ function BidRow({
   preview?: BidPreview
 }) {
   const minPrice = SALE_ECONOMICS.startingPriceUsd
-  const maxPrice = SALE_ECONOMICS.maxPriceUsd
   const increment = SALE_ECONOMICS.bidIncrementUsd
-  const band = { minPriceUsd: minPrice, maxPriceUsd: maxPrice, incrementUsd: increment }
+  // No upper price cap (team-confirmed 2026-06-30); the grid is floor-anchored: minPrice + k*increment.
+  const band = { minPriceUsd: minPrice, incrementUsd: increment }
   const floor = snapBidPrice(
     Math.max(clearingPriceUsd ?? minPrice, prevBid?.priceUsd ?? 0, minPrice),
     band,
@@ -435,6 +436,7 @@ function BidRow({
     setAmount(v)
   }
   const chainId = useChainId()
+  const limits = useLimits()
   const [submitState, setSubmitState] = useState<SubmitState>(preview?.state ?? "idle")
   const [txHash, setTxHash] = useState<string | null>(preview?.txHash ?? null)
   const [submitError, setSubmitError] = useState<string | null>(preview?.error ?? null)
@@ -444,16 +446,16 @@ function BidRow({
   const amountNum = Number(amount)
   const priceCheck = validateBidPrice(priceNum, {
     minPriceUsd: minPrice,
-    maxPriceUsd: maxPrice,
     incrementUsd: increment,
-    prevPriceUsd: prevBid ? Math.min(prevBid.priceUsd, maxPrice) : undefined,
+    prevPriceUsd: prevBid?.priceUsd,
   })
   // A raise can only keep or increase the committed amount, never reduce it. With a prior bid the
   // floor is the existing commitment; otherwise the global minimum.
-  const minCommit = prevBid
-    ? Math.max(SALE_ECONOMICS.minCommitmentUsd, prevBid.committedUsd)
-    : SALE_ECONOMICS.minCommitmentUsd
-  const amountCheck = validateBidAmount(amountNum, minCommit, SALE_ECONOMICS.maxCommitmentUsd)
+  // SDK first (Sonar fetchLimits, per-wallet); fallback to the published economics default ($100).
+  const minCommitFloor = limits.data?.minUsd ?? SALE_ECONOMICS.minCommitmentUsd
+  const maxCommit = limits.data?.maxUsd ?? SALE_ECONOMICS.maxCommitmentUsd
+  const minCommit = prevBid ? Math.max(minCommitFloor, prevBid.committedUsd) : minCommitFloor
+  const amountCheck = validateBidAmount(amountNum, minCommit, maxCommit)
   const priceShown = price !== "" && !Number.isNaN(priceNum)
   const amountShown = amount !== "" && !Number.isNaN(amountNum)
 
@@ -495,18 +497,16 @@ function BidRow({
   const priceError =
     priceShown && priceCheck === "below-min"
       ? `Min price ${fmtPriceUsdc(minPrice)}.`
-      : priceShown && priceCheck === "above-max"
-        ? `Max price ${fmtPriceUsdc(maxPrice)} - the hardcap.`
-        : priceShown && priceCheck === "off-increment"
-          ? `Bids move in ${increment} USDC steps.`
-          : priceShown && priceCheck === "below-previous" && prevBid
-            ? `Raise above your current ${fmtPriceUsdc(prevBid.priceUsd)}.`
-            : null
+      : priceShown && priceCheck === "off-increment"
+        ? `Bids move in ${increment} USDC steps.`
+        : priceShown && priceCheck === "below-previous" && prevBid
+          ? `Raise above your current ${fmtPriceUsdc(prevBid.priceUsd)}.`
+          : null
   const amountError =
     amountShown && amountCheck === "too-low"
       ? prevBid
         ? `Can’t go below your committed ${fmtUsdc(prevBid.committedUsd)}.`
-        : `Min ${fmtUsdc(SALE_ECONOMICS.minCommitmentUsd)}.`
+        : `Min ${fmtUsdc(minCommitFloor)}.`
       : null
 
   const headroom =
@@ -685,7 +685,7 @@ function BidRow({
             downLabel: "Lower the price one step",
           }}
           invalid={priceShown && priceCheck !== "ok"}
-          hint={`If your bid meets or exceeds the final clearing price, it wins. You pay the clearing price, not your original bid. Bids are placed in $${increment} increments, from the $${minPrice} starting price up to the $${maxPrice} maximum.`}
+          hint={`If your bid meets or exceeds the final clearing price, it wins. You pay the clearing price, not your original bid. Bids are placed in $${increment} increments, starting from the $${minPrice} starting price.`}
           suffix={
             <>
               USDC <span className="text-[0.7em] opacity-60">/ GNOT</span>
@@ -700,8 +700,8 @@ function BidRow({
           value={amount}
           onChange={onAmountChange}
           invalid={amountShown && amountCheck !== "ok"}
-          placeholder={String(SALE_ECONOMICS.minCommitmentUsd)}
-          hint={`The total USDC you commit is the amount you pay if your bid wins. If you're outbid, you're fully refunded after the sale. Your GNOT allocation is calculated as: Amount (USDC) / Clearing Price. Minimum commitment is $${fmtUsdc(SALE_ECONOMICS.minCommitmentUsd)}, with no maximum.`}
+          placeholder={String(minCommitFloor)}
+          hint={`The total USDC you commit is the amount you pay if your bid wins. If you're outbid, you're fully refunded after the sale. Your GNOT allocation is calculated as: Amount (USDC) / Clearing Price. Minimum commitment is $${fmtUsdc(minCommitFloor)}, with no maximum.`}
           error={amountError}
           className="w-32"
         />

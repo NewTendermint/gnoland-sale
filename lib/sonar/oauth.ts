@@ -1,20 +1,17 @@
 import "server-only"
-import { getStore } from "@netlify/blobs"
+import { eq } from "drizzle-orm"
+import { db } from "../db/client"
+import { pkceStates } from "../db/schema"
 import { env } from "../env"
 import { sonarCore } from "./server-only"
 
-// PKCE state in a Blobs store keyed by `state`. Netlify Blobs has no native TTL, so
-// expiry is stamped in metadata and enforced on read in consumePkceState.
-const PKCE_STORE = "sonar-pkce"
-const PKCE_TTL_MS = 10 * 60 * 1000 // 10 minutes
+// PKCE state in Postgres (Sonar recommends a database; replaces Netlify Blobs).
+// 10-min TTL stamped on insert, enforced on read; single-use via atomic delete-returning.
+const PKCE_TTL_MS = 10 * 60 * 1000
 
 export interface PkcePayload {
   sessionId: string
   codeVerifier: string
-}
-
-function pkceStore() {
-  return getStore(PKCE_STORE)
 }
 
 /**
@@ -23,9 +20,11 @@ function pkceStore() {
  */
 export async function generatePkceAndStore(sessionId: string): Promise<string> {
   const { codeVerifier, codeChallenge, state } = await sonarCore.generatePKCEParams()
-  await pkceStore().setJSON(state, { sessionId, codeVerifier } satisfies PkcePayload, {
-    metadata: { expiresAt: Date.now() + PKCE_TTL_MS },
-    onlyIfNew: true,
+  await db.insert(pkceStates).values({
+    state,
+    sessionId,
+    codeVerifier,
+    expiresAt: new Date(Date.now() + PKCE_TTL_MS),
   })
   const url = sonarCore.buildAuthorizationUrl({
     clientUUID: env.SONAR_CLIENT_UUID,
@@ -41,16 +40,13 @@ export async function generatePkceAndStore(sessionId: string): Promise<string> {
  * the CSRF/replay control for the OAuth flow. Caller also binds `sessionId`.
  */
 export async function consumePkceState(state: string): Promise<PkcePayload> {
-  const store = pkceStore()
-  const entry = await store.getWithMetadata(state, { type: "json" })
-  if (!entry) {
+  // Delete first, atomically: even an expired/malformed entry must not survive a consume.
+  const [row] = await db.delete(pkceStates).where(eq(pkceStates.state, state)).returning()
+  if (!row) {
     throw new Error("PKCE state not found")
   }
-  // Delete first, unconditionally: even an expired/malformed entry must not survive a consume.
-  await store.delete(state)
-  const expiresAt = entry.metadata.expiresAt
-  if (typeof expiresAt !== "number" || expiresAt < Date.now()) {
+  if (row.expiresAt.getTime() < Date.now()) {
     throw new Error("PKCE state expired")
   }
-  return entry.data as PkcePayload
+  return { sessionId: row.sessionId, codeVerifier: row.codeVerifier }
 }

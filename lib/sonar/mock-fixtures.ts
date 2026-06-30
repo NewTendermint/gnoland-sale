@@ -3,6 +3,7 @@ import type {
   EntityDetails,
   GeneratePurchasePermitResponse,
   Hex,
+  LimitsResponse,
   ListAvailableEntitiesResponse,
   PrePurchaseCheckResponse,
   ReadCommitmentDataResponse,
@@ -84,4 +85,11 @@ export const mockFixtures = {
   } satisfies GeneratePurchasePermitResponse,
 
   entities: { Entities: [MOCK_ENTITY] } satisfies ListAvailableEntitiesResponse,
+
+  // $100 minimum (the economics default), no maximum. Amounts in USDC smallest units (6 decimals).
+  limits: {
+    HasCustomCommitmentAmountLimit: false,
+    MinCommitmentAmount: "100000000",
+    MaxCommitmentAmount: "0",
+  } satisfies LimitsResponse,
 }

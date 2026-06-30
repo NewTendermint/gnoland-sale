@@ -82,3 +82,18 @@ export const pushSubscriptionInsertSchema = z
     bidLimitUsd: z.number().positive(),
   })
   .strict()
+
+// Ephemeral OAuth PKCE state (Sonar recommends a DB store; replaces Netlify Blobs). Single-use
+// (deleted on consume), TTL enforced on read via expires_at. No PII; verifier is a throwaway nonce.
+// TODO(prod): periodic sweep of expired/abandoned rows (consumed rows self-delete on consume).
+export const pkceStates = pgTable(
+  "pkce_states",
+  {
+    state: text("state").primaryKey(),
+    sessionId: text("session_id").notNull(),
+    codeVerifier: text("code_verifier").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("pkce_states_expires_at_idx").on(table.expiresAt)],
+)

@@ -32,16 +32,8 @@
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
-# State-preview overrides (?phase / ?registration / ?journey + /dev/states) in
-# production builds. Active in EVERY context while the site is a staging
-# preview so states are reviewable on the shared URL.
-# !! REMOVE from [build.environment] before the public launch (pre-launch
-# hardening checklist): the live page's phase must not be flippable from a
-# crafted link. Preview contexts may keep it via their own context blocks.
+# Newsletter capture UI on (required explicitly in production builds). Stays on at launch (runbook).
 [build.environment]
-  NEXT_PUBLIC_STATE_OVERRIDES = "1"
-  # Newsletter capture UI on (required explicitly in production builds). Stays
-  # on at launch (runbook); only STATE_OVERRIDES above must go.
   NEXT_PUBLIC_NEWSLETTER_ENABLED = "1"
 
 # Deploy-context-scoped environment variables.
@@ -54,13 +46,13 @@
   # domain is attached (before public launch).
   NEXT_PUBLIC_SITE_URL = "https://gnoland-sonar.netlify.app"
 
-  # Sale phase for the live deploy. Forced to "pre-sale" until the auction opens: the homepage
-  # shows the countdown + newsletter capture (Stage A), then auto-advances to "Register now"
-  # (Stage B) on registrationOpensIso by DATE alone (resolvePreSaleStage) - no redeploy needed.
-  # The top-level pre-sale -> live -> ended transition is still MANUAL: no on-chain/date
-  # automation is wired in SaleProvider yet, so flip this to "live" when bidding opens and
-  # "ended" at settlement. !! REPLACE with phase automation before relying on it for launch.
-  NEXT_PUBLIC_SALE_PHASE = "pre-sale"
+  # Sale phase is DATE-DRIVEN (2026-06-29): the 3 dates in lib/sale/economics.ts drive
+  # pre-sale -> live -> ended (resolved server-side in app/page.tsx + re-resolved on the clock).
+  # Leaving NEXT_PUBLIC_SALE_PHASE UNSET here lets the page flip itself at saleOpensIso /
+  # saleClosesIso with NO redeploy. Set it only as a temporary override (staging / incident).
 
+# NEXT_PUBLIC_STATE_OVERRIDES (dev state-preview) is set in the Netlify DASHBOARD, scoped to
+# Branch deploys + Deploy previews ONLY - never Production, and not committed here (so this file
+# stays identical on every branch). The live page's phase must not be flippable from a crafted link.
 [context.deploy-preview.environment]
   NEXT_PUBLIC_SITE_URL = "https://deploy-preview.netlify.app"

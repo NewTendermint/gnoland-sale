@@ -52,22 +52,28 @@ export function Footer() {
                 className="space-y-2 text-lg text-muted lg:text-xl lg:col-span-2 lg:col-start-5"
               >
                 <li>
-                  {/* biome-ignore lint/a11y/useValidAnchor: legal page URL not yet provided */}
-                  <a href="#" className="link-underline transition-colors hover:text-foreground">
+                  <Link
+                    href="/terms-of-service"
+                    className="link-underline transition-colors hover:text-foreground"
+                  >
                     Terms of Service
-                  </a>
+                  </Link>
                 </li>
                 <li>
-                  {/* biome-ignore lint/a11y/useValidAnchor: legal page URL not yet provided */}
-                  <a href="#" className="link-underline transition-colors hover:text-foreground">
+                  <Link
+                    href="/privacy-policy"
+                    className="link-underline transition-colors hover:text-foreground"
+                  >
                     Privacy Policy
-                  </a>
+                  </Link>
                 </li>
                 <li>
-                  {/* biome-ignore lint/a11y/useValidAnchor: legal page URL not yet provided */}
-                  <a href="#" className="link-underline transition-colors hover:text-foreground">
+                  <Link
+                    href="/terms-of-service#risk-disclosures"
+                    className="link-underline transition-colors hover:text-foreground"
+                  >
                     Risk Disclosure
-                  </a>
+                  </Link>
                 </li>
                 <li>
                   <Link
