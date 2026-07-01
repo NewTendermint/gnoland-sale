@@ -53,3 +53,20 @@
 # stays identical on every branch). The live page's phase must not be flippable from a crafted link.
 [context.deploy-preview.environment]
   NEXT_PUBLIC_SITE_URL = "https://deploy-preview.netlify.app"
+
+# Branch deploys: the permanent `staging` branch -> a stable test env on Sonar sandbox + Sepolia.
+# Same code/bundle as production; ONLY the env differs by context, so promoting staging -> main is
+# safe - this block never applies to the production context. Secrets (Sonar sandbox creds, DB,
+# ENCRYPTION_KEY / SESSION_PASSWORD / IP_HMAC_PEPPER) are set in the Netlify dashboard scoped to
+# Branch deploys, never committed here. Only the non-secret chain + URL config lives below.
+[context.branch-deploy.environment]
+  # Stable branch URL: https://<branch>--<site>.netlify.app. Confirm/replace if the site name
+  # differs, or point it at a custom subdomain (e.g. https://staging.sale.gno.land).
+  NEXT_PUBLIC_SITE_URL = "https://staging--gnoland-sonar.netlify.app"
+  # Force Sepolia on staging regardless of any dashboard default; the client + server pair MUST
+  # match, else the bid blocks (the client would pick mainnet, which has no configured contract).
+  SALE_CHAIN = "sepolia"
+  NEXT_PUBLIC_SALE_CHAIN = "sepolia"
+  # Sandbox sale's lower minimum commitment (prod keeps the economics.ts default of 100).
+  # Match this to your Sonar sandbox sale's actual min.
+  NEXT_PUBLIC_MIN_COMMITMENT_USD = "2"
