@@ -30,6 +30,7 @@
   "files": {
     "ignore": [
       "node_modules",
+      ".claude",
       ".netlify",
       ".next",
       "build",
@@ -37,7 +38,7 @@
       "coverage",
       "playwright-report",
       "test-results",
-      "lib/db/migrations",
+      "netlify/database/migrations",
       "*.md"
     ]
   }
