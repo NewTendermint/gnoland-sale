@@ -18,7 +18,6 @@ export default defineConfig({
       ENCRYPTION_KEY: "a".repeat(64),
       IP_HMAC_PEPPER: "b".repeat(64),
       SESSION_PASSWORD: "x".repeat(40),
-      DATABASE_URL: "postgres://user:pass@localhost:5432/test",
     },
   },
   resolve: {

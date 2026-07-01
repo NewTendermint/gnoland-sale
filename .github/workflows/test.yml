@@ -1,0 +1,27 @@
+# Test suite: Vitest unit tests.
+# Runs on every pull request and on pushes to main, in parallel with the Checks workflow.
+name: Tests
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      # Pull the repo at the commit under test.
+      - uses: actions/checkout@v4
+
+      # Pin Node to the project's runtime and cache npm downloads.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # Reproducible install from the lockfile.
+      - run: npm ci
+
+      # Unit tests under Vitest.
+      - name: Unit tests
+        run: npm run test
