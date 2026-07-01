@@ -12,7 +12,11 @@ export type SaleContracts = {
 
 const CONTRACTS: Record<number, SaleContracts | undefined> = {
   [sepolia.id]: {
-    settlementSale: "0xc600cAF84C3654B572BA84c5bAC3D75c3dA2645A",
+    // Sonar sandbox contract. A sale redeploy changes this address (and the sale UUID then resolves
+    // to the new one), so it is env-overridable to avoid a code change each time - set
+    // NEXT_PUBLIC_SEPOLIA_SETTLEMENT_SALE to the Contract Address on Echo's Integration page.
+    settlementSale: (process.env.NEXT_PUBLIC_SEPOLIA_SETTLEMENT_SALE ||
+      "0xD3454B943496938fAdA9a33067916649712fdC92") as Hex,
   },
   // mainnet (chainId 1): { settlementSale: "0x..." } - TBD at launch.
 }
