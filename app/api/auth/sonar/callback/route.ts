@@ -12,7 +12,14 @@ export async function GET(request: Request) {
   const url = new URL(request.url)
   const code = url.searchParams.get("code")
   const state = url.searchParams.get("state")
-  const home = new URL("/", request.url)
+  // Redirect off the canonical site URL, never request.url: on a Netlify branch deploy
+  // request.url is the immutable deploy permalink, not the stable alias / prod domain.
+  let home: URL
+  try {
+    home = new URL("/", process.env.NEXT_PUBLIC_SITE_URL || request.url)
+  } catch {
+    home = new URL("/", request.url)
+  }
 
   if (!code || !state) {
     home.searchParams.set("auth", "error")
