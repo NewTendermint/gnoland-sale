@@ -84,7 +84,7 @@ export const pushSubscriptionInsertSchema = z
 
 // Ephemeral OAuth PKCE state. Single-use (deleted on consume), TTL enforced on read via expires_at.
 // No PII; verifier is a throwaway nonce.
-// TODO(prod): periodic sweep of expired/abandoned rows (consumed rows self-delete on consume).
+// Expired/abandoned rows swept daily by /api/db/cleanup (consumed rows self-delete on consume).
 export const pkceStates = pgTable(
   "pkce_states",
   {

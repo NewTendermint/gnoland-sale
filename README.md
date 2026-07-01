@@ -32,7 +32,8 @@ Two cases need real config (copy `.env.example` to `.env.local`):
 ## Scripts
 
 ```
-npm run dev          start dev server
+npm run dev          start dev server (mocked, no DB, :3000)
+npm run dev:db       start via Netlify CLI (local DB + injected env, :8888)
 npm run build        production build (includes the client-bundle secret scan)
 npm run lint         Biome
 npm run typecheck    tsc strict
