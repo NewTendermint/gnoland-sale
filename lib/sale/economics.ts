@@ -1,7 +1,7 @@
 // Single source for sale numbers. PROVISIONAL values are flagged; confirm before launch.
-// Schedule instants encode 6:00 PM EST as the published times (EST = UTC-5, so 23:00Z);
-// the sale close is 5:59 PM EST (22:59Z). The Countdown to saleClosesIso and the phase
-// gates derive from these, so the time-of-day is intentional, not midnight.
+// Schedule instants are the exact UTC moments from the Sonar dashboard (all at 22:00Z on the
+// three dates). The Countdown to saleClosesIso and the phase gates derive from these, so the
+// time-of-day is intentional, not midnight.
 export const SALE_ECONOMICS = {
   startingPriceUsd: 0.0645, // = minimum price (= step 0 of the on-chain bid grid)
   saleSupplyGnot: 38_760_000, // ~2.9% of supply (was 77.5M / ~5.8%, halved 2026-06-30)
@@ -19,9 +19,9 @@ export const SALE_ECONOMICS = {
   // The 3 dates drive the page PHASE (pre-sale/live/ended, lib/sale/phase.ts) + the countdowns.
   // Bidding is still enforced on-chain (the contract stage + permit window), so these dates never
   // gate money. Keep in sync with the Sonar dashboard (no SDK endpoint exposes them).
-  registrationOpensIso: process.env.NEXT_PUBLIC_REGISTRATION_OPENS ?? "2026-07-06T23:00:00Z", // Mon Jul 6, 6:00 PM EST
-  saleOpensIso: process.env.NEXT_PUBLIC_SALE_OPENS ?? "2026-07-20T23:00:00Z", // Mon Jul 20, 6:00 PM EST
-  saleClosesIso: process.env.NEXT_PUBLIC_SALE_CLOSES ?? "2026-07-27T22:59:00Z", // Mon Jul 27, 5:59 PM EST
+  registrationOpensIso: process.env.NEXT_PUBLIC_REGISTRATION_OPENS ?? "2026-07-06T22:00:00Z", // Mon Jul 6, 22:00 UTC (Sonar dashboard)
+  saleOpensIso: process.env.NEXT_PUBLIC_SALE_OPENS ?? "2026-07-20T22:00:00Z", // Mon Jul 20, 22:00 UTC (Sonar dashboard)
+  saleClosesIso: process.env.NEXT_PUBLIC_SALE_CLOSES ?? "2026-07-27T22:00:00Z", // Mon Jul 27, 22:00 UTC (Sonar dashboard)
 } as const
 
 /** Display a sale ISO date, e.g. "July 15, 2026" (UTC-fixed so SSR and client agree). */
@@ -40,24 +40,23 @@ export function formatSaleMonth(iso: string): string {
 }
 
 /**
- * Full schedule line with weekday + time, e.g. "Monday, July 6, 2026 at 6:00 PM EST".
- * Rendered in a fixed UTC-5 zone (Etc/GMT+5) and labeled EST to match the published
- * schedule; the fixed offset (no DST) keeps SSR and client output identical.
+ * Full schedule line with weekday + time, e.g. "Monday, July 6, 2026 at 22:00 UTC".
+ * Rendered in UTC to match the Sonar dashboard exactly (no DST ambiguity; SSR and client agree).
  */
 export function formatSaleDateTime(iso: string): string {
   const d = new Date(iso)
   const date = d.toLocaleDateString("en-US", {
-    timeZone: "Etc/GMT+5",
+    timeZone: "UTC",
     weekday: "long",
     month: "long",
     day: "numeric",
     year: "numeric",
   })
   const time = d.toLocaleTimeString("en-US", {
-    timeZone: "Etc/GMT+5",
-    hour: "numeric",
+    timeZone: "UTC",
+    hour: "2-digit",
     minute: "2-digit",
-    hour12: true,
+    hour12: false,
   })
-  return `${date} at ${time} EST`
+  return `${date} at ${time} UTC`
 }
