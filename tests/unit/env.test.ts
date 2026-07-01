@@ -11,14 +11,12 @@ const valid = {
   ENCRYPTION_KEY: "a".repeat(64),
   IP_HMAC_PEPPER: "b".repeat(64),
   SESSION_PASSWORD: "x".repeat(40),
-  DATABASE_URL: "postgres://user:pass@localhost:5432/db",
 }
 
 describe("parseEnv", () => {
   it("returns the parsed env for a well-formed source", () => {
     const env = parseEnv(valid)
     expect(env.SONAR_CLIENT_UUID).toBe("client-uuid")
-    expect(env.DATABASE_URL).toBe("postgres://user:pass@localhost:5432/db")
   })
 
   it('defaults SALE_PAUSED to "false" when absent', () => {

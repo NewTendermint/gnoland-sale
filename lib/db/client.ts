@@ -1,13 +1,15 @@
 import "server-only"
-import { neon } from "@neondatabase/serverless"
-import { drizzle } from "drizzle-orm/neon-http"
-import { env } from "../env"
+import { drizzle } from "drizzle-orm/netlify-db"
 import * as schema from "./schema"
 
 type Db = ReturnType<typeof createDb>
 
+// The netlify-db adapter reads NETLIFY_DB_URL when drizzle() is called and THROWS if it's unset.
+// Defer that call so importing `db` never connects: modules that import it for non-DB code paths
+// (mocked sale/newsletter flows, unit tests) must not blow up at import. Connection materializes
+// on first query. NETLIFY_DB_URL is auto-injected on Netlify; set it in .env.local for local dev.
 function createDb() {
-  return drizzle(neon(env.DATABASE_URL), { schema })
+  return drizzle({ schema })
 }
 
 let cachedDb: Db | null = null
@@ -16,7 +18,7 @@ function getDb(): Db {
   return cachedDb
 }
 
-// Drizzle client, lazily created on first query (keeps env.DATABASE_URL out of import).
+// Drizzle client, lazily created on first query (keeps the NETLIFY_DB_URL lookup out of import).
 export const db = new Proxy({} as Db, {
   get(_target, prop) {
     const real = getDb()
