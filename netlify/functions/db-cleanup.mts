@@ -1,0 +1,28 @@
+// Netlify Scheduled Function: daily DB hygiene, 03:00 UTC. Netlify only schedules the PRODUCTION
+// deploy (never branch-deploys/previews), so this one prod run fans out to every deploy that owns a
+// SEPARATE database: each target's own /api/db/cleanup runs the DELETEs against that deploy's own
+// NETLIFY_DB_URL (prod route -> prod DB, staging route -> staging DB). Thin by design - no
+// server-only imports (they throw in a plain Node function); the route does the real work.
+// Requires the SAME CRON_SECRET value in every targeted context. Keep the staging URL in sync with
+// netlify.toml [context.branch-deploy] NEXT_PUBLIC_SITE_URL.
+const TARGETS = [
+  process.env.URL ?? process.env.NEXT_PUBLIC_SITE_URL, // production (this deploy)
+  "https://staging--gnoland-sonar.netlify.app", // permanent staging branch-deploy (own Sepolia DB)
+]
+
+export default async function handler() {
+  const secret = process.env.CRON_SECRET
+  if (!secret) return
+  await Promise.all(
+    [...new Set(TARGETS.filter(Boolean))].map(async (base) => {
+      const res = await fetch(`${base}/api/db/cleanup`, {
+        method: "POST",
+        headers: { authorization: `Bearer ${secret}` },
+      }).catch(() => null)
+      // Log non-2xx so a wrong secret / access-gated staging leg is visible in the function logs.
+      if (!res?.ok) console.error(`db-cleanup: ${base} -> ${res?.status ?? "unreachable"}`)
+    }),
+  )
+}
+
+export const config = { schedule: "0 3 * * *" }
