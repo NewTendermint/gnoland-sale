@@ -1,0 +1,43 @@
+# Database schema/migration checks.
+# Runs on every pull request and on pushes to main, in parallel with the Checks and Tests
+# workflows.
+#
+# This workflow does NOT apply or push schema to any hosted database. Netlify Database (GA)
+# applies migrations from netlify/database/migrations automatically at deploy time (preview
+# branch first, then production on publish) - running drizzle-kit migrate/push against a hosted
+# DB from CI would bypass migration history and drift the schema. CI's job is only to prove the
+# committed migrations are consistent with the Drizzle schema.
+name: Database
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  migrations:
+    runs-on: ubuntu-latest
+    steps:
+      # Pull the repo at the commit under test.
+      - uses: actions/checkout@v4
+
+      # Pin Node to the project's runtime and cache npm downloads.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # Reproducible install from the lockfile.
+      - run: npm ci
+
+      # Migration drift guard: regenerating from lib/db/schema.ts must produce no new/changed
+      # migration. Fails a PR that edits the schema without committing the generated migration.
+      # Offline - `drizzle-kit generate` reads only the schema, never connects to a database.
+      - name: Check migrations are up to date
+        run: |
+          npm run db:generate
+          if [ -n "$(git status --porcelain netlify/database/migrations)" ]; then
+            echo "::error::Schema changed without a committed migration. Run 'npm run db:generate' and commit the result."
+            git status --porcelain netlify/database/migrations
+            git --no-pager diff -- netlify/database/migrations
+            exit 1
+          fi

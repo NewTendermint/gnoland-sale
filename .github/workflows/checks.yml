@@ -1,8 +1,7 @@
-# Continuous Integration pipeline.
-# Runs on every pull request and on pushes to main.
-# Pipeline shape: validate (lint, typecheck, unit tests, build, secret scan, audit).
+# Static checks: lint, typecheck, build, secret scanning, and dependency audit.
+# Runs on every pull request and on pushes to main, in parallel with the Tests workflow.
 # An e2e job will be added later once a preview URL is available.
-name: CI
+name: Checks
 on:
   pull_request:
   push:
@@ -38,10 +37,6 @@ jobs:
       # TypeScript strict mode - fail on any type error.
       - name: Typecheck
         run: npm run typecheck
-
-      # Unit tests under Vitest.
-      - name: Unit tests
-        run: npm run test
 
       # Produce the production build that the secret scanner inspects.
       - name: Build

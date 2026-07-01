@@ -11,7 +11,8 @@ const envSchema = z.object({
   ENCRYPTION_KEY: z.string().regex(/^[0-9a-fA-F]{64}$/),
   IP_HMAC_PEPPER: z.string().length(64),
   SESSION_PASSWORD: z.string().min(32),
-  DATABASE_URL: z.url(),
+  // No DATABASE_URL: the DB layer uses Netlify Database (GA) via the drizzle-orm/netlify-db
+  // adapter, which reads the auto-injected NETLIFY_DB_URL internally (lib/db/client.ts).
   SALE_PAUSED: z.enum(["true", "false"]).default("false"),
   // Defaults to testnet so a misconfigured prod mislabels toward sandbox, not mainnet.
   SALE_CHAIN: z.enum(["mainnet", "sepolia"]).default("sepolia"),
@@ -30,9 +31,7 @@ export type Env = z.infer<typeof envSchema>
 
 // Validate an environment source. Error stays terse: never echo the value (may be a secret).
 export function parseEnv(source: Record<string, string | undefined> = process.env): Env {
-  // Netlify Database (GA) injects NETLIFY_DATABASE_URL; alias it to our DATABASE_URL.
-  const normalized = { ...source, DATABASE_URL: source.DATABASE_URL ?? source.NETLIFY_DATABASE_URL }
-  const parsed = envSchema.safeParse(normalized)
+  const parsed = envSchema.safeParse(source)
   if (!parsed.success) {
     throw new Error("Invalid environment variables")
   }
