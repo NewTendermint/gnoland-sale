@@ -43,14 +43,10 @@
   # TODO: revert to https://sale.gno.land once the custom domain is attached
   NEXT_PUBLIC_SITE_URL = "https://gnoland-sonar.netlify.app"
 
-  # Sale phase is derived from the 3 dates in lib/sale/economics.ts:
-  # pre-sale -> live -> ended (resolved server-side in app/page.tsx + re-resolved on the clock).
-  # Leaving NEXT_PUBLIC_SALE_PHASE UNSET here lets the page flip itself at saleOpensIso /
-  # saleClosesIso with NO redeploy. Set it only as a temporary override (staging / incident).
-
-# NEXT_PUBLIC_STATE_OVERRIDES (dev state-preview) is set in the Netlify DASHBOARD, scoped to
-# Branch deploys + Deploy previews ONLY - never Production, and not committed here (so this file
-# stays identical on every branch). The live page's phase must not be flippable from a crafted link.
+  # Sale phase is derived purely from the 3 dates in lib/sale/economics.ts (pre-sale -> live ->
+  # ended), resolved server-side in app/page.tsx + re-resolved on the clock every 60s. There is no
+  # phase override: to place a non-prod deploy in a given phase, override the milestone DATES
+  # (see the branch-deploy block below). /dev/states is a local-dev-only gallery.
 [context.deploy-preview.environment]
   NEXT_PUBLIC_SITE_URL = "https://deploy-preview.netlify.app"
 
@@ -70,3 +66,8 @@
   # Sandbox sale's lower minimum commitment (prod keeps the economics.ts default of 100).
   # Match this to your Sonar sandbox sale's actual min.
   NEXT_PUBLIC_MIN_COMMITMENT_USD = "2"
+  # Milestone dates shifted so "now" sits in the commitment (live) window -> staging shows the bid
+  # via the sale clock, no phase override. Widen/shift to test other phases; prod uses economics.ts.
+  NEXT_PUBLIC_REGISTRATION_OPENS = "2026-06-01T22:00:00Z"
+  NEXT_PUBLIC_SALE_OPENS = "2026-06-15T22:00:00Z"
+  NEXT_PUBLIC_SALE_CLOSES = "2026-12-31T22:00:00Z"

@@ -23,10 +23,7 @@ import { Tokenomics } from "./(sections)/tokenomics/Tokenomics"
 export const revalidate = 30
 
 export default function Home() {
-  const initialPhase = resolveSalePhase({
-    override: process.env.NEXT_PUBLIC_SALE_PHASE,
-    now: Date.now(),
-  })
+  const initialPhase = resolveSalePhase(Date.now())
   return (
     <SaleProvider initialPhase={initialPhase}>
       <TabAlert />

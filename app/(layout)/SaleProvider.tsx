@@ -8,8 +8,6 @@ import { useFunnelCapable } from "../../lib/device/funnel-gate"
 import { SALE_CHAIN } from "../../lib/sale/contracts"
 import { useEntity, useMyBid, useSaleData } from "../../lib/sale/hooks"
 import { deriveJourney } from "../../lib/sale/journey"
-import { MOCK_JOURNEY_INPUTS } from "../../lib/sale/mock"
-import { stateOverridesEnabled } from "../../lib/sale/overrides"
 import { resolvePreSaleStage, resolveSalePhase } from "../../lib/sale/phase"
 import { markSonarSeen } from "../../lib/sale/returning"
 import type {
@@ -46,10 +44,7 @@ export function SaleProvider({
   const entity = useEntity({ enabled: funnelCapable === true })
   const position = useMyBid({ enabled: funnelCapable === true })
   const [phase, setPhase] = useState<SalePhase>(initialPhase)
-  const [phaseOverridden, setPhaseOverridden] = useState(false)
-  const [journeyOverride, setJourneyOverride] = useState<JourneyState | null>(null)
   const [preSaleStage, setPreSaleStage] = useState<PreSaleStage>("registration-closed")
-  const [stageOverride, setStageOverride] = useState<PreSaleStage | null>(null)
   const [sonarReturn, setSonarReturn] = useState<SonarReturn>(null)
   const [bidPanelOpen, setBidPanelOpen] = useState(false)
   const queryClient = useQueryClient()
@@ -67,30 +62,13 @@ export function SaleProvider({
         setBidPanelOpen(true)
       }
     }
-    if (!stateOverridesEnabled()) return
-    const params = url.searchParams
-    const p = params.get("phase")
-    if (p) {
-      setPhase(resolveSalePhase({ override: p }))
-      setPhaseOverridden(true)
-    }
-    const j = params.get("journey")
-    if (j && j in MOCK_JOURNEY_INPUTS) setJourneyOverride(j as JourneyState)
-    const r = params.get("registration")
-    if (r === "open" || r === "closed") {
-      setStageOverride(r === "open" ? "registration-open" : "registration-closed")
-    }
   }, [queryClient])
 
-  // Re-resolves phase every minute and on tab refocus. Dev overrides win.
+  // Re-resolves phase + stage every minute and on tab refocus, straight from the sale clock.
   useEffect(() => {
     const resolve = () => {
-      if (!stageOverride) setPreSaleStage(resolvePreSaleStage(Date.now()))
-      if (!phaseOverridden) {
-        setPhase(
-          resolveSalePhase({ override: process.env.NEXT_PUBLIC_SALE_PHASE, now: Date.now() }),
-        )
-      }
+      setPreSaleStage(resolvePreSaleStage(Date.now()))
+      setPhase(resolveSalePhase(Date.now()))
     }
     const id = setInterval(resolve, 60_000)
     document.addEventListener("visibilitychange", resolve)
@@ -98,7 +76,7 @@ export function SaleProvider({
       clearInterval(id)
       document.removeEventListener("visibilitychange", resolve)
     }
-  }, [stageOverride, phaseOverridden])
+  }, [])
 
   // Remember (non-PII) that we've seen the entity, so a return after the 2h session greets "welcome back".
   useEffect(() => {
@@ -115,13 +93,12 @@ export function SaleProvider({
       myBid: position.data ?? null,
       clearingPriceUsd: sale.data.clearingPriceUsd,
     }
-    const journey = journeyOverride ?? deriveJourney(journeyInput)
     return {
       phase,
-      preSaleStage: stageOverride ?? preSaleStage,
-      journey,
+      preSaleStage,
+      journey: deriveJourney(journeyInput),
       commitment: sale.data,
-      myBid: journeyOverride ? MOCK_JOURNEY_INPUTS[journeyOverride].myBid : journeyInput.myBid,
+      myBid: journeyInput.myBid,
       sonarReturn,
       bidPanelOpen,
       setBidPanelOpen,
@@ -133,9 +110,7 @@ export function SaleProvider({
     position.data,
     sale.data,
     phase,
-    stageOverride,
     preSaleStage,
-    journeyOverride,
     sonarReturn,
     bidPanelOpen,
   ])
