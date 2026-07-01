@@ -20,7 +20,14 @@ Open http://localhost:3000. With no env set, development runs fully mocked (Sona
 Two cases need real config (copy `.env.example` to `.env.local`):
 
 - **A specific phase or real services**: set the relevant vars (see "Environment").
-- **The Sonar OAuth / login flow**: set `NETLIFY_DB_URL` to a Postgres instance and run `npm run db:migrate`. PKCE state is stored in the `pkce_states` table, so the login flow throws at boot without a database. Mocked sale metrics and the newsletter do not need it.
+- **The Sonar OAuth / login flow (needs a database)**: run the app through the Netlify CLI instead of `npm run dev`. `netlify dev` starts a local Postgres, injects `NETLIFY_DB_URL`, and injects the secrets set on the linked site (`SONAR_*`, `ENCRYPTION_KEY`, `SESSION_PASSWORD`, `IP_HMAC_PEPPER`), so no `.env.local` is needed for those:
+
+  ```
+  netlify dev                        # Next + local DB + injected env, on the URL it prints (default :8888, not :3000)
+  netlify database migrations apply  # once: local does not auto-apply migrations
+  ```
+
+  Without the CLI, set `NETLIFY_DB_URL` yourself in `.env.local`: a Neon URL works with the default adapter, a plain local Postgres also needs `NETLIFY_DB_DRIVER=server`. PKCE state lives in `pkce_states`, so the login flow throws at boot without a database. Mocked sale metrics and the newsletter do not need any of this.
 
 ## Scripts
 
@@ -116,13 +123,13 @@ Copy `.env.example` to `.env.local`. Production secrets live in Netlify env, nev
 
 ## Database and storage
 
-The site uses **Netlify Database (GA)** in production — the managed Postgres built into Netlify, auto-provisioned by the `@netlify/database` dependency at deploy time. The app connects through the `drizzle-orm/netlify-db` adapter (no connection string in app code). Schema in `lib/db/schema.ts` (Drizzle):
+The site uses **Netlify Database (GA)** in production - the managed Postgres built into Netlify, auto-provisioned by the `@netlify/database` dependency at deploy time. The app connects through the `drizzle-orm/netlify-db` adapter (no connection string in app code). Schema in `lib/db/schema.ts` (Drizzle):
 
 - `oauth_tokens`: the libsodium-encrypted `{accessToken, refreshToken}` envelope per opaque session id. Plaintext tokens never touch the DB or the browser.
 - `audit_log`: append-only trail of permit issuance and sensitive events. Wallets/entity ids in clear (already public on chain), IPs only as HMAC, metadata behind a strict allow-list.
 - `pkce_states`: single-use OAuth state + code verifier, expiry checked on read.
 
-Migrations live in `netlify/database/migrations/` and are applied automatically by the Netlify deploy (each deploy preview forks its own branch DB from production). Never run `drizzle-kit migrate`/`push` against a hosted Netlify DB — only against a local `NETLIFY_DB_URL`. The newsletter stores nothing here: emails go straight to Mailchimp.
+Migrations live in `netlify/database/migrations/` and are applied automatically by the Netlify deploy (each deploy preview forks its own branch DB from production). Never run `drizzle-kit migrate`/`push` against a hosted Netlify DB - only against a local `NETLIFY_DB_URL`. The newsletter stores nothing here: emails go straight to Mailchimp.
 
 ## API surface
 
