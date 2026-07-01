@@ -20,8 +20,10 @@ export const wagmiConfig = createConfig({
     walletConnect({ projectId: wcProjectId, showQrModal: true }),
   ],
   transports: {
-    [mainnet.id]: http(),
-    [sepolia.id]: http(),
+    // Dedicated RPC per chain (Alchemy/Infura...) when set, else viem's public default (rate-limited,
+    // not launch-grade). When you set one, add its host to the CSP connect-src in middleware.ts.
+    [mainnet.id]: http(process.env.NEXT_PUBLIC_MAINNET_RPC_URL || undefined),
+    [sepolia.id]: http(process.env.NEXT_PUBLIC_SEPOLIA_RPC_URL || undefined),
   },
   ssr: true,
 })
