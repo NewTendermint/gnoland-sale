@@ -17,7 +17,12 @@ import { SALE_CHAIN } from "../../../lib/sale/contracts"
 import { SALE_ECONOMICS } from "../../../lib/sale/economics"
 import { fmtGnot, fmtPrice, fmtUsd } from "../../../lib/sale/format"
 import { usePaymentTokens } from "../../../lib/sale/hooks"
-import { SUPPORT_CONTACT_HREF, VERIFY_STATUS, WELCOME_BACK } from "../../../lib/sale/labels"
+import {
+  SUPPORT_CONTACT_HREF,
+  VERIFY_INCOMPLETE,
+  VERIFY_STATUS,
+  WELCOME_BACK,
+} from "../../../lib/sale/labels"
 import { defaultPaymentToken } from "../../../lib/sale/onchain"
 import {
   type BidParams,
@@ -97,6 +102,8 @@ export function BidFlow({
   clearingPriceUsd,
   myBid,
   onConnectSonar,
+  onSignOut,
+  setupHref,
   onBid,
   preview,
 }: {
@@ -105,6 +112,8 @@ export function BidFlow({
   clearingPriceUsd: number | null
   myBid: MyBid
   onConnectSonar?: () => void
+  onSignOut?: () => void
+  setupHref: string
   onBid?: (p: BidParams, opts?: { onStage?: (s: BidStage) => void }) => Promise<BidResult>
   preview?: BidPreview
 }) {
@@ -115,6 +124,8 @@ export function BidFlow({
       clearingPriceUsd={clearingPriceUsd}
       myBid={myBid}
       onConnectSonar={onConnectSonar}
+      onSignOut={onSignOut}
+      setupHref={setupHref}
       onBid={onBid}
       preview={preview}
     />
@@ -127,6 +138,8 @@ function StateContent({
   clearingPriceUsd,
   myBid,
   onConnectSonar,
+  onSignOut,
+  setupHref,
   onBid,
   preview,
 }: {
@@ -135,6 +148,8 @@ function StateContent({
   clearingPriceUsd: number | null
   myBid: MyBid
   onConnectSonar?: () => void
+  onSignOut?: () => void
+  setupHref: string
   onBid?: (p: BidParams, opts?: { onStage?: (s: BidStage) => void }) => Promise<BidResult>
   preview?: BidPreview
 }) {
@@ -156,7 +171,13 @@ function StateContent({
   return (
     <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4">
       <div className="min-w-0 flex-1">
-        <GateContent journey={journey} returning={returning} onConnectSonar={onConnectSonar} />
+        <GateContent
+          journey={journey}
+          returning={returning}
+          onConnectSonar={onConnectSonar}
+          onSignOut={onSignOut}
+          setupHref={setupHref}
+        />
       </div>
     </div>
   )
@@ -166,14 +187,28 @@ function GateContent({
   journey,
   returning,
   onConnectSonar,
+  onSignOut,
+  setupHref,
 }: {
   journey: JourneyState
   returning?: boolean
   onConnectSonar?: () => void
+  onSignOut?: () => void
+  setupHref: string
 }) {
   switch (journey) {
     case "wrong-network":
       return <SwitchNetworkGate />
+    case "kyc-incomplete":
+      return (
+        <GateRow
+          icon={VERIFY_INCOMPLETE.icon}
+          title={VERIFY_INCOMPLETE.title}
+          body={VERIFY_INCOMPLETE.body}
+          cta={VERIFY_INCOMPLETE.cta}
+          ctaHref={setupHref}
+        />
+      )
     case "kyc-required":
       return returning ? (
         <GateRow
@@ -182,6 +217,19 @@ function GateContent({
           body={WELCOME_BACK.body}
           cta={WELCOME_BACK.cta}
           onCta={onConnectSonar}
+          // The escape from a stale recognition (e.g. a different Sonar account behind the same
+          // browser): signing out clears the seen marker, and the next login derives fresh.
+          secondary={
+            onSignOut ? (
+              <button
+                type="button"
+                onClick={onSignOut}
+                className="text-[11px] text-muted underline underline-offset-2 transition-colors hover:text-foreground"
+              >
+                Sign out of Sonar
+              </button>
+            ) : undefined
+          }
         />
       ) : (
         <GateRow
@@ -232,6 +280,7 @@ function GateRow({
   cta,
   onCta,
   ctaHref,
+  secondary,
   tone = "default",
 }: {
   icon: string
@@ -240,6 +289,7 @@ function GateRow({
   cta?: string
   onCta?: () => void
   ctaHref?: string
+  secondary?: ReactNode
   tone?: "default" | "danger"
 }) {
   return (
@@ -255,15 +305,18 @@ function GateRow({
           <span className="ml-1.5 text-muted">{body}</span>
         </p>
       </div>
-      {ctaHref && cta ? (
-        <Cta variant="solid-contrast" href={ctaHref} external>
-          {cta}
-        </Cta>
-      ) : cta ? (
-        <Cta variant="solid-contrast" onClick={onCta}>
-          {cta}
-        </Cta>
-      ) : null}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        {ctaHref && cta ? (
+          <Cta variant="solid-contrast" href={ctaHref} external>
+            {cta}
+          </Cta>
+        ) : cta ? (
+          <Cta variant="solid-contrast" onClick={onCta}>
+            {cta}
+          </Cta>
+        ) : null}
+        {secondary}
+      </div>
     </div>
   )
 }
