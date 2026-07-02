@@ -8,6 +8,7 @@ import { useFunnelCapable } from "../../lib/device/funnel-gate"
 import { SALE_CHAIN } from "../../lib/sale/contracts"
 import { useEntity, useMyBid, useSaleData } from "../../lib/sale/hooks"
 import { deriveJourney } from "../../lib/sale/journey"
+import { derivePendingView } from "../../lib/sale/pending-bid"
 import { resolvePreSaleStage, resolveSalePhase } from "../../lib/sale/phase"
 import { markSonarSeen, useSonarSeen } from "../../lib/sale/returning"
 import type {
@@ -15,6 +16,7 @@ import type {
   JourneyInput,
   JourneyState,
   MyBid,
+  PendingBidDelta,
   PreSaleStage,
   SalePhase,
   SonarReturn,
@@ -26,6 +28,10 @@ type SaleContextValue = {
   journey: JourneyState
   commitment: CommitmentData
   myBid: MyBid
+  /** The connected wallet's confirmed-but-unreported share, for the metric "pending" chips. */
+  pendingBidDelta: PendingBidDelta | null
+  /** True while myBid comes from the pending overlay (status claims must stay neutral). */
+  pendingIndexing: boolean
   /** Whether the entity / position reads have settled successfully at least once. The journey is
    *  derived from missing data as "unverified"/"no bid", so status-asserting UI must not render
    *  those claims before these are true (it would flash a false state on every load). */
@@ -107,6 +113,9 @@ export function SaleProvider({
     const onSaleChain = chainId === SALE_CHAIN.id
     const read = entity.data
     const snapshot = read?.status === "entity" ? read.entity : null
+    // The pending overlay only applies while the sale is LIVE: the ended/settlement UI must
+    // compute refunds and allocations from Sonar's settled answer, never from local optimism.
+    const pendingView = derivePendingView(phase === "live" ? position.pending : null, position.data)
     const journeyInput: JourneyInput = {
       isConnected,
       isSaleChain: onSaleChain,
@@ -117,7 +126,8 @@ export function SaleProvider({
       hadEntityBefore: sonarSeen,
       setupState: snapshot?.setupState ?? null,
       eligibility: snapshot?.eligibility ?? null,
-      myBid: position.data ?? null,
+      myBid: pendingView.myBid,
+      pendingIndexing: pendingView.pendingIndexing,
       clearingPriceUsd: sale.data.clearingPriceUsd,
     }
     return {
@@ -126,6 +136,8 @@ export function SaleProvider({
       journey: deriveJourney(journeyInput),
       commitment: sale.data,
       myBid: journeyInput.myBid,
+      pendingBidDelta: pendingView.delta,
+      pendingIndexing: pendingView.pendingIndexing,
       entityResolved: entity.isSuccess,
       positionResolved: position.isSuccess,
       sonarReturn,
@@ -140,6 +152,7 @@ export function SaleProvider({
     entity.data,
     entity.isSuccess,
     position.data,
+    position.pending,
     position.isSuccess,
     sale.data,
     phase,

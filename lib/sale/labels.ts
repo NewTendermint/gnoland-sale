@@ -4,6 +4,7 @@ import type { JourneyState } from "./types"
 export function bidCtaLabel(journey: JourneyState): string {
   switch (journey) {
     case "has-bid-winning":
+    case "has-bid-pending":
       return "Manage bid"
     case "has-bid-outbid":
       return "Raise bid"

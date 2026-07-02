@@ -18,6 +18,8 @@ export type AllocationRow = {
   amount: number
   /** Purpose, verbatim from the source sheet. */
   note: string
+  /** Asterisked footnote rendered at the bottom of the distribution tile. */
+  footnote?: string
   color: string
 }
 
@@ -48,6 +50,7 @@ export const allocation: AllocationRow[] = [
     percent: 22.51,
     amount: 300_000_000,
     note: "For past and future investors",
+    footnote: "Including $20M investment from AIB",
     color: "color-mix(in srgb, var(--foreground) 50%, transparent)",
   },
   {

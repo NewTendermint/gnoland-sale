@@ -21,6 +21,19 @@ describe("resolveTabAlertState", () => {
     ).toBe("outbid")
   })
 
+  it("never fires 'outbid' for a pending (confirmed-but-unreported) bid", () => {
+    // The pending overlay can sit below the current clearing; alarming the user's own fresh bid
+    // as outbid would be a false claim - has-bid-pending stays silent.
+    expect(
+      resolveTabAlertState({
+        journey: "has-bid-pending",
+        phase: "live",
+        saleClosesMs: NOW + 10 * CLOSING_SOON_WINDOW_MS,
+        nowMs: NOW,
+      }),
+    ).toBeNull()
+  })
+
   it("prioritizes 'outbid' over 'closing-soon' when both hold", () => {
     expect(
       resolveTabAlertState({

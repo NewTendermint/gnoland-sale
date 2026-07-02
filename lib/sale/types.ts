@@ -71,6 +71,15 @@ export type JourneyState =
   | "ready"
   | "has-bid-winning"
   | "has-bid-outbid"
+  // Confirmed on-chain, not yet reported by Sonar's cached read: status claims stay neutral.
+  | "has-bid-pending"
+
+// The confirmed-but-unreported share of a pending bid, shown as chips next to the aggregate
+// metrics. newBidder = Sonar does not report this entity's bid at all yet.
+export type PendingBidDelta = {
+  amountUsd: number
+  newBidder: boolean
+}
 
 // "Your position" display state, derived via derivePositionState (journey.ts).
 export type PositionState = "not-ready" | "no-bids" | "active"
@@ -102,6 +111,8 @@ export type JourneyInput = {
   setupState: EntitySetupState | null
   eligibility: SaleEligibility | null
   myBid: MyBid
+  // The bid shown is confirmed on-chain but not reported by Sonar yet (pending overlay).
+  pendingIndexing: boolean
   clearingPriceUsd: number | null
 }
 

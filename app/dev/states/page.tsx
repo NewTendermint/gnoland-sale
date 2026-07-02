@@ -1,19 +1,28 @@
 import { notFound } from "next/navigation"
 // Dev-only state harness: renders the sticky bar in every state. Gated out of production.
 import { Fragment, type ReactNode } from "react"
+import { MetricPendingChip } from "../../(layout)/BidBarShell"
 import { BidSectionHeader, PreSaleRight } from "../../(layout)/BidPanelDesktop"
 import { BidFlow, type BidPreview } from "../../(sections)/bid/BidFlow"
 import { BidStatusTag, FunnelSteps } from "../../(sections)/bid/FunnelSteps"
 import { Cta } from "../../(ui)/Cta"
 import { Icon } from "../../(ui)/Icon"
-import { fmtCompactUsd, fmtCount, fmtPrice } from "../../../lib/sale/format"
+import {
+  PENDING_BIDDER_CHIP,
+  fmtCompactUsd,
+  fmtCount,
+  fmtPrice,
+  pendingCommittedChip,
+} from "../../../lib/sale/format"
 import { bidCtaLabel } from "../../../lib/sale/labels"
 import { MOCK_COMMITMENT_LIVE, MOCK_JOURNEY_INPUTS } from "../../../lib/sale/mock"
 import { stateOverridesEnabled } from "../../../lib/sale/overrides"
 import { sonarSetupUrl } from "../../../lib/sale/setup-url"
 import type { JourneyState, PreSaleBarState } from "../../../lib/sale/types"
 
-const METRICS = [
+type PreviewMetric = { icon: string; value: string; label: string; pending?: string }
+
+const METRICS: PreviewMetric[] = [
   {
     icon: "clearing",
     value: MOCK_COMMITMENT_LIVE.clearingPriceUsd
@@ -34,6 +43,16 @@ const METRICS = [
   },
 ]
 
+// Mirrors liveMetrics with a PendingBidDelta (first bid, $500). Chip copy comes from the same
+// format helpers as production, so the gallery cannot drift.
+const METRICS_PENDING: PreviewMetric[] = METRICS.map((m) =>
+  m.label === "Bidders"
+    ? { ...m, pending: PENDING_BIDDER_CHIP }
+    : m.label === "Committed"
+      ? { ...m, pending: pendingCommittedChip(500) }
+      : m,
+)
+
 function CtaPill({ journey }: { journey: JourneyState }) {
   return (
     <Cta variant="solid" arrow>
@@ -46,9 +65,11 @@ function CtaPill({ journey }: { journey: JourneyState }) {
 function MetricsRow({
   dense,
   right,
+  metrics = METRICS,
 }: {
   dense: boolean
   right: ReactNode
+  metrics?: PreviewMetric[]
 }) {
   return (
     <div className="border-t border-border py-4 sm:py-6">
@@ -58,7 +79,7 @@ function MetricsRow({
             dense ? "gap-x-5 gap-y-2 sm:gap-x-7" : "gap-8 sm:gap-10"
           }`}
         >
-          {METRICS.map((m, i) => (
+          {metrics.map((m, i) => (
             <div
               key={m.label}
               className={`flex items-center ${dense ? "gap-x-5 sm:gap-x-7" : "gap-8 sm:gap-10"}`}
@@ -79,6 +100,7 @@ function MetricsRow({
                 </div>
                 <p className="mt-0.5 text-[10px] uppercase tracking-[0.2em] text-muted">
                   {m.label}
+                  {m.pending ? <MetricPendingChip label={m.pending} /> : null}
                 </p>
               </div>
             </div>
@@ -381,6 +403,37 @@ export default function DevStatesPage() {
             ) : null}
           </Fragment>
         ))}
+
+        <GallerySection title="Live · pending indexing (bid confirmed on-chain, Sonar catching up)">
+          <p className="text-sm text-muted">
+            Right after a confirmed bid, Sonar's read trails by ~1min (readCommitmentData cache):
+            the position overlays from localStorage (gnot:pending-bid) and the unreported share
+            shows as chips next to the Bidders / Committed labels. Chips purge once Sonar reports
+            the amount (10s poll), on sign-out, or after the 10min TTL. The journey holds a
+            dedicated has-bid-pending state so no surface claims Winning/Outbid early.
+          </p>
+          <Caption>Collapsed - first bid, $500 not indexed yet</Caption>
+          <div className="rounded-[var(--frame-radius)] border border-border bg-background px-6 lg:px-8">
+            <MetricsRow
+              dense={false}
+              metrics={METRICS_PENDING}
+              right={<CtaPill journey="has-bid-pending" />}
+            />
+          </div>
+          <Caption>Your bid header - neutral Pending status while unreported</Caption>
+          <div className="overflow-hidden rounded-[var(--frame-radius)] border border-border bg-background">
+            <div className="px-6 py-6 lg:px-8">
+              <div className="bid-capsule px-6 py-5">
+                <BidSectionHeader
+                  journey="has-bid-pending"
+                  myBid={MOCK_JOURNEY_INPUTS["has-bid-pending"].myBid}
+                  clearingPriceUsd={MOCK_JOURNEY_INPUTS["has-bid-pending"].clearingPriceUsd}
+                  wallet={<MockWalletChip />}
+                />
+              </div>
+            </div>
+          </div>
+        </GallerySection>
 
         <GallerySection title="Ended · collapsed (metrics + View results)">
           <CompactPreview

@@ -38,6 +38,9 @@ export function deriveJourney(i: JourneyInput): JourneyState {
   if (!i.isConnected) return "disconnected"
   if (!i.isSaleChain) return "wrong-network"
   if (i.myBid) {
+    // A confirmed-but-unreported bid must not claim Winning/Outbid anywhere (tag, tab alert,
+    // sections): the neutral pending state is derived HERE so every consumer inherits it.
+    if (i.pendingIndexing) return "has-bid-pending"
     return bidStatus(i.myBid.priceUsd, i.clearingPriceUsd) === "outbid"
       ? "has-bid-outbid"
       : "has-bid-winning"
