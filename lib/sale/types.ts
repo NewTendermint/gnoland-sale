@@ -61,6 +61,7 @@ export type JourneyState =
   | "disconnected"
   | "wrong-network"
   | "kyc-required"
+  | "kyc-incomplete"
   | "kyc-pending"
   | "kyc-failed"
   | "not-eligible"
@@ -78,6 +79,7 @@ export type SonarReturn = "ok" | "error" | null
 export type PreSaleBarState =
   | "notify"
   | "register"
+  | "incomplete"
   | "pending"
   | "failed"
   | "not-eligible"

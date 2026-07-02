@@ -21,6 +21,7 @@ import { useBid, useClaim } from "../../lib/sale/hooks"
 import { derivePreSaleBar } from "../../lib/sale/journey"
 import {
   SUPPORT_CONTACT_HREF,
+  VERIFY_INCOMPLETE,
   VERIFY_STATUS,
   WELCOME_BACK,
   bidCtaLabel,
@@ -54,6 +55,7 @@ export function BidPanelDesktop() {
     entityResolved,
     positionResolved,
     sonarReturn,
+    sonarSetupUrl,
     bidPanelOpen: expanded,
     setBidPanelOpen: setExpanded,
   } = useSale()
@@ -127,6 +129,7 @@ export function BidPanelDesktop() {
           <PreSaleRight
             state={barState}
             returning={sonarSeen}
+            setupHref={sonarSetupUrl}
             onRegister={redirectToSonarLogin}
             onSignOut={handleSignOut}
             onRefresh={handleRefresh}
@@ -323,6 +326,7 @@ export function BidPanelDesktop() {
                           clearingPriceUsd={commitment.clearingPriceUsd}
                           myBid={myBid}
                           onConnectSonar={redirectToSonarLogin}
+                          setupHref={sonarSetupUrl}
                           onBid={bid.submit}
                         />
                       </>
@@ -521,12 +525,14 @@ function StatusRow({
 export function PreSaleRight({
   state,
   returning,
+  setupHref,
   onRegister = () => {},
   onSignOut = () => {},
   onRefresh = () => {},
 }: {
   state: PreSaleBarState
   returning: boolean
+  setupHref?: string
   onRegister?: () => void
   onSignOut?: () => void
   onRefresh?: () => void | Promise<void>
@@ -559,6 +565,20 @@ export function PreSaleRight({
           <Cta variant="solid" arrow onClick={onRegister}>
             <span>Register now</span>
           </Cta>
+        </div>
+      )
+    case "incomplete":
+      return (
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+          <BarStatus
+            icon={VERIFY_INCOMPLETE.icon}
+            title={`${VERIFY_INCOMPLETE.title}.`}
+            body={VERIFY_INCOMPLETE.body}
+          />
+          <Cta variant="solid" arrow href={setupHref} external>
+            <span>{VERIFY_INCOMPLETE.cta}</span>
+          </Cta>
+          <SignOutLink onClick={onSignOut} />
         </div>
       )
     case "pending":

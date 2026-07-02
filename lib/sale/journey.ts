@@ -9,7 +9,10 @@ import type {
   SonarReturn,
 } from "./types"
 
-const PENDING_SETUP: EntitySetupState[] = ["in-progress", "ready-for-review", "in-review"]
+// States where the user still has setup work to finish ON SONAR (re-running OAuth cannot advance
+// them - the CTA must link out to the hosted setup page, app.echo.xyz/sonar/{saleUUID}).
+const INCOMPLETE_SETUP: EntitySetupState[] = ["not-started", "in-progress"]
+const PENDING_SETUP: EntitySetupState[] = ["ready-for-review", "in-review"]
 const FAILED_SETUP: EntitySetupState[] = ["failure", "failure-final", "technical-issue"]
 
 /**
@@ -21,7 +24,9 @@ const FAILED_SETUP: EntitySetupState[] = ["failure", "failure-final", "technical
  */
 export function deriveJourney(i: JourneyInput): JourneyState {
   if (i.setupState && FAILED_SETUP.includes(i.setupState)) return "kyc-failed"
+  if (i.setupState && INCOMPLETE_SETUP.includes(i.setupState)) return "kyc-incomplete"
   if (i.setupState && PENDING_SETUP.includes(i.setupState)) return "kyc-pending"
+  // null setupState = no Sonar session at all (verify has not started from our side).
   if (i.setupState !== "complete") return "kyc-required"
   if (i.eligibility === "not-eligible") return "not-eligible"
   if (!i.isConnected) return "disconnected"
@@ -44,6 +49,7 @@ export function derivePositionState(journey: JourneyState, hasBid: boolean): Pos
 // Journey states that have NOT cleared the Verify gate.
 const UNVERIFIED_JOURNEYS: JourneyState[] = [
   "kyc-required",
+  "kyc-incomplete",
   "kyc-pending",
   "kyc-failed",
   "not-eligible",
@@ -61,6 +67,7 @@ export function derivePreSaleBar(
   sonarReturn: SonarReturn,
 ): PreSaleBarState {
   if (sonarReturn === "error") return "auth-error"
+  if (journey === "kyc-incomplete") return "incomplete"
   if (journey === "kyc-pending") return "pending"
   if (journey === "kyc-failed") return "failed"
   if (journey === "not-eligible") return "not-eligible"

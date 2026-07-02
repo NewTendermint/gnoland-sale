@@ -13,7 +13,7 @@ import { steps } from "../../../content/sections/how-it-works"
 import { redirectToSonarLogin } from "../../../lib/sale/api"
 import { SALE_ECONOMICS, formatSaleDate } from "../../../lib/sale/economics"
 import { isSonarVerified } from "../../../lib/sale/journey"
-import { DESKTOP_ONLY, VERIFY_STATUS } from "../../../lib/sale/labels"
+import { DESKTOP_ONLY, VERIFY_INCOMPLETE, VERIFY_STATUS } from "../../../lib/sale/labels"
 import type { PreSaleStage, JourneyState as SaleJourney, SalePhase } from "../../../lib/sale/types"
 
 type FunnelStep =
@@ -41,6 +41,7 @@ function liveCtaLabel(state: FunnelStep): string {
 }
 
 const PRESALE_STATUS: Partial<Record<SaleJourney, string>> = {
+  "kyc-incomplete": `${VERIFY_INCOMPLETE.title}. ${VERIFY_INCOMPLETE.body}`,
   "kyc-pending": `${VERIFY_STATUS.pending.title}. ${VERIFY_STATUS.pending.body}`,
   "kyc-failed": `${VERIFY_STATUS.failed.title}. ${VERIFY_STATUS.failed.body}`,
   "not-eligible": `${VERIFY_STATUS["not-eligible"].title}. ${VERIFY_STATUS["not-eligible"].body}`,

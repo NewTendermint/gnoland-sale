@@ -17,7 +17,12 @@ import { SALE_CHAIN } from "../../../lib/sale/contracts"
 import { SALE_ECONOMICS } from "../../../lib/sale/economics"
 import { fmtGnot, fmtPrice, fmtUsd } from "../../../lib/sale/format"
 import { usePaymentTokens } from "../../../lib/sale/hooks"
-import { SUPPORT_CONTACT_HREF, VERIFY_STATUS, WELCOME_BACK } from "../../../lib/sale/labels"
+import {
+  SUPPORT_CONTACT_HREF,
+  VERIFY_INCOMPLETE,
+  VERIFY_STATUS,
+  WELCOME_BACK,
+} from "../../../lib/sale/labels"
 import { defaultPaymentToken } from "../../../lib/sale/onchain"
 import {
   type BidParams,
@@ -97,6 +102,7 @@ export function BidFlow({
   clearingPriceUsd,
   myBid,
   onConnectSonar,
+  setupHref,
   onBid,
   preview,
 }: {
@@ -105,6 +111,7 @@ export function BidFlow({
   clearingPriceUsd: number | null
   myBid: MyBid
   onConnectSonar?: () => void
+  setupHref?: string
   onBid?: (p: BidParams, opts?: { onStage?: (s: BidStage) => void }) => Promise<BidResult>
   preview?: BidPreview
 }) {
@@ -115,6 +122,7 @@ export function BidFlow({
       clearingPriceUsd={clearingPriceUsd}
       myBid={myBid}
       onConnectSonar={onConnectSonar}
+      setupHref={setupHref}
       onBid={onBid}
       preview={preview}
     />
@@ -127,6 +135,7 @@ function StateContent({
   clearingPriceUsd,
   myBid,
   onConnectSonar,
+  setupHref,
   onBid,
   preview,
 }: {
@@ -135,6 +144,7 @@ function StateContent({
   clearingPriceUsd: number | null
   myBid: MyBid
   onConnectSonar?: () => void
+  setupHref?: string
   onBid?: (p: BidParams, opts?: { onStage?: (s: BidStage) => void }) => Promise<BidResult>
   preview?: BidPreview
 }) {
@@ -156,7 +166,12 @@ function StateContent({
   return (
     <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4">
       <div className="min-w-0 flex-1">
-        <GateContent journey={journey} returning={returning} onConnectSonar={onConnectSonar} />
+        <GateContent
+          journey={journey}
+          returning={returning}
+          onConnectSonar={onConnectSonar}
+          setupHref={setupHref}
+        />
       </div>
     </div>
   )
@@ -166,14 +181,26 @@ function GateContent({
   journey,
   returning,
   onConnectSonar,
+  setupHref,
 }: {
   journey: JourneyState
   returning?: boolean
   onConnectSonar?: () => void
+  setupHref?: string
 }) {
   switch (journey) {
     case "wrong-network":
       return <SwitchNetworkGate />
+    case "kyc-incomplete":
+      return (
+        <GateRow
+          icon={VERIFY_INCOMPLETE.icon}
+          title={VERIFY_INCOMPLETE.title}
+          body={VERIFY_INCOMPLETE.body}
+          cta={VERIFY_INCOMPLETE.cta}
+          ctaHref={setupHref}
+        />
+      )
     case "kyc-required":
       return returning ? (
         <GateRow

@@ -29,6 +29,14 @@ export const MOCK_JOURNEY_INPUTS: Record<JourneyState, JourneyInput> = {
   "kyc-required": {
     isConnected: true,
     isSaleChain: true,
+    setupState: null,
+    eligibility: null,
+    myBid: null,
+    clearingPriceUsd: 0.0774,
+  },
+  "kyc-incomplete": {
+    isConnected: true,
+    isSaleChain: true,
     setupState: "not-started",
     eligibility: null,
     myBid: null,

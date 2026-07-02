@@ -1,7 +1,10 @@
 import type { JourneyState } from "../../../lib/sale/types"
 
 const FUNNEL: { label: string; states: JourneyState[] }[] = [
-  { label: "Verify", states: ["kyc-required", "kyc-pending", "kyc-failed", "not-eligible"] },
+  {
+    label: "Verify",
+    states: ["kyc-required", "kyc-incomplete", "kyc-pending", "kyc-failed", "not-eligible"],
+  },
   { label: "Connect", states: ["disconnected", "wrong-network"] },
   { label: "Bid", states: ["ready", "has-bid-winning", "has-bid-outbid"] },
 ]

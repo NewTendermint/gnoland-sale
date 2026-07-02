@@ -24,8 +24,14 @@ export const revalidate = 30
 
 export default function Home() {
   const initialPhase = resolveSalePhase(Date.now())
+  // KYC/entity setup happens only on Echo's hosted page - the CTA for an unfinished setup links
+  // there. The sale UUID is public (it is in the URL every verified user visits); read directly
+  // from process.env because mocked dev runs without SONAR_* and lib/env would fail the boot.
+  const sonarSetupUrl = process.env.SONAR_SALE_UUID
+    ? `https://app.echo.xyz/sonar/${process.env.SONAR_SALE_UUID}`
+    : "https://app.echo.xyz"
   return (
-    <SaleProvider initialPhase={initialPhase}>
+    <SaleProvider initialPhase={initialPhase} sonarSetupUrl={sonarSetupUrl}>
       <TabAlert />
       <PushLimitSync />
       <main id="main">

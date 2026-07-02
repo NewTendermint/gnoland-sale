@@ -33,6 +33,8 @@ type SaleContextValue = {
   positionResolved: boolean
   /** Sonar OAuth return hint (?auth=ok|error), display-only. */
   sonarReturn: SonarReturn
+  /** Echo's hosted entity-setup page for this sale (app.echo.xyz/sonar/{saleUUID}). */
+  sonarSetupUrl: string
   bidPanelOpen: boolean
   setBidPanelOpen: (open: boolean) => void
 }
@@ -42,7 +44,8 @@ const SaleContext = createContext<SaleContextValue | null>(null)
 export function SaleProvider({
   children,
   initialPhase,
-}: { children: ReactNode; initialPhase: SalePhase }) {
+  sonarSetupUrl,
+}: { children: ReactNode; initialPhase: SalePhase; sonarSetupUrl: string }) {
   const { isConnected, chainId } = useAccount()
   const funnelCapable = useFunnelCapable()
   const sale = useSaleData()
@@ -118,6 +121,7 @@ export function SaleProvider({
       entityResolved: entity.isSuccess,
       positionResolved: position.isSuccess,
       sonarReturn,
+      sonarSetupUrl,
       bidPanelOpen,
       setBidPanelOpen,
     }
@@ -132,6 +136,7 @@ export function SaleProvider({
     phase,
     preSaleStage,
     sonarReturn,
+    sonarSetupUrl,
     bidPanelOpen,
   ])
 

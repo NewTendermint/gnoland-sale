@@ -126,6 +126,9 @@ function MockWalletChip() {
   )
 }
 
+// Stand-in for the env-derived Echo setup URL (page.tsx wires the real one into SaleProvider).
+const SETUP_URL_PREVIEW = "https://app.echo.xyz/sonar/00000000-0000-0000-0000-000000000000"
+
 function ExpandedBar({
   journey,
   returning = false,
@@ -152,6 +155,7 @@ function ExpandedBar({
             returning={returning}
             clearingPriceUsd={input.clearingPriceUsd}
             myBid={input.myBid}
+            setupHref={SETUP_URL_PREVIEW}
             preview={preview}
           />
         </div>
@@ -236,7 +240,7 @@ function PreSaleBarPreview({
             Opens July 20, 2026
           </p>
         </div>
-        <PreSaleRight state={state} returning={returning} />
+        <PreSaleRight state={state} returning={returning} setupHref={SETUP_URL_PREVIEW} />
       </div>
     </div>
   )
@@ -265,6 +269,12 @@ const PRE_SALE_BAR_STATES: ReadonlyArray<{
     state: "register",
     returning: true,
     href: "/?phase=pre-sale&registration=open&journey=kyc-required",
+  },
+  {
+    label: "Incomplete (setup unfinished -> Complete on Sonar)",
+    state: "incomplete",
+    returning: false,
+    href: "/?phase=pre-sale&registration=open&journey=kyc-incomplete",
   },
   {
     label: "Pending (in review)",

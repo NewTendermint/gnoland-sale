@@ -8,7 +8,13 @@ import {
 import { MOCK_JOURNEY_INPUTS } from "../../../lib/sale/mock"
 import type { JourneyInput, JourneyState } from "../../../lib/sale/types"
 
-const UNVERIFIED: JourneyState[] = ["kyc-required", "kyc-pending", "kyc-failed", "not-eligible"]
+const UNVERIFIED: JourneyState[] = [
+  "kyc-required",
+  "kyc-incomplete",
+  "kyc-pending",
+  "kyc-failed",
+  "not-eligible",
+]
 const VERIFIED: JourneyState[] = [
   "disconnected",
   "wrong-network",
@@ -48,11 +54,18 @@ describe("deriveJourney - Verify gate is first and wallet-independent", () => {
   it("kyc-required even with a wallet connected (verify precedes connect)", () => {
     expect(deriveJourney({ ...base, isConnected: true, isSaleChain: true })).toBe("kyc-required")
   })
-  it("kyc-required when not-started", () => {
-    expect(deriveJourney({ ...base, setupState: "not-started" })).toBe("kyc-required")
+  it("kyc-incomplete when the session is live but setup was never finished (user must act on Sonar)", () => {
+    for (const s of ["not-started", "in-progress"] as const) {
+      expect(deriveJourney({ ...base, setupState: s })).toBe("kyc-incomplete")
+    }
   })
-  it("kyc-pending for every in-flight setup state, with or without a wallet", () => {
-    for (const s of ["in-progress", "ready-for-review", "in-review"] as const) {
+  it("kyc-incomplete beats the wallet gates (verify precedes connect)", () => {
+    expect(
+      deriveJourney({ ...base, setupState: "not-started", isConnected: true, isSaleChain: true }),
+    ).toBe("kyc-incomplete")
+  })
+  it("kyc-pending only for the review states (waiting on Sonar, nothing to act on)", () => {
+    for (const s of ["ready-for-review", "in-review"] as const) {
       expect(deriveJourney({ ...base, setupState: s })).toBe("kyc-pending")
     }
   })
@@ -145,6 +158,7 @@ describe("derivePositionState - TokenDetails 'Your position' display", () => {
     "disconnected",
     "wrong-network",
     "kyc-required",
+    "kyc-incomplete",
     "kyc-pending",
     "kyc-failed",
     "not-eligible",
@@ -181,6 +195,7 @@ describe("derivePreSaleBar - pre-sale sticky-bar state", () => {
   })
   it("a known Sonar status beats the stage ask, in both stages", () => {
     for (const stage of ["registration-closed", "registration-open"] as const) {
+      expect(derivePreSaleBar(stage, "kyc-incomplete", null)).toBe("incomplete")
       expect(derivePreSaleBar(stage, "kyc-pending", null)).toBe("pending")
       expect(derivePreSaleBar(stage, "kyc-failed", null)).toBe("failed")
       expect(derivePreSaleBar(stage, "not-eligible", null)).toBe("not-eligible")
