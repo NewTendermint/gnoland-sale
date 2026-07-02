@@ -12,5 +12,6 @@ export const stats = [
   { value: "3M+", label: "Total wallets" },
   { value: "650K+", label: "Active wallets" },
   { value: "1,000+", label: "On-chain packages" },
-  { value: "250k+", label: "Test13 transactions" },
+  // Value overridden at render by the live Test13 count (lib/stats/test13.ts); this is only a hint.
+  { value: "680K+", label: "Test13 transactions" },
 ]
