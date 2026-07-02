@@ -22,6 +22,8 @@ export function bidSectionTitle(journey: JourneyState): string {
   switch (journey) {
     case "kyc-required":
       return "Verify your identity"
+    case "kyc-incomplete":
+      return VERIFY_INCOMPLETE.title
     case "kyc-pending":
       return "Verification in progress"
     case "kyc-failed":
@@ -65,6 +67,15 @@ export const VERIFY_STATUS = {
     title: "Identity verified",
     body: "",
   },
+} as const
+
+/** Session live but entity setup unfinished on Sonar. Re-running OAuth cannot advance this state -
+ *  the CTA links out to Echo's hosted setup page (app.echo.xyz/sonar/{saleUUID}) in a new tab. */
+export const VERIFY_INCOMPLETE = {
+  icon: "shield-check",
+  title: "Finish your verification",
+  body: "Complete your identity check on Sonar.",
+  cta: "Complete on Sonar",
 } as const
 
 /** Returning visitor whose Sonar session expired: recognized, prompted to reconnect (status is re-fetched live, never shown from cache). */

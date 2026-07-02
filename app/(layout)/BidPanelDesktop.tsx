@@ -16,11 +16,12 @@ import { newsletterEnabled } from "../../lib/newsletter/config"
 import { postSonarLogout, redirectToSonarLogin } from "../../lib/sale/api"
 import { gnotEstimate } from "../../lib/sale/calc"
 import { SALE_ECONOMICS, formatSaleDate } from "../../lib/sale/economics"
-import { fmtGnot, fmtPriceUsdc, fmtUsdc } from "../../lib/sale/format"
+import { fmtGnot, fmtPrice, fmtUsd } from "../../lib/sale/format"
 import { useBid, useClaim } from "../../lib/sale/hooks"
 import { derivePreSaleBar } from "../../lib/sale/journey"
 import {
   SUPPORT_CONTACT_HREF,
+  VERIFY_INCOMPLETE,
   VERIFY_STATUS,
   WELCOME_BACK,
   bidCtaLabel,
@@ -54,6 +55,7 @@ export function BidPanelDesktop() {
     entityResolved,
     positionResolved,
     sonarReturn,
+    sonarSetupUrl,
     bidPanelOpen: expanded,
     setBidPanelOpen: setExpanded,
   } = useSale()
@@ -127,6 +129,7 @@ export function BidPanelDesktop() {
           <PreSaleRight
             state={barState}
             returning={sonarSeen}
+            setupHref={sonarSetupUrl}
             onRegister={redirectToSonarLogin}
             onSignOut={handleSignOut}
             onRefresh={handleRefresh}
@@ -323,6 +326,8 @@ export function BidPanelDesktop() {
                           clearingPriceUsd={commitment.clearingPriceUsd}
                           myBid={myBid}
                           onConnectSonar={redirectToSonarLogin}
+                          onSignOut={handleSignOut}
+                          setupHref={sonarSetupUrl}
                           onBid={bid.submit}
                         />
                       </>
@@ -360,8 +365,8 @@ export function BidSectionHeader({
           <span className="mr-3 text-sm font-semibold tracking-tight text-foreground">
             Your bid
           </span>
-          <HeaderCell label="Committed" value={fmtUsdc(myBid.committedUsd)} />
-          <HeaderCell label="Your max price" value={`${fmtPriceUsdc(myBid.priceUsd)} / GNOT`} />
+          <HeaderCell label="Committed" value={fmtUsd(myBid.committedUsd)} />
+          <HeaderCell label="Your max price" value={`${fmtPrice(myBid.priceUsd)} / GNOT`} />
           <HeaderCell
             label="Est. allocation"
             value={`~${fmtGnot(gnotEstimate(myBid.committedUsd, clearingPriceUsd))} GNOT`}
@@ -482,6 +487,7 @@ function StatusRow({
   tone = "default",
   title,
   body,
+  action,
   onSignOut,
   onRefresh,
   withCalendar = false,
@@ -491,6 +497,7 @@ function StatusRow({
   tone?: "default" | "danger" | "ok"
   title: string
   body?: string
+  action?: ReactNode
   onSignOut: () => void
   onRefresh?: () => void | Promise<void>
   withCalendar?: boolean
@@ -500,6 +507,7 @@ function StatusRow({
     <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
         <BarStatus icon={icon} tone={tone} title={title} body={body} />
+        {action}
         {contactHref ? (
           <a
             href={contactHref}
@@ -521,12 +529,14 @@ function StatusRow({
 export function PreSaleRight({
   state,
   returning,
+  setupHref,
   onRegister = () => {},
   onSignOut = () => {},
   onRefresh = () => {},
 }: {
   state: PreSaleBarState
   returning: boolean
+  setupHref: string
   onRegister?: () => void
   onSignOut?: () => void
   onRefresh?: () => void | Promise<void>
@@ -552,6 +562,9 @@ export function PreSaleRight({
           <Cta variant="solid" arrow onClick={onRegister}>
             <span>{WELCOME_BACK.cta}</span>
           </Cta>
+          {/* The escape from a stale recognition (e.g. a different Sonar account behind the same
+              browser): signing out clears the seen marker, and the next login derives fresh. */}
+          <SignOutLink onClick={onSignOut} />
         </div>
       ) : (
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
@@ -560,6 +573,20 @@ export function PreSaleRight({
             <span>Register now</span>
           </Cta>
         </div>
+      )
+    case "incomplete":
+      return (
+        <StatusRow
+          icon={VERIFY_INCOMPLETE.icon}
+          title={`${VERIFY_INCOMPLETE.title}.`}
+          body={VERIFY_INCOMPLETE.body}
+          action={
+            <Cta variant="solid" arrow href={setupHref} external>
+              <span>{VERIFY_INCOMPLETE.cta}</span>
+            </Cta>
+          }
+          onSignOut={onSignOut}
+        />
       )
     case "pending":
       return (

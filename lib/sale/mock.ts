@@ -1,4 +1,4 @@
-// Preview fixtures for the /dev/states harness and the dev-only ?journey= / ?phase= overrides.
+// Preview fixtures for the /dev/states harness (the local, dev-only state gallery).
 import type { CommitmentData, JourneyInput, JourneyState } from "./types"
 
 export const MOCK_COMMITMENT_LIVE: CommitmentData = {
@@ -13,6 +13,8 @@ export const MOCK_JOURNEY_INPUTS: Record<JourneyState, JourneyInput> = {
   disconnected: {
     isConnected: false,
     isSaleChain: false,
+    hasSonarSession: true,
+    hadEntityBefore: false,
     setupState: "complete",
     eligibility: "eligible",
     myBid: null,
@@ -21,6 +23,8 @@ export const MOCK_JOURNEY_INPUTS: Record<JourneyState, JourneyInput> = {
   "wrong-network": {
     isConnected: true,
     isSaleChain: false,
+    hasSonarSession: true,
+    hadEntityBefore: false,
     setupState: "complete",
     eligibility: "eligible",
     myBid: null,
@@ -29,6 +33,18 @@ export const MOCK_JOURNEY_INPUTS: Record<JourneyState, JourneyInput> = {
   "kyc-required": {
     isConnected: true,
     isSaleChain: true,
+    hasSonarSession: false,
+    hadEntityBefore: false,
+    setupState: null,
+    eligibility: null,
+    myBid: null,
+    clearingPriceUsd: 0.0774,
+  },
+  "kyc-incomplete": {
+    isConnected: true,
+    isSaleChain: true,
+    hasSonarSession: true,
+    hadEntityBefore: false,
     setupState: "not-started",
     eligibility: null,
     myBid: null,
@@ -37,6 +53,8 @@ export const MOCK_JOURNEY_INPUTS: Record<JourneyState, JourneyInput> = {
   "kyc-pending": {
     isConnected: true,
     isSaleChain: true,
+    hasSonarSession: true,
+    hadEntityBefore: false,
     setupState: "in-review",
     eligibility: null,
     myBid: null,
@@ -45,6 +63,8 @@ export const MOCK_JOURNEY_INPUTS: Record<JourneyState, JourneyInput> = {
   "kyc-failed": {
     isConnected: true,
     isSaleChain: true,
+    hasSonarSession: true,
+    hadEntityBefore: false,
     setupState: "failure-final",
     eligibility: null,
     myBid: null,
@@ -53,6 +73,8 @@ export const MOCK_JOURNEY_INPUTS: Record<JourneyState, JourneyInput> = {
   "not-eligible": {
     isConnected: true,
     isSaleChain: true,
+    hasSonarSession: true,
+    hadEntityBefore: false,
     setupState: "complete",
     eligibility: "not-eligible",
     myBid: null,
@@ -61,6 +83,8 @@ export const MOCK_JOURNEY_INPUTS: Record<JourneyState, JourneyInput> = {
   ready: {
     isConnected: true,
     isSaleChain: true,
+    hasSonarSession: true,
+    hadEntityBefore: false,
     setupState: "complete",
     eligibility: "eligible",
     myBid: null,
@@ -69,6 +93,8 @@ export const MOCK_JOURNEY_INPUTS: Record<JourneyState, JourneyInput> = {
   "has-bid-winning": {
     isConnected: true,
     isSaleChain: true,
+    hasSonarSession: true,
+    hadEntityBefore: false,
     setupState: "complete",
     eligibility: "eligible",
     myBid: { priceUsd: 0.0903, committedUsd: 3200, lockup: false },
@@ -77,6 +103,8 @@ export const MOCK_JOURNEY_INPUTS: Record<JourneyState, JourneyInput> = {
   "has-bid-outbid": {
     isConnected: true,
     isSaleChain: true,
+    hasSonarSession: true,
+    hadEntityBefore: false,
     setupState: "complete",
     eligibility: "eligible",
     myBid: { priceUsd: 0.07095, committedUsd: 3200, lockup: false },

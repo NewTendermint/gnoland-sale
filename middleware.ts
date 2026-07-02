@@ -24,10 +24,10 @@ export function middleware(request: NextRequest) {
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https:",
     "font-src 'self' data:",
-    // RPC hosts are viem's public defaults for mainnet (eth.merkle.io) + sepolia
-    // (*.rpc.thirdweb.com). Set a dedicated RPC (Alchemy/Infura) + allowlist it here
-    // before prod; public endpoints rate-limit and are not launch-grade.
-    "connect-src 'self' https://eth.merkle.io https://*.rpc.thirdweb.com wss://relay.walletconnect.com wss://relay.walletconnect.org https://*.walletconnect.com https://*.walletconnect.org https://*.web3modal.org https://*.reown.com https://*.coinbase.com https://*.cbhq.net",
+    // RPC hosts mirror the web3.ts failover chain: publicnode (explicit fallback), then
+    // viem's chain defaults for mainnet (eth.merkle.io) + sepolia (*.rpc.thirdweb.com).
+    // The dedicated keyed RPC (Alchemy/Infura) must be allowlisted here when provisioned.
+    "connect-src 'self' https://ethereum-rpc.publicnode.com https://ethereum-sepolia-rpc.publicnode.com https://eth.merkle.io https://*.rpc.thirdweb.com wss://relay.walletconnect.com wss://relay.walletconnect.org https://*.walletconnect.com https://*.walletconnect.org https://*.web3modal.org https://*.reown.com https://*.coinbase.com https://*.cbhq.net",
     "frame-src 'self' https://*.walletconnect.org https://*.walletconnect.com https://*.coinbase.com",
     "worker-src 'self' blob:",
     "base-uri 'self'",

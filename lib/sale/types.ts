@@ -2,7 +2,9 @@
 export type SalePhase = "pre-sale" | "live" | "ended"
 export type PreSaleStage = "registration-closed" | "registration-open"
 
-// Mirrors sonar-core EntitySetupState (8 states)
+// Mirrors sonar-core EntitySetupState (8 states). "unknown" is OUR normalization sentinel for
+// values newer than the mirror (sonar-core is pre-1.0), never a sonar-core value: it must derive
+// a passive journey, not an action claim (see deriveJourney).
 export type EntitySetupState =
   | "not-started"
   | "in-progress"
@@ -12,6 +14,7 @@ export type EntitySetupState =
   | "failure-final"
   | "technical-issue"
   | "complete"
+  | "unknown"
 
 // Mirrors sonar-core SaleEligibility
 export type SaleEligibility = "eligible" | "not-eligible" | "unknown-setup-incomplete"
@@ -61,6 +64,7 @@ export type JourneyState =
   | "disconnected"
   | "wrong-network"
   | "kyc-required"
+  | "kyc-incomplete"
   | "kyc-pending"
   | "kyc-failed"
   | "not-eligible"
@@ -78,6 +82,7 @@ export type SonarReturn = "ok" | "error" | null
 export type PreSaleBarState =
   | "notify"
   | "register"
+  | "incomplete"
   | "pending"
   | "failed"
   | "not-eligible"
@@ -88,6 +93,12 @@ export type PreSaleBarState =
 export type JourneyInput = {
   isConnected: boolean
   isSaleChain: boolean
+  // False when the entity read answered 401 (no Sonar session) or has not resolved yet. A live
+  // session with an empty entity list (a marked 404) keeps this true - reconnecting cannot help.
+  hasSonarSession: boolean
+  // This browser has read a real entity before (the sonar-seen marker). An empty answer on such
+  // a browser is transient noise, never a "start your setup" ask.
+  hadEntityBefore: boolean
   setupState: EntitySetupState | null
   eligibility: SaleEligibility | null
   myBid: MyBid

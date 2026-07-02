@@ -27,9 +27,11 @@ const ELIGIBILITIES: readonly SaleEligibility[] = [
 ]
 
 function normalizeSetup(value: string): EntitySetupState {
+  // Unrecognized values normalize to the "unknown" sentinel, never to an actionable state:
+  // sonar-core is pre-1.0 and a renamed/new state must not tell a verified user to redo setup.
   return (SETUP_STATES as readonly string[]).includes(value)
     ? (value as EntitySetupState)
-    : "not-started"
+    : "unknown"
 }
 function normalizeEligibility(value: string): SaleEligibility {
   return (ELIGIBILITIES as readonly string[]).includes(value)

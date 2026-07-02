@@ -9,7 +9,7 @@ import { SALE_CHAIN } from "../../lib/sale/contracts"
 import { useEntity, useMyBid, useSaleData } from "../../lib/sale/hooks"
 import { deriveJourney } from "../../lib/sale/journey"
 import { resolvePreSaleStage, resolveSalePhase } from "../../lib/sale/phase"
-import { markSonarSeen } from "../../lib/sale/returning"
+import { markSonarSeen, useSonarSeen } from "../../lib/sale/returning"
 import type {
   CommitmentData,
   JourneyInput,
@@ -33,6 +33,8 @@ type SaleContextValue = {
   positionResolved: boolean
   /** Sonar OAuth return hint (?auth=ok|error), display-only. */
   sonarReturn: SonarReturn
+  /** Echo's hosted entity-setup page for this sale (app.echo.xyz/sonar/{saleUUID}). */
+  sonarSetupUrl: string
   bidPanelOpen: boolean
   setBidPanelOpen: (open: boolean) => void
 }
@@ -42,9 +44,11 @@ const SaleContext = createContext<SaleContextValue | null>(null)
 export function SaleProvider({
   children,
   initialPhase,
-}: { children: ReactNode; initialPhase: SalePhase }) {
+  sonarSetupUrl,
+}: { children: ReactNode; initialPhase: SalePhase; sonarSetupUrl: string }) {
   const { isConnected, chainId } = useAccount()
   const funnelCapable = useFunnelCapable()
+  const sonarSeen = useSonarSeen()
   const sale = useSaleData()
   const entity = useEntity({ enabled: funnelCapable === true })
   const position = useMyBid({ enabled: funnelCapable === true })
@@ -96,16 +100,23 @@ export function SaleProvider({
 
   // Remember (non-PII) that we've seen the entity, so a return after the 2h session greets "welcome back".
   useEffect(() => {
-    if (entity.data) markSonarSeen()
+    if (entity.data?.status === "entity") markSonarSeen()
   }, [entity.data])
 
   const value = useMemo<SaleContextValue>(() => {
     const onSaleChain = chainId === SALE_CHAIN.id
+    const read = entity.data
+    const snapshot = read?.status === "entity" ? read.entity : null
     const journeyInput: JourneyInput = {
       isConnected,
       isSaleChain: onSaleChain,
-      setupState: entity.data?.setupState ?? null,
-      eligibility: entity.data?.eligibility ?? null,
+      // An unresolved read counts as "no session". Only the live bid panel holds a skeleton on
+      // entityResolved; the pre-sale bar and sections render the journey immediately, so they can
+      // briefly show the register ask until the first read lands.
+      hasSonarSession: read !== undefined && read.status !== "no-session",
+      hadEntityBefore: sonarSeen,
+      setupState: snapshot?.setupState ?? null,
+      eligibility: snapshot?.eligibility ?? null,
       myBid: position.data ?? null,
       clearingPriceUsd: sale.data.clearingPriceUsd,
     }
@@ -118,12 +129,14 @@ export function SaleProvider({
       entityResolved: entity.isSuccess,
       positionResolved: position.isSuccess,
       sonarReturn,
+      sonarSetupUrl,
       bidPanelOpen,
       setBidPanelOpen,
     }
   }, [
     chainId,
     isConnected,
+    sonarSeen,
     entity.data,
     entity.isSuccess,
     position.data,
@@ -132,6 +145,7 @@ export function SaleProvider({
     phase,
     preSaleStage,
     sonarReturn,
+    sonarSetupUrl,
     bidPanelOpen,
   ])
 

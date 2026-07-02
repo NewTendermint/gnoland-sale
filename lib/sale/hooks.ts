@@ -3,13 +3,25 @@
 // Client data hooks the UI binds to; each wraps a ./api fetcher in TanStack Query.
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useAccount } from "wagmi"
-import { HttpError, getCommitments, postGeneratePermit, postPrePurchase } from "./api"
+import {
+  type EntityRead,
+  HttpError,
+  getCommitments,
+  postGeneratePermit,
+  postPrePurchase,
+} from "./api"
 import { forceLockupForRegion } from "./calc"
 import { readEntity, readMyPosition } from "./confirmed-read"
-import { type ClaimResult, claimRefundOnChain, submitBidOnChain } from "./onchain"
+import { SALE_CHAIN, saleContractsFor } from "./contracts"
+import {
+  type ClaimResult,
+  claimRefundOnChain,
+  resolvePaymentTokens,
+  submitBidOnChain,
+} from "./onchain"
 import { sonarQueryRetry, sonarQueryRetryDelay } from "./query-retry"
 import type { BidParams, BidResult, BidStage } from "./submitter"
-import type { CommitmentData, EntitySnapshot, MyBid } from "./types"
+import type { CommitmentData, MyBid } from "./types"
 
 // Neutral zeros until the first fetch resolves; as initialData, types `data` as always-defined.
 const EMPTY_COMMITMENT: CommitmentData = {
@@ -29,12 +41,13 @@ export function useSaleData() {
   })
 }
 
-/** The session's Sonar entity (KYC + eligibility); `data` is null when not connected. */
+/** The session's Sonar entity read (KYC + eligibility), discriminated by session/entity presence. */
 export function useEntity(opts?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["sale", "entity"],
-    // Null-confirming read: a null while this browser had an entity is re-read before being
-    // trusted, so one transient empty upstream answer can no longer stick as "reconnect".
+    // Empty-confirming read (see confirmed-read): a no-entity answer is re-read unconditionally,
+    // a no-session answer only on a browser that has seen an entity - one transient empty
+    // upstream answer must not stick as a false status.
     queryFn: () => readEntity(),
     enabled: opts?.enabled ?? true,
     retry: sonarQueryRetry,
@@ -47,8 +60,8 @@ export function useMyBid(opts?: { enabled?: boolean }) {
   const { isConnected } = useAccount()
   return useQuery({
     queryKey: ["sale", "my-bid"],
-    // Null-confirming read: an unexpected null (this browser has a bid) is re-read before being
-    // trusted, so one transient empty upstream answer can no longer stick as "no bid".
+    // Null-confirming read (see confirmed-read): an unexpected null while this browser has a bid
+    // is re-read before being trusted - one transient empty answer must not stick as "no bid".
     queryFn: () => readMyPosition(),
     enabled: isConnected && (opts?.enabled ?? true),
     // useBid marks this stale (refetchType:"none") after a submit; it reconciles with the indexed
@@ -56,6 +69,21 @@ export function useMyBid(opts?: { enabled?: boolean }) {
     refetchOnWindowFocus: false,
     retry: sonarQueryRetry,
     retryDelay: sonarQueryRetryDelay,
+  })
+}
+
+/** The sale's registered payment tokens (immutable on-chain -> cached for the session). Resolves
+ *  only on the sale chain with a configured contract; `data` stays undefined elsewhere. */
+export function usePaymentTokens() {
+  const { chainId } = useAccount()
+  const contracts = saleContractsFor(chainId)
+  return useQuery({
+    queryKey: ["sale", "payment-tokens", chainId],
+    queryFn: () =>
+      resolvePaymentTokens(contracts?.settlementSale as `0x${string}`, chainId as number),
+    enabled: chainId === SALE_CHAIN.id && Boolean(contracts),
+    staleTime: Number.POSITIVE_INFINITY,
+    gcTime: Number.POSITIVE_INFINITY,
   })
 }
 
@@ -103,10 +131,11 @@ export function useBid() {
       // Compliance: a US entity must carry the on-chain lockup flag - read the region from the
       // trusted server entity snapshot (query cache), never from client UI state, and force it on.
       // The contract rejects a US commitment without it (BidMustHaveLockup).
-      const entity = queryClient.getQueryData<EntitySnapshot>(["sale", "entity"])
+      const read = queryClient.getQueryData<EntityRead>(["sale", "entity"])
+      const region = read?.status === "entity" ? read.entity.investingRegion : undefined
       const bidParams: BidParams = {
         ...params,
-        lockup: forceLockupForRegion(entity?.investingRegion) || params.lockup,
+        lockup: forceLockupForRegion(region) || params.lockup,
       }
       const permit = await postGeneratePermit(address)
       const result = await submitBidOnChain({

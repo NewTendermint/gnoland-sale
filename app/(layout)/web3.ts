@@ -1,6 +1,6 @@
 // wagmi config. Chains pinned to Ethereum mainnet + Sepolia only; never add others (project rule).
 import { mainnet, sepolia } from "viem/chains"
-import { http, createConfig } from "wagmi"
+import { http, createConfig, fallback } from "wagmi"
 import { coinbaseWallet, walletConnect } from "wagmi/connectors"
 
 // The projectId is a PUBLIC client id (not a secret) from Reown/WalletConnect Cloud; usage is
@@ -16,10 +16,23 @@ export const wagmiConfig = createConfig({
     walletConnect({ projectId: wcProjectId, showQrModal: true }),
   ],
   transports: {
-    // Dedicated RPC per chain (Alchemy/Infura...) when set, else viem's public default (rate-limited,
-    // not launch-grade). When you set one, add its host to the CSP connect-src in middleware.ts.
-    [mainnet.id]: http(process.env.NEXT_PUBLIC_MAINNET_RPC_URL || undefined),
-    [sepolia.id]: http(process.env.NEXT_PUBLIC_SEPOLIA_RPC_URL || undefined),
+    // Failover order per chain: dedicated keyed RPC (env, provision before launch) -> publicnode
+    // (free, per-visitor-IP limits) -> viem's chain default. Every host here must stay allowlisted
+    // in the CSP connect-src (middleware.ts).
+    [mainnet.id]: fallback([
+      ...(process.env.NEXT_PUBLIC_MAINNET_RPC_URL
+        ? [http(process.env.NEXT_PUBLIC_MAINNET_RPC_URL)]
+        : []),
+      http("https://ethereum-rpc.publicnode.com"),
+      http(),
+    ]),
+    [sepolia.id]: fallback([
+      ...(process.env.NEXT_PUBLIC_SEPOLIA_RPC_URL
+        ? [http(process.env.NEXT_PUBLIC_SEPOLIA_RPC_URL)]
+        : []),
+      http("https://ethereum-sepolia-rpc.publicnode.com"),
+      http(),
+    ]),
   },
   ssr: true,
 })
