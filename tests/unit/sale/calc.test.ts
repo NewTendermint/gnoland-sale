@@ -140,7 +140,7 @@ describe("validateBidPrice - floor-anchored increment grid", () => {
 // The float-to-integer traps these exist for: 0.12255 * 1e6 floats to
 // 122550.00000000001, and naive truncation would ship a wrong on-chain price.
 describe("on-chain unit conversions", () => {
-  it("usdToTokenUnits scales exactly at 6 decimals (USDC/USDT on Base)", () => {
+  it("usdToTokenUnits scales exactly at 6 decimals (USDC/USDT on the sale chain)", () => {
     expect(usdToTokenUnits(5000, 6)).toBe(5_000_000_000n)
     expect(usdToTokenUnits(200, 6)).toBe(200_000_000n)
     expect(usdToTokenUnits(100_000, 6)).toBe(100_000_000_000n)

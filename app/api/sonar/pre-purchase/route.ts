@@ -12,7 +12,7 @@ export async function POST(request: Request) {
   const { sessionId, wallet, entity } = gate.ctx
   try {
     const result = await prePurchaseCheck({ sessionId, entityId: entity.entityId, wallet })
-    return NextResponse.json(result)
+    return NextResponse.json(result, { headers: { "Cache-Control": "private, no-store" } })
   } catch (err) {
     if (err instanceof SonarAuthError) {
       return NextResponse.json({ error: "unauthenticated" }, { status: 401 })

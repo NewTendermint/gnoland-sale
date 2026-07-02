@@ -80,6 +80,13 @@ async function rotateTokens(sessionId: string): Promise<StoredTokens> {
     return fresh
   } catch (err) {
     if (err instanceof APIError && (err.status === 400 || err.status === 401)) {
+      // invalid_grant can mean a concurrent instance already rotated this (single-use) refresh
+      // token - the in-flight guard is per-instance only. If the stored pair changed since our
+      // read, adopt the winner's tokens instead of ending a healthy session.
+      const latest = await loadTokens(sessionId)
+      if (latest && latest.refreshToken !== current.refreshToken) {
+        return latest
+      }
       await deleteTokens(sessionId)
       throw new SonarAuthError("Sonar session expired; reconnect required")
     }

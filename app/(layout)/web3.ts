@@ -3,10 +3,6 @@ import { mainnet, sepolia } from "viem/chains"
 import { http, createConfig } from "wagmi"
 import { coinbaseWallet, walletConnect } from "wagmi/connectors"
 
-export const SUPPORTED_CHAIN_IDS: readonly number[] = [mainnet.id, sepolia.id]
-
-export const PRIMARY_CHAIN_ID = mainnet.id
-
 // The projectId is a PUBLIC client id (not a secret) from Reown/WalletConnect Cloud; usage is
 // locked to our domains via the Reown AllowList, not by hiding the id.
 // Override per-environment with NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID.

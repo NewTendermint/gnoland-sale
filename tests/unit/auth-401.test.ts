@@ -78,6 +78,27 @@ describe("withSonarAuth (401 -> refresh once -> retry once)", () => {
     expect(deleteTokensMock).toHaveBeenCalledWith("sess-1")
   })
 
+  it("adopts a rotation done by a concurrent instance instead of ending the session", async () => {
+    // The refresh is rejected because another instance already used this single-use refresh
+    // token; the post-failure re-read returns the winner's fresh pair - the call retries with it.
+    loadTokensMock
+      .mockResolvedValueOnce({ ...STORED }) // token acquisition
+      .mockResolvedValueOnce({ ...STORED }) // read inside the rotation
+      .mockResolvedValueOnce({
+        accessToken: "tok-2",
+        refreshToken: "refresh-2",
+        expiresAt: new Date(Date.now() + 60 * 60_000),
+      }) // re-read after invalid_grant
+    refreshTokenMock.mockRejectedValue(new APIError(400, "invalid_grant"))
+    const fn = vi
+      .fn<(token: string) => Promise<string>>()
+      .mockRejectedValueOnce(new APIError(401, "unauthorized"))
+      .mockImplementation(async (token) => token)
+
+    expect(await withSonarAuth("sess-race", fn)).toBe("tok-2")
+    expect(deleteTokensMock).not.toHaveBeenCalled()
+  })
+
   it("ends the session when the retried call still 401s", async () => {
     await expect(
       withSonarAuth("sess-1", async () => {

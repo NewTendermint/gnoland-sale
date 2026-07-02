@@ -98,7 +98,7 @@ export function SaleProvider({
     const onSaleChain = chainId === SALE_CHAIN.id
     const journeyInput: JourneyInput = {
       isConnected,
-      isBaseChain: onSaleChain,
+      isSaleChain: onSaleChain,
       setupState: entity.data?.setupState ?? null,
       eligibility: entity.data?.eligibility ?? null,
       myBid: position.data ?? null,

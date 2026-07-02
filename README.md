@@ -57,9 +57,8 @@ Three phases drive every surface (`lib/sale/phase.ts`):
 
 Resolution order (first match wins):
 
-1. **`NEXT_PUBLIC_SALE_PHASE` env** (`pre-sale` | `live` | `ended`) - an operator OVERRIDE. Leave it UNSET in production so the phase follows the clock; set it only for staging, screenshots, or to force a phase during an incident.
-2. **The sale clock** - the dates in `lib/sale/economics.ts` (`saleOpensIso`, `saleClosesIso`): `pre-sale` before it opens, `live` during the window, `ended` after it closes. This is the production default: set the 3 dates and the page serves the right version itself, no deploy. Resolved server-side (`app/page.tsx`, ISR ~30s) and re-resolved client-side every 60s so an open tab flips without a reload.
-3. Dev default: `live`.
+1. **The sale clock** - the dates in `lib/sale/economics.ts` (`saleOpensIso`, `saleClosesIso`), each overridable via its `NEXT_PUBLIC_*` env var: `pre-sale` before it opens, `live` during the window, `ended` after it closes. This is the production default: set the 3 dates and the page serves the right version itself, no deploy. Resolved server-side (`app/page.tsx`, ISR ~30s) and re-resolved client-side every 60s so an open tab flips without a reload. There is no direct phase-override env var; the phase always follows the dates.
+2. Dev default: `live`.
 
 ### The two pre-sale stages (automatic flip)
 
@@ -82,12 +81,12 @@ Inside a phase, each visitor gets a derived funnel state (`lib/sale/journey.ts`,
 
 | When | What you do | What is automatic |
 |---|---|---|
-| Pre-sale launch | Confirm the 3 dates in `economics.ts` (or env), `NEXT_PUBLIC_NEWSLETTER_ENABLED=1`, Mailchimp creds. Do NOT set `NEXT_PUBLIC_SALE_PHASE` - the clock drives it. | Pre-sale renders; pre-sale -> live -> ended all flip by the dates |
+| Pre-sale launch | Confirm the 3 dates in `economics.ts` (or env), `NEXT_PUBLIC_NEWSLETTER_ENABLED=1`, Mailchimp creds. The clock drives the phase (no phase-override var exists). | Pre-sale renders; pre-sale -> live -> ended all flip by the dates |
 | Registration opens | Nothing | Stage A -> B by clock, "Register now" appears |
 | Sale opens | Nothing | Page flips to `live` by the clock (ISR ~30s) |
 | Sale closes | Nothing | Page flips to `ended` by the clock - final clearing + results |
 | Schedule moves | Update the 3 ISO dates in `economics.ts` (or the `NEXT_PUBLIC_*` env overrides); deploy | Phase + countdowns follow the new dates |
-| Incident | `SALE_PAUSED=true`; optionally `NEXT_PUBLIC_SALE_PHASE` to force a phase | Bid routes 503; UI shows paused / the forced phase |
+| Incident | `SALE_PAUSED=true`; to force a phase, move the milestone dates (`NEXT_PUBLIC_SALE_OPENS` / `SALE_CLOSES`) + redeploy | Bid routes 503; UI shows paused / the phase the new dates imply |
 
 Newsletter kill switch: unset `NEXT_PUBLIC_NEWSLETTER_ENABLED` and the capture UI disappears (surfaces fall back to a date line).
 
@@ -100,7 +99,6 @@ Copy `.env.example` to `.env.local`. Production secrets live in Netlify env, nev
 | Var | Role |
 |---|---|
 | `NEXT_PUBLIC_SITE_URL` | Canonical URL (metadata, sitemap) |
-| `NEXT_PUBLIC_SALE_PHASE` | Phase override (see runbook) |
 | `NEXT_PUBLIC_REGISTRATION_OPENS` / `SALE_OPENS` / `SALE_CLOSES` | Milestone date overrides (ISO) |
 | `NEXT_PUBLIC_NEWSLETTER_ENABLED` | `1` renders the newsletter capture (dev defaults on) |
 | `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` | Public Reown/WalletConnect id (has a built-in default) |
@@ -174,7 +172,7 @@ Tracked items that must be set when going live (most are config, not code):
 - Wire the mainnet `SettlementSale` address in `lib/sale/contracts.ts`.
 - Flip CSP from Report-Only to enforce in `middleware.ts` after wallet testing.
 - Set the Reown/WalletConnect AllowList to `sale.gno.land`.
-- Set `SALE_CHAIN=mainnet` on the production context, plus `SECRETS_SCAN_OMIT_KEYS=SALE_CHAIN` (the value `mainnet` trips Netlify's secret scanner otherwise).
+- Set `SALE_CHAIN=mainnet` on the production context, and APPEND `SALE_CHAIN` to the existing `SECRETS_SCAN_OMIT_KEYS` list in `netlify.toml` (which already omits the VAPID public keys) - the value `mainnet` trips Netlify's secret scanner otherwise. Do NOT replace the list, or the VAPID omits are lost and the production build fails the scan.
 - Provision the server-only secrets above on the production context.
 
 ## Development and review

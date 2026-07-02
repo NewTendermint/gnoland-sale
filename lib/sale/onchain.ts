@@ -2,8 +2,8 @@
 
 import { wagmiConfig } from "@/app/(layout)/web3"
 // The on-chain steps of the sale: the single swap point for going live. Real path = @wagmi/core
-// actions against the deployed SettlementSale; falls back to emulation when no contract is
-// configured for the connected chain (so /dev/states + offline dev keep working).
+// actions against the deployed SettlementSale. When no contract is configured for the connected
+// chain, the bid is blocked (a "wrong-chain" reverted result), never emulated.
 import {
   getAccount,
   getPublicClient,

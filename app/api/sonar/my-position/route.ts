@@ -15,7 +15,9 @@ export async function GET() {
   // Rolling: re-stamp the 2h cookie window.
   await session.save()
   try {
-    return NextResponse.json(await readMyBid(session.sessionId))
+    return NextResponse.json(await readMyBid(session.sessionId), {
+      headers: { "Cache-Control": "private, no-store" },
+    })
   } catch (err) {
     if (err instanceof SonarAuthError) {
       return NextResponse.json({ error: "unauthenticated" }, { status: 401 })
