@@ -7,7 +7,8 @@ export const fmtPrice = (n: number) =>
 /** Whole-dollar USD amount, e.g. "$3,200". */
 export const fmtUsd = (n: number) => `$${n.toLocaleString("en-US", { maximumFractionDigits: 0 })}`
 
-/** Compact USD, e.g. "$1.2M" (deterministic across JS engines, unlike Intl compact). */
+/** Compact USD, e.g. "$721K" / "$1.2M" (deterministic across JS engines, unlike Intl compact).
+ * One decimal from millions up only; K amounts round to a whole number. */
 export const fmtCompactUsd = (n: number) => {
   const sign = n < 0 ? "-" : ""
   const abs = Math.abs(n)
@@ -19,7 +20,7 @@ export const fmtCompactUsd = (n: number) => {
     v /= 1000
     i++
   }
-  let rounded = Math.round(v * 10) / 10
+  let rounded = i === 0 ? Math.round(v) : Math.round(v * 10) / 10
   if (rounded >= 1000 && i < units.length - 1) {
     rounded /= 1000
     i++

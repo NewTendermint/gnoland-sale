@@ -2,9 +2,10 @@ import { describe, expect, it } from "vitest"
 import { formatCompactCount } from "../../../lib/stats/test13"
 
 describe("formatCompactCount", () => {
-  it("floors thousands into a K+ suffix, keeping one decimal of nuance", () => {
-    expect(formatCompactCount(688_024)).toBe("688K+") // .0 dropped
-    expect(formatCompactCount(250_999)).toBe("250.9K+")
+  it("floors thousands into a whole K+ (decimals are reserved for millions)", () => {
+    expect(formatCompactCount(688_024)).toBe("688K+")
+    expect(formatCompactCount(250_999)).toBe("250K+")
+    expect(formatCompactCount(720_900)).toBe("720K+")
     expect(formatCompactCount(1_000)).toBe("1K+")
   })
 
@@ -16,7 +17,7 @@ describe("formatCompactCount", () => {
 
   it("never overstates: the floor keeps the '+' truthful", () => {
     expect(formatCompactCount(3_199_999)).toBe("3.1M+")
-    expect(formatCompactCount(688_999)).toBe("688.9K+")
+    expect(formatCompactCount(688_999)).toBe("688K+")
   })
 
   it("leaves sub-thousand counts as a plain N+", () => {

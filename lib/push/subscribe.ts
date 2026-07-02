@@ -53,7 +53,10 @@ export async function enablePushAlerts(bidLimitUsd: number): Promise<PushOptInRe
   try {
     const permission = await Notification.requestPermission()
     if (permission !== "granted") return "denied"
-    const reg = await navigator.serviceWorker.register("/sw.js")
+    await navigator.serviceWorker.register("/sw.js")
+    // subscribe() rejects (InvalidStateError) until the SW is active; on a first visit
+    // register() resolves while it is still installing, so wait for activation.
+    const reg = await navigator.serviceWorker.ready
     const sub = await reg.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: urlBase64ToUint8Array(key),
