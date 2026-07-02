@@ -3,7 +3,7 @@ import type { ReadCommitmentDataResponse } from "@echoxyz/sonar-core"
 import { env } from "../env"
 import type { CommitmentMetrics, MyBid } from "../sale/types"
 import { createSonarClient } from "./client"
-import { ensureFreshTokens, withSonarAuth } from "./permit"
+import { withSonarAuth } from "./permit"
 
 const MICRO_USD = 1_000_000
 
@@ -53,17 +53,15 @@ export function mapMyBid(res: ReadCommitmentDataResponse, saleSpecificEntityId: 
 
 /** Read the session's position (authenticated); null when no entity or no commitment. */
 export async function readMyBid(sessionId: string): Promise<MyBid> {
-  const tokens = await ensureFreshTokens(sessionId)
-  const client = createSonarClient(tokens.accessToken)
-  const entities = await withSonarAuth(sessionId, () =>
-    client.listAvailableEntities({ saleUUID: env.SONAR_SALE_UUID }),
+  const entities = await withSonarAuth(sessionId, (accessToken) =>
+    createSonarClient(accessToken).listAvailableEntities({ saleUUID: env.SONAR_SALE_UUID }),
   )
   const entity = entities.Entities[0]
   if (!entity) {
     return null
   }
-  const data = await withSonarAuth(sessionId, () =>
-    client.readCommitmentData({ saleUUID: env.SONAR_SALE_UUID }),
+  const data = await withSonarAuth(sessionId, (accessToken) =>
+    createSonarClient(accessToken).readCommitmentData({ saleUUID: env.SONAR_SALE_UUID }),
   )
   return mapMyBid(data, entity.SaleSpecificEntityID)
 }

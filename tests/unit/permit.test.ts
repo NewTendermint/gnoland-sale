@@ -21,6 +21,7 @@ const {
 vi.mock("../../lib/sonar/tokens", () => ({
   loadTokens: loadTokensMock,
   storeTokens: storeTokensMock,
+  deleteTokens: vi.fn(),
 }))
 vi.mock("../../lib/sonar/client", () => ({
   createSonarClient: createSonarClientMock,

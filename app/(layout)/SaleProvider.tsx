@@ -64,6 +64,17 @@ export function SaleProvider({
     }
   }, [queryClient])
 
+  // A position read landing right after the Sonar OAuth return can settle null (it races the fresh
+  // session) and useMyBid never refetches on its own - re-read once. An unchanged null does not
+  // re-trigger the effect, so a genuine no-bid session never loops.
+  useEffect(() => {
+    if (sonarReturn !== "ok" || !position.isFetched || position.data != null) return
+    const t = setTimeout(() => {
+      queryClient.invalidateQueries({ queryKey: ["sale", "my-bid"] })
+    }, 1000)
+    return () => clearTimeout(t)
+  }, [sonarReturn, position.isFetched, position.data, queryClient])
+
   // Re-resolves phase + stage every minute and on tab refocus, straight from the sale clock.
   useEffect(() => {
     const resolve = () => {
