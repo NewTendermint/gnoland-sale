@@ -69,6 +69,9 @@ function isSafeHttpUrl(value: string | undefined): value is string {
   }
 }
 
+// Module-level so the guard survives a BidFlow remount (panel collapse/expand). One bidder per client.
+let bidInFlight = false
+
 /** Bid submission: Sonar pre-purchase + permit gates, then submitBidOnChain. */
 export function useBid() {
   const { address } = useAccount()
@@ -81,6 +84,12 @@ export function useBid() {
     if (!address) {
       return { status: "reverted", reason: "Connect your wallet" }
     }
+    // Cross-remount double-submit guard: a second bid while one tx is pending would sign against a
+    // stale USDC nonce and revert on-chain (wasted gas). Module-level so it persists across remounts.
+    if (bidInFlight) {
+      return { status: "reverted", reason: "A bid is already in progress" }
+    }
+    bidInFlight = true
     try {
       const pre = await postPrePurchase(address)
       if (!pre.readyToPurchase) {
@@ -126,6 +135,8 @@ export function useBid() {
         return { status: "reverted", reason: "session-expired" }
       }
       return { status: "reverted", reason: "Could not place bid" }
+    } finally {
+      bidInFlight = false
     }
   }
 

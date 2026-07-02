@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { interpretBidReceipt, submitBidOnChain } from "../../lib/sale/onchain"
+import { bidPreflightReason, interpretBidReceipt, submitBidOnChain } from "../../lib/sale/onchain"
 
 // No wallet is connected in the unit env, so getAccount() has no chainId and saleContractsFor()
 // returns undefined -> the submit reverts with "Connect your wallet", never a fake/emulated bid.
@@ -87,5 +87,37 @@ describe("interpretBidReceipt (mined receipt + replacement -> bid result)", () =
         txHash: mined,
       })
     }
+  })
+})
+
+describe("bidPreflightReason (pre-signature guards)", () => {
+  const permit = (over: Partial<typeof ARGS.permit.PermitJSON>) => ({
+    ...ARGS.permit.PermitJSON,
+    ...over,
+  })
+  const NOW = 1_000_000
+
+  it("rejects an expired permit before signing", () => {
+    expect(bidPreflightReason(permit({ ExpiresAt: NOW - 1 }), 100n, 1000n, NOW)).toBe(
+      "Your authorization expired - please try again",
+    )
+  })
+
+  it("ignores expiry when ExpiresAt is 0 (unset/mock)", () => {
+    expect(bidPreflightReason(permit({ ExpiresAt: 0 }), 100n, 1000n, NOW)).toBeNull()
+  })
+
+  it("rejects when the USDC balance is below the amount delta", () => {
+    expect(bidPreflightReason(permit({ ExpiresAt: NOW + 600 }), 100n, 99n, NOW)).toBe(
+      "Insufficient USDC balance",
+    )
+  })
+
+  it("passes when balance covers the delta and the permit is live", () => {
+    expect(bidPreflightReason(permit({ ExpiresAt: NOW + 600 }), 100n, 100n, NOW)).toBeNull()
+  })
+
+  it("skips the balance check for a price-only raise (delta 0)", () => {
+    expect(bidPreflightReason(permit({ ExpiresAt: NOW + 600 }), 0n, 0n, NOW)).toBeNull()
   })
 })

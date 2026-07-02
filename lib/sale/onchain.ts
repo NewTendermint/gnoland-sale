@@ -19,7 +19,7 @@ import { SALE_CHAIN, saleContractsFor } from "./contracts"
 import { SALE_ECONOMICS } from "./economics"
 import { toPurchasePermitV3 } from "./permit-map"
 import type { BidParams, BidResult, BidStage } from "./submitter"
-import type { SalePermit } from "./types"
+import type { SalePermit, SonarPermitV3 } from "./types"
 
 type OnChainBidArgs = {
   params: BidParams
@@ -115,6 +115,28 @@ export function interpretBidReceipt(
   return { status: "submitted", txHash: receipt.transactionHash }
 }
 
+/**
+ * Cheap pre-signature guards from data already in hand (the permit + one balance read): reject a
+ * doomed bid BEFORE the EIP-2612 wallet popup so no unused approval is signed. Returns a user-facing
+ * reason (reusing bidRevertReason's wording), or null to proceed. Amount/price BOUNDS are left to
+ * simulateContract on purpose - their "0 = no limit" semantics are not pinned here.
+ */
+export function bidPreflightReason(
+  permit: SonarPermitV3,
+  amountDelta: bigint,
+  usdcBalance: bigint,
+  nowSec: number,
+): string | null {
+  const expiresAt = Number(permit.ExpiresAt)
+  if (expiresAt > 0 && nowSec >= expiresAt) {
+    return "Your authorization expired - please try again"
+  }
+  if (amountDelta > 0n && usdcBalance < amountDelta) {
+    return "Insufficient USDC balance"
+  }
+  return null
+}
+
 export async function submitBidOnChain(args: OnChainBidArgs): Promise<BidResult> {
   const { params, permit, wallet } = args
   if (!permit?.Signature) {
@@ -153,6 +175,27 @@ export async function submitBidOnChain(args: OnChainBidArgs): Promise<BidResult>
     })
     const prevAmount = states[0]?.currentBid.amount ?? 0n
     const amountDelta = bid.amount > prevAmount ? bid.amount - prevAmount : 0n
+
+    // Pre-signature guards: catch a dead permit / underfunded wallet BEFORE the EIP-2612 popup, so a
+    // doomed bid never leaves an unused signed approval. Balance is only read when there's a delta.
+    const usdcBalance =
+      amountDelta > 0n
+        ? await readContract(wagmiConfig, {
+            address: payment.address,
+            abi: erc20Abi,
+            functionName: "balanceOf",
+            args: [wallet],
+          })
+        : 0n
+    const preflight = bidPreflightReason(
+      permit.PermitJSON,
+      amountDelta,
+      usdcBalance,
+      Math.floor(Date.now() / 1000),
+    )
+    if (preflight) {
+      return { status: "reverted", reason: preflight }
+    }
 
     let erc20PermitDeadline = 0n
     let erc20PermitSignature: `0x${string}` = "0x"
