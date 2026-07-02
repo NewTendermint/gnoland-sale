@@ -100,9 +100,7 @@ export function SettlementFlow({
               <span className="text-sm text-muted">GNOT</span>
             </Cell>
           ) : null}
-          <Cell label="Refundable">
-            {fmtUsd(refundableUsd)} <span className="text-sm text-muted">USDC</span>
-          </Cell>
+          <Cell label="Refundable">{fmtUsd(refundableUsd)}</Cell>
         </div>
 
         <div className="ml-auto flex items-center gap-4">

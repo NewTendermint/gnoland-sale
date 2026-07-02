@@ -45,11 +45,11 @@ const EIP2612_PERMIT_TYPES = {
 } as const
 
 /** One user-facing line for a wallet/contract failure (never leak raw revert data to the UI). */
-function bidRevertReason(err: unknown): string {
+function bidRevertReason(err: unknown, tokenSymbol = "USDC"): string {
   const msg = err instanceof Error ? err.message : String(err)
   if (/rejected|denied/i.test(msg)) return "You cancelled the signature"
   if (/insufficient|exceeds balance|transfer amount exceeds/i.test(msg)) {
-    return "Insufficient USDC balance"
+    return `Insufficient ${tokenSymbol} balance`
   }
   if (/BidPriceBelowMinPrice|BidPriceExceedsMaxPrice/i.test(msg)) {
     return "Your price is outside the allowed range"
@@ -67,34 +67,108 @@ function bidRevertReason(err: unknown): string {
   return "Could not place bid"
 }
 
-// The sale's payment token is immutable, so read (address + decimals) from the contract once per
-// (chain, sale) and cache. Reading paymentTokens() means we bid in EXACTLY the token the deployed
-// contract accepts - no hardcoded address/decimals to drift out of sync.
-const paymentTokenCache = new Map<string, { address: `0x${string}`; decimals: number }>()
+export type PaymentToken = { address: `0x${string}`; symbol: string; decimals: number }
 
-async function resolvePaymentToken(
+/** The contract assumes uniform decimals + 1:1 parity across payment tokens (SettlementSale.sol);
+ *  enforce the decimals part - every USD conversion in the app depends on it. */
+export function assertUniformDecimals(
+  tokens: readonly { symbol: string; decimals: number }[],
+): void {
+  if (tokens.length === 0) {
+    throw new Error("Sale has no payment token configured")
+  }
+  const first = tokens[0]
+  const drift = tokens.find((t) => t.decimals !== first.decimals)
+  if (drift) {
+    throw new Error(
+      `Payment tokens disagree on decimals (${first.symbol}=${first.decimals}, ${drift.symbol}=${drift.decimals})`,
+    )
+  }
+}
+
+// The sale's primary token (UX default). NOT the contract's tokens[0]: the registration order is
+// Echo's, not ours - the redeployed sandbox lists USDT first.
+const DEFAULT_TOKEN_SYMBOL = "USDC"
+
+/** The default funding token: USDC when the sale accepts it, else the sale's first token. */
+export function defaultPaymentToken(tokens: readonly PaymentToken[]): PaymentToken {
+  return tokens.find((t) => t.symbol === DEFAULT_TOKEN_SYMBOL) ?? tokens[0]
+}
+
+/** Pick the funding token for this transaction: the caller's choice when it is one of the sale's
+ *  registered tokens, else the default. Fails fast on an address the contract would reject anyway
+ *  (InvalidPaymentToken). */
+export function selectPaymentToken(
+  tokens: readonly PaymentToken[],
+  requested?: `0x${string}`,
+): PaymentToken {
+  if (!requested) return defaultPaymentToken(tokens)
+  const match = tokens.find((t) => t.address.toLowerCase() === requested.toLowerCase())
+  if (!match) {
+    throw new Error("Selected token is not accepted by this sale")
+  }
+  return match
+}
+
+/** ERC-20 approve plan covering the amount delta; null = the current allowance already covers it.
+ *  resetFirst handles USDT-style approve, which reverts when changing a non-zero allowance - it
+ *  must be zeroed first (verified mainnet USDT behavior). */
+export function approvalPlan(
+  allowance: bigint,
+  delta: bigint,
+): { resetFirst: boolean; amount: bigint } | null {
+  if (delta <= 0n || allowance >= delta) return null
+  return { resetFirst: allowance > 0n, amount: delta }
+}
+
+// Mainnet tokens with no usable EIP-2612 permit (verified against deployed bytecode); they take
+// the approval path. Anything else is probed for nonces() and falls back to approval when absent.
+const NO_PERMIT_SYMBOLS = new Set(["USDT"])
+
+async function tokenSupportsPermit(token: PaymentToken, wallet: `0x${string}`): Promise<boolean> {
+  if (NO_PERMIT_SYMBOLS.has(token.symbol)) return false
+  try {
+    await readContract(wagmiConfig, {
+      address: token.address,
+      abi: erc20Abi,
+      functionName: "nonces",
+      args: [wallet],
+    })
+    return true
+  } catch {
+    return false
+  }
+}
+
+// The sale's payment tokens are immutable (set at contract init), so read the full list
+// (address + symbol + decimals) once per (chain, sale) and cache. Reading paymentTokens() means we
+// bid in EXACTLY the tokens the deployed contract accepts - nothing hardcoded to drift out of sync.
+const paymentTokensCache = new Map<string, PaymentToken[]>()
+
+export async function resolvePaymentTokens(
   settlementSale: `0x${string}`,
   chainId: number,
-): Promise<{ address: `0x${string}`; decimals: number }> {
+): Promise<PaymentToken[]> {
   const key = `${chainId}:${settlementSale}`
-  const cached = paymentTokenCache.get(key)
+  const cached = paymentTokensCache.get(key)
   if (cached) return cached
-  const [token] = await readContract(wagmiConfig, {
+  const addresses = await readContract(wagmiConfig, {
     address: settlementSale,
     abi: settlementSaleAbi,
     functionName: "paymentTokens",
   })
-  if (!token) {
-    throw new Error("Sale has no payment token configured")
-  }
-  const decimals = await readContract(wagmiConfig, {
-    address: token,
-    abi: erc20Abi,
-    functionName: "decimals",
-  })
-  const resolved = { address: token, decimals: Number(decimals) }
-  paymentTokenCache.set(key, resolved)
-  return resolved
+  const tokens = await Promise.all(
+    addresses.map(async (address) => {
+      const [symbol, decimals] = await Promise.all([
+        readContract(wagmiConfig, { address, abi: erc20Abi, functionName: "symbol" }),
+        readContract(wagmiConfig, { address, abi: erc20Abi, functionName: "decimals" }),
+      ])
+      return { address, symbol, decimals: Number(decimals) }
+    }),
+  )
+  assertUniformDecimals(tokens)
+  paymentTokensCache.set(key, tokens)
+  return tokens
 }
 
 /**
@@ -126,13 +200,14 @@ export function bidPreflightReason(
   amountDelta: bigint,
   usdcBalance: bigint,
   nowSec: number,
+  tokenSymbol = "USDC",
 ): string | null {
   const expiresAt = Number(permit.ExpiresAt)
   if (expiresAt > 0 && nowSec >= expiresAt) {
     return "Your authorization expired - please try again"
   }
   if (amountDelta > 0n && usdcBalance < amountDelta) {
-    return "Insufficient USDC balance"
+    return `Insufficient ${tokenSymbol} balance`
   }
   return null
 }
@@ -155,9 +230,14 @@ export async function submitBidOnChain(args: OnChainBidArgs): Promise<BidResult>
     return { status: "reverted", reason: "wrong-chain" }
   }
 
+  let paySymbol = "USDC"
   try {
     const purchasePermit = toPurchasePermitV3(permit.PermitJSON)
-    const payment = await resolvePaymentToken(contracts.settlementSale, chainId)
+    const payment = selectPaymentToken(
+      await resolvePaymentTokens(contracts.settlementSale, chainId),
+      params.token,
+    )
+    paySymbol = payment.symbol
     const bid = {
       lockup: params.lockup,
       price: priceUsdToOnchainPrice(params.priceUsd, SALE_ECONOMICS.bidIncrementUsd),
@@ -192,9 +272,78 @@ export async function submitBidOnChain(args: OnChainBidArgs): Promise<BidResult>
       amountDelta,
       usdcBalance,
       Math.floor(Date.now() / 1000),
+      payment.symbol,
     )
     if (preflight) {
       return { status: "reverted", reason: preflight }
+    }
+
+    // Approval path - tokens without EIP-2612 (e.g. USDT): fund the delta with a plain approve tx
+    // (zeroing a leftover allowance first, USDT requirement), then bid via replaceBidWithApproval.
+    // The permit path below stays untouched for USDC.
+    if (amountDelta > 0n && !(await tokenSupportsPermit(payment, wallet))) {
+      const allowance = await readContract(wagmiConfig, {
+        address: payment.address,
+        abi: erc20Abi,
+        functionName: "allowance",
+        args: [wallet, contracts.settlementSale],
+      })
+      const plan = approvalPlan(allowance, amountDelta)
+      if (plan) {
+        args.onStage?.("approving")
+        if (plan.resetFirst) {
+          const resetHash = await writeContract(wagmiConfig, {
+            address: payment.address,
+            abi: erc20Abi,
+            functionName: "approve",
+            args: [contracts.settlementSale, 0n],
+            account: wallet,
+          })
+          const resetReceipt = await waitForTransactionReceipt(wagmiConfig, { hash: resetHash })
+          if (resetReceipt.status !== "success") {
+            return { status: "reverted", reason: "The approval transaction failed on-chain" }
+          }
+        }
+        const approveHash = await writeContract(wagmiConfig, {
+          address: payment.address,
+          abi: erc20Abi,
+          functionName: "approve",
+          args: [contracts.settlementSale, plan.amount],
+          account: wallet,
+        })
+        const approveReceipt = await waitForTransactionReceipt(wagmiConfig, { hash: approveHash })
+        if (approveReceipt.status !== "success") {
+          return { status: "reverted", reason: "The approval transaction failed on-chain" }
+        }
+      }
+      const call = {
+        address: contracts.settlementSale,
+        abi: settlementSaleAbi,
+        functionName: "replaceBidWithApproval",
+        args: [payment.address, bid, purchasePermit, permit.Signature as `0x${string}`],
+        account: wallet,
+      } as const
+      await simulateContract(wagmiConfig, call) // pre-flight: surface reverts before the wallet popup
+      args.onStage?.("signing")
+      let gas = 600_000n
+      try {
+        const publicClient = getPublicClient(wagmiConfig)
+        if (publicClient) {
+          const generous = (await publicClient.estimateContractGas(call)) * 3n
+          if (generous > gas) gas = generous
+        }
+      } catch {
+        // estimate failed (network/state); keep the floor
+      }
+      const txHash = await writeContract(wagmiConfig, { ...call, gas })
+      let replacementReason: "replaced" | "repriced" | "cancelled" | null = null
+      const receipt = await waitForTransactionReceipt(wagmiConfig, {
+        hash: txHash,
+        onReplaced: (r) => {
+          replacementReason = r.reason
+        },
+      })
+      return interpretBidReceipt(receipt, replacementReason)
     }
 
     let erc20PermitDeadline = 0n
@@ -281,7 +430,7 @@ export async function submitBidOnChain(args: OnChainBidArgs): Promise<BidResult>
     })
     return interpretBidReceipt(receipt, replacementReason)
   } catch (err) {
-    return { status: "reverted", reason: bidRevertReason(err) }
+    return { status: "reverted", reason: bidRevertReason(err, paySymbol) }
   }
 }
 

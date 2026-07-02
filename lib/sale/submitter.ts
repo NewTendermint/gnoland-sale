@@ -1,5 +1,11 @@
 // Bid types + the /dev/states preview submitter. Real on-chain path: lib/sale/onchain.ts.
-export type BidParams = { priceUsd: number; amountUsd: number; lockup: boolean }
+// token: the payment token funding THIS transaction's delta (omitted = the sale's first token).
+export type BidParams = {
+  priceUsd: number
+  amountUsd: number
+  lockup: boolean
+  token?: `0x${string}`
+}
 export type BidResult =
   | { status: "submitted"; txHash: string }
   | { status: "reverted"; reason: string }

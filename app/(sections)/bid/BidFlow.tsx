@@ -15,8 +15,10 @@ import {
 } from "../../../lib/sale/calc"
 import { SALE_CHAIN } from "../../../lib/sale/contracts"
 import { SALE_ECONOMICS } from "../../../lib/sale/economics"
-import { fmtGnot, fmtPriceUsdc, fmtUsdc } from "../../../lib/sale/format"
+import { fmtGnot, fmtPrice, fmtUsd } from "../../../lib/sale/format"
+import { usePaymentTokens } from "../../../lib/sale/hooks"
 import { SUPPORT_CONTACT_HREF, VERIFY_STATUS, WELCOME_BACK } from "../../../lib/sale/labels"
+import { defaultPaymentToken } from "../../../lib/sale/onchain"
 import {
   type BidParams,
   type BidResult,
@@ -397,7 +399,7 @@ function DeltaCapsule({ added }: { added: number }) {
   if (!Number.isFinite(added) || added <= 0) return null
   return (
     <span className="rounded-full border border-current px-1.5 py-px text-[0.65em] font-bold tracking-normal opacity-70">
-      +{fmtUsdc(added)}
+      +{fmtUsd(added)}
     </span>
   )
 }
@@ -435,6 +437,23 @@ function BidRow({
     setAmount(v)
   }
   const chainId = useChainId()
+  // Funding token for THIS transaction (contract model: one bid, per-tx payment token). The picker
+  // only exists once the sale registers several tokens; until then behavior is byte-identical.
+  const paymentTokens = usePaymentTokens().data
+  const multiToken = (paymentTokens?.length ?? 0) > 1
+  const [payTokenAddress, setPayTokenAddress] = useState<`0x${string}` | null>(null)
+  const payToken = paymentTokens?.length
+    ? (paymentTokens.find((t) => t.address === payTokenAddress) ??
+      defaultPaymentToken(paymentTokens))
+    : undefined
+  // Picker lists the default first, not the contract's registration order.
+  const orderedTokens =
+    multiToken && paymentTokens
+      ? [
+          defaultPaymentToken(paymentTokens),
+          ...paymentTokens.filter((t) => t !== defaultPaymentToken(paymentTokens)),
+        ]
+      : paymentTokens
   const [submitState, setSubmitState] = useState<SubmitState>(preview?.state ?? "idle")
   const [txHash, setTxHash] = useState<string | null>(preview?.txHash ?? null)
   const [submitError, setSubmitError] = useState<string | null>(preview?.error ?? null)
@@ -489,17 +508,17 @@ function BidRow({
 
   const priceError =
     priceShown && priceCheck === "below-min"
-      ? `Min price ${fmtPriceUsdc(minPrice)}.`
+      ? `Min price ${fmtPrice(minPrice)}.`
       : priceShown && priceCheck === "off-increment"
-        ? `Bids move in ${increment} USDC steps.`
+        ? `Bids move in $${increment} steps.`
         : priceShown && priceCheck === "below-previous" && prevBid
-          ? `Raise above your current ${fmtPriceUsdc(prevBid.priceUsd)}.`
+          ? `Raise above your current ${fmtPrice(prevBid.priceUsd)}.`
           : null
   const amountError =
     amountShown && amountCheck === "too-low"
       ? prevBid
-        ? `Can’t go below your committed ${fmtUsdc(prevBid.committedUsd)}.`
-        : `Min ${fmtUsdc(minCommitFloor)}.`
+        ? `Can’t go below your committed ${fmtUsd(prevBid.committedUsd)}.`
+        : `Min ${fmtUsd(minCommitFloor)}.`
       : null
 
   const headroom =
@@ -524,14 +543,19 @@ function BidRow({
 
   const raiseNote =
     prevBid && priceValid && amountValid && !raisesSomething
-      ? "Your bid is unchanged - raise the price or add USDC."
+      ? "Your bid is unchanged - raise the price or add funds."
       : null
 
   async function runSubmit() {
     setSubmitError(null)
     // lockup:false here = the user opt-in (no toggle surfaced). The compliance-forced US lockup
     // is applied in useBid from the trusted server entity region (Sonar A.17.8), not in the form.
-    const params: BidParams = { priceUsd: priceNum, amountUsd: amountNum, lockup: false }
+    const params: BidParams = {
+      priceUsd: priceNum,
+      amountUsd: amountNum,
+      lockup: false,
+      token: payToken?.address,
+    }
     if (onBid) {
       setSubmitState("submitting")
       const result = await onBid(params, {
@@ -571,7 +595,7 @@ function BidRow({
         <div className="min-w-0 flex-1">
           <p className="text-sm">
             <span className="font-medium text-foreground">
-              Commit {fmtUsdc(amountNum)} at {fmtPriceUsdc(priceNum)} per GNOT?
+              Commit {fmtUsd(amountNum)} at {fmtPrice(priceNum)} per GNOT?
             </span>
             <span className="ml-1.5 text-muted">
               You pay the final clearing price. Est. ~{fmtGnot(est)} GNOT. Bids can be raised but
@@ -581,8 +605,8 @@ function BidRow({
           {prevBid ? (
             <p className="mt-1 text-xs text-muted">
               {amountNum > prevBid.committedUsd
-                ? `Only the ${fmtUsdc(amountNum - prevBid.committedUsd)} difference is charged.`
-                : "No additional USDC - just sign."}
+                ? `Only the ${fmtUsd(amountNum - prevBid.committedUsd)} difference is charged.`
+                : "No additional funds - just sign."}
             </p>
           ) : null}
         </div>
@@ -613,14 +637,14 @@ function BidRow({
               {submitState === "submitting"
                 ? "Placing your bid..."
                 : submitState === "approving"
-                  ? "Approving USDC..."
+                  ? `Approving ${payToken?.symbol ?? "USDC"}...`
                   : "Signing..."}
             </span>
             <span className="ml-1.5 text-muted">
               {submitState === "submitting"
                 ? "Preparing your bid - check your wallet in a moment."
                 : submitState === "approving"
-                  ? "Approve USDC spending in your wallet."
+                  ? `Approve ${payToken?.symbol ?? "USDC"} spending in your wallet.`
                   : "Confirm and sign the bid in your wallet."}
             </span>
           </p>
@@ -636,7 +660,7 @@ function BidRow({
         <div className="flex flex-wrap items-center gap-3">
           <Icon name="shield-check" draw={false} className="h-5 w-5 shrink-0 text-mint" />
           <p className="text-sm text-foreground">
-            Bid submitted - {fmtUsdc(amountNum)} at {fmtPriceUsdc(priceNum)} per GNOT.
+            Bid submitted - {fmtUsd(amountNum)} at {fmtPrice(priceNum)} per GNOT.
           </p>
           {explorer ? (
             <a
@@ -683,7 +707,7 @@ function BidRow({
           hint={`If your bid meets or exceeds the final clearing price, it wins. You pay the clearing price, not your original bid. Bids are placed in $${increment} increments, starting from the $${minPrice} starting price.`}
           suffix={
             <>
-              USDC <span className="text-[0.7em] opacity-60">/ GNOT</span>
+              USD <span className="text-[0.7em] opacity-60">/ GNOT</span>
             </>
           }
           error={priceError}
@@ -691,14 +715,23 @@ function BidRow({
         />
         <InputCell
           id="bid-amount"
-          label="Amount (USDC)"
+          label="Amount (USD)"
           value={amount}
           onChange={onAmountChange}
           invalid={amountShown && amountCheck !== "ok"}
           placeholder={String(minCommitFloor)}
-          hint={`The total USDC you commit is the amount you pay if your bid wins. If you're outbid, you're fully refunded after the sale. Your GNOT allocation is calculated as: Amount (USDC) / Clearing Price. Minimum commitment is $${fmtUsdc(minCommitFloor)}, with no maximum.`}
+          hint={`The total USD you commit is the amount you pay if your bid wins. If you're outbid, you're fully refunded after the sale. Your GNOT allocation is calculated as: Amount (USD) / Clearing Price. Minimum commitment is ${fmtUsd(minCommitFloor)}, with no maximum.`}
           error={amountError}
           className="w-32"
+          trailing={
+            multiToken && orderedTokens ? (
+              <TokenSelect
+                tokens={orderedTokens}
+                value={payToken?.address}
+                onChange={setPayTokenAddress}
+              />
+            ) : undefined
+          }
         />
 
         <div className="flex flex-col gap-1.5">
@@ -777,6 +810,7 @@ function InputCell({
   readOnly = false,
   prefix,
   suffix,
+  trailing,
   error,
   invalid,
   placeholder,
@@ -791,6 +825,9 @@ function InputCell({
   readOnly?: boolean
   prefix?: string
   suffix?: ReactNode
+  /** Interactive node after the input (e.g. the payment-token picker) - rendered without the
+   *  decorative suffix's aria-hidden. */
+  trailing?: ReactNode
   error?: string | null
   invalid: boolean
   placeholder?: string
@@ -901,6 +938,7 @@ function InputCell({
             {suffix}
           </span>
         ) : null}
+        {trailing ?? null}
       </div>
       {error ? (
         <p
@@ -911,6 +949,45 @@ function InputCell({
         </p>
       ) : null}
     </div>
+  )
+}
+
+/** Per-transaction funding token picker (the "USDC ▾" suffix of the Amount field); rendered only
+ *  once the sale accepts several tokens. Native select: keyboard + screen reader for free. */
+function TokenSelect({
+  tokens,
+  value,
+  onChange,
+}: {
+  tokens: readonly { address: `0x${string}`; symbol: string }[]
+  value?: `0x${string}`
+  onChange: (address: `0x${string}`) => void
+}) {
+  return (
+    <span className="relative ml-1 inline-flex items-center whitespace-nowrap font-mono text-sm text-muted transition-colors focus-within:text-foreground hover:text-foreground">
+      <select
+        aria-label="Payment token"
+        value={value}
+        onChange={(e) => onChange(e.target.value as `0x${string}`)}
+        className="cursor-pointer appearance-none bg-transparent pr-[15px] outline-none"
+      >
+        {tokens.map((t) => (
+          <option key={t.address} value={t.address}>
+            {t.symbol}
+          </option>
+        ))}
+      </select>
+      <svg
+        viewBox="0 0 10 6"
+        className="pointer-events-none absolute right-0 top-1/2 h-[6px] w-[9px] -translate-y-1/2"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        aria-hidden="true"
+      >
+        <path d="M1 1l4 4 4-4" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </span>
   )
 }
 

@@ -6,7 +6,13 @@ import { useAccount } from "wagmi"
 import { HttpError, getCommitments, postGeneratePermit, postPrePurchase } from "./api"
 import { forceLockupForRegion } from "./calc"
 import { readEntity, readMyPosition } from "./confirmed-read"
-import { type ClaimResult, claimRefundOnChain, submitBidOnChain } from "./onchain"
+import { SALE_CHAIN, saleContractsFor } from "./contracts"
+import {
+  type ClaimResult,
+  claimRefundOnChain,
+  resolvePaymentTokens,
+  submitBidOnChain,
+} from "./onchain"
 import { sonarQueryRetry, sonarQueryRetryDelay } from "./query-retry"
 import type { BidParams, BidResult, BidStage } from "./submitter"
 import type { CommitmentData, EntitySnapshot, MyBid } from "./types"
@@ -56,6 +62,21 @@ export function useMyBid(opts?: { enabled?: boolean }) {
     refetchOnWindowFocus: false,
     retry: sonarQueryRetry,
     retryDelay: sonarQueryRetryDelay,
+  })
+}
+
+/** The sale's registered payment tokens (immutable on-chain -> cached for the session). Resolves
+ *  only on the sale chain with a configured contract; `data` stays undefined elsewhere. */
+export function usePaymentTokens() {
+  const { chainId } = useAccount()
+  const contracts = saleContractsFor(chainId)
+  return useQuery({
+    queryKey: ["sale", "payment-tokens", chainId],
+    queryFn: () =>
+      resolvePaymentTokens(contracts?.settlementSale as `0x${string}`, chainId as number),
+    enabled: chainId === SALE_CHAIN.id && Boolean(contracts),
+    staleTime: Number.POSITIVE_INFINITY,
+    gcTime: Number.POSITIVE_INFINITY,
   })
 }
 

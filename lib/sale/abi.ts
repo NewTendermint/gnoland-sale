@@ -43,6 +43,44 @@ export const settlementSaleAbi = [
     ],
     outputs: [],
   },
+  // Non-permit entry point (SettlementSale.sol): same bid, funded by a prior ERC-20 approval
+  // covering the amount delta - the path for tokens without EIP-2612 (mainnet USDT).
+  {
+    type: "function",
+    name: "replaceBidWithApproval",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "token", type: "address" },
+      {
+        name: "bid",
+        type: "tuple",
+        components: [
+          { name: "lockup", type: "bool" },
+          { name: "price", type: "uint64" },
+          { name: "amount", type: "uint256" },
+        ],
+      },
+      {
+        name: "purchasePermit",
+        type: "tuple",
+        components: [
+          { name: "saleSpecificEntityID", type: "bytes16" },
+          { name: "saleUUID", type: "bytes16" },
+          { name: "wallet", type: "address" },
+          { name: "expiresAt", type: "uint64" },
+          { name: "minAmount", type: "uint256" },
+          { name: "maxAmount", type: "uint256" },
+          { name: "minPrice", type: "uint64" },
+          { name: "maxPrice", type: "uint64" },
+          { name: "opensAt", type: "uint64" },
+          { name: "closesAt", type: "uint64" },
+          { name: "payload", type: "bytes" },
+        ],
+      },
+      { name: "purchasePermitSignature", type: "bytes" },
+    ],
+    outputs: [],
+  },
   { type: "function", name: "claimRefund", stateMutability: "nonpayable", inputs: [], outputs: [] },
   {
     type: "function",
@@ -219,5 +257,32 @@ export const erc20Abi = [
     stateMutability: "view",
     inputs: [{ name: "owner", type: "address" }],
     outputs: [{ type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "symbol",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ type: "string" }],
+  },
+  {
+    type: "function",
+    name: "allowance",
+    stateMutability: "view",
+    inputs: [
+      { name: "owner", type: "address" },
+      { name: "spender", type: "address" },
+    ],
+    outputs: [{ type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "approve",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "spender", type: "address" },
+      { name: "amount", type: "uint256" },
+    ],
+    outputs: [{ type: "bool" }],
   },
 ] as const

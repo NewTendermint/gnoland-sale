@@ -16,7 +16,7 @@ import { newsletterEnabled } from "../../lib/newsletter/config"
 import { postSonarLogout, redirectToSonarLogin } from "../../lib/sale/api"
 import { gnotEstimate } from "../../lib/sale/calc"
 import { SALE_ECONOMICS, formatSaleDate } from "../../lib/sale/economics"
-import { fmtGnot, fmtPriceUsdc, fmtUsdc } from "../../lib/sale/format"
+import { fmtGnot, fmtPrice, fmtUsd } from "../../lib/sale/format"
 import { useBid, useClaim } from "../../lib/sale/hooks"
 import { derivePreSaleBar } from "../../lib/sale/journey"
 import {
@@ -360,8 +360,8 @@ export function BidSectionHeader({
           <span className="mr-3 text-sm font-semibold tracking-tight text-foreground">
             Your bid
           </span>
-          <HeaderCell label="Committed" value={fmtUsdc(myBid.committedUsd)} />
-          <HeaderCell label="Your max price" value={`${fmtPriceUsdc(myBid.priceUsd)} / GNOT`} />
+          <HeaderCell label="Committed" value={fmtUsd(myBid.committedUsd)} />
+          <HeaderCell label="Your max price" value={`${fmtPrice(myBid.priceUsd)} / GNOT`} />
           <HeaderCell
             label="Est. allocation"
             value={`~${fmtGnot(gnotEstimate(myBid.committedUsd, clearingPriceUsd))} GNOT`}
