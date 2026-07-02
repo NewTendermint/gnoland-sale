@@ -13,6 +13,7 @@ import {
 } from "./api"
 import { forceLockupForRegion } from "./calc"
 import { type ClaimResult, claimRefundOnChain, submitBidOnChain } from "./onchain"
+import { sonarQueryRetry, sonarQueryRetryDelay } from "./query-retry"
 import type { BidParams, BidResult, BidStage } from "./submitter"
 import type { CommitmentData, EntitySnapshot, MyBid } from "./types"
 
@@ -40,6 +41,8 @@ export function useEntity(opts?: { enabled?: boolean }) {
     queryKey: ["sale", "entity"],
     queryFn: getEntity,
     enabled: opts?.enabled ?? true,
+    retry: sonarQueryRetry,
+    retryDelay: sonarQueryRetryDelay,
   })
 }
 
@@ -53,6 +56,8 @@ export function useMyBid(opts?: { enabled?: boolean }) {
     // useBid marks this stale (refetchType:"none") after a submit; it reconciles with the indexed
     // commitment on remount. Off window-focus to avoid churn while the panel stays mounted.
     refetchOnWindowFocus: false,
+    retry: sonarQueryRetry,
+    retryDelay: sonarQueryRetryDelay,
   })
 }
 
