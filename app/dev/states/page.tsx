@@ -200,28 +200,16 @@ function Caption({ children }: { children: string }) {
 
 function GallerySection({
   title,
-  href,
   children,
 }: {
   title: string
-  href?: string
   children: ReactNode
 }) {
   return (
     <section className="flex flex-col gap-3 border-t border-border pt-8">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
-        <p className="font-mono text-xs font-medium uppercase tracking-[0.2em] text-foreground">
-          {title}
-        </p>
-        {href ? (
-          <a
-            href={href}
-            className="text-xs text-muted underline underline-offset-2 hover:text-foreground"
-          >
-            see it live <code className="font-mono">{href}</code>
-          </a>
-        ) : null}
-      </div>
+      <p className="font-mono text-xs font-medium uppercase tracking-[0.2em] text-foreground">
+        {title}
+      </p>
       {children}
     </section>
   )
@@ -251,29 +239,23 @@ const PRE_SALE_BAR_STATES: ReadonlyArray<{
   label: string
   state: PreSaleBarState
   returning: boolean
-  href?: string
 }> = [
   {
     label: "Notify (stage A, registration closed)",
     state: "notify",
     returning: false,
-    href: "/?phase=pre-sale&registration=closed&journey=kyc-required",
   },
   {
     label: "Register (new visitor)",
     state: "register",
     returning: false,
-    href: "/?phase=pre-sale&registration=open&journey=kyc-required",
   },
   {
     label: "Register - returning (Welcome back / Reconnect)",
     state: "register",
     returning: true,
-    href: "/?phase=pre-sale&registration=open&journey=kyc-required",
   },
   {
-    // No "see it live" href: the live page has no ?journey/?phase readers (the sibling links
-    // predate that removal); reproduce with the Sonar sandbox entity Overrides instead.
     label: "Incomplete (setup unfinished -> Complete on Sonar)",
     state: "incomplete",
     returning: false,
@@ -282,31 +264,26 @@ const PRE_SALE_BAR_STATES: ReadonlyArray<{
     label: "Pending (in review)",
     state: "pending",
     returning: false,
-    href: "/?phase=pre-sale&registration=open&journey=kyc-pending",
   },
   {
     label: "Failed (Contact support + shield-x)",
     state: "failed",
     returning: false,
-    href: "/?phase=pre-sale&registration=open&journey=kyc-failed",
   },
   {
     label: "Not eligible (shield-x)",
     state: "not-eligible",
     returning: false,
-    href: "/?phase=pre-sale&registration=open&journey=not-eligible",
   },
   {
     label: "Registered (Identity verified)",
     state: "registered",
     returning: false,
-    href: "/?phase=pre-sale&registration=open&journey=disconnected",
   },
   {
     label: "Auth error",
     state: "auth-error",
     returning: false,
-    href: "/?phase=pre-sale&auth=error&journey=kyc-required",
   },
 ]
 
@@ -359,22 +336,21 @@ export default function DevStatesPage() {
         </h1>
         <p className="mt-1 text-sm text-muted">
           For each state: the collapsed bar (metrics + opening CTA) then the expanded bar (metrics +
-          stepper on top, flow below). Drive the real bar with{" "}
-          <code className="font-mono">?journey=&lt;state&gt;</code> /{" "}
-          <code className="font-mono">?phase=pre-sale|ended</code>.
+          stepper on top, flow below). The live page has no URL overrides - to reproduce a state for
+          real, use the Sonar sandbox entity Overrides.
         </p>
       </header>
 
       <div className="flex flex-col gap-14">
         {PRE_SALE_BAR_STATES.map((row) => (
-          <GallerySection key={row.label} title={`Pre-sale · ${row.label}`} href={row.href}>
+          <GallerySection key={row.label} title={`Pre-sale · ${row.label}`}>
             <PreSaleBarPreview state={row.state} returning={row.returning} />
           </GallerySection>
         ))}
 
         {states.map((s) => (
           <Fragment key={s}>
-            <GallerySection title={`Live · ${s}`} href={`/?journey=${s}`}>
+            <GallerySection title={`Live · ${s}`}>
               <Caption>Collapsed</Caption>
               <CollapsedBar journey={s} />
               <Caption>Expanded</Caption>
@@ -382,20 +358,14 @@ export default function DevStatesPage() {
             </GallerySection>
 
             {s === "kyc-required" ? (
-              <GallerySection
-                title="Live · kyc-required (returning -> Welcome back)"
-                href="/?journey=kyc-required"
-              >
+              <GallerySection title="Live · kyc-required (returning -> Welcome back)">
                 <Caption>Expanded</Caption>
                 <ExpandedBar journey="kyc-required" returning />
               </GallerySection>
             ) : null}
 
             {s === "ready" ? (
-              <GallerySection
-                title="Live · money-loop (commit -> approve -> sign -> receipt)"
-                href="/?journey=ready"
-              >
+              <GallerySection title="Live · money-loop (commit -> approve -> sign -> receipt)">
                 <p className="text-sm text-muted">
                   Live, this runs on click (Place bid). Approve/sign are dev-paced previews - in
                   production the wallet drives the timing and the on-chain seam returns the real tx
@@ -419,22 +389,9 @@ export default function DevStatesPage() {
             sub="Final price $0.1161"
             cta="View results"
           />
-          <div className="flex flex-col gap-1.5">
-            <a
-              href="/?phase=ended&journey=has-bid-winning"
-              className="text-xs text-muted underline underline-offset-2 hover:text-foreground"
-            >
-              won - expand, connect, allocation{" "}
-              <code className="font-mono">{"/?phase=ended&journey=has-bid-winning"}</code>
-            </a>
-            <a
-              href="/?phase=ended&journey=has-bid-outbid"
-              className="text-xs text-muted underline underline-offset-2 hover:text-foreground"
-            >
-              outbid - expand, connect, claim{" "}
-              <code className="font-mono">{"/?phase=ended&journey=has-bid-outbid"}</code>
-            </a>
-          </div>
+          <p className="text-xs text-muted">
+            won - expand, connect, allocation · outbid - expand, connect, claim
+          </p>
         </GallerySection>
       </div>
     </main>

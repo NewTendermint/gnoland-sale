@@ -23,7 +23,7 @@ export function bidSectionTitle(journey: JourneyState): string {
     case "kyc-required":
       return "Verify your identity"
     case "kyc-incomplete":
-      return "Finish your verification"
+      return VERIFY_INCOMPLETE.title
     case "kyc-pending":
       return "Verification in progress"
     case "kyc-failed":

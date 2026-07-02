@@ -39,7 +39,17 @@ export async function getEntity(): Promise<EntityRead> {
     return { status: "no-session" }
   }
   if (res.status === 404) {
-    return { status: "no-entity" }
+    // Only OUR route's marker counts as "no entity yet": a stray 404 (deploy window, rewrite,
+    // CDN) must not classify a possibly-verified user as "session live, setup not started".
+    const body: unknown = await res.json().catch(() => null)
+    if (
+      typeof body === "object" &&
+      body !== null &&
+      (body as { error?: unknown }).error === "no_entity"
+    ) {
+      return { status: "no-entity" }
+    }
+    throw new HttpError(res.status, "/api/sonar/entity responded 404 without no_entity")
   }
   if (!res.ok) {
     throw new HttpError(res.status, `/api/sonar/entity responded ${res.status}`)
@@ -47,10 +57,12 @@ export async function getEntity(): Promise<EntityRead> {
   return { status: "entity", entity: (await res.json()) as EntitySnapshot }
 }
 
-/** The session's current position (price + committed); null on 401/404. */
+/** The session's current position (price + committed); null when signed out or without a bid.
+ *  The route answers "no bid" as a 200 null body and never emits a 404, so a 404 here is stray
+ *  infrastructure and must error rather than show a live bidder the fresh bid form. */
 export async function getMyPosition(): Promise<MyBid> {
   const res = await fetch("/api/sonar/my-position", { headers: { accept: "application/json" } })
-  if (res.status === 401 || res.status === 404) {
+  if (res.status === 401) {
     return null
   }
   if (!res.ok) {

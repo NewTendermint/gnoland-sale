@@ -326,6 +326,7 @@ export function BidPanelDesktop() {
                           clearingPriceUsd={commitment.clearingPriceUsd}
                           myBid={myBid}
                           onConnectSonar={redirectToSonarLogin}
+                          onSignOut={handleSignOut}
                           setupHref={sonarSetupUrl}
                           onBid={bid.submit}
                         />
@@ -561,6 +562,9 @@ export function PreSaleRight({
           <Cta variant="solid" arrow onClick={onRegister}>
             <span>{WELCOME_BACK.cta}</span>
           </Cta>
+          {/* The escape from a stale recognition (e.g. a different Sonar account behind the same
+              browser): signing out clears the seen marker, and the next login derives fresh. */}
+          <SignOutLink onClick={onSignOut} />
         </div>
       ) : (
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2">

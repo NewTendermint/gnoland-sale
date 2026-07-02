@@ -45,8 +45,9 @@ export function useSaleData() {
 export function useEntity(opts?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["sale", "entity"],
-    // Null-confirming read: a null while this browser had an entity is re-read before being
-    // trusted, so one transient empty upstream answer can no longer stick as "reconnect".
+    // Empty-confirming read (see confirmed-read): a no-entity answer is re-read unconditionally,
+    // a no-session answer only on a browser that has seen an entity - one transient empty
+    // upstream answer must not stick as a false status.
     queryFn: () => readEntity(),
     enabled: opts?.enabled ?? true,
     retry: sonarQueryRetry,
@@ -59,8 +60,8 @@ export function useMyBid(opts?: { enabled?: boolean }) {
   const { isConnected } = useAccount()
   return useQuery({
     queryKey: ["sale", "my-bid"],
-    // Null-confirming read: an unexpected null (this browser has a bid) is re-read before being
-    // trusted, so one transient empty upstream answer can no longer stick as "no bid".
+    // Null-confirming read (see confirmed-read): an unexpected null while this browser has a bid
+    // is re-read before being trusted - one transient empty answer must not stick as "no bid".
     queryFn: () => readMyPosition(),
     enabled: isConnected && (opts?.enabled ?? true),
     // useBid marks this stale (refetchType:"none") after a submit; it reconciles with the indexed

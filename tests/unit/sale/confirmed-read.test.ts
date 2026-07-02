@@ -57,10 +57,24 @@ describe("readEntity (empty-confirming entity read)", () => {
     expect(fetcher).toHaveBeenCalledTimes(1)
   })
 
-  it("accepts an empty answer immediately for a first-time visitor (no sonar-seen flag)", async () => {
+  it("accepts a no-session immediately for a first-time visitor (no sonar-seen flag)", async () => {
     const fetcher = vi.fn().mockResolvedValue(NO_SESSION)
     expect(await readEntity(fetcher, DELAY)).toEqual(NO_SESSION)
     expect(fetcher).toHaveBeenCalledTimes(1)
+  })
+
+  it("always confirms a no-entity answer, even on a first-time browser (post-OAuth race)", async () => {
+    // The riskiest empty is the first read right after an OAuth return: no sonar-seen flag yet,
+    // but Sonar may still be materializing the entity - a single empty must not stick.
+    const fetcher = vi.fn().mockResolvedValueOnce(NO_ENTITY).mockResolvedValue(ENTITY_READ)
+    expect(await readEntity(fetcher, DELAY)).toEqual(ENTITY_READ)
+    expect(fetcher).toHaveBeenCalledTimes(2)
+  })
+
+  it("settles on no-entity after the bounded confirms all come back empty", async () => {
+    const fetcher = vi.fn().mockResolvedValue(NO_ENTITY)
+    expect(await readEntity(fetcher, DELAY)).toEqual(NO_ENTITY)
+    expect(fetcher).toHaveBeenCalledTimes(3) // initial + 2 confirms
   })
 
   it("re-reads a suspect empty answer (entity seen before) and returns the recovered entity", async () => {

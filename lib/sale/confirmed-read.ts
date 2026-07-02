@@ -9,16 +9,15 @@ const CONFIRM_DELAY_MS = 1500
 
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
 
-// Re-read an empty answer a bounded number of times while it looks suspect: one transient empty
-// upstream answer must not settle as an authoritative "nothing" that only a manual reload would fix.
+// Re-read a suspect answer a bounded number of times: one transient empty upstream answer must
+// not settle as an authoritative "nothing" that only a manual reload would fix.
 async function confirmEmpty<T>(
   fetcher: () => Promise<T>,
-  isEmpty: (result: T) => boolean,
-  suspect: () => boolean,
+  suspect: (result: T) => boolean,
   delayMs: number,
 ): Promise<T> {
   let result = await fetcher()
-  for (let tries = 0; isEmpty(result) && suspect() && tries < CONFIRM_TRIES; tries++) {
+  for (let tries = 0; suspect(result) && tries < CONFIRM_TRIES; tries++) {
     await wait(delayMs)
     result = await fetcher()
   }
@@ -32,20 +31,25 @@ export async function readMyPosition(
   fetcher: () => Promise<MyBid> = getMyPosition,
   delayMs: number = CONFIRM_DELAY_MS,
 ): Promise<MyBid> {
-  const position = await confirmEmpty(fetcher, (r) => r == null, hasBidSeen, delayMs)
+  const position = await confirmEmpty(fetcher, (r) => r == null && hasBidSeen(), delayMs)
   if (position != null) {
     markBidSeen()
   }
   return position
 }
 
-/** entity read: a browser that had a Sonar entity reading empty is either a genuinely expired
- *  session (deterministic, cheap 401s - the reconnect prompt just lands a couple seconds later)
- *  or transient upstream noise (a 404 from an empty Sonar answer) - confirming kills the false
- *  sticky "reconnect" without hiding the real one. */
+/** entity read: an empty answer is re-read before being trusted. A no-entity answer is ALWAYS
+ *  suspect - it is the ambiguous one (Sonar may still be materializing the entity right after
+ *  OAuth, or answering empty transiently) and a false "start your setup" must not stick. A
+ *  no-session answer (deterministic, cheap 401s) is only suspect on a browser that has seen an
+ *  entity, killing the false sticky "reconnect" without hiding the real one. */
 export async function readEntity(
   fetcher: () => Promise<EntityRead> = getEntity,
   delayMs: number = CONFIRM_DELAY_MS,
 ): Promise<EntityRead> {
-  return confirmEmpty(fetcher, (r) => r.status !== "entity", hasSonarSeen, delayMs)
+  return confirmEmpty(
+    fetcher,
+    (r) => r.status === "no-entity" || (r.status === "no-session" && hasSonarSeen()),
+    delayMs,
+  )
 }

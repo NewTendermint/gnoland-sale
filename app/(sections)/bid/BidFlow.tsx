@@ -102,6 +102,7 @@ export function BidFlow({
   clearingPriceUsd,
   myBid,
   onConnectSonar,
+  onSignOut,
   setupHref,
   onBid,
   preview,
@@ -111,6 +112,7 @@ export function BidFlow({
   clearingPriceUsd: number | null
   myBid: MyBid
   onConnectSonar?: () => void
+  onSignOut?: () => void
   setupHref: string
   onBid?: (p: BidParams, opts?: { onStage?: (s: BidStage) => void }) => Promise<BidResult>
   preview?: BidPreview
@@ -122,6 +124,7 @@ export function BidFlow({
       clearingPriceUsd={clearingPriceUsd}
       myBid={myBid}
       onConnectSonar={onConnectSonar}
+      onSignOut={onSignOut}
       setupHref={setupHref}
       onBid={onBid}
       preview={preview}
@@ -135,6 +138,7 @@ function StateContent({
   clearingPriceUsd,
   myBid,
   onConnectSonar,
+  onSignOut,
   setupHref,
   onBid,
   preview,
@@ -144,6 +148,7 @@ function StateContent({
   clearingPriceUsd: number | null
   myBid: MyBid
   onConnectSonar?: () => void
+  onSignOut?: () => void
   setupHref: string
   onBid?: (p: BidParams, opts?: { onStage?: (s: BidStage) => void }) => Promise<BidResult>
   preview?: BidPreview
@@ -170,6 +175,7 @@ function StateContent({
           journey={journey}
           returning={returning}
           onConnectSonar={onConnectSonar}
+          onSignOut={onSignOut}
           setupHref={setupHref}
         />
       </div>
@@ -181,11 +187,13 @@ function GateContent({
   journey,
   returning,
   onConnectSonar,
+  onSignOut,
   setupHref,
 }: {
   journey: JourneyState
   returning?: boolean
   onConnectSonar?: () => void
+  onSignOut?: () => void
   setupHref: string
 }) {
   switch (journey) {
@@ -209,6 +217,19 @@ function GateContent({
           body={WELCOME_BACK.body}
           cta={WELCOME_BACK.cta}
           onCta={onConnectSonar}
+          // The escape from a stale recognition (e.g. a different Sonar account behind the same
+          // browser): signing out clears the seen marker, and the next login derives fresh.
+          secondary={
+            onSignOut ? (
+              <button
+                type="button"
+                onClick={onSignOut}
+                className="text-[11px] text-muted underline underline-offset-2 transition-colors hover:text-foreground"
+              >
+                Sign out of Sonar
+              </button>
+            ) : undefined
+          }
         />
       ) : (
         <GateRow
@@ -259,6 +280,7 @@ function GateRow({
   cta,
   onCta,
   ctaHref,
+  secondary,
   tone = "default",
 }: {
   icon: string
@@ -267,6 +289,7 @@ function GateRow({
   cta?: string
   onCta?: () => void
   ctaHref?: string
+  secondary?: ReactNode
   tone?: "default" | "danger"
 }) {
   return (
@@ -282,15 +305,18 @@ function GateRow({
           <span className="ml-1.5 text-muted">{body}</span>
         </p>
       </div>
-      {ctaHref && cta ? (
-        <Cta variant="solid-contrast" href={ctaHref} external>
-          {cta}
-        </Cta>
-      ) : cta ? (
-        <Cta variant="solid-contrast" onClick={onCta}>
-          {cta}
-        </Cta>
-      ) : null}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        {ctaHref && cta ? (
+          <Cta variant="solid-contrast" href={ctaHref} external>
+            {cta}
+          </Cta>
+        ) : cta ? (
+          <Cta variant="solid-contrast" onClick={onCta}>
+            {cta}
+          </Cta>
+        ) : null}
+        {secondary}
+      </div>
     </div>
   )
 }

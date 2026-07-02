@@ -9,9 +9,6 @@ import type {
   SonarReturn,
 } from "./types"
 
-// States where the user still has setup work to finish ON SONAR (re-running OAuth cannot advance
-// them - the CTA must link out to the hosted setup page, app.echo.xyz/sonar/{saleUUID}).
-const INCOMPLETE_SETUP: EntitySetupState[] = ["not-started", "in-progress"]
 // "unknown" (an unrecognized upstream value) rides with the passive wait states: a false
 // "finish your setup" claim to a possibly-verified user is worse than a false "in review".
 const PENDING_SETUP: EntitySetupState[] = ["ready-for-review", "in-review", "unknown"]
@@ -26,11 +23,17 @@ const FAILED_SETUP: EntitySetupState[] = ["failure", "failure-final", "technical
  */
 export function deriveJourney(i: JourneyInput): JourneyState {
   if (i.setupState && FAILED_SETUP.includes(i.setupState)) return "kyc-failed"
-  if (i.setupState && INCOMPLETE_SETUP.includes(i.setupState)) return "kyc-incomplete"
   if (i.setupState && PENDING_SETUP.includes(i.setupState)) return "kyc-pending"
-  // null setupState = no entity data. With a live session (a 404 empty answer) the user still
-  // has to START setup on Sonar; without one, (re)connecting via OAuth is the correct ask.
-  if (i.setupState !== "complete") return i.hasSonarSession ? "kyc-incomplete" : "kyc-required"
+  if (i.setupState !== "complete") {
+    // Everything left (not-started, in-progress, or no entity data at all) can only advance on
+    // Echo's hosted setup page - EXCEPT the two cases where the setup ask would be false:
+    // no session at all (401: reconnecting via OAuth is the correct ask), and an empty answer on
+    // a browser that has already seen a real entity (transient upstream noise: the passive
+    // reconnect prompt self-heals, a "finish your setup" claim to a verified user does not).
+    if (!i.hasSonarSession) return "kyc-required"
+    if (i.setupState === null && i.hadEntityBefore) return "kyc-required"
+    return "kyc-incomplete"
+  }
   if (i.eligibility === "not-eligible") return "not-eligible"
   if (!i.isConnected) return "disconnected"
   if (!i.isSaleChain) return "wrong-network"

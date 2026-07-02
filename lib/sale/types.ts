@@ -93,9 +93,12 @@ export type PreSaleBarState =
 export type JourneyInput = {
   isConnected: boolean
   isSaleChain: boolean
-  // False only when the entity read answered 401 (no Sonar session). A live session with an
-  // empty entity list (404) keeps this true - reconnecting cannot help that user.
+  // False when the entity read answered 401 (no Sonar session) or has not resolved yet. A live
+  // session with an empty entity list (a marked 404) keeps this true - reconnecting cannot help.
   hasSonarSession: boolean
+  // This browser has read a real entity before (the sonar-seen marker). An empty answer on such
+  // a browser is transient noise, never a "start your setup" ask.
+  hadEntityBefore: boolean
   setupState: EntitySetupState | null
   eligibility: SaleEligibility | null
   myBid: MyBid

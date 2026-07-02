@@ -27,6 +27,7 @@ const base: JourneyInput = {
   isConnected: false,
   isSaleChain: false,
   hasSonarSession: false,
+  hadEntityBefore: false,
   setupState: null,
   eligibility: null,
   myBid: null,
@@ -67,6 +68,23 @@ describe("deriveJourney - Verify gate is first and wallet-independent", () => {
     expect(deriveJourney({ ...base, hasSonarSession: true, setupState: null })).toBe(
       "kyc-incomplete",
     )
+  })
+  it("an empty answer on a browser that has seen a real entity is noise, not a setup ask", () => {
+    // A transient empty read must never tell a verified user to redo setup - fall back to the
+    // passive reconnect (kyc-required + returning -> "Welcome back"), which self-heals.
+    expect(
+      deriveJourney({ ...base, hasSonarSession: true, hadEntityBefore: true, setupState: null }),
+    ).toBe("kyc-required")
+  })
+  it("real entity data saying not-started outranks the seen-before marker", () => {
+    expect(
+      deriveJourney({
+        ...base,
+        hasSonarSession: true,
+        hadEntityBefore: true,
+        setupState: "not-started",
+      }),
+    ).toBe("kyc-incomplete")
   })
   it("kyc-pending for an unrecognized setup state (passive fallback, no false setup CTA)", () => {
     expect(deriveJourney({ ...base, hasSonarSession: true, setupState: "unknown" })).toBe(

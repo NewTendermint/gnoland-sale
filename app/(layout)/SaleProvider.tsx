@@ -9,7 +9,7 @@ import { SALE_CHAIN } from "../../lib/sale/contracts"
 import { useEntity, useMyBid, useSaleData } from "../../lib/sale/hooks"
 import { deriveJourney } from "../../lib/sale/journey"
 import { resolvePreSaleStage, resolveSalePhase } from "../../lib/sale/phase"
-import { markSonarSeen } from "../../lib/sale/returning"
+import { markSonarSeen, useSonarSeen } from "../../lib/sale/returning"
 import type {
   CommitmentData,
   JourneyInput,
@@ -48,6 +48,7 @@ export function SaleProvider({
 }: { children: ReactNode; initialPhase: SalePhase; sonarSetupUrl: string }) {
   const { isConnected, chainId } = useAccount()
   const funnelCapable = useFunnelCapable()
+  const sonarSeen = useSonarSeen()
   const sale = useSaleData()
   const entity = useEntity({ enabled: funnelCapable === true })
   const position = useMyBid({ enabled: funnelCapable === true })
@@ -109,8 +110,11 @@ export function SaleProvider({
     const journeyInput: JourneyInput = {
       isConnected,
       isSaleChain: onSaleChain,
-      // An unresolved read counts as "no session" - the entityResolved skeleton gates the UI anyway.
+      // An unresolved read counts as "no session". Only the live bid panel holds a skeleton on
+      // entityResolved; the pre-sale bar and sections render the journey immediately, so they can
+      // briefly show the register ask until the first read lands.
       hasSonarSession: read !== undefined && read.status !== "no-session",
+      hadEntityBefore: sonarSeen,
       setupState: snapshot?.setupState ?? null,
       eligibility: snapshot?.eligibility ?? null,
       myBid: position.data ?? null,
@@ -132,6 +136,7 @@ export function SaleProvider({
   }, [
     chainId,
     isConnected,
+    sonarSeen,
     entity.data,
     entity.isSuccess,
     position.data,
