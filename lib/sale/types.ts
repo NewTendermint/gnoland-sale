@@ -2,7 +2,9 @@
 export type SalePhase = "pre-sale" | "live" | "ended"
 export type PreSaleStage = "registration-closed" | "registration-open"
 
-// Mirrors sonar-core EntitySetupState (8 states)
+// Mirrors sonar-core EntitySetupState (8 states). "unknown" is OUR normalization sentinel for
+// values newer than the mirror (sonar-core is pre-1.0), never a sonar-core value: it must derive
+// a passive journey, not an action claim (see deriveJourney).
 export type EntitySetupState =
   | "not-started"
   | "in-progress"
@@ -12,6 +14,7 @@ export type EntitySetupState =
   | "failure-final"
   | "technical-issue"
   | "complete"
+  | "unknown"
 
 // Mirrors sonar-core SaleEligibility
 export type SaleEligibility = "eligible" | "not-eligible" | "unknown-setup-incomplete"
@@ -90,6 +93,9 @@ export type PreSaleBarState =
 export type JourneyInput = {
   isConnected: boolean
   isSaleChain: boolean
+  // False only when the entity read answered 401 (no Sonar session). A live session with an
+  // empty entity list (404) keeps this true - reconnecting cannot help that user.
+  hasSonarSession: boolean
   setupState: EntitySetupState | null
   eligibility: SaleEligibility | null
   myBid: MyBid

@@ -13,6 +13,7 @@ export const MOCK_JOURNEY_INPUTS: Record<JourneyState, JourneyInput> = {
   disconnected: {
     isConnected: false,
     isSaleChain: false,
+    hasSonarSession: true,
     setupState: "complete",
     eligibility: "eligible",
     myBid: null,
@@ -21,6 +22,7 @@ export const MOCK_JOURNEY_INPUTS: Record<JourneyState, JourneyInput> = {
   "wrong-network": {
     isConnected: true,
     isSaleChain: false,
+    hasSonarSession: true,
     setupState: "complete",
     eligibility: "eligible",
     myBid: null,
@@ -29,6 +31,7 @@ export const MOCK_JOURNEY_INPUTS: Record<JourneyState, JourneyInput> = {
   "kyc-required": {
     isConnected: true,
     isSaleChain: true,
+    hasSonarSession: false,
     setupState: null,
     eligibility: null,
     myBid: null,
@@ -37,6 +40,7 @@ export const MOCK_JOURNEY_INPUTS: Record<JourneyState, JourneyInput> = {
   "kyc-incomplete": {
     isConnected: true,
     isSaleChain: true,
+    hasSonarSession: true,
     setupState: "not-started",
     eligibility: null,
     myBid: null,
@@ -45,6 +49,7 @@ export const MOCK_JOURNEY_INPUTS: Record<JourneyState, JourneyInput> = {
   "kyc-pending": {
     isConnected: true,
     isSaleChain: true,
+    hasSonarSession: true,
     setupState: "in-review",
     eligibility: null,
     myBid: null,
@@ -53,6 +58,7 @@ export const MOCK_JOURNEY_INPUTS: Record<JourneyState, JourneyInput> = {
   "kyc-failed": {
     isConnected: true,
     isSaleChain: true,
+    hasSonarSession: true,
     setupState: "failure-final",
     eligibility: null,
     myBid: null,
@@ -61,6 +67,7 @@ export const MOCK_JOURNEY_INPUTS: Record<JourneyState, JourneyInput> = {
   "not-eligible": {
     isConnected: true,
     isSaleChain: true,
+    hasSonarSession: true,
     setupState: "complete",
     eligibility: "not-eligible",
     myBid: null,
@@ -69,6 +76,7 @@ export const MOCK_JOURNEY_INPUTS: Record<JourneyState, JourneyInput> = {
   ready: {
     isConnected: true,
     isSaleChain: true,
+    hasSonarSession: true,
     setupState: "complete",
     eligibility: "eligible",
     myBid: null,
@@ -77,6 +85,7 @@ export const MOCK_JOURNEY_INPUTS: Record<JourneyState, JourneyInput> = {
   "has-bid-winning": {
     isConnected: true,
     isSaleChain: true,
+    hasSonarSession: true,
     setupState: "complete",
     eligibility: "eligible",
     myBid: { priceUsd: 0.0903, committedUsd: 3200, lockup: false },
@@ -85,6 +94,7 @@ export const MOCK_JOURNEY_INPUTS: Record<JourneyState, JourneyInput> = {
   "has-bid-outbid": {
     isConnected: true,
     isSaleChain: true,
+    hasSonarSession: true,
     setupState: "complete",
     eligibility: "eligible",
     myBid: { priceUsd: 0.07095, committedUsd: 3200, lockup: false },

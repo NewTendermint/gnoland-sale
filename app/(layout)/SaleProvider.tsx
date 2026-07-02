@@ -99,16 +99,20 @@ export function SaleProvider({
 
   // Remember (non-PII) that we've seen the entity, so a return after the 2h session greets "welcome back".
   useEffect(() => {
-    if (entity.data) markSonarSeen()
+    if (entity.data?.status === "entity") markSonarSeen()
   }, [entity.data])
 
   const value = useMemo<SaleContextValue>(() => {
     const onSaleChain = chainId === SALE_CHAIN.id
+    const read = entity.data
+    const snapshot = read?.status === "entity" ? read.entity : null
     const journeyInput: JourneyInput = {
       isConnected,
       isSaleChain: onSaleChain,
-      setupState: entity.data?.setupState ?? null,
-      eligibility: entity.data?.eligibility ?? null,
+      // An unresolved read counts as "no session" - the entityResolved skeleton gates the UI anyway.
+      hasSonarSession: read !== undefined && read.status !== "no-session",
+      setupState: snapshot?.setupState ?? null,
+      eligibility: snapshot?.eligibility ?? null,
       myBid: position.data ?? null,
       clearingPriceUsd: sale.data.clearingPriceUsd,
     }

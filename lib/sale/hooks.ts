@@ -3,7 +3,13 @@
 // Client data hooks the UI binds to; each wraps a ./api fetcher in TanStack Query.
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useAccount } from "wagmi"
-import { HttpError, getCommitments, postGeneratePermit, postPrePurchase } from "./api"
+import {
+  type EntityRead,
+  HttpError,
+  getCommitments,
+  postGeneratePermit,
+  postPrePurchase,
+} from "./api"
 import { forceLockupForRegion } from "./calc"
 import { readEntity, readMyPosition } from "./confirmed-read"
 import { SALE_CHAIN, saleContractsFor } from "./contracts"
@@ -15,7 +21,7 @@ import {
 } from "./onchain"
 import { sonarQueryRetry, sonarQueryRetryDelay } from "./query-retry"
 import type { BidParams, BidResult, BidStage } from "./submitter"
-import type { CommitmentData, EntitySnapshot, MyBid } from "./types"
+import type { CommitmentData, MyBid } from "./types"
 
 // Neutral zeros until the first fetch resolves; as initialData, types `data` as always-defined.
 const EMPTY_COMMITMENT: CommitmentData = {
@@ -35,7 +41,7 @@ export function useSaleData() {
   })
 }
 
-/** The session's Sonar entity (KYC + eligibility); `data` is null when not connected. */
+/** The session's Sonar entity read (KYC + eligibility), discriminated by session/entity presence. */
 export function useEntity(opts?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["sale", "entity"],
@@ -124,10 +130,11 @@ export function useBid() {
       // Compliance: a US entity must carry the on-chain lockup flag - read the region from the
       // trusted server entity snapshot (query cache), never from client UI state, and force it on.
       // The contract rejects a US commitment without it (BidMustHaveLockup).
-      const entity = queryClient.getQueryData<EntitySnapshot>(["sale", "entity"])
+      const read = queryClient.getQueryData<EntityRead>(["sale", "entity"])
+      const region = read?.status === "entity" ? read.entity.investingRegion : undefined
       const bidParams: BidParams = {
         ...params,
-        lockup: forceLockupForRegion(entity?.investingRegion) || params.lockup,
+        lockup: forceLockupForRegion(region) || params.lockup,
       }
       const permit = await postGeneratePermit(address)
       const result = await submitBidOnChain({

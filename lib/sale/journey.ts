@@ -12,7 +12,9 @@ import type {
 // States where the user still has setup work to finish ON SONAR (re-running OAuth cannot advance
 // them - the CTA must link out to the hosted setup page, app.echo.xyz/sonar/{saleUUID}).
 const INCOMPLETE_SETUP: EntitySetupState[] = ["not-started", "in-progress"]
-const PENDING_SETUP: EntitySetupState[] = ["ready-for-review", "in-review"]
+// "unknown" (an unrecognized upstream value) rides with the passive wait states: a false
+// "finish your setup" claim to a possibly-verified user is worse than a false "in review".
+const PENDING_SETUP: EntitySetupState[] = ["ready-for-review", "in-review", "unknown"]
 const FAILED_SETUP: EntitySetupState[] = ["failure", "failure-final", "technical-issue"]
 
 /**
@@ -26,8 +28,9 @@ export function deriveJourney(i: JourneyInput): JourneyState {
   if (i.setupState && FAILED_SETUP.includes(i.setupState)) return "kyc-failed"
   if (i.setupState && INCOMPLETE_SETUP.includes(i.setupState)) return "kyc-incomplete"
   if (i.setupState && PENDING_SETUP.includes(i.setupState)) return "kyc-pending"
-  // null setupState = no Sonar session at all (verify has not started from our side).
-  if (i.setupState !== "complete") return "kyc-required"
+  // null setupState = no entity data. With a live session (a 404 empty answer) the user still
+  // has to START setup on Sonar; without one, (re)connecting via OAuth is the correct ask.
+  if (i.setupState !== "complete") return i.hasSonarSession ? "kyc-incomplete" : "kyc-required"
   if (i.eligibility === "not-eligible") return "not-eligible"
   if (!i.isConnected) return "disconnected"
   if (!i.isSaleChain) return "wrong-network"

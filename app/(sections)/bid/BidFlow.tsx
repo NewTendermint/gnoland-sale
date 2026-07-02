@@ -111,7 +111,7 @@ export function BidFlow({
   clearingPriceUsd: number | null
   myBid: MyBid
   onConnectSonar?: () => void
-  setupHref?: string
+  setupHref: string
   onBid?: (p: BidParams, opts?: { onStage?: (s: BidStage) => void }) => Promise<BidResult>
   preview?: BidPreview
 }) {
@@ -144,7 +144,7 @@ function StateContent({
   clearingPriceUsd: number | null
   myBid: MyBid
   onConnectSonar?: () => void
-  setupHref?: string
+  setupHref: string
   onBid?: (p: BidParams, opts?: { onStage?: (s: BidStage) => void }) => Promise<BidResult>
   preview?: BidPreview
 }) {
@@ -186,7 +186,7 @@ function GateContent({
   journey: JourneyState
   returning?: boolean
   onConnectSonar?: () => void
-  setupHref?: string
+  setupHref: string
 }) {
   switch (journey) {
     case "wrong-network":

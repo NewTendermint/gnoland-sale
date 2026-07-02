@@ -73,7 +73,6 @@ export const VERIFY_STATUS = {
  *  the CTA links out to Echo's hosted setup page (app.echo.xyz/sonar/{saleUUID}) in a new tab. */
 export const VERIFY_INCOMPLETE = {
   icon: "shield-check",
-  tone: "default",
   title: "Finish your verification",
   body: "Complete your identity check on Sonar, then come back here.",
   cta: "Complete on Sonar",

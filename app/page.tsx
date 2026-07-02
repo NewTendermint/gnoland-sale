@@ -1,4 +1,5 @@
 import { resolveSalePhase } from "@/lib/sale/phase"
+import { sonarSetupUrl } from "@/lib/sale/setup-url"
 import { BidPanel } from "./(layout)/BidPanel"
 import { PushLimitSync } from "./(layout)/PushLimitSync"
 import { SaleProvider } from "./(layout)/SaleProvider"
@@ -24,14 +25,17 @@ export const revalidate = 30
 
 export default function Home() {
   const initialPhase = resolveSalePhase(Date.now())
-  // KYC/entity setup happens only on Echo's hosted page - the CTA for an unfinished setup links
-  // there. The sale UUID is public (it is in the URL every verified user visits); read directly
-  // from process.env because mocked dev runs without SONAR_* and lib/env would fail the boot.
-  const sonarSetupUrl = process.env.SONAR_SALE_UUID
-    ? `https://app.echo.xyz/sonar/${process.env.SONAR_SALE_UUID}`
-    : "https://app.echo.xyz"
+  // Read directly from process.env because mocked dev runs without SONAR_* and lib/env would
+  // fail the boot. Missing in production = misconfiguration: the CTA would open Echo's homepage
+  // with no path to this sale, so make it loud without breaking the render.
+  const saleUUID = process.env.SONAR_SALE_UUID
+  if (!saleUUID && process.env.NODE_ENV === "production") {
+    console.warn(
+      "SONAR_SALE_UUID is not set: the Complete-on-Sonar CTA falls back to Echo's homepage",
+    )
+  }
   return (
-    <SaleProvider initialPhase={initialPhase} sonarSetupUrl={sonarSetupUrl}>
+    <SaleProvider initialPhase={initialPhase} sonarSetupUrl={sonarSetupUrl(saleUUID)}>
       <TabAlert />
       <PushLimitSync />
       <main id="main">

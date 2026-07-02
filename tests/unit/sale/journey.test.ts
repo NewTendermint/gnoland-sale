@@ -26,6 +26,7 @@ const VERIFIED: JourneyState[] = [
 const base: JourneyInput = {
   isConnected: false,
   isSaleChain: false,
+  hasSonarSession: false,
   setupState: null,
   eligibility: null,
   myBid: null,
@@ -36,6 +37,7 @@ const base: JourneyInput = {
 // unlocks the wallet gates and the bid tail under the verify-first ordering.
 const verified: JourneyInput = {
   ...base,
+  hasSonarSession: true,
   setupState: "complete",
   eligibility: "eligible",
 }
@@ -56,12 +58,30 @@ describe("deriveJourney - Verify gate is first and wallet-independent", () => {
   })
   it("kyc-incomplete when the session is live but setup was never finished (user must act on Sonar)", () => {
     for (const s of ["not-started", "in-progress"] as const) {
-      expect(deriveJourney({ ...base, setupState: s })).toBe("kyc-incomplete")
+      expect(deriveJourney({ ...base, hasSonarSession: true, setupState: s })).toBe(
+        "kyc-incomplete",
+      )
     }
+  })
+  it("kyc-incomplete when the session is live but Sonar has no entity yet (empty 404 answer)", () => {
+    expect(deriveJourney({ ...base, hasSonarSession: true, setupState: null })).toBe(
+      "kyc-incomplete",
+    )
+  })
+  it("kyc-pending for an unrecognized setup state (passive fallback, no false setup CTA)", () => {
+    expect(deriveJourney({ ...base, hasSonarSession: true, setupState: "unknown" })).toBe(
+      "kyc-pending",
+    )
   })
   it("kyc-incomplete beats the wallet gates (verify precedes connect)", () => {
     expect(
-      deriveJourney({ ...base, setupState: "not-started", isConnected: true, isSaleChain: true }),
+      deriveJourney({
+        ...base,
+        hasSonarSession: true,
+        setupState: "not-started",
+        isConnected: true,
+        isSaleChain: true,
+      }),
     ).toBe("kyc-incomplete")
   })
   it("kyc-pending only for the review states (waiting on Sonar, nothing to act on)", () => {

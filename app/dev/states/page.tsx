@@ -10,6 +10,7 @@ import { fmtCompactUsd, fmtCount, fmtPrice } from "../../../lib/sale/format"
 import { bidCtaLabel } from "../../../lib/sale/labels"
 import { MOCK_COMMITMENT_LIVE, MOCK_JOURNEY_INPUTS } from "../../../lib/sale/mock"
 import { stateOverridesEnabled } from "../../../lib/sale/overrides"
+import { sonarSetupUrl } from "../../../lib/sale/setup-url"
 import type { JourneyState, PreSaleBarState } from "../../../lib/sale/types"
 
 const METRICS = [
@@ -127,7 +128,7 @@ function MockWalletChip() {
 }
 
 // Stand-in for the env-derived Echo setup URL (page.tsx wires the real one into SaleProvider).
-const SETUP_URL_PREVIEW = "https://app.echo.xyz/sonar/00000000-0000-0000-0000-000000000000"
+const SETUP_URL_PREVIEW = sonarSetupUrl("00000000-0000-0000-0000-000000000000")
 
 function ExpandedBar({
   journey,
@@ -250,7 +251,7 @@ const PRE_SALE_BAR_STATES: ReadonlyArray<{
   label: string
   state: PreSaleBarState
   returning: boolean
-  href: string
+  href?: string
 }> = [
   {
     label: "Notify (stage A, registration closed)",
@@ -271,10 +272,11 @@ const PRE_SALE_BAR_STATES: ReadonlyArray<{
     href: "/?phase=pre-sale&registration=open&journey=kyc-required",
   },
   {
+    // No "see it live" href: the live page has no ?journey/?phase readers (the sibling links
+    // predate that removal); reproduce with the Sonar sandbox entity Overrides instead.
     label: "Incomplete (setup unfinished -> Complete on Sonar)",
     state: "incomplete",
     returning: false,
-    href: "/?phase=pre-sale&registration=open&journey=kyc-incomplete",
   },
   {
     label: "Pending (in review)",

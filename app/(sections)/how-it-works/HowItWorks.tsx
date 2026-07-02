@@ -25,7 +25,7 @@ type FunnelStep =
   | "bidding"
   | "ended"
 
-function liveCtaLabel(state: FunnelStep): string {
+function liveCtaLabel(state: FunnelStep, journey: SaleJourney): string {
   switch (state) {
     case "needs-connect":
       return "Connect your wallet"
@@ -36,7 +36,9 @@ function liveCtaLabel(state: FunnelStep): string {
     case "ended":
       return "View your results"
     default:
-      return "Verify with Sonar"
+      // The needed action differs behind the same Verify step: OAuth for a fresh visitor,
+      // finishing setup on Sonar for a kyc-incomplete one (the panel gate links there).
+      return journey === "kyc-incomplete" ? VERIFY_INCOMPLETE.title : "Verify with Sonar"
   }
 }
 
@@ -90,7 +92,7 @@ function funnelState(journey: SaleJourney, phase: SalePhase, stage: PreSaleStage
 }
 
 export function HowItWorks() {
-  const { journey, phase, preSaleStage, setBidPanelOpen } = useSale()
+  const { journey, phase, preSaleStage, setBidPanelOpen, sonarSetupUrl } = useSale()
   const journeyState = funnelState(journey, phase, preSaleStage)
   const registrationOpen = preSaleStage === "registration-open"
   const preSaleStatus = phase === "pre-sale" ? PRESALE_STATUS[journey] : undefined
@@ -105,7 +107,21 @@ export function HowItWorks() {
               You're registered - the sale opens {formatSaleDate(SALE_ECONOMICS.saleOpensIso)}.
             </p>
           ) : preSaleStatus ? (
-            <p className="text-base text-on-contrast-muted">{preSaleStatus}</p>
+            <div>
+              <p className="text-base text-on-contrast-muted">{preSaleStatus}</p>
+              {journey === "kyc-incomplete" ? (
+                <div className="mt-4">
+                  <Cta
+                    href={sonarSetupUrl}
+                    external
+                    label={VERIFY_INCOMPLETE.cta}
+                    arrow
+                    variant="ghost-contrast"
+                    size="sm"
+                  />
+                </div>
+              ) : null}
+            </div>
           ) : phase === "pre-sale" ? (
             registrationOpen ? (
               <>
@@ -136,7 +152,7 @@ export function HowItWorks() {
               <div className="hidden funnel:block">
                 <Cta
                   onClick={() => setBidPanelOpen(true)}
-                  label={liveCtaLabel(journeyState)}
+                  label={liveCtaLabel(journeyState, journey)}
                   arrow
                   variant="ghost-contrast"
                   size="sm"

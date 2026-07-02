@@ -24,16 +24,27 @@ export function getCommitments(): Promise<CommitmentData> {
   return getJson<CommitmentData>("/api/sonar/commitments")
 }
 
-/** The session's Sonar entity (KYC + eligibility); null on 401/404. */
-export async function getEntity(): Promise<EntitySnapshot | null> {
+/** Entity read result. 401 and 404 are different states, not one "null": with no session (401)
+ *  reconnecting via OAuth is the right ask; with a live session and no entity yet (404) only
+ *  Echo's hosted setup page can advance the user. */
+export type EntityRead =
+  | { status: "no-session" }
+  | { status: "no-entity" }
+  | { status: "entity"; entity: EntitySnapshot }
+
+/** The session's Sonar entity (KYC + eligibility), discriminated by session/entity presence. */
+export async function getEntity(): Promise<EntityRead> {
   const res = await fetch("/api/sonar/entity", { headers: { accept: "application/json" } })
-  if (res.status === 401 || res.status === 404) {
-    return null
+  if (res.status === 401) {
+    return { status: "no-session" }
+  }
+  if (res.status === 404) {
+    return { status: "no-entity" }
   }
   if (!res.ok) {
     throw new HttpError(res.status, `/api/sonar/entity responded ${res.status}`)
   }
-  return res.json() as Promise<EntitySnapshot>
+  return { status: "entity", entity: (await res.json()) as EntitySnapshot }
 }
 
 /** The session's current position (price + committed); null on 401/404. */

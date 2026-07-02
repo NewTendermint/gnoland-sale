@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
+import type { EntityRead } from "../../../lib/sale/api"
 import { readEntity, readMyPosition } from "../../../lib/sale/confirmed-read"
 import { hasBidSeen, markBidSeen, markSonarSeen } from "../../../lib/sale/returning"
 import type { EntitySnapshot, MyBid } from "../../../lib/sale/types"
@@ -10,6 +11,9 @@ const ENTITY: EntitySnapshot = {
   eligibility: "eligible",
   investingRegion: "eu",
 }
+const ENTITY_READ: EntityRead = { status: "entity", entity: ENTITY }
+const NO_SESSION: EntityRead = { status: "no-session" }
+const NO_ENTITY: EntityRead = { status: "no-entity" }
 // Near-zero confirm delay keeps the retry paths fast in tests.
 const DELAY = 1
 
@@ -46,30 +50,30 @@ describe("readMyPosition (null-confirming my-position read)", () => {
   })
 })
 
-describe("readEntity (null-confirming entity read)", () => {
+describe("readEntity (empty-confirming entity read)", () => {
   it("returns the entity straight through", async () => {
-    const fetcher = vi.fn().mockResolvedValue(ENTITY)
-    expect(await readEntity(fetcher, DELAY)).toEqual(ENTITY)
+    const fetcher = vi.fn().mockResolvedValue(ENTITY_READ)
+    expect(await readEntity(fetcher, DELAY)).toEqual(ENTITY_READ)
     expect(fetcher).toHaveBeenCalledTimes(1)
   })
 
-  it("accepts a null immediately for a first-time visitor (no sonar-seen flag)", async () => {
-    const fetcher = vi.fn().mockResolvedValue(null)
-    expect(await readEntity(fetcher, DELAY)).toBeNull()
+  it("accepts an empty answer immediately for a first-time visitor (no sonar-seen flag)", async () => {
+    const fetcher = vi.fn().mockResolvedValue(NO_SESSION)
+    expect(await readEntity(fetcher, DELAY)).toEqual(NO_SESSION)
     expect(fetcher).toHaveBeenCalledTimes(1)
   })
 
-  it("re-reads a suspect null (entity seen before) and returns the recovered entity", async () => {
+  it("re-reads a suspect empty answer (entity seen before) and returns the recovered entity", async () => {
     markSonarSeen()
-    const fetcher = vi.fn().mockResolvedValueOnce(null).mockResolvedValue(ENTITY)
-    expect(await readEntity(fetcher, DELAY)).toEqual(ENTITY)
+    const fetcher = vi.fn().mockResolvedValueOnce(NO_ENTITY).mockResolvedValue(ENTITY_READ)
+    expect(await readEntity(fetcher, DELAY)).toEqual(ENTITY_READ)
     expect(fetcher).toHaveBeenCalledTimes(2)
   })
 
   it("still surfaces a real signed-out state after the bounded confirms", async () => {
     markSonarSeen()
-    const fetcher = vi.fn().mockResolvedValue(null)
-    expect(await readEntity(fetcher, DELAY)).toBeNull()
+    const fetcher = vi.fn().mockResolvedValue(NO_SESSION)
+    expect(await readEntity(fetcher, DELAY)).toEqual(NO_SESSION)
     expect(fetcher).toHaveBeenCalledTimes(3) // initial + 2 confirms
   })
 })

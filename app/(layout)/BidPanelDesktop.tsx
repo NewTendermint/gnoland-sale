@@ -486,6 +486,7 @@ function StatusRow({
   tone = "default",
   title,
   body,
+  action,
   onSignOut,
   onRefresh,
   withCalendar = false,
@@ -495,6 +496,7 @@ function StatusRow({
   tone?: "default" | "danger" | "ok"
   title: string
   body?: string
+  action?: ReactNode
   onSignOut: () => void
   onRefresh?: () => void | Promise<void>
   withCalendar?: boolean
@@ -504,6 +506,7 @@ function StatusRow({
     <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
         <BarStatus icon={icon} tone={tone} title={title} body={body} />
+        {action}
         {contactHref ? (
           <a
             href={contactHref}
@@ -532,7 +535,7 @@ export function PreSaleRight({
 }: {
   state: PreSaleBarState
   returning: boolean
-  setupHref?: string
+  setupHref: string
   onRegister?: () => void
   onSignOut?: () => void
   onRefresh?: () => void | Promise<void>
@@ -569,17 +572,19 @@ export function PreSaleRight({
       )
     case "incomplete":
       return (
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-          <BarStatus
-            icon={VERIFY_INCOMPLETE.icon}
-            title={`${VERIFY_INCOMPLETE.title}.`}
-            body={VERIFY_INCOMPLETE.body}
-          />
-          <Cta variant="solid" arrow href={setupHref} external>
-            <span>{VERIFY_INCOMPLETE.cta}</span>
-          </Cta>
-          <SignOutLink onClick={onSignOut} />
-        </div>
+        <StatusRow
+          icon={VERIFY_INCOMPLETE.icon}
+          title={`${VERIFY_INCOMPLETE.title}.`}
+          body={VERIFY_INCOMPLETE.body}
+          action={
+            <Cta variant="solid" arrow href={setupHref} external>
+              <span>{VERIFY_INCOMPLETE.cta}</span>
+            </Cta>
+          }
+          onSignOut={onSignOut}
+          onRefresh={onRefresh}
+          withCalendar
+        />
       )
     case "pending":
       return (

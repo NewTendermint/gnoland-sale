@@ -86,7 +86,7 @@ describe("getEntity", () => {
     })
     expect(await getEntity("sess-unknown")).toEqual({
       entityId: "22222222-2222-2222-2222-222222222222",
-      setupState: "not-started",
+      setupState: "unknown",
       eligibility: "unknown-setup-incomplete",
       investingRegion: "unknown",
     })

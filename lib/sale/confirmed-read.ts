@@ -1,23 +1,24 @@
 "use client"
 
-import { getEntity, getMyPosition } from "./api"
+import { type EntityRead, getEntity, getMyPosition } from "./api"
 import { hasBidSeen, hasSonarSeen, markBidSeen } from "./returning"
-import type { EntitySnapshot, MyBid } from "./types"
+import type { MyBid } from "./types"
 
 const CONFIRM_TRIES = 2
 const CONFIRM_DELAY_MS = 1500
 
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
 
-// Re-read a null a bounded number of times while it looks suspect: one transient empty upstream
-// answer must not settle as an authoritative "nothing" that only a manual reload would fix.
-async function confirmNull<T>(
-  fetcher: () => Promise<T | null>,
+// Re-read an empty answer a bounded number of times while it looks suspect: one transient empty
+// upstream answer must not settle as an authoritative "nothing" that only a manual reload would fix.
+async function confirmEmpty<T>(
+  fetcher: () => Promise<T>,
+  isEmpty: (result: T) => boolean,
   suspect: () => boolean,
   delayMs: number,
-): Promise<T | null> {
+): Promise<T> {
   let result = await fetcher()
-  for (let tries = 0; result == null && suspect() && tries < CONFIRM_TRIES; tries++) {
+  for (let tries = 0; isEmpty(result) && suspect() && tries < CONFIRM_TRIES; tries++) {
     await wait(delayMs)
     result = await fetcher()
   }
@@ -31,20 +32,20 @@ export async function readMyPosition(
   fetcher: () => Promise<MyBid> = getMyPosition,
   delayMs: number = CONFIRM_DELAY_MS,
 ): Promise<MyBid> {
-  const position = await confirmNull(fetcher, hasBidSeen, delayMs)
+  const position = await confirmEmpty(fetcher, (r) => r == null, hasBidSeen, delayMs)
   if (position != null) {
     markBidSeen()
   }
   return position
 }
 
-/** entity read: a browser that had a Sonar entity reading null is either a genuinely expired
+/** entity read: a browser that had a Sonar entity reading empty is either a genuinely expired
  *  session (deterministic, cheap 401s - the reconnect prompt just lands a couple seconds later)
  *  or transient upstream noise (a 404 from an empty Sonar answer) - confirming kills the false
  *  sticky "reconnect" without hiding the real one. */
 export async function readEntity(
-  fetcher: () => Promise<EntitySnapshot | null> = getEntity,
+  fetcher: () => Promise<EntityRead> = getEntity,
   delayMs: number = CONFIRM_DELAY_MS,
-): Promise<EntitySnapshot | null> {
-  return confirmNull(fetcher, hasSonarSeen, delayMs)
+): Promise<EntityRead> {
+  return confirmEmpty(fetcher, (r) => r.status !== "entity", hasSonarSeen, delayMs)
 }
