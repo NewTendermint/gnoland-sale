@@ -25,7 +25,7 @@ export function deriveJourney(i: JourneyInput): JourneyState {
   if (i.setupState !== "complete") return "kyc-required"
   if (i.eligibility === "not-eligible") return "not-eligible"
   if (!i.isConnected) return "disconnected"
-  if (!i.isBaseChain) return "wrong-network"
+  if (!i.isSaleChain) return "wrong-network"
   if (i.myBid) {
     return bidStatus(i.myBid.priceUsd, i.clearingPriceUsd) === "outbid"
       ? "has-bid-outbid"

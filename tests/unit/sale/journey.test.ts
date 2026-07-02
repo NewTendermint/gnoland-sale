@@ -19,7 +19,7 @@ const VERIFIED: JourneyState[] = [
 
 const base: JourneyInput = {
   isConnected: false,
-  isBaseChain: false,
+  isSaleChain: false,
   setupState: null,
   eligibility: null,
   myBid: null,
@@ -34,11 +34,11 @@ const verified: JourneyInput = {
   eligibility: "eligible",
 }
 
-// Verified + connected on Base: ready to vary the bid tail.
+// Verified + connected on the sale chain: ready to vary the bid tail.
 const cleared: JourneyInput = {
   ...verified,
   isConnected: true,
-  isBaseChain: true,
+  isSaleChain: true,
 }
 
 describe("deriveJourney - Verify gate is first and wallet-independent", () => {
@@ -46,7 +46,7 @@ describe("deriveJourney - Verify gate is first and wallet-independent", () => {
     expect(deriveJourney(base)).toBe("kyc-required")
   })
   it("kyc-required even with a wallet connected (verify precedes connect)", () => {
-    expect(deriveJourney({ ...base, isConnected: true, isBaseChain: true })).toBe("kyc-required")
+    expect(deriveJourney({ ...base, isConnected: true, isSaleChain: true })).toBe("kyc-required")
   })
   it("kyc-required when not-started", () => {
     expect(deriveJourney({ ...base, setupState: "not-started" })).toBe("kyc-required")
@@ -72,8 +72,8 @@ describe("deriveJourney - wallet gates (reached only once verified + eligible)",
   it("disconnected when verified but no wallet", () => {
     expect(deriveJourney(verified)).toBe("disconnected")
   })
-  it("wrong-network when verified + connected off Base", () => {
-    expect(deriveJourney({ ...verified, isConnected: true, isBaseChain: false })).toBe(
+  it("wrong-network when verified + connected off the sale chain", () => {
+    expect(deriveJourney({ ...verified, isConnected: true, isSaleChain: false })).toBe(
       "wrong-network",
     )
   })
@@ -123,18 +123,18 @@ describe("deriveJourney - guard precedence (earlier gate wins)", () => {
         setupState: "failure",
         eligibility: "not-eligible",
         isConnected: true,
-        isBaseChain: true,
+        isSaleChain: true,
       }),
     ).toBe("kyc-failed")
   })
-  it("not-eligible beats the wallet gates (verified but ineligible, off Base)", () => {
+  it("not-eligible beats the wallet gates (verified but ineligible, off the sale chain)", () => {
     expect(
       deriveJourney({
         ...base,
         setupState: "complete",
         eligibility: "not-eligible",
         isConnected: true,
-        isBaseChain: false,
+        isSaleChain: false,
       }),
     ).toBe("not-eligible")
   })

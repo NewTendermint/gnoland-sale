@@ -7,7 +7,7 @@ import type {
   SaleEligibility,
 } from "../sale/types"
 import { createSonarClient } from "./client"
-import { ensureFreshTokens, withSonarAuth } from "./permit"
+import { withSonarAuth } from "./permit"
 
 // Mirrors sonar-core enum values 1:1; the SDK types them `string`, so validate at the boundary.
 const SETUP_STATES: readonly EntitySetupState[] = [
@@ -44,9 +44,8 @@ function normalizeRegion(value: string): InvestingRegion {
 
 /** Resolve the session's entity (id server-derived, never client-supplied); null if none. */
 export async function getEntity(sessionId: string): Promise<EntitySnapshot | null> {
-  const tokens = await ensureFreshTokens(sessionId)
-  const res = await withSonarAuth(sessionId, () =>
-    createSonarClient(tokens.accessToken).listAvailableEntities({
+  const res = await withSonarAuth(sessionId, (accessToken) =>
+    createSonarClient(accessToken).listAvailableEntities({
       saleUUID: env.SONAR_SALE_UUID,
     }),
   )

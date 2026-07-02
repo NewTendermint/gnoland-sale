@@ -3,16 +3,11 @@
 // Client data hooks the UI binds to; each wraps a ./api fetcher in TanStack Query.
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useAccount } from "wagmi"
-import {
-  HttpError,
-  getCommitments,
-  getEntity,
-  getMyPosition,
-  postGeneratePermit,
-  postPrePurchase,
-} from "./api"
+import { HttpError, getCommitments, postGeneratePermit, postPrePurchase } from "./api"
 import { forceLockupForRegion } from "./calc"
+import { readEntity, readMyPosition } from "./confirmed-read"
 import { type ClaimResult, claimRefundOnChain, submitBidOnChain } from "./onchain"
+import { sonarQueryRetry, sonarQueryRetryDelay } from "./query-retry"
 import type { BidParams, BidResult, BidStage } from "./submitter"
 import type { CommitmentData, EntitySnapshot, MyBid } from "./types"
 
@@ -38,8 +33,12 @@ export function useSaleData() {
 export function useEntity(opts?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["sale", "entity"],
-    queryFn: getEntity,
+    // Null-confirming read: a null while this browser had an entity is re-read before being
+    // trusted, so one transient empty upstream answer can no longer stick as "reconnect".
+    queryFn: () => readEntity(),
     enabled: opts?.enabled ?? true,
+    retry: sonarQueryRetry,
+    retryDelay: sonarQueryRetryDelay,
   })
 }
 
@@ -48,11 +47,15 @@ export function useMyBid(opts?: { enabled?: boolean }) {
   const { isConnected } = useAccount()
   return useQuery({
     queryKey: ["sale", "my-bid"],
-    queryFn: getMyPosition,
+    // Null-confirming read: an unexpected null (this browser has a bid) is re-read before being
+    // trusted, so one transient empty upstream answer can no longer stick as "no bid".
+    queryFn: () => readMyPosition(),
     enabled: isConnected && (opts?.enabled ?? true),
     // useBid marks this stale (refetchType:"none") after a submit; it reconciles with the indexed
     // commitment on remount. Off window-focus to avoid churn while the panel stays mounted.
     refetchOnWindowFocus: false,
+    retry: sonarQueryRetry,
+    retryDelay: sonarQueryRetryDelay,
   })
 }
 
@@ -66,6 +69,9 @@ function isSafeHttpUrl(value: string | undefined): value is string {
   }
 }
 
+// Module-level so the guard survives a BidFlow remount (panel collapse/expand). One bidder per client.
+let bidInFlight = false
+
 /** Bid submission: Sonar pre-purchase + permit gates, then submitBidOnChain. */
 export function useBid() {
   const { address } = useAccount()
@@ -78,6 +84,12 @@ export function useBid() {
     if (!address) {
       return { status: "reverted", reason: "Connect your wallet" }
     }
+    // Cross-remount double-submit guard: a second bid while one tx is pending would sign against a
+    // stale USDC nonce and revert on-chain (wasted gas). Module-level so it persists across remounts.
+    if (bidInFlight) {
+      return { status: "reverted", reason: "A bid is already in progress" }
+    }
+    bidInFlight = true
     try {
       const pre = await postPrePurchase(address)
       if (!pre.readyToPurchase) {
@@ -123,6 +135,8 @@ export function useBid() {
         return { status: "reverted", reason: "session-expired" }
       }
       return { status: "reverted", reason: "Could not place bid" }
+    } finally {
+      bidInFlight = false
     }
   }
 

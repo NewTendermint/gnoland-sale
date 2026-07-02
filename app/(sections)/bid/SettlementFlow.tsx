@@ -6,6 +6,7 @@ import { WalletButton } from "../../(layout)/WalletButton"
 import { Cta } from "../../(ui)/Cta"
 import { GnotCoin } from "../../(ui)/GnotCoin"
 import { Icon } from "../../(ui)/Icon"
+import { SALE_CHAIN } from "../../../lib/sale/contracts"
 import { SALE_ECONOMICS, formatSaleDate } from "../../../lib/sale/economics"
 import { fmtGnot, fmtPrice, fmtUsd } from "../../../lib/sale/format"
 import type { ClaimResult } from "../../../lib/sale/onchain"
@@ -123,7 +124,13 @@ export function SettlementFlow({
         </div>
       </div>
 
-      {claimError ? <p className="text-xs font-medium text-danger">{claimError}</p> : null}
+      {claimError ? (
+        <p className="text-xs font-medium text-danger">
+          {claimError === "wrong-chain"
+            ? `Switch to ${SALE_CHAIN.name} in your wallet to claim your refund.`
+            : claimError}
+        </p>
+      ) : null}
       {won ? (
         <p className="text-xs text-muted">
           GNOT is sent to your wallet at mainnet ({formatSaleDate(SALE_ECONOMICS.mainnetIso)}), with

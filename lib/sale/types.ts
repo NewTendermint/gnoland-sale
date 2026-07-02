@@ -87,7 +87,7 @@ export type PreSaleBarState =
 // Inputs the journey deriver needs (no readyToPurchase: that gating lives in the bid step).
 export type JourneyInput = {
   isConnected: boolean
-  isBaseChain: boolean
+  isSaleChain: boolean
   setupState: EntitySetupState | null
   eligibility: SaleEligibility | null
   myBid: MyBid

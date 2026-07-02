@@ -19,7 +19,7 @@ export async function GET() {
     if (!entity) {
       return NextResponse.json({ error: "no_entity" }, { status: 404 })
     }
-    return NextResponse.json(entity)
+    return NextResponse.json(entity, { headers: { "Cache-Control": "private, no-store" } })
   } catch (err) {
     // Revoked/expired Sonar token -> 401 so the client reconnects.
     if (err instanceof SonarAuthError) {

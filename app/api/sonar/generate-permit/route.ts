@@ -24,7 +24,7 @@ export async function POST(request: Request) {
       ipHmac: ip ? ipHmac(ip) : null,
       userAgentClass: classifyUserAgent(request.headers.get("user-agent")),
     })
-    return NextResponse.json(result)
+    return NextResponse.json(result, { headers: { "Cache-Control": "private, no-store" } })
   } catch (err) {
     if (err instanceof SonarAuthError) {
       return NextResponse.json({ error: "unauthenticated" }, { status: 401 })

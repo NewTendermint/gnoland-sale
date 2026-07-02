@@ -4,6 +4,7 @@ import { env } from "@/lib/env"
 import { detectTransitions } from "@/lib/push/detect"
 import { sendOutbidNotifications } from "@/lib/push/send"
 import { SALE_ECONOMICS } from "@/lib/sale/economics"
+import { timingSafeEqualStr } from "@/lib/security/secret-compare"
 import { readCommitments } from "@/lib/sonar/commitments"
 import { inArray } from "drizzle-orm"
 import { NextResponse } from "next/server"
@@ -12,7 +13,8 @@ export const runtime = "nodejs"
 
 // POST /api/push/cron - Netlify scheduled function; bearer CRON_SECRET required.
 export async function POST(req: Request) {
-  if (!env.CRON_SECRET || req.headers.get("authorization") !== `Bearer ${env.CRON_SECRET}`) {
+  const expected = env.CRON_SECRET ? `Bearer ${env.CRON_SECRET}` : null
+  if (!expected || !timingSafeEqualStr(req.headers.get("authorization"), expected)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 })
   }
 

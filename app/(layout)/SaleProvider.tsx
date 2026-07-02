@@ -26,6 +26,11 @@ type SaleContextValue = {
   journey: JourneyState
   commitment: CommitmentData
   myBid: MyBid
+  /** Whether the entity / position reads have settled successfully at least once. The journey is
+   *  derived from missing data as "unverified"/"no bid", so status-asserting UI must not render
+   *  those claims before these are true (it would flash a false state on every load). */
+  entityResolved: boolean
+  positionResolved: boolean
   /** Sonar OAuth return hint (?auth=ok|error), display-only. */
   sonarReturn: SonarReturn
   bidPanelOpen: boolean
@@ -64,6 +69,17 @@ export function SaleProvider({
     }
   }, [queryClient])
 
+  // A position read landing right after the Sonar OAuth return can settle null (it races the fresh
+  // session) and useMyBid never refetches on its own - re-read once. An unchanged null does not
+  // re-trigger the effect, so a genuine no-bid session never loops.
+  useEffect(() => {
+    if (sonarReturn !== "ok" || !position.isFetched || position.data != null) return
+    const t = setTimeout(() => {
+      queryClient.invalidateQueries({ queryKey: ["sale", "my-bid"] })
+    }, 1000)
+    return () => clearTimeout(t)
+  }, [sonarReturn, position.isFetched, position.data, queryClient])
+
   // Re-resolves phase + stage every minute and on tab refocus, straight from the sale clock.
   useEffect(() => {
     const resolve = () => {
@@ -87,7 +103,7 @@ export function SaleProvider({
     const onSaleChain = chainId === SALE_CHAIN.id
     const journeyInput: JourneyInput = {
       isConnected,
-      isBaseChain: onSaleChain,
+      isSaleChain: onSaleChain,
       setupState: entity.data?.setupState ?? null,
       eligibility: entity.data?.eligibility ?? null,
       myBid: position.data ?? null,
@@ -99,6 +115,8 @@ export function SaleProvider({
       journey: deriveJourney(journeyInput),
       commitment: sale.data,
       myBid: journeyInput.myBid,
+      entityResolved: entity.isSuccess,
+      positionResolved: position.isSuccess,
       sonarReturn,
       bidPanelOpen,
       setBidPanelOpen,
@@ -107,7 +125,9 @@ export function SaleProvider({
     chainId,
     isConnected,
     entity.data,
+    entity.isSuccess,
     position.data,
+    position.isSuccess,
     sale.data,
     phase,
     preSaleStage,

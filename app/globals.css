@@ -187,6 +187,16 @@ html[data-app-ready] .screen {
   pointer-events: none;
 }
 
+/* On mobile/touch/reduced-motion there is no loader cover and no entrance animation (shouldAnimate()
+   is false), so the gate above would hold the hero at opacity:0 until hydration and stall LCP.
+   Paint immediately there. Placed after the base rule so equal specificity resolves in its favor. */
+@media (hover: none), (pointer: coarse), (prefers-reduced-motion: reduce), (max-width: 63.999rem) {
+  [data-entrance="pending"] {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
 * {
   box-sizing: border-box;
 }
