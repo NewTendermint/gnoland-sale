@@ -1,6 +1,7 @@
 import { db } from "@/lib/db/client"
 import { oauthTokens, pkceStates } from "@/lib/db/schema"
 import { env } from "@/lib/env"
+import { timingSafeEqualStr } from "@/lib/security/secret-compare"
 import { lt } from "drizzle-orm"
 import { NextResponse } from "next/server"
 
@@ -15,7 +16,8 @@ const OAUTH_GRACE_DAYS = 7
 // Sweeps DEAD rows only: expired single-use PKCE states, and oauth_tokens expired past the grace
 // window. Never touches a live session or an in-flight OAuth flow. Not a table wipe.
 export async function POST(req: Request) {
-  if (!env.CRON_SECRET || req.headers.get("authorization") !== `Bearer ${env.CRON_SECRET}`) {
+  const expected = env.CRON_SECRET ? `Bearer ${env.CRON_SECRET}` : null
+  if (!expected || !timingSafeEqualStr(req.headers.get("authorization"), expected)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 })
   }
 

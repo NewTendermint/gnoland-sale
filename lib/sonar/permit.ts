@@ -26,7 +26,6 @@ export class PermitDedupError extends Error {}
 
 // Server-side replay guard, keyed by wallet. Per-instance only:
 // a best-effort fast-path, not cluster-wide; on-chain controls are authoritative.
-// TODO: add a durable cross-instance limiter and Edge rate-limit before launch.
 const lastPermitAt = new Map<string, number>()
 export function checkPermitDedup(wallet: string, now: number = Date.now()): void {
   // Opportunistic eviction so the Map cannot grow unbounded over a long sale.
