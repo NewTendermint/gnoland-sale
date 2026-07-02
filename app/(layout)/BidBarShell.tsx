@@ -7,8 +7,14 @@ import { LG_MEDIA_QUERY } from "../../lib/device/breakpoints"
 import { useMediaQuery } from "../../lib/device/use-media-query"
 import { shouldAnimate } from "../../lib/motion/should-animate"
 import { SALE_ECONOMICS } from "../../lib/sale/economics"
-import { fmtCompactUsd, fmtCount, fmtPrice } from "../../lib/sale/format"
-import type { CommitmentData } from "../../lib/sale/types"
+import {
+  PENDING_BIDDER_CHIP,
+  fmtCompactUsd,
+  fmtCount,
+  fmtPrice,
+  pendingCommittedChip,
+} from "../../lib/sale/format"
+import type { CommitmentData, PendingBidDelta } from "../../lib/sale/types"
 import { Countdown } from "./Countdown"
 
 export const SHELL =
@@ -51,7 +57,12 @@ export function useBarGrow<T extends HTMLElement>() {
   return ref
 }
 
-export type BarMetric = { icon: string; value: ReactNode; label: string }
+export type BarMetric = { icon: string; value: ReactNode; label: string; pending?: string }
+
+/** The single renderer for a metric's pending chip; keep every render site on this component. */
+export function MetricPendingChip({ label }: { label: string }) {
+  return <span className="ml-2 font-mono normal-case tracking-normal tabular-nums">{label}</span>
+}
 
 export function BarShell({ children }: { children: ReactNode }) {
   const cardRef = useBarGrow<HTMLDivElement>()
@@ -101,7 +112,10 @@ export function MetricCell({
         {compact ? null : <Icon name={metric.icon} draw={false} className="h-[18px] w-[18px]" />}
         <p className="font-mono text-lg font-medium tracking-tight tabular-nums">{metric.value}</p>
       </div>
-      <p className="mt-0.5 text-[10px] uppercase tracking-[0.2em] text-muted">{metric.label}</p>
+      <p className="mt-0.5 text-[10px] uppercase tracking-[0.2em] text-muted">
+        {metric.label}
+        {metric.pending ? <MetricPendingChip label={metric.pending} /> : null}
+      </p>
     </div>
   )
 }
@@ -120,7 +134,10 @@ export function BarCountdown({ targetIso, caption }: { targetIso: string; captio
   )
 }
 
-export function liveMetrics(commitment: CommitmentData): BarMetric[] {
+export function liveMetrics(
+  commitment: CommitmentData,
+  pendingDelta: PendingBidDelta | null = null,
+): BarMetric[] {
   return [
     {
       icon: "clearing",
@@ -132,8 +149,18 @@ export function liveMetrics(commitment: CommitmentData): BarMetric[] {
       value: <Countdown targetIso={SALE_ECONOMICS.saleClosesIso} />,
       label: "Time left",
     },
-    { icon: "users-group", value: fmtCount(commitment.uniqueCommitmentCount), label: "Bidders" },
-    { icon: "database", value: fmtCompactUsd(commitment.totalCommittedUsd), label: "Committed" },
+    {
+      icon: "users-group",
+      value: fmtCount(commitment.uniqueCommitmentCount),
+      label: "Bidders",
+      pending: pendingDelta?.newBidder ? PENDING_BIDDER_CHIP : undefined,
+    },
+    {
+      icon: "database",
+      value: fmtCompactUsd(commitment.totalCommittedUsd),
+      label: "Committed",
+      pending: pendingDelta ? pendingCommittedChip(pendingDelta.amountUsd) : undefined,
+    },
   ]
 }
 

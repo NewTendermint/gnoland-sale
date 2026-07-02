@@ -2,6 +2,7 @@
 
 // Client data hooks the UI binds to; each wraps a ./api fetcher in TanStack Query.
 import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { useEffect } from "react"
 import { useAccount } from "wagmi"
 import {
   type EntityRead,
@@ -19,9 +20,10 @@ import {
   resolvePaymentTokens,
   submitBidOnChain,
 } from "./onchain"
+import { reconcilePendingBid, usePendingBid, writePendingBid } from "./pending-bid"
 import { sonarQueryRetry, sonarQueryRetryDelay } from "./query-retry"
 import type { BidParams, BidResult, BidStage } from "./submitter"
-import type { CommitmentData, MyBid } from "./types"
+import type { CommitmentData } from "./types"
 
 // Neutral zeros until the first fetch resolves; as initialData, types `data` as always-defined.
 const EMPTY_COMMITMENT: CommitmentData = {
@@ -55,21 +57,33 @@ export function useEntity(opts?: { enabled?: boolean }) {
   })
 }
 
-/** The session's current position (price + committed); `data` is null when none. */
+/** The session's raw Sonar position (price + committed); `data` is null when none, undefined
+ *  while unresolved. `pending` is the wallet's confirmed-but-unreported bid (stable reference);
+ *  SaleProvider derives the displayed overlay from both via derivePendingView. */
 export function useMyBid(opts?: { enabled?: boolean }) {
-  const { isConnected } = useAccount()
-  return useQuery({
+  const { isConnected, address } = useAccount()
+  const pending = usePendingBid(address)
+  const query = useQuery({
     queryKey: ["sale", "my-bid"],
     // Null-confirming read (see confirmed-read): an unexpected null while this browser has a bid
     // is re-read before being trusted - one transient empty answer must not stick as "no bid".
     queryFn: () => readMyPosition(),
     enabled: isConnected && (opts?.enabled ?? true),
-    // useBid marks this stale (refetchType:"none") after a submit; it reconciles with the indexed
-    // commitment on remount. Off window-focus to avoid churn while the panel stays mounted.
     refetchOnWindowFocus: false,
+    // Poll only while a pending bid waits for Sonar's cache (10s, the commitments cadence), so
+    // the reconcile below purges it as soon as Sonar reports the amount.
+    refetchInterval: pending ? 10_000 : false,
     retry: sonarQueryRetry,
     retryDelay: sonarQueryRetryDelay,
   })
+  // Footgun: reconcile must live in an effect, not the queryFn - a fetch-side effect would run on
+  // every retry and capture a stale wallet address across an account switch.
+  const settled = query.data
+  useEffect(() => {
+    if (settled === undefined) return
+    reconcilePendingBid(settled, address)
+  }, [settled, address])
+  return { ...query, pending }
 }
 
 /** The sale's registered payment tokens (immutable on-chain -> cached for the session). Resolves
@@ -145,17 +159,16 @@ export function useBid() {
         onStage: opts?.onStage,
       })
       if (result.status === "submitted") {
-        // Optimistic: reflect the just-placed bid as the session's position.
-        const optimistic: MyBid = {
-          priceUsd: bidParams.priceUsd,
-          committedUsd: bidParams.amountUsd,
-          lockup: bidParams.lockup,
-        }
-        queryClient.setQueryData(["sale", "my-bid"], optimistic)
-        // Mark the position stale so it reconciles with Sonar's indexed commitment on the next
-        // observe (remount), WITHOUT an immediate refetch that could clobber this optimistic value
-        // before indexing completes (indexing latency is unknown; no arbitrary timeout).
-        queryClient.invalidateQueries({ queryKey: ["sale", "my-bid"], refetchType: "none" })
+        // Footgun: never setQueryData(["sale","my-bid"]) here - the pending-bid store is the only
+        // optimistic layer, and the query cache must stay Sonar's real answer (the delta baseline).
+        writePendingBid(
+          {
+            priceUsd: bidParams.priceUsd,
+            committedUsd: bidParams.amountUsd,
+            lockup: bidParams.lockup,
+          },
+          address,
+        )
       }
       return result
     } catch (err) {

@@ -154,7 +154,12 @@ function StateContent({
   preview?: BidPreview
 }) {
   // Shared render path keeps BidRow's tree position across ready -> has-bid (stable key preserves the receipt).
-  if (journey === "ready" || journey === "has-bid-winning" || journey === "has-bid-outbid") {
+  if (
+    journey === "ready" ||
+    journey === "has-bid-winning" ||
+    journey === "has-bid-outbid" ||
+    journey === "has-bid-pending"
+  ) {
     return (
       <div className="flex w-full flex-col gap-2">
         <BidRow

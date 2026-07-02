@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react"
 import { observeReveal } from "../../lib/motion/reveal-group"
 import { shouldAnimate } from "../../lib/motion/should-animate"
 
-const REST_OPACITY = "0.4"
+const REST_OPACITY = "0.6"
 const FADE_MS = 900
 
 export function BlueprintLoop() {

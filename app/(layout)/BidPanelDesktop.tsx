@@ -27,6 +27,7 @@ import {
   bidCtaLabel,
   bidSectionTitle,
 } from "../../lib/sale/labels"
+import { clearPendingBid } from "../../lib/sale/pending-bid"
 import { clearSonarSeen, useSonarSeen } from "../../lib/sale/returning"
 import type { JourneyState, MyBid, PreSaleBarState } from "../../lib/sale/types"
 import { AddToCalendarButton } from "./AddToCalendarButton"
@@ -36,6 +37,7 @@ import {
   BarStatus,
   CARD,
   MetricCell,
+  MetricPendingChip,
   SHELL,
   finalMetrics,
   liveMetrics,
@@ -52,6 +54,7 @@ export function BidPanelDesktop() {
     journey,
     commitment,
     myBid,
+    pendingBidDelta,
     entityResolved,
     positionResolved,
     sonarReturn,
@@ -82,6 +85,7 @@ export function BidPanelDesktop() {
     postSonarLogout().then(
       () => {
         clearSonarSeen()
+        clearPendingBid()
         queryClient.invalidateQueries({ queryKey: ["sale", "entity"] })
         queryClient.invalidateQueries({ queryKey: ["sale", "my-bid"] })
       },
@@ -193,14 +197,17 @@ export function BidPanelDesktop() {
     )
   }
 
-  const metrics = liveMetrics(commitment)
+  const metrics = liveMetrics(commitment, pendingBidDelta)
 
   // The journey reads missing data as "unverified"/"no bid", so rendering it before the reads
   // settle would flash a false status (reconnect prompt, "place your bid") on every load. Hold a
   // neutral skeleton until the claims are backed by data; the position read only matters once the
   // journey needs it (its query is disabled until the wallet connects).
   const positionRelevant =
-    journey === "ready" || journey === "has-bid-winning" || journey === "has-bid-outbid"
+    journey === "ready" ||
+    journey === "has-bid-winning" ||
+    journey === "has-bid-outbid" ||
+    journey === "has-bid-pending"
   const statusResolved = entityResolved && (!positionRelevant || positionResolved)
 
   return (
@@ -242,6 +249,7 @@ export function BidPanelDesktop() {
                         </div>
                         <p className="mt-0.5 text-[10px] uppercase tracking-[0.2em] text-muted">
                           {m.label}
+                          {m.pending ? <MetricPendingChip label={m.pending} /> : null}
                         </p>
                       </div>
                     </div>
@@ -357,7 +365,8 @@ export function BidSectionHeader({
   clearingPriceUsd: number | null
   wallet: ReactNode
 }) {
-  const hasBid = journey === "has-bid-winning" || journey === "has-bid-outbid"
+  const hasBid =
+    journey === "has-bid-winning" || journey === "has-bid-outbid" || journey === "has-bid-pending"
   return (
     <div className="mb-4 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-b border-border pb-3">
       {hasBid && myBid ? (
@@ -373,8 +382,20 @@ export function BidSectionHeader({
           />
           <HeaderCell
             label="Current status"
-            value={journey === "has-bid-winning" ? "Winning" : "Outbid"}
-            tone={journey === "has-bid-winning" ? "ok" : "warn"}
+            value={
+              journey === "has-bid-pending"
+                ? "Pending"
+                : journey === "has-bid-winning"
+                  ? "Winning"
+                  : "Outbid"
+            }
+            tone={
+              journey === "has-bid-pending"
+                ? undefined
+                : journey === "has-bid-winning"
+                  ? "ok"
+                  : "warn"
+            }
           />
         </div>
       ) : (

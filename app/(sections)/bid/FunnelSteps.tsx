@@ -6,7 +6,7 @@ const FUNNEL: { label: string; states: JourneyState[] }[] = [
     states: ["kyc-required", "kyc-incomplete", "kyc-pending", "kyc-failed", "not-eligible"],
   },
   { label: "Connect", states: ["disconnected", "wrong-network"] },
-  { label: "Bid", states: ["ready", "has-bid-winning", "has-bid-outbid"] },
+  { label: "Bid", states: ["ready", "has-bid-winning", "has-bid-outbid", "has-bid-pending"] },
 ]
 
 export function FunnelSteps({ journey }: { journey: JourneyState }) {
@@ -59,6 +59,14 @@ export function BidStatusTag({ journey }: { journey: JourneyState }) {
     return (
       <span className="rounded-full bg-amber px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.15em] text-on-amber">
         Outbid
+      </span>
+    )
+  }
+  if (journey === "has-bid-pending") {
+    // Neutral outline; on-contrast tokens because this tag only renders inside the solid CTA.
+    return (
+      <span className="rounded-full border border-on-contrast/40 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.15em] text-on-contrast">
+        Pending
       </span>
     )
   }

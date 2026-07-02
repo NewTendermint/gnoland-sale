@@ -7,6 +7,11 @@ export const fmtPrice = (n: number) =>
 /** Whole-dollar USD amount, e.g. "$3,200". */
 export const fmtUsd = (n: number) => `$${n.toLocaleString("en-US", { maximumFractionDigits: 0 })}`
 
+// Pending-chip copy. Single source for the live bar AND the /dev/states gallery (this module is
+// server-importable, unlike the client metric components).
+export const PENDING_BIDDER_CHIP = "+1 pending"
+export const pendingCommittedChip = (amountUsd: number) => `+${fmtUsd(amountUsd)} pending`
+
 /** Compact USD, e.g. "$721K" / "$1.2M" (deterministic across JS engines, unlike Intl compact).
  * One decimal from millions up only; K amounts round to a whole number. */
 export const fmtCompactUsd = (n: number) => {

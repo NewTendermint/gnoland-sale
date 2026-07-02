@@ -18,6 +18,7 @@ export const MOCK_JOURNEY_INPUTS: Record<JourneyState, JourneyInput> = {
     setupState: "complete",
     eligibility: "eligible",
     myBid: null,
+    pendingIndexing: false,
     clearingPriceUsd: 0.0774,
   },
   "wrong-network": {
@@ -28,6 +29,7 @@ export const MOCK_JOURNEY_INPUTS: Record<JourneyState, JourneyInput> = {
     setupState: "complete",
     eligibility: "eligible",
     myBid: null,
+    pendingIndexing: false,
     clearingPriceUsd: 0.0774,
   },
   "kyc-required": {
@@ -38,6 +40,7 @@ export const MOCK_JOURNEY_INPUTS: Record<JourneyState, JourneyInput> = {
     setupState: null,
     eligibility: null,
     myBid: null,
+    pendingIndexing: false,
     clearingPriceUsd: 0.0774,
   },
   "kyc-incomplete": {
@@ -48,6 +51,7 @@ export const MOCK_JOURNEY_INPUTS: Record<JourneyState, JourneyInput> = {
     setupState: "not-started",
     eligibility: null,
     myBid: null,
+    pendingIndexing: false,
     clearingPriceUsd: 0.0774,
   },
   "kyc-pending": {
@@ -58,6 +62,7 @@ export const MOCK_JOURNEY_INPUTS: Record<JourneyState, JourneyInput> = {
     setupState: "in-review",
     eligibility: null,
     myBid: null,
+    pendingIndexing: false,
     clearingPriceUsd: 0.0774,
   },
   "kyc-failed": {
@@ -68,6 +73,7 @@ export const MOCK_JOURNEY_INPUTS: Record<JourneyState, JourneyInput> = {
     setupState: "failure-final",
     eligibility: null,
     myBid: null,
+    pendingIndexing: false,
     clearingPriceUsd: 0.0774,
   },
   "not-eligible": {
@@ -78,6 +84,7 @@ export const MOCK_JOURNEY_INPUTS: Record<JourneyState, JourneyInput> = {
     setupState: "complete",
     eligibility: "not-eligible",
     myBid: null,
+    pendingIndexing: false,
     clearingPriceUsd: 0.0774,
   },
   ready: {
@@ -88,6 +95,7 @@ export const MOCK_JOURNEY_INPUTS: Record<JourneyState, JourneyInput> = {
     setupState: "complete",
     eligibility: "eligible",
     myBid: null,
+    pendingIndexing: false,
     clearingPriceUsd: 0.0774,
   },
   "has-bid-winning": {
@@ -98,6 +106,7 @@ export const MOCK_JOURNEY_INPUTS: Record<JourneyState, JourneyInput> = {
     setupState: "complete",
     eligibility: "eligible",
     myBid: { priceUsd: 0.0903, committedUsd: 3200, lockup: false },
+    pendingIndexing: false,
     clearingPriceUsd: 0.0774,
   },
   "has-bid-outbid": {
@@ -108,6 +117,18 @@ export const MOCK_JOURNEY_INPUTS: Record<JourneyState, JourneyInput> = {
     setupState: "complete",
     eligibility: "eligible",
     myBid: { priceUsd: 0.07095, committedUsd: 3200, lockup: false },
+    pendingIndexing: false,
+    clearingPriceUsd: 0.0774,
+  },
+  "has-bid-pending": {
+    isConnected: true,
+    isSaleChain: true,
+    hasSonarSession: true,
+    hadEntityBefore: false,
+    setupState: "complete",
+    eligibility: "eligible",
+    myBid: { priceUsd: 0.0903, committedUsd: 500, lockup: false },
+    pendingIndexing: true,
     clearingPriceUsd: 0.0774,
   },
 }

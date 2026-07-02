@@ -50,13 +50,14 @@ export function Backers() {
                 {b.logo ? (
                   <ClipOpen
                     durationMs={700}
+                    fromBottomPct={20}
                     className="flex h-11 w-28 items-center justify-center [--frame-radius:0px] lg:h-12 lg:w-32"
                   >
+                    {/* not lazy: a 0x0 img inside the clip never triggers Chrome's lazy load */}
                     <img
                       src={b.logo}
                       alt={b.name}
-                      loading="lazy"
-                      className={`max-h-full max-w-full object-contain opacity-60 brightness-0 transition-opacity group-hover:opacity-100 dark:invert${b.logoClass ? ` ${b.logoClass}` : ""}`}
+                      className={`max-h-full max-w-full object-contain opacity-60 brightness-0 transition-opacity group-hover:opacity-100 dark:invert ${b.logoClass ?? ""}`}
                     />
                   </ClipOpen>
                 ) : null}

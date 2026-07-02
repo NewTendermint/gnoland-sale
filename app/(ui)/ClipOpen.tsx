@@ -8,15 +8,17 @@ export function ClipOpen({
   lead = false,
   index,
   durationMs,
+  fromBottomPct,
   children,
 }: {
   className?: string
   lead?: boolean
   index?: number
   durationMs?: number
+  fromBottomPct?: number
   children: ReactNode
 }) {
-  const ref = useClipOpen<HTMLDivElement>({ lead, index, durationMs })
+  const ref = useClipOpen<HTMLDivElement>({ lead, index, durationMs, fromBottomPct })
   return (
     <div ref={ref as Ref<HTMLDivElement>} className={className}>
       {children}
