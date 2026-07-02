@@ -586,8 +586,6 @@ export function PreSaleRight({
             </Cta>
           }
           onSignOut={onSignOut}
-          onRefresh={onRefresh}
-          withCalendar
         />
       )
     case "pending":

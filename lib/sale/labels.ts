@@ -74,7 +74,7 @@ export const VERIFY_STATUS = {
 export const VERIFY_INCOMPLETE = {
   icon: "shield-check",
   title: "Finish your verification",
-  body: "Complete your identity check on Sonar, then come back here.",
+  body: "Complete your identity check on Sonar.",
   cta: "Complete on Sonar",
 } as const
 
