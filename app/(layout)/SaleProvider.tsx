@@ -26,6 +26,11 @@ type SaleContextValue = {
   journey: JourneyState
   commitment: CommitmentData
   myBid: MyBid
+  /** Whether the entity / position reads have settled successfully at least once. The journey is
+   *  derived from missing data as "unverified"/"no bid", so status-asserting UI must not render
+   *  those claims before these are true (it would flash a false state on every load). */
+  entityResolved: boolean
+  positionResolved: boolean
   /** Sonar OAuth return hint (?auth=ok|error), display-only. */
   sonarReturn: SonarReturn
   bidPanelOpen: boolean
@@ -110,6 +115,8 @@ export function SaleProvider({
       journey: deriveJourney(journeyInput),
       commitment: sale.data,
       myBid: journeyInput.myBid,
+      entityResolved: entity.isSuccess,
+      positionResolved: position.isSuccess,
       sonarReturn,
       bidPanelOpen,
       setBidPanelOpen,
@@ -118,7 +125,9 @@ export function SaleProvider({
     chainId,
     isConnected,
     entity.data,
+    entity.isSuccess,
     position.data,
+    position.isSuccess,
     sale.data,
     phase,
     preSaleStage,

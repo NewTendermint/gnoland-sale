@@ -51,6 +51,8 @@ export function BidPanelDesktop() {
     journey,
     commitment,
     myBid,
+    entityResolved,
+    positionResolved,
     sonarReturn,
     bidPanelOpen: expanded,
     setBidPanelOpen: setExpanded,
@@ -190,6 +192,14 @@ export function BidPanelDesktop() {
 
   const metrics = liveMetrics(commitment)
 
+  // The journey reads missing data as "unverified"/"no bid", so rendering it before the reads
+  // settle would flash a false status (reconnect prompt, "place your bid") on every load. Hold a
+  // neutral skeleton until the claims are backed by data; the position read only matters once the
+  // journey needs it (its query is disabled until the wallet connects).
+  const positionRelevant =
+    journey === "ready" || journey === "has-bid-winning" || journey === "has-bid-outbid"
+  const statusResolved = entityResolved && (!positionRelevant || positionResolved)
+
   return (
     <aside aria-label="Bid panel" data-component="bid-panel" className={SHELL}>
       <div ref={cardRef} className={CARD}>
@@ -238,7 +248,14 @@ export function BidPanelDesktop() {
                 <div className="flex flex-wrap items-center gap-3 sm:gap-4">
                   {expanded ? (
                     <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-                      <FunnelSteps journey={journey} />
+                      {statusResolved ? (
+                        <FunnelSteps journey={journey} />
+                      ) : (
+                        <div
+                          aria-hidden="true"
+                          className="h-4 w-56 animate-pulse rounded-full bg-border motion-reduce:animate-none"
+                        />
+                      )}
                       <CloseButton onClick={() => setExpanded(false)} />
                     </div>
                   ) : (
@@ -289,23 +306,29 @@ export function BidPanelDesktop() {
                       expanded ? "opacity-100" : "opacity-0"
                     }`}
                   >
-                    {isConnected ? (
-                      <BidSectionHeader
-                        journey={journey}
-                        myBid={myBid}
-                        clearingPriceUsd={commitment.clearingPriceUsd}
-                        wallet={<WalletButton />}
-                      />
-                    ) : null}
-                    <BidFlow
-                      key={bidFlowEpoch}
-                      journey={journey}
-                      returning={sonarSeen}
-                      clearingPriceUsd={commitment.clearingPriceUsd}
-                      myBid={myBid}
-                      onConnectSonar={redirectToSonarLogin}
-                      onBid={bid.submit}
-                    />
+                    {statusResolved ? (
+                      <>
+                        {isConnected ? (
+                          <BidSectionHeader
+                            journey={journey}
+                            myBid={myBid}
+                            clearingPriceUsd={commitment.clearingPriceUsd}
+                            wallet={<WalletButton />}
+                          />
+                        ) : null}
+                        <BidFlow
+                          key={bidFlowEpoch}
+                          journey={journey}
+                          returning={sonarSeen}
+                          clearingPriceUsd={commitment.clearingPriceUsd}
+                          myBid={myBid}
+                          onConnectSonar={redirectToSonarLogin}
+                          onBid={bid.submit}
+                        />
+                      </>
+                    ) : (
+                      <BidPanelSkeleton />
+                    )}
                   </div>
                 </div>
               </div>
@@ -374,6 +397,26 @@ function HeaderCell({
       >
         {value}
       </p>
+    </div>
+  )
+}
+
+// Neutral placeholder shown while the entity/position reads settle - the panel must not claim
+// "verify"/"reconnect"/"place your bid" before the data backs it. Mirrors the panel's layout
+// (header row + input row) so the resolve does not shift the bar's height.
+function BidPanelSkeleton() {
+  return (
+    <div aria-busy="true" className="animate-pulse motion-reduce:animate-none">
+      <div className="mb-4 flex items-center justify-between gap-x-6 border-b border-border pb-3">
+        <div className="h-5 w-44 rounded-md bg-border" />
+        <div className="h-9 w-36 rounded-full bg-border" />
+      </div>
+      <div className="flex flex-wrap items-center gap-x-8 gap-y-4">
+        <div className="h-12 w-40 rounded-[var(--radius-md)] bg-border" />
+        <div className="h-12 w-48 rounded-[var(--radius-md)] bg-border" />
+        <div className="h-12 w-44 rounded-[var(--radius-md)] bg-border" />
+        <div className="ml-auto h-12 w-36 rounded-full bg-border" />
+      </div>
     </div>
   )
 }
