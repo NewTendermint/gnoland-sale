@@ -58,7 +58,7 @@ export function Narrative() {
                 </div>
                 <div className="border-l border-border pl-4">
                   <dd className="font-mono text-2xl font-bold tabular-nums text-foreground md:text-3xl lg:text-4xl">
-                    <CountUp value="100+" index={1} />
+                    <CountUp value="1,000+" index={1} />
                   </dd>
                   <FadeIn
                     as="dt"

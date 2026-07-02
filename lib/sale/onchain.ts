@@ -97,6 +97,24 @@ async function resolvePaymentToken(
   return resolved
 }
 
+/**
+ * Decide the bid outcome from the mined receipt + any replacement. A wallet "cancel" is a 0-value
+ * self-send that mines "success", so a cancellation must read as a reverted bid, not a placed one;
+ * a speed-up/reprice ("replaced"/"repriced") is the SAME bid and stays valid, at the mined hash.
+ */
+export function interpretBidReceipt(
+  receipt: { status: "success" | "reverted"; transactionHash: string },
+  replacementReason: "replaced" | "repriced" | "cancelled" | null,
+): BidResult {
+  if (replacementReason === "cancelled") {
+    return { status: "reverted", reason: "You cancelled the transaction" }
+  }
+  if (receipt.status !== "success") {
+    return { status: "reverted", reason: "The bid transaction failed on-chain" }
+  }
+  return { status: "submitted", txHash: receipt.transactionHash }
+}
+
 export async function submitBidOnChain(args: OnChainBidArgs): Promise<BidResult> {
   const { params, permit, wallet } = args
   if (!permit?.Signature) {
@@ -195,8 +213,9 @@ export async function submitBidOnChain(args: OnChainBidArgs): Promise<BidResult>
 
     // Wallets (esp. Keplr's EVM path) under-estimate gas for this nested call - the permit + transferFrom
     // hit the EIP-150 63/64 forwarding rule, which eth_estimateGas under-counts too. Set the limit
-    // explicitly from our own RPC (x3, generously floored). Unused gas is refunded, so a high ceiling is free.
-    let gas = 300_000n
+    // explicitly from our own RPC (x3) over a floor safely above the ~393k a first bid measured on
+    // Sepolia (used only if the estimate throws). Unused gas is refunded, so a high ceiling is free.
+    let gas = 600_000n
     try {
       const publicClient = getPublicClient(wagmiConfig)
       if (publicClient) {
@@ -207,11 +226,17 @@ export async function submitBidOnChain(args: OnChainBidArgs): Promise<BidResult>
       // estimate failed (network/state); keep the floor
     }
     const txHash = await writeContract(wagmiConfig, { ...call, gas })
-    const receipt = await waitForTransactionReceipt(wagmiConfig, { hash: txHash })
-    if (receipt.status !== "success") {
-      return { status: "reverted", reason: "The bid transaction failed on-chain" }
-    }
-    return { status: "submitted", txHash }
+    // A wallet "cancel" replaces the bid tx with a 0-value self-send that MINES SUCCESSFULLY, so the
+    // receipt reads "success" for a tx that never placed the bid. Capture any replacement and let
+    // interpretBidReceipt tell a cancellation apart from a real bid (a speed-up/reprice stays valid).
+    let replacementReason: "replaced" | "repriced" | "cancelled" | null = null
+    const receipt = await waitForTransactionReceipt(wagmiConfig, {
+      hash: txHash,
+      onReplaced: (r) => {
+        replacementReason = r.reason
+      },
+    })
+    return interpretBidReceipt(receipt, replacementReason)
   } catch (err) {
     return { status: "reverted", reason: bidRevertReason(err) }
   }
