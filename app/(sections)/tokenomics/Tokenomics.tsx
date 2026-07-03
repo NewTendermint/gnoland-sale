@@ -17,6 +17,30 @@ export function Tokenomics() {
   const circulatingPct = ((circulating.total / TOTAL_SUPPLY) * 100).toFixed(1)
   const lockedPct = (100 - Number(circulatingPct)).toFixed(1)
 
+  // Waffle: 1 cell = 1% of total supply.
+  const tokenSaleCells = Math.round((circulating.tokenSaleSupply / TOTAL_SUPPLY) * 100)
+  const circulatingCells = Math.round((circulating.total / TOTAL_SUPPLY) * 100)
+  const tokenSalePct = ((circulating.tokenSaleSupply / TOTAL_SUPPLY) * 100).toFixed(1)
+  const otherPct = (
+    ((circulating.total - circulating.tokenSaleSupply) / TOTAL_SUPPLY) *
+    100
+  ).toFixed(1)
+  const waffleCells = Array.from({ length: 100 }, (_, i) => {
+    if (i < tokenSaleCells) {
+      return { title: `Token Sale - ${tokenSalePct}%`, color: "var(--foreground)" }
+    }
+    if (i < circulatingCells) {
+      return {
+        title: `Other circulating - ${otherPct}%`,
+        color: "color-mix(in srgb, var(--foreground) 40%, transparent)",
+      }
+    }
+    return {
+      title: `Locked - ${lockedPct}%`,
+      color: "color-mix(in srgb, var(--foreground) 8%, transparent)",
+    }
+  })
+
   const circFacts: Array<{ label: string; value: string; light?: boolean }> = [
     { label: "Lockup", value: circulating.lockup, light: true },
     { label: "FDV (at $0.0645)", value: `$${circulating.fdvUsd.toLocaleString("en-US")}` },
@@ -70,11 +94,24 @@ export function Tokenomics() {
                     <span className="text-xs text-muted">{row.note}</span>
                     <span className="shrink-0 font-mono text-xs tabular-nums text-muted">
                       {row.amount.toLocaleString("en-US")}
+                      {row.footnote ? <span aria-hidden="true">*</span> : null}
                     </span>
                   </div>
                 </FadeIn>
               ))}
             </ul>
+
+            {allocation.some((row) => row.footnote) ? (
+              <FadeIn as="div" index={16} className="mt-4 flex flex-col gap-y-1">
+                {allocation
+                  .filter((row) => row.footnote)
+                  .map((row) => (
+                    <p key={row.category} className="text-xs text-muted">
+                      *{row.footnote}
+                    </p>
+                  ))}
+              </FadeIn>
+            ) : null}
           </ClipOpen>
         </RevealGroup>
 
@@ -101,27 +138,17 @@ export function Tokenomics() {
               index={9}
               role="img"
               aria-label={`Of the ${TOTAL_SUPPLY.toLocaleString("en-US")} GNOT total supply, about ${circulatingPct} percent is circulating at mainnet launch and ${lockedPct} percent is still locked`}
-              className="flex h-4 w-full overflow-hidden rounded-sm"
+              className="grid w-full grid-cols-[repeat(20,minmax(0,1fr))] gap-1"
             >
-              <div
-                style={{
-                  width: `${(circulating.tokenSaleSupply / TOTAL_SUPPLY) * 100}%`,
-                  backgroundColor: "var(--foreground)",
-                }}
-              />
-              <div
-                style={{
-                  width: `${((circulating.total - circulating.tokenSaleSupply) / TOTAL_SUPPLY) * 100}%`,
-                  backgroundColor: "color-mix(in srgb, var(--foreground) 40%, transparent)",
-                }}
-              />
-              <div
-                aria-hidden="true"
-                style={{
-                  width: `${lockedPct}%`,
-                  backgroundColor: "color-mix(in srgb, var(--foreground) 8%, transparent)",
-                }}
-              />
+              {waffleCells.map((cell, i) => (
+                <div
+                  // biome-ignore lint/suspicious/noArrayIndexKey: cells are positional by design
+                  key={i}
+                  title={cell.title}
+                  className="aspect-square rounded-[2px]"
+                  style={{ backgroundColor: cell.color }}
+                />
+              ))}
             </FadeIn>
 
             <FadeIn
@@ -159,7 +186,7 @@ export function Tokenomics() {
               </span>
             </FadeIn>
 
-            <div className="mt-7 flex flex-1 flex-col">
+            <div className="mt-auto flex flex-col pt-7">
               <FadeIn
                 as="div"
                 index={10}
@@ -175,14 +202,14 @@ export function Tokenomics() {
 
               <DrawLine colorClass="bg-border" index={10} />
 
-              <ul className="mt-2 flex flex-1 flex-col justify-between">
+              <ul className="mt-2 flex flex-col gap-y-1">
                 {circulatingBreakdown.map((row, i) => (
                   <FadeIn as="li" key={row.category} index={11 + i} className="py-1">
                     <div className="flex items-baseline justify-between gap-3 text-sm">
-                      <span className="font-mono uppercase tracking-widest text-foreground">
+                      <span className="uppercase tracking-wide text-foreground">
                         {row.category}
                       </span>
-                      <span className="font-mono font-bold tabular-nums uppercase tracking-widest text-foreground">
+                      <span className="font-mono font-bold tabular-nums text-foreground">
                         {row.amount.toLocaleString("en-US")}
                       </span>
                     </div>
@@ -194,12 +221,12 @@ export function Tokenomics() {
                             className="flex items-baseline justify-between gap-3 text-xs"
                           >
                             <span
-                              className={`font-mono uppercase tracking-[0.15em] ${c.highlight ? "font-bold text-foreground" : "text-muted"}`}
+                              className={`uppercase tracking-wide ${c.highlight ? "font-medium text-foreground" : "text-muted"}`}
                             >
                               {c.category}
                             </span>
                             <span
-                              className={`font-mono tabular-nums uppercase tracking-[0.15em] ${c.highlight ? "font-bold text-foreground" : "text-muted"}`}
+                              className={`font-mono tabular-nums ${c.highlight ? "font-bold text-foreground" : "text-muted"}`}
                             >
                               {c.amount.toLocaleString("en-US")}
                             </span>
@@ -226,7 +253,11 @@ export function Tokenomics() {
                     {fact.label}
                   </span>
                   <span
-                    className={`text-right font-mono uppercase tracking-widest ${fact.light ? "font-normal text-muted" : "font-bold text-foreground"}`}
+                    className={
+                      fact.light
+                        ? "text-right text-muted"
+                        : "text-right font-mono font-bold tabular-nums text-foreground"
+                    }
                   >
                     {fact.value}
                   </span>

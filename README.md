@@ -178,9 +178,8 @@ Tracked items that must be set when going live (most are config, not code):
 ## Development and review
 
 - `SONAR_MOCK=1` (the default in dev with no creds): the whole Sonar surface runs on local fixtures (`lib/sonar/mock-*`), including a slowly climbing mock clearing price.
-- `/dev/states`: every funnel state, collapsed + expanded, without a wallet or Sonar.
-- URL overrides: `?phase=pre-sale|live|ended`, `?registration=open|closed`, `?journey=<state>` preview any combination on the real page.
-- Both are gated by `stateOverridesEnabled()` (`lib/sale/overrides.ts`): always on in dev; in production builds only while `NEXT_PUBLIC_STATE_OVERRIDES=1` is set (dashboard, non-production contexts).
+- `/dev/states`: every funnel state, collapsed + expanded, without a wallet or Sonar. Gated by `stateOverridesEnabled()` (`lib/sale/overrides.ts`), local dev only - the live page has no URL overrides anymore; to reproduce a state for real, use Sonar sandbox entity overrides.
+- Testing + KYC handling guide: `docs/specs/launch-and-test-checklist.md` - the evergreen register (security gates before LIVE, funnel E2E against the Sonar sandbox + Sepolia, KYC states); the KYC state map is `docs/ux-kyc-states.svg`. `docs/` is local-only (not committed).
 
 ## Layout
 

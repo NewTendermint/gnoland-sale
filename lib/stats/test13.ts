@@ -14,11 +14,11 @@ function floorOneDecimal(x: number): string {
   return Number.isInteger(v) ? String(v) : v.toFixed(1)
 }
 
-/** Compact, "+"-suffixed count matching the stats grid style, keeping one decimal of nuance
- *  (688024 -> "688K+", 3150000 -> "3.1M+", 1900000 -> "1.9M+"). */
+/** Compact, "+"-suffixed count matching the stats grid style. One decimal from millions up
+ *  only; K counts floor to a whole number (720900 -> "720K+", 3150000 -> "3.1M+"). */
 export function formatCompactCount(n: number): string {
   if (n >= 1_000_000) return `${floorOneDecimal(n / 1_000_000)}M+`
-  if (n >= 1_000) return `${floorOneDecimal(n / 1_000)}K+`
+  if (n >= 1_000) return `${Math.floor(n / 1_000)}K+`
   return `${n}+`
 }
 

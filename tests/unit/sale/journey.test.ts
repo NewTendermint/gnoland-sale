@@ -21,6 +21,7 @@ const VERIFIED: JourneyState[] = [
   "ready",
   "has-bid-winning",
   "has-bid-outbid",
+  "has-bid-pending",
 ]
 
 const base: JourneyInput = {
@@ -31,6 +32,7 @@ const base: JourneyInput = {
   setupState: null,
   eligibility: null,
   myBid: null,
+  pendingIndexing: false,
   clearingPriceUsd: 0.1,
 }
 
@@ -164,6 +166,22 @@ describe("deriveJourney - eligibility + bid tail", () => {
       }),
     ).toBe("has-bid-winning")
   })
+  it("has-bid-pending overrides both Winning and Outbid while the bid is unreported", () => {
+    // A confirmed-but-unreported bid must never claim a settled status (tag, tab alert, sections).
+    for (const priceUsd of [0.2, 0.1]) {
+      expect(
+        deriveJourney({
+          ...cleared,
+          myBid: { priceUsd, committedUsd: 1000, lockup: false },
+          pendingIndexing: true,
+          clearingPriceUsd: 0.15,
+        }),
+      ).toBe("has-bid-pending")
+    }
+  })
+  it("pendingIndexing without a bid has no effect (ready)", () => {
+    expect(deriveJourney({ ...cleared, pendingIndexing: true })).toBe("ready")
+  })
 })
 
 describe("deriveJourney - guard precedence (earlier gate wins)", () => {
@@ -203,6 +221,7 @@ describe("derivePositionState - TokenDetails 'Your position' display", () => {
     "ready",
     "has-bid-winning",
     "has-bid-outbid",
+    "has-bid-pending",
   ]
   it("active whenever a bid exists, in any journey state", () => {
     for (const s of allStates) expect(derivePositionState(s, true)).toBe("active")

@@ -82,6 +82,7 @@ function funnelState(journey: SaleJourney, phase: SalePhase, stage: PreSaleStage
       return "wallet-ready"
     case "has-bid-winning":
     case "has-bid-outbid":
+    case "has-bid-pending":
       return "bidding"
     case "disconnected":
     case "wrong-network":
