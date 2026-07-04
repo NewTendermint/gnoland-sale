@@ -368,5 +368,11 @@ main > section {
     --border: color-mix(in srgb, var(--on-contrast) 18%, transparent);
     --border-strong: color-mix(in srgb, var(--on-contrast) 34%, transparent);
     --surface-alt: color-mix(in srgb, var(--on-contrast) 8%, transparent);
+    /* Hide the scroll bar on the expanded bid panel (still scrolls via wheel/touch/keyboard). */
+    scrollbar-width: none;
+  }
+
+  .bid-capsule::-webkit-scrollbar {
+    display: none;
   }
 }

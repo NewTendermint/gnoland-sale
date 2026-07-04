@@ -5,9 +5,10 @@
  * dates are pulled from SALE_ECONOMICS so the answers can never drift from the
  * terms table. An answer may be a single string or an array of paragraphs.
  *
- * Footgun: the worked examples below are illustrative literals - the refund example
- * (1,000 USDC bid $0.1806 / $0.1419 clearing) and the oversubscription example
- * ($20M / $10M / 50%) stay literal. Re-write them by hand if the band or supply moves.
+ * Footgun: the worked examples below are illustrative literals - the auction steps
+ * ($0.0645 / $0.086, 30M-40M vs 38,760,000), the refund example (1,000 USDC bid
+ * $0.172 / $0.129 clearing) and the oversubscription example ($20M / $10M / 50%) stay
+ * literal. Re-write them by hand if the band or supply moves.
  */
 import {
   SALE_ECONOMICS,
@@ -17,10 +18,18 @@ import {
 } from "../../lib/sale/economics"
 import { fmtPrice } from "../../lib/sale/format"
 
-export const faq: Array<{ q: string; a: string | string[] }> = [
+export type FaqBlock = string | { strong: string }
+
+export const faq: Array<{ q: string; a: string | FaqBlock[] }> = [
   {
     q: "How does the auction work?",
-    a: `The GNOT token sale takes place as a uniform-price auction (English auction) with a minimum price (starting price) of ${fmtPrice(SALE_ECONOMICS.startingPriceUsd)}. Participants submit bids in increments of $${SALE_ECONOMICS.bidIncrementUsd} at or above the clearing price. The price moves up when demand at or above a higher step is itself enough to buy the entire ${SALE_ECONOMICS.saleSupplyGnot.toLocaleString("en-US")} at that price. The clearing price is determined by demand at the end of the auction. All bids at or above the clearing price are successful.`,
+    a: [
+      `The GNOT token sale takes place as a uniform-price auction (English auction) with a minimum price (starting price) of ${fmtPrice(SALE_ECONOMICS.startingPriceUsd)}. Participants submit bids in increments of $${SALE_ECONOMICS.bidIncrementUsd} at or above the clearing price. The price moves up when demand at or above a higher step is itself enough to buy the entire ${SALE_ECONOMICS.saleSupplyGnot.toLocaleString("en-US")} at that price. The clearing price is determined by demand at the end of the auction. All bids at or above the clearing price are successful.`,
+      { strong: "Example 1: Clearing price stays at current level" },
+      "Bids received: 30,000,000 GNOT at $0.0645, 20,000,000 GNOT at $0.086. Since total demand at $0.086 (20M) falls short of the 38,760,000 GNOT being sold, the clearing price remains $0.0645. Winning bidders receive tokens pro rata, and excess bid amounts are refunded.",
+      { strong: "Example 2: Clearing price increases" },
+      "Bids received: 40,000,000 GNOT at $0.0645, 40,000,000 GNOT at $0.086. Since demand at $0.086 (40M) exceeds the 38,760,000 GNOT available, the clearing price rises to $0.086. Bidders at $0.0645 are not allocated tokens - only bids at or above the clearing price qualify. Winning bidders receive tokens pro rata, and excess bid amounts are refunded.",
+    ],
   },
   {
     q: "When is the token sale date?",
@@ -41,8 +50,8 @@ export const faq: Array<{ q: string; a: string | string[] }> = [
   {
     q: "If the clearing price is lower than my bid price, do I get a refund on the difference?",
     a: [
-      "No. If the clearing price is lower than your bid, your committed USDC will buy tokens at that price.",
-      "Example: A participant bids 1,000 USDC at $0.1806 per token. The clearing price is $0.1419. The participant receives tokens at $0.1419, spending $1,000 USDC.",
+      "No. If the clearing price is lower than your bid, your committed USDC will buy tokens at the clearing price.",
+      "Example: A participant bids 1,000 USDC at $0.172 per token. The clearing price is $0.129. The participant receives tokens at $0.129, spending $1,000 USDC.",
     ],
   },
   {
