@@ -60,9 +60,19 @@ export function Faq() {
                 >
                   <div className="overflow-hidden" inert={!isOpen}>
                     <div className="max-w-3xl space-y-3 pb-6 text-base text-muted md:text-lg lg:pb-8">
-                      {(Array.isArray(item.a) ? item.a : [item.a]).map((para) => (
-                        <p key={para}>{para}</p>
-                      ))}
+                      {(Array.isArray(item.a) ? item.a : [item.a]).map((para) => {
+                        const text = typeof para === "string" ? para : para.strong
+                        return (
+                          <p
+                            key={text}
+                            className={
+                              typeof para === "string" ? undefined : "font-semibold text-foreground"
+                            }
+                          >
+                            {text}
+                          </p>
+                        )
+                      })}
                     </div>
                   </div>
                 </div>

@@ -21,8 +21,8 @@ export const partners = [
     href: "https://www.onbloc.xyz",
   },
   {
-    name: "AtomOne",
-    body: "AtomOne is a community-driven, constitutionally governed blockchain prioritizing security and decentralization in the Cosmos ecosystem. Gno.land plans to integrate AtomOne for consensus.",
+    name: "All in Bits",
+    body: "All in Bits is the team behind Tendermint BFT and Cosmos, the foundational infrastructure of the Internet of Blockchains ecosystem and the organization building AtomOne, the next chapter of that vision.",
     href: "https://atom.one/",
   },
 ]
