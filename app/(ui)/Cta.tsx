@@ -32,6 +32,7 @@ type CtaProps = {
   variant?: keyof typeof VARIANTS
   size?: keyof typeof SIZES
   className?: string
+  title?: string
 }
 
 export function Cta({
@@ -48,6 +49,7 @@ export function Cta({
   variant = "solid",
   size = "md",
   className = "",
+  title,
 }: CtaProps) {
   const base =
     "btn-pan group inline-flex cursor-pointer items-center justify-center gap-2 rounded-full font-bold uppercase tracking-[0.2em] disabled:pointer-events-none disabled:opacity-40"
@@ -74,6 +76,7 @@ export function Cta({
         disabled={disabled}
         aria-label={ariaLabel}
         aria-expanded={ariaExpanded}
+        title={title}
         className={cls}
       >
         {inner}
@@ -84,6 +87,7 @@ export function Cta({
     <a
       href={href}
       aria-label={ariaLabel}
+      title={title}
       {...(external ? { target: "_blank", rel: "noreferrer noopener" } : {})}
       className={cls}
     >

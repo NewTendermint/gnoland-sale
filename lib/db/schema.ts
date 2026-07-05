@@ -4,6 +4,7 @@ import {
   index,
   jsonb,
   pgTable,
+  smallint,
   text,
   timestamp,
 } from "drizzle-orm/pg-core"
@@ -69,6 +70,14 @@ export const pushSubscriptions = pgTable("push_subscriptions", {
   lastStatus: text("last_status").notNull().default("winning"), // "winning" | "outbid"
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+})
+
+// Price email cron state: one row (id=1). Absent row = first run (baseline gets recorded);
+// lastSentAt null = baseline only, no email sent yet.
+export const priceEmailState = pgTable("price_email_state", {
+  id: smallint("id").primaryKey(),
+  lastSentPriceUsd: doublePrecision("last_sent_price_usd").notNull(),
+  lastSentAt: timestamp("last_sent_at", { withTimezone: true }),
 })
 
 // A push endpoint only ever comes from a browser's PushManager, so its host is always one of the

@@ -44,7 +44,18 @@ export async function sendOutbidNotifications(
         sent++
       } catch (err) {
         const status = (err as { statusCode?: number }).statusCode
-        if (status === 404 || status === 410) expiredEndpoints.push(t.endpoint)
+        if (status === 404 || status === 410) {
+          expiredEndpoints.push(t.endpoint)
+        } else {
+          // Host only, never the full endpoint (it is a capability URL). A silent 403 cost us
+          // a full debugging day on 2026-07-05 - every non-prune failure now leaves a trace.
+          // The URL parse is guarded: one malformed row must never reject the whole batch.
+          let host = "unparseable-endpoint"
+          try {
+            host = new URL(t.endpoint).hostname
+          } catch {}
+          console.error(`push-send: ${host} -> ${status ?? "network"}`)
+        }
       }
     }),
   )
