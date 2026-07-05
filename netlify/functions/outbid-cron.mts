@@ -7,7 +7,8 @@
 // targeted context. The staging fan-out URL comes from CRON_STAGING_URL, set on the PRODUCTION
 // context (only prod is scheduled); unset -> the staging leg is simply skipped.
 const TARGETS = [
-  process.env.URL ?? process.env.NEXT_PUBLIC_SITE_URL, // production (this deploy), auto-injected
+  // CRON_PROD_URL overrides while sale.gno.land DNS is not on Netlify (URL = the unreachable custom domain).
+  process.env.CRON_PROD_URL ?? process.env.URL ?? process.env.NEXT_PUBLIC_SITE_URL,
   process.env.CRON_STAGING_URL, // staging branch-deploy (own Sepolia DB)
 ]
 
