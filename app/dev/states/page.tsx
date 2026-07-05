@@ -3,7 +3,7 @@ import { notFound } from "next/navigation"
 import { Fragment, type ReactNode } from "react"
 import { MetricPendingChip } from "../../(layout)/BidBarShell"
 import { BidSectionHeader, PreSaleRight } from "../../(layout)/BidPanelDesktop"
-import { BidFlow, type BidPreview } from "../../(sections)/bid/BidFlow"
+import { BidFlow, type BidPreview, PostBidOptIns } from "../../(sections)/bid/BidFlow"
 import { BidStatusTag, FunnelSteps } from "../../(sections)/bid/FunnelSteps"
 import { Cta } from "../../(ui)/Cta"
 import { Icon } from "../../(ui)/Icon"
@@ -430,6 +430,37 @@ export default function DevStatesPage() {
                   clearingPriceUsd={MOCK_JOURNEY_INPUTS["has-bid-pending"].clearingPriceUsd}
                   wallet={<MockWalletChip />}
                 />
+              </div>
+            </div>
+          </div>
+        </GallerySection>
+
+        <GallerySection title="Post-bid opt-ins · one line, shared explainer, push + email side by side">
+          <p className="text-sm text-muted">
+            The bid-panel success row: confirmation left, the REAL PostBidOptIns component right (no
+            static replica, so the gallery cannot drift). Fully interactive: the email flow mocks
+            Mailchimp in dev, the push flow uses this browser's real permission state.
+          </p>
+          <Caption>
+            Submitted - single row, two compact CTAs (each opens its dedicated view in place)
+          </Caption>
+          <div className="overflow-hidden rounded-[var(--frame-radius)] border border-border bg-background">
+            <div className="px-6 py-6 lg:px-8">
+              {/* Same dark capsule as the real panel: the ghost-contrast CTAs are invisible on a
+                  light background, so the preview must replicate the production surface. */}
+              <div className="bid-capsule px-6 py-5">
+                <div className="flex flex-wrap items-center justify-between gap-x-10 gap-y-3">
+                  <div className="flex items-center gap-3">
+                    <Icon name="shield-check" draw={false} className="h-5 w-5 shrink-0 text-mint" />
+                    <p className="whitespace-nowrap text-sm text-foreground">
+                      Bid submitted - $1,000 at $0.086 per GNOT.
+                    </p>
+                    <span className="whitespace-nowrap text-xs text-muted underline underline-offset-2">
+                      View transaction
+                    </span>
+                  </div>
+                  <PostBidOptIns bidLimitUsd={0.086} />
+                </div>
               </div>
             </div>
           </div>

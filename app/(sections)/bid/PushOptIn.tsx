@@ -2,13 +2,15 @@
 
 import { type PushOptInResult, enablePushAlerts, hasPushSubscription } from "@/lib/push/subscribe"
 import { useEffect, useState } from "react"
-import { Cta } from "../../(ui)/Cta"
-import { Icon } from "../../(ui)/Icon"
 
-// Outbid push opt-in. Desktop only; no-ops where unsupported. Stores only bid limit (no PII).
-export function PushOptIn({ bidLimitUsd }: { bidLimitUsd: number }) {
+type PushOptInStatus = "idle" | "working" | PushOptInResult
+
+// Push opt-in state machine, presentation-free: the post-bid row (BidFlow) renders the compact
+// CTA / detail views itself. Probes existing permission + subscription at mount; `enable` runs
+// the SW + permission + subscribe + POST chain. Desktop only; unsupported -> supported: false.
+export function usePushAlerts(bidLimitUsd: number) {
   const [supported, setSupported] = useState(false)
-  const [status, setStatus] = useState<"idle" | "working" | PushOptInResult>("idle")
+  const [status, setStatus] = useState<PushOptInStatus>("idle")
 
   useEffect(() => {
     const ok =
@@ -27,50 +29,10 @@ export function PushOptIn({ bidLimitUsd }: { bidLimitUsd: number }) {
     })
   }, [])
 
-  if (!supported || status === "unsupported") return null
-
-  if (status === "granted") {
-    return (
-      <div className="flex flex-col gap-1 sm:items-end">
-        <p className="flex items-center gap-2 text-xs text-mint">
-          <Icon name="shield-check" draw={false} className="h-4 w-4 shrink-0" />
-          Alerts on. We'll notify you if you're outbid.
-        </p>
-        <p className="text-[11px] text-muted">
-          Not receiving them? Turn on notifications for your browser in your system settings.
-        </p>
-      </div>
-    )
+  const enable = async () => {
+    setStatus("working")
+    setStatus(await enablePushAlerts(bidLimitUsd))
   }
 
-  if (status === "denied") {
-    return (
-      <p className="text-xs text-muted sm:text-right">
-        Notifications are blocked. Enable them for your browser in your system settings to get
-        outbid alerts.
-      </p>
-    )
-  }
-
-  const note =
-    status === "error"
-      ? "Could not enable alerts. Try again."
-      : "Get notified if you're outbid, even after you close this tab."
-
-  return (
-    <div className="flex flex-wrap items-center gap-3">
-      <p className="text-xs text-muted">{note}</p>
-      <Cta
-        variant="ghost-contrast"
-        size="sm"
-        disabled={status === "working"}
-        onClick={async () => {
-          setStatus("working")
-          setStatus(await enablePushAlerts(bidLimitUsd))
-        }}
-      >
-        {status === "working" ? "Enabling" : "Enable alerts"}
-      </Cta>
-    </div>
-  )
+  return { supported, status, enable }
 }
