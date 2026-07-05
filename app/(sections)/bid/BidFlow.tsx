@@ -4,8 +4,15 @@ import { useEffect, useRef, useState } from "react"
 import type { ReactNode } from "react"
 import { sepolia } from "viem/chains"
 import { useChainId, useConnect, useSwitchChain } from "wagmi"
+import { NewsletterForm } from "../../(layout)/NewsletterForm"
+import { CloseButton } from "../../(ui)/CloseButton"
 import { Cta } from "../../(ui)/Cta"
 import { Icon } from "../../(ui)/Icon"
+import {
+  clearEmailOptInDone,
+  emailOptInDone,
+  newsletterEnabled,
+} from "../../../lib/newsletter/config"
 import {
   bidHeadroomPct,
   gnotEstimate,
@@ -31,7 +38,7 @@ import {
   MockBidSubmitter,
 } from "../../../lib/sale/submitter"
 import type { JourneyState, MyBid } from "../../../lib/sale/types"
-import { PushOptIn } from "./PushOptIn"
+import { usePushAlerts } from "./PushOptIn"
 
 const submitter = new MockBidSubmitter()
 
@@ -70,6 +77,167 @@ function WalletIcon({ src }: { src?: string }) {
     return <Icon name="wallet" draw={false} className="h-5 w-5 text-muted" />
   }
   return <img src={src} alt="" className="h-6 w-6 rounded-md" onError={() => setFailed(true)} />
+}
+
+// Channel pitches (validated copy, single source: the menu composes them, each dedicated view
+// reuses its own). PUSH_HINT is the settings tooltip for the granted state.
+const EMAIL_PITCH = "Price updates by email - never linked to your wallet or bids."
+const PUSH_PITCH = "Outbid alerts in your browser - never linked to your wallet or bids."
+const BOTH_PITCH =
+  "Outbid alerts in your browser or price updates by email - never linked to your wallet or bids."
+const PUSH_HINT =
+  "Not receiving them? Turn on notifications for your browser in your system settings."
+
+/** Post-bid opt-in row. Compact menu: one explainer + two icon CTAs (check icon once a channel
+ *  is active). Clicking a CTA switches the slot to that channel's dedicated view; success and
+ *  error copy lives ONLY in the dedicated views. Exported for the /dev/states gallery. */
+export function PostBidOptIns({ bidLimitUsd }: { bidLimitUsd: number }) {
+  const { supported, status, enable } = usePushAlerts(bidLimitUsd)
+  const [view, setView] = useState<"menu" | "email" | "push">("menu")
+  const [emailDone, setEmailDone] = useState(false)
+  const emailEnabled = newsletterEnabled()
+
+  // The flag is written by ANY NewsletterForm instance (footer, tiles, this panel).
+  useEffect(() => {
+    setEmailDone(emailOptInDone())
+  }, [])
+
+  const pushGranted = status === "granted"
+  const pushOffered = supported && status !== "unsupported"
+  // The explainer only sells the channels still on offer; nothing left -> no sentence.
+  const emailPitch = emailEnabled && !emailDone
+  const pushPitch = pushOffered && !pushGranted
+  const sentence =
+    emailPitch && pushPitch ? BOTH_PITCH : emailPitch ? EMAIL_PITCH : pushPitch ? PUSH_PITCH : null
+
+  if (view === "email") {
+    return (
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+        <div aria-hidden="true" className="h-8 w-px shrink-0 bg-border" />
+        {emailDone ? (
+          // Re-opened from the checked CTA: the subscription already happened, show the state,
+          // with an escape hatch for a mistyped address (clears the browser flag only).
+          <>
+            <p className="flex items-center gap-2 whitespace-nowrap text-xs text-mint">
+              <Icon name="shield-check" draw={false} className="h-4 w-4 shrink-0" />
+              Confirmation email sent - check your inbox.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                clearEmailOptInDone()
+                setEmailDone(false)
+              }}
+              className="cursor-pointer whitespace-nowrap text-xs text-muted underline underline-offset-2 hover:text-foreground"
+            >
+              Use another email
+            </button>
+          </>
+        ) : (
+          <>
+            <p className="max-w-[36ch] text-right text-xs text-muted">{EMAIL_PITCH}</p>
+            <NewsletterForm
+              variant="inline"
+              inputId="bid-panel-email"
+              onSuccess={() => setEmailDone(true)}
+            />
+          </>
+        )}
+        <CloseButton label="Back to notification options" onClick={() => setView("menu")} />
+      </div>
+    )
+  }
+
+  if (view === "push") {
+    return (
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+        <div aria-hidden="true" className="h-8 w-px shrink-0 bg-border" />
+        {status === "working" ? (
+          <p className="max-w-[36ch] text-right text-xs text-muted">{PUSH_PITCH}</p>
+        ) : status === "error" ? (
+          <p className="max-w-[44ch] text-right text-xs text-muted">
+            Could not enable alerts. Check that notifications are allowed for your browser in your
+            system settings, then retry.
+          </p>
+        ) : null}
+        {status === "working" ? (
+          <Cta variant="ghost-contrast" size="sm" className="shrink-0 whitespace-nowrap" disabled>
+            Enabling
+          </Cta>
+        ) : status === "granted" ? (
+          <p
+            className="flex items-center gap-2 whitespace-nowrap text-xs text-mint"
+            title={PUSH_HINT}
+          >
+            <Icon name="shield-check" draw={false} className="h-4 w-4 shrink-0" />
+            Browser alerts on. We'll notify you if you're outbid.
+          </p>
+        ) : status === "denied" ? (
+          <p className="text-xs text-muted">
+            Notifications are blocked. Enable them for your browser in your system settings to get
+            outbid alerts.
+          </p>
+        ) : status === "unsupported" ? (
+          <p className="text-xs text-muted">
+            Notifications are not available in this browser. Use email updates instead.
+          </p>
+        ) : (
+          <Cta
+            variant="ghost-contrast"
+            size="sm"
+            className="shrink-0 whitespace-nowrap"
+            onClick={enable}
+          >
+            Retry
+          </Cta>
+        )}
+        {status !== "working" ? (
+          <CloseButton label="Back to notification options" onClick={() => setView("menu")} />
+        ) : null}
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+      <div aria-hidden="true" className="h-8 w-px shrink-0 bg-border" />
+      {sentence ? <p className="max-w-[36ch] text-right text-xs text-muted">{sentence}</p> : null}
+      {emailEnabled ? (
+        <Cta
+          variant="ghost-contrast"
+          size="sm"
+          className="shrink-0 whitespace-nowrap"
+          onClick={() => setView("email")}
+        >
+          <Icon
+            name={emailDone ? "shield-check" : "send"}
+            draw={false}
+            className={`h-4 w-4 shrink-0 ${emailDone ? "text-mint" : ""}`}
+          />
+          {emailDone ? "Subscribed" : "Subscribe"}
+        </Cta>
+      ) : null}
+      {pushOffered ? (
+        <Cta
+          variant="ghost-contrast"
+          size="sm"
+          className="shrink-0 whitespace-nowrap"
+          title={pushGranted ? PUSH_HINT : undefined}
+          onClick={() => {
+            setView("push")
+            if (status === "idle" || status === "error") enable()
+          }}
+        >
+          <Icon
+            name={pushGranted ? "shield-check" : "browser"}
+            draw={false}
+            className={`h-4 w-4 shrink-0 ${pushGranted ? "text-mint" : ""}`}
+          />
+          {pushGranted ? "Alerts on" : "Enable alerts"}
+        </Cta>
+      ) : null}
+    </div>
+  )
 }
 
 /** Block-explorer tx link for the receipt; null unless `hash` is a real 32-byte tx hash. */
@@ -713,11 +881,13 @@ function BidRow({
 
   if (submitState === "submitted") {
     const explorer = txHash ? txExplorerUrl(txHash, chainId) : null
+    // flex-wrap is the safety net: one line at desktop widths, graceful wrap instead of
+    // clipping when the panel is at funnel-minimum width.
     return (
-      <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4">
-        <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-x-10 gap-y-3">
+        <div className="flex items-center gap-3">
           <Icon name="shield-check" draw={false} className="h-5 w-5 shrink-0 text-mint" />
-          <p className="text-sm text-foreground">
+          <p className="whitespace-nowrap text-sm text-foreground">
             Bid submitted - {fmtUsd(amountNum)} at {fmtPrice(priceNum)} per GNOT.
           </p>
           {explorer ? (
@@ -725,7 +895,7 @@ function BidRow({
               href={explorer}
               target="_blank"
               rel="noreferrer"
-              className="text-xs text-muted underline underline-offset-2 hover:text-foreground"
+              className="whitespace-nowrap text-xs text-muted underline underline-offset-2 hover:text-foreground"
             >
               View transaction
             </a>
@@ -733,7 +903,7 @@ function BidRow({
             <span className="font-mono text-[11px] text-muted">tx {txHash}</span>
           ) : null}
         </div>
-        <PushOptIn bidLimitUsd={priceNum} />
+        <PostBidOptIns bidLimitUsd={priceNum} />
       </div>
     )
   }

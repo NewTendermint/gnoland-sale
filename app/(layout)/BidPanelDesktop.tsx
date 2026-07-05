@@ -6,6 +6,7 @@ import { useAccount } from "wagmi"
 import { BidFlow } from "../(sections)/bid/BidFlow"
 import { BidStatusTag, FunnelSteps } from "../(sections)/bid/FunnelSteps"
 import { SettlementFlow } from "../(sections)/bid/SettlementFlow"
+import { CloseButton } from "../(ui)/CloseButton"
 import { Cta } from "../(ui)/Cta"
 import { DrawLine } from "../(ui)/DrawLine"
 import { Entrance } from "../(ui)/Entrance"
@@ -444,28 +445,6 @@ function BidPanelSkeleton() {
         <div className="ml-auto h-12 w-36 rounded-full bg-border" />
       </div>
     </div>
-  )
-}
-
-function CloseButton({ onClick }: { onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label="Close"
-      className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border text-muted transition-colors duration-300 hover:border-surface-contrast hover:bg-surface-contrast hover:text-on-contrast"
-    >
-      <svg
-        viewBox="0 0 16 16"
-        className="h-3.5 w-3.5"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        aria-hidden="true"
-      >
-        <path d="M3 3l10 10M13 3L3 13" strokeLinecap="round" />
-      </svg>
-    </button>
   )
 }
 
