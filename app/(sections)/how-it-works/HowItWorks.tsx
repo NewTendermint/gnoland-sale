@@ -43,7 +43,7 @@ function liveCtaLabel(state: FunnelStep, journey: SaleJourney): string {
 }
 
 const PRESALE_STATUS: Partial<Record<SaleJourney, string>> = {
-  "kyc-incomplete": `${VERIFY_INCOMPLETE.title}. ${VERIFY_INCOMPLETE.body}`,
+  "kyc-incomplete": `${VERIFY_INCOMPLETE.title}.`,
   "kyc-pending": `${VERIFY_STATUS.pending.title}. ${VERIFY_STATUS.pending.body}`,
   "kyc-failed": `${VERIFY_STATUS.failed.title}. ${VERIFY_STATUS.failed.body}`,
   "not-eligible": `${VERIFY_STATUS["not-eligible"].title}. ${VERIFY_STATUS["not-eligible"].body}`,

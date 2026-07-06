@@ -9,6 +9,7 @@ import { shouldAnimate } from "../../lib/motion/should-animate"
 import { SALE_ECONOMICS } from "../../lib/sale/economics"
 import {
   PENDING_BIDDER_CHIP,
+  PENDING_CHIP_HINT,
   fmtCompactUsd,
   fmtCount,
   fmtPrice,
@@ -59,9 +60,17 @@ export function useBarGrow<T extends HTMLElement>() {
 
 export type BarMetric = { icon: string; value: ReactNode; label: string; pending?: string }
 
-/** The single renderer for a metric's pending chip; keep every render site on this component. */
+/** The single renderer for a metric's pending chip; keep every render site on this component.
+ *  A grey capsule on its own line under the label: zero width impact on the metrics row. */
 export function MetricPendingChip({ label }: { label: string }) {
-  return <span className="ml-2 font-mono normal-case tracking-normal tabular-nums">{label}</span>
+  return (
+    <span
+      title={PENDING_CHIP_HINT}
+      className="mt-1 block w-fit rounded-full bg-surface-alt px-2 py-0.5 font-mono text-[8px] normal-case tracking-normal tabular-nums text-foreground"
+    >
+      {label}
+    </span>
+  )
 }
 
 export function BarShell({ children }: { children: ReactNode }) {

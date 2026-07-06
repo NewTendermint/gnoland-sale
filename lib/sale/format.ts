@@ -8,16 +8,18 @@ export const fmtPrice = (n: number) =>
 export const fmtUsd = (n: number) => `$${n.toLocaleString("en-US", { maximumFractionDigits: 0 })}`
 
 // Pending-chip copy. Single source for the live bar AND the /dev/states gallery (this module is
-// server-importable, unlike the client metric components).
+// server-importable, unlike the client metric components). Rendered as a capsule on its own line
+// under the metric label; the tooltip (PENDING_CHIP_HINT) spells out the indexing lag.
 export const PENDING_BIDDER_CHIP = "+1 pending"
 export const pendingCommittedChip = (amountUsd: number) => `+${fmtUsd(amountUsd)} pending`
+export const PENDING_CHIP_HINT = "Confirmed on-chain, not yet indexed"
 
-/** Compact USD, e.g. "$721K" / "$1.2M" (deterministic across JS engines, unlike Intl compact).
+/** Compact number, e.g. "721K" / "1.2M" (deterministic across JS engines, unlike Intl compact).
  * One decimal from millions up only; K amounts round to a whole number. */
-export const fmtCompactUsd = (n: number) => {
+export const fmtCompact = (n: number) => {
   const sign = n < 0 ? "-" : ""
   const abs = Math.abs(n)
-  if (abs < 1000) return `${sign}$${Math.round(abs)}`
+  if (abs < 1000) return `${sign}${Math.round(abs)}`
   const units = ["K", "M", "B", "T"]
   let v = abs
   let i = -1
@@ -30,8 +32,11 @@ export const fmtCompactUsd = (n: number) => {
     rounded /= 1000
     i++
   }
-  return `${sign}$${rounded}${units[i]}`
+  return `${sign}${rounded}${units[i]}`
 }
+
+/** Compact USD, e.g. "$721K" / "$1.2M". */
+export const fmtCompactUsd = (n: number) => (n < 0 ? `-$${fmtCompact(-n)}` : `$${fmtCompact(n)}`)
 
 /** Plain count, e.g. "1,247". */
 export const fmtCount = (n: number) => n.toLocaleString("en-US")

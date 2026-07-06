@@ -131,14 +131,16 @@ export function BidPanelDesktop() {
                 : `Registration opens ${formatSaleDate(SALE_ECONOMICS.registrationOpensIso, false)}`
             }
           />
-          <PreSaleRight
-            state={barState}
-            returning={sonarSeen}
-            setupHref={sonarSetupUrl}
-            onRegister={redirectToSonarLogin}
-            onSignOut={handleSignOut}
-            onRefresh={handleRefresh}
-          />
+          <div className="ml-auto flex justify-end">
+            <PreSaleRight
+              state={barState}
+              returning={sonarSeen}
+              setupHref={sonarSetupUrl}
+              onRegister={redirectToSonarLogin}
+              onSignOut={handleSignOut}
+              onRefresh={handleRefresh}
+            />
+          </div>
         </div>
       </BarShell>
     )
@@ -156,11 +158,12 @@ export function BidPanelDesktop() {
             ))}
           </div>
           {expanded ? (
-            <CloseButton onClick={() => setExpanded(false)} />
+            <CloseButton className="ml-auto" onClick={() => setExpanded(false)} />
           ) : (
             <Cta
               variant="solid"
               arrow
+              className="ml-auto"
               onClick={() => setExpanded(true)}
               buttonRef={triggerRef}
               ariaExpanded={expanded}
@@ -218,20 +221,20 @@ export function BidPanelDesktop() {
           <Entrance className="band-10">
             <DrawLine immediate delayMs={200} />
             <div className="py-4 sm:py-6">
-              <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4">
+              <div className="flex flex-wrap items-start justify-between gap-x-8 gap-y-4">
                 <Stagger
                   as="div"
                   immediate
                   delayMs={900}
-                  className={`flex flex-wrap items-center ${
-                    expanded ? "gap-x-5 gap-y-2 sm:gap-x-7" : "gap-6 gap-y-2 sm:gap-7"
+                  className={`flex flex-wrap items-start ${
+                    expanded ? "gap-x-5 gap-y-2 sm:gap-x-7" : "gap-5 gap-y-2 xl:gap-7"
                   }`}
                 >
                   {metrics.map((m, i) => (
                     <div
                       key={m.label}
-                      className={`flex items-center ${
-                        expanded ? "gap-x-5 sm:gap-x-7" : "gap-6 sm:gap-7"
+                      className={`flex items-start ${
+                        expanded ? "gap-x-5 sm:gap-x-7" : "gap-5 xl:gap-7"
                       }`}
                     >
                       {i > 0 ? (
@@ -242,7 +245,7 @@ export function BidPanelDesktop() {
                           <Icon name={m.icon} draw={false} className="h-[18px] w-[18px]" />
                           <p
                             className={`font-mono font-medium tracking-tight tabular-nums ${
-                              expanded ? "text-lg" : "text-2xl sm:text-3xl"
+                              expanded ? "text-lg" : "text-2xl xl:text-3xl"
                             }`}
                           >
                             {m.value}
@@ -257,7 +260,7 @@ export function BidPanelDesktop() {
                   ))}
                 </Stagger>
 
-                <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+                <div className="ml-auto flex flex-wrap items-center justify-end gap-3 sm:gap-4">
                   {expanded ? (
                     <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
                       {statusResolved ? (
@@ -265,7 +268,7 @@ export function BidPanelDesktop() {
                       ) : (
                         <div
                           aria-hidden="true"
-                          className="h-4 w-56 animate-pulse rounded-full bg-border motion-reduce:animate-none"
+                          className="hidden h-4 w-56 animate-pulse rounded-full bg-border motion-reduce:animate-none xl:block"
                         />
                       )}
                       <CloseButton onClick={() => setExpanded(false)} />
@@ -448,18 +451,6 @@ function BidPanelSkeleton() {
   )
 }
 
-function SignOutLink({ onClick }: { onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="text-[11px] text-muted underline underline-offset-2 transition-colors hover:text-foreground"
-    >
-      Sign out of Sonar
-    </button>
-  )
-}
-
 function RefreshButton({ onRefresh }: { onRefresh: () => void | Promise<void> }) {
   const [pending, setPending] = useState(false)
   return (
@@ -519,7 +510,6 @@ function StatusRow({
           </a>
         ) : null}
         {onRefresh ? <RefreshButton onRefresh={onRefresh} /> : null}
-        <SignOutLink onClick={onSignOut} />
       </div>
       {withCalendar ? <AddToCalendarButton milestone="sale" variant="bar" /> : null}
     </div>
@@ -562,9 +552,6 @@ export function PreSaleRight({
           <Cta variant="solid" arrow onClick={onRegister}>
             <span>{WELCOME_BACK.cta}</span>
           </Cta>
-          {/* The escape from a stale recognition (e.g. a different Sonar account behind the same
-              browser): signing out clears the seen marker, and the next login derives fresh. */}
-          <SignOutLink onClick={onSignOut} />
         </div>
       ) : (
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
@@ -579,7 +566,6 @@ export function PreSaleRight({
         <StatusRow
           icon={VERIFY_INCOMPLETE.icon}
           title={`${VERIFY_INCOMPLETE.title}.`}
-          body={VERIFY_INCOMPLETE.body}
           action={
             <Cta variant="solid" arrow href={setupHref} external>
               <span>{VERIFY_INCOMPLETE.cta}</span>
