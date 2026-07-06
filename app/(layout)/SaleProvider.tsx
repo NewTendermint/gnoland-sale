@@ -6,6 +6,7 @@ import type { ReactNode } from "react"
 import { useAccount } from "wagmi"
 import { useFunnelCapable } from "../../lib/device/funnel-gate"
 import { SALE_CHAIN } from "../../lib/sale/contracts"
+import { SALE_ECONOMICS } from "../../lib/sale/economics"
 import { useEntity, useMyBid, useSaleData } from "../../lib/sale/hooks"
 import { deriveJourney } from "../../lib/sale/journey"
 import { derivePendingView } from "../../lib/sale/pending-bid"
@@ -98,9 +99,24 @@ export function SaleProvider({
     }
     const id = setInterval(resolve, 60_000)
     document.addEventListener("visibilitychange", resolve)
+    // The 60s poll can lag a boundary by up to a minute, leaving the wrong surface up after the
+    // countdown already hit zero (e.g. the live bid form still showing at saleClosesIso, so a bid
+    // is built against a just-closed window). Fire an exact-boundary re-resolve at each upcoming
+    // transition so the flip lands on the clock. setTimeout is a 32-bit ms count: delays past
+    // ~24.8 days overflow and fire immediately, so skip those - the poll + visibilitychange still
+    // cover the far future and a nearer mount re-arms them.
+    const boundaryTimers = [
+      SALE_ECONOMICS.registrationOpensIso,
+      SALE_ECONOMICS.saleOpensIso,
+      SALE_ECONOMICS.saleClosesIso,
+    ]
+      .map((iso) => new Date(iso).getTime() - Date.now())
+      .filter((ms) => ms > 0 && ms <= 2_147_483_647)
+      .map((ms) => setTimeout(resolve, ms))
     return () => {
       clearInterval(id)
       document.removeEventListener("visibilitychange", resolve)
+      for (const t of boundaryTimers) clearTimeout(t)
     }
   }, [])
 
