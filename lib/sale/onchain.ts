@@ -47,13 +47,18 @@ const EIP2612_PERMIT_TYPES = {
 
 /** Failure cases shared by the bid and claim paths: user rejection and a mid-flow wallet network
  *  switch (chainId is pinned on every write, so the tx was blocked, never sent on the wrong
- *  chain). "wrong-chain" is the existing sentinel the flows already render switch-back copy for. */
-function sharedWalletErrorReason(err: unknown): string | null {
+ *  chain). "wrong-chain" is the existing sentinel the flows already render switch-back copy for.
+ *  cancelledCopy names what the user rejected: the bid flow signs (EIP-2612 permit), the claim
+ *  flow only confirms a transaction. */
+function sharedWalletErrorReason(
+  err: unknown,
+  cancelledCopy = "You cancelled the signature",
+): string | null {
   if (err instanceof BaseError && err.walk((e) => e instanceof ChainMismatchError)) {
     return "wrong-chain"
   }
   const msg = err instanceof Error ? err.message : String(err)
-  if (/rejected|denied/i.test(msg)) return "You cancelled the signature"
+  if (/rejected|denied/i.test(msg)) return cancelledCopy
   if (/does not match the target chain|chain mismatch/i.test(msg)) return "wrong-chain"
   return null
 }
@@ -637,7 +642,9 @@ export async function claimRefundOnChain(args: { wallet: `0x${string}` }): Promi
   } catch (err) {
     return {
       status: "reverted",
-      reason: sharedWalletErrorReason(err) ?? "Could not claim your refund",
+      reason:
+        sharedWalletErrorReason(err, "You cancelled the transaction") ??
+        "Could not claim your refund",
     }
   }
 }

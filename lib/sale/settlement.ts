@@ -39,6 +39,10 @@ export type ClaimView = {
   /** Display amount: the contract's number when readable (includes pro-rata partial refunds for
    *  winners), else the derived estimate above. */
   refundableUsd: number
+  /** Winner allocation consistent with refundableUsd: scaled by the on-chain fill ratio when the
+   *  contract's refundable is readable (accepted = committed - refund), else the derived upper
+   *  bound. Zero for outbid. */
+  gnotAllocation: number
   refunded: boolean
   showClaimButton: boolean
   showAutoRefundLine: boolean
@@ -62,11 +66,22 @@ export function deriveClaimView(
   // The contract does not zero committedAmountByToken on refund, so this stays the historical
   // refundable amount after "Refund sent" - which is what the cell should keep showing.
   const refundableUsd = onchainRefundable ?? settlement.refundableUsd
+  // Keep the two numbers coherent: allocation = accepted / clearing and accepted = committed -
+  // refund, so a winner's estimate scales by the same fill ratio the refund reveals.
+  const gnotAllocation =
+    settlement.status === "won" && onchainRefundable != null && settlement.committedUsd > 0
+      ? settlement.gnotAllocation *
+        ((settlement.committedUsd - onchainRefundable) / settlement.committedUsd)
+      : settlement.gnotAllocation
   return {
     refundableUsd,
+    gnotAllocation,
     refunded,
+    // Both assertions key on the CONTRACT's amount, never the estimate: a wallet that is not the
+    // one that committed on-chain must get neither the button nor the automatic-refunds promise.
     showClaimButton:
       gate?.done === true && gate.claimEnabled && !refunded && (onchainRefundable ?? 0) > 0,
-    showAutoRefundLine: gate?.done === true && !gate.claimEnabled && !refunded && refundableUsd > 0,
+    showAutoRefundLine:
+      gate?.done === true && !gate.claimEnabled && !refunded && (onchainRefundable ?? 0) > 0,
   }
 }

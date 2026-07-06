@@ -101,12 +101,25 @@ describe("deriveClaimView (Sonar estimate x on-chain gate, fail-closed)", () => 
     const v = deriveClaimView(winner, gate({ refundableUsd: 480 }), false)
     expect(v.refundableUsd).toBe(480)
     expect(v.showClaimButton).toBe(true)
+    // Allocation stays coherent with the refund: scaled by the same fill ratio
+    // (accepted = committed - refund => 2720/3200 = 85%).
+    expect(v.gnotAllocation).toBeCloseTo(27562 * 0.85, 6)
+  })
+
+  it("keeps the derived allocation upper bound while the contract's refund is unreadable", () => {
+    const v = deriveClaimView(winner, undefined, false)
+    expect(v.gnotAllocation).toBe(27562)
   })
 
   it("shows the automatic-refunds line only at Done with self-serve disabled", () => {
     const v = deriveClaimView(outbid, gate({ claimEnabled: false }), false)
     expect(v.showClaimButton).toBe(false)
     expect(v.showAutoRefundLine).toBe(true)
+  })
+
+  it("never promises automatic refunds from the derived estimate either (same guard as the button)", () => {
+    const v = deriveClaimView(outbid, gate({ claimEnabled: false, refundableUsd: null }), false)
+    expect(v.showAutoRefundLine).toBe(false)
   })
 
   it("an on-chain refunded entity shows Refund sent (no button, no line), keeping the historical amount", () => {

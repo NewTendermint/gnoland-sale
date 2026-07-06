@@ -69,15 +69,12 @@ export function SettlementFlow({
     )
   }
 
-  const { status, committedUsd, gnotAllocation } = settlement
+  const { status, committedUsd } = settlement
   const won = status === "won"
   // All claim assertions come from the pure merge in lib/sale/settlement.ts (fail-closed: only
   // the contract's own numbers open the button).
-  const { refundableUsd, refunded, showClaimButton, showAutoRefundLine } = deriveClaimView(
-    settlement,
-    gate,
-    claimState === "claimed",
-  )
+  const { refundableUsd, gnotAllocation, refunded, showClaimButton, showAutoRefundLine } =
+    deriveClaimView(settlement, gate, claimState === "claimed")
 
   async function onClaimClick() {
     setClaimState("claiming")
