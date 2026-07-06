@@ -29,7 +29,7 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 vi.mock("@/lib/env", () => ({
   env: {
     SALE_PAUSED: "false",
-    SALE_CHAIN: "base-sepolia",
+    SALE_CHAIN: "sepolia",
     SONAR_REDIRECT_URI: "https://app.example/callback",
     SONAR_SALE_UUID: "test-sale",
     IP_HMAC_PEPPER: "0".repeat(64),
@@ -141,6 +141,13 @@ describe("POST /api/sonar/pre-purchase", () => {
     mockedPrePurchase.mockRejectedValue(new SonarAuthError("expired"))
     const res = await prePurchasePOST(req({ wallet }))
     expect(res.status).toBe(401)
+  })
+
+  it("rejects an oversized body before it reaches the entity lookup", async () => {
+    mockedGetSession.mockResolvedValue(sessionStub("sess-1"))
+    const res = await prePurchasePOST(req({ wallet, pad: "x".repeat(2048) }))
+    expect(res.status).toBe(400)
+    expect(mockedGetEntity).not.toHaveBeenCalled()
   })
 })
 

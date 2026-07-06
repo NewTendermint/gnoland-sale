@@ -1,11 +1,12 @@
 import "server-only"
 
 /**
- * Dev-only Sonar mock switch (injects fixtures at the Sonar boundary). Two guards
- * keep mock data off a real sale: off in production, AND off when SALE_CHAIN=mainnet.
+ * Dev-only Sonar mock switch (injects fixtures at the Sonar boundary). Off in
+ * production, and fail-closed to the sepolia sandbox: any other SALE_CHAIN
+ * (mainnet, a typo) disables the mock.
  */
 export function sonarMockEnabled(): boolean {
   if (process.env.NODE_ENV === "production") return false
-  if (process.env.SALE_CHAIN === "mainnet") return false
+  if ((process.env.SALE_CHAIN ?? "sepolia") !== "sepolia") return false // unset = sepolia (lib/env.ts default)
   return process.env.SONAR_MOCK === "1"
 }
