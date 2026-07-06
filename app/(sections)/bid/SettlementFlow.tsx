@@ -6,6 +6,7 @@ import { WalletButton } from "../../(layout)/WalletButton"
 import { Cta } from "../../(ui)/Cta"
 import { GnotCoin } from "../../(ui)/GnotCoin"
 import { Icon } from "../../(ui)/Icon"
+import { useViewFocus } from "../../../lib/a11y/focus"
 import { SALE_CHAIN } from "../../../lib/sale/contracts"
 import { SALE_ECONOMICS, formatSaleDate } from "../../../lib/sale/economics"
 import { fmtGnot, fmtPrice, fmtUsd } from "../../../lib/sale/format"
@@ -45,6 +46,9 @@ export function SettlementFlow({
   const connected = previewConnected ?? isConnected
   const [claimState, setClaimState] = useState<"idle" | "claiming" | "claimed">("idle")
   const [claimError, setClaimError] = useState<string | null>(null)
+  // The claim button disables on "claiming" and unmounts on "claimed", both of which drop focus
+  // to <body>; refocus the flow so the outcome is reachable and announced.
+  const viewRef = useViewFocus<HTMLDivElement>(claimState)
 
   if (!connected) {
     return (
@@ -88,7 +92,7 @@ export function SettlementFlow({
   }
 
   return (
-    <div className="flex flex-col gap-5">
+    <div ref={viewRef} tabIndex={-1} className="flex flex-col gap-5 focus:outline-none">
       <div className="flex items-center gap-3">
         <Icon
           name="shield-check"
@@ -119,10 +123,10 @@ export function SettlementFlow({
 
         <div className="ml-auto flex items-center gap-4">
           {refunded ? (
-            <span className="inline-flex items-center gap-2 text-sm font-medium text-foreground">
+            <output className="inline-flex items-center gap-2 text-sm font-medium text-foreground">
               <Icon name="shield-check" draw={false} className="h-5 w-5 shrink-0 text-mint" />
               Refund sent
-            </span>
+            </output>
           ) : showClaimButton ? (
             <Cta
               variant="solid-contrast"
@@ -139,7 +143,7 @@ export function SettlementFlow({
       </div>
 
       {claimError ? (
-        <p className="text-xs font-medium text-danger">
+        <p role="alert" className="text-xs font-medium text-danger">
           {claimError === "wrong-chain"
             ? `Switch to ${SALE_CHAIN.name} in your wallet to claim your refund.`
             : claimError}

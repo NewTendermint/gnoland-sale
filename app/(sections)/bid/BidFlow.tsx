@@ -8,6 +8,7 @@ import { NewsletterForm } from "../../(layout)/NewsletterForm"
 import { CloseButton } from "../../(ui)/CloseButton"
 import { Cta } from "../../(ui)/Cta"
 import { Icon } from "../../(ui)/Icon"
+import { useViewFocus } from "../../../lib/a11y/focus"
 import {
   clearEmailOptInDone,
   emailOptInDone,
@@ -690,6 +691,9 @@ function BidRow({
   const [txHash, setTxHash] = useState<string | null>(preview?.txHash ?? null)
   const [submitError, setSubmitError] = useState<string | null>(preview?.error ?? null)
   const aliveRef = useRef(true)
+  // One ref shared by the mutually-exclusive view containers below: each submit-state change
+  // unmounts the element that held focus, so the incoming view takes it (and gets announced).
+  const viewRef = useViewFocus<HTMLDivElement>(submitState)
 
   const priceNum = Number(price)
   const amountNum = Number(amount)
@@ -823,7 +827,11 @@ function BidRow({
 
   if (submitState === "confirming") {
     return (
-      <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4">
+      <div
+        ref={viewRef}
+        tabIndex={-1}
+        className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4 focus:outline-none"
+      >
         <div className="min-w-0 flex-1">
           <p className="text-sm">
             <span className="font-medium text-foreground">
@@ -864,7 +872,11 @@ function BidRow({
 
   if (submitState === "submitting" || submitState === "approving" || submitState === "signing") {
     return (
-      <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4">
+      <div
+        ref={viewRef}
+        tabIndex={-1}
+        className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4 focus:outline-none"
+      >
         <div className="flex items-center gap-3" aria-live="polite">
           <Icon name="clock" draw={false} className="h-5 w-5 shrink-0 text-foreground" />
           <p className="text-sm">
@@ -893,7 +905,12 @@ function BidRow({
     // One line, always: the confirmation and CTAs never wrap or shrink; the tiny privacy note
     // inside PostBidOptIns is the only elastic element (min-w-0, wraps its own text).
     return (
-      <div className="flex items-center justify-between gap-x-10">
+      <div
+        ref={viewRef}
+        tabIndex={-1}
+        aria-live="polite"
+        className="flex items-center justify-between gap-x-10 focus:outline-none"
+      >
         <div className="flex shrink-0 items-center gap-3">
           <Icon name="shield-check" draw={false} className="h-5 w-5 shrink-0 text-mint" />
           <p className="whitespace-nowrap text-sm text-foreground">
@@ -918,7 +935,7 @@ function BidRow({
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    <div ref={viewRef} tabIndex={-1} className="flex flex-col gap-2 focus:outline-none">
       {outbid ? (
         <p className="text-xs font-bold text-danger" role="alert">
           You've been outbid. Increase your bid to stay in the sale.

@@ -22,9 +22,8 @@ import { NextResponse } from "next/server"
 export function middleware(request: NextRequest) {
   const nonce = btoa(crypto.randomUUID())
 
-  // Both policies report to /api/csp-report: report-uri for Firefox/Safari, report-to (wired to
-  // the Reporting-Endpoints header below) for Chromium. Without these the Report-Only policy only
-  // ever reached the local DevTools console - zero field data.
+  // report-uri for Firefox/Safari, report-to (Reporting-Endpoints header below) for Chromium;
+  // a Report-Only policy without a reporting target never leaves the visitor's DevTools console.
   const reporting = "report-uri /api/csp-report; report-to csp-report"
 
   const enforcedCsp = [
