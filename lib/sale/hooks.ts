@@ -63,6 +63,15 @@ export function useEntity(opts?: { enabled?: boolean }) {
 export function useMyBid(opts?: { enabled?: boolean }) {
   const { isConnected, address } = useAccount()
   const pending = usePendingBid(address)
+  const queryClient = useQueryClient()
+  // A disconnected wallet must not keep showing the previous session's position (the query is
+  // merely disabled, its cache would survive and the journey would still read "Raise bid").
+  // Footgun: removeQueries, not resetQueries - reset refetches through enabled:false and the
+  // Sonar session (still alive server-side) would repopulate the position we just cleared.
+  useEffect(() => {
+    if (isConnected) return
+    queryClient.removeQueries({ queryKey: ["sale", "my-bid"] })
+  }, [isConnected, queryClient])
   const query = useQuery({
     queryKey: ["sale", "my-bid"],
     // Null-confirming read (see confirmed-read): an unexpected null while this browser has a bid
