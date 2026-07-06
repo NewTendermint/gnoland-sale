@@ -5,6 +5,7 @@ import { MetricPendingChip } from "../../(layout)/BidBarShell"
 import { BidSectionHeader, PreSaleRight } from "../../(layout)/BidPanelDesktop"
 import { BidFlow, type BidPreview, PostBidOptIns } from "../../(sections)/bid/BidFlow"
 import { BidStatusTag, FunnelSteps } from "../../(sections)/bid/FunnelSteps"
+import { SettlementFlow } from "../../(sections)/bid/SettlementFlow"
 import { Cta } from "../../(ui)/Cta"
 import { Icon } from "../../(ui)/Icon"
 import {
@@ -16,9 +17,10 @@ import {
 } from "../../../lib/sale/format"
 import { bidCtaLabel } from "../../../lib/sale/labels"
 import { MOCK_COMMITMENT_LIVE, MOCK_JOURNEY_INPUTS } from "../../../lib/sale/mock"
+import type { ClaimGate } from "../../../lib/sale/onchain"
 import { stateOverridesEnabled } from "../../../lib/sale/overrides"
 import { sonarSetupUrl } from "../../../lib/sale/setup-url"
-import type { JourneyState, PreSaleBarState } from "../../../lib/sale/types"
+import type { JourneyState, MyBid, PreSaleBarState } from "../../../lib/sale/types"
 
 type PreviewMetric = { icon: string; value: string; label: string; pending?: string }
 
@@ -348,6 +350,45 @@ const MONEY_LOOP: ReadonlyArray<{ label: string; journey: JourneyState; preview:
   },
 ]
 
+// Settlement (ended phase) claim-gate states: the gate mirrors readClaimGate's on-chain read
+// (stage Done + claimRefundEnabled + committed - accepted), fixtures here, real reads live.
+const SETTLEMENT_STATES: ReadonlyArray<{
+  label: string
+  myBid: MyBid
+  gate: ClaimGate | undefined
+}> = [
+  {
+    label: "Gate unresolved (contract read pending) - claim button hidden, fail-closed",
+    myBid: MOCK_JOURNEY_INPUTS["has-bid-outbid"].myBid,
+    gate: undefined,
+  },
+  {
+    label: "Settlement still running on-chain (stage not Done) - numbers only, no claim assertion",
+    myBid: MOCK_JOURNEY_INPUTS["has-bid-outbid"].myBid,
+    gate: { done: false, claimEnabled: false, refunded: false, refundableUsd: null },
+  },
+  {
+    label: "Outbid - claim open, full commitment refundable",
+    myBid: MOCK_JOURNEY_INPUTS["has-bid-outbid"].myBid,
+    gate: { done: true, claimEnabled: true, refunded: false, refundableUsd: 3200 },
+  },
+  {
+    label: "Winner - pro-rata partial refund (on-chain amount overrides the derived $0)",
+    myBid: MOCK_JOURNEY_INPUTS["has-bid-winning"].myBid,
+    gate: { done: true, claimEnabled: true, refunded: false, refundableUsd: 480 },
+  },
+  {
+    label: "Claim disabled on-chain - refunds processed automatically (refunder role)",
+    myBid: MOCK_JOURNEY_INPUTS["has-bid-outbid"].myBid,
+    gate: { done: true, claimEnabled: false, refunded: false, refundableUsd: 3200 },
+  },
+  {
+    label: "Already refunded on-chain - Refund sent",
+    myBid: MOCK_JOURNEY_INPUTS["has-bid-outbid"].myBid,
+    gate: { done: true, claimEnabled: true, refunded: true, refundableUsd: 3200 },
+  },
+]
+
 export default function DevStatesPage() {
   if (!stateOverridesEnabled()) notFound()
 
@@ -480,6 +521,32 @@ export default function DevStatesPage() {
           <p className="text-xs text-muted">
             won - expand, connect, allocation · outbid - expand, connect, claim
           </p>
+        </GallerySection>
+
+        <GallerySection title="Ended · settlement flow (on-chain claim gate)">
+          <p className="text-sm text-muted">
+            Live, the gate comes from readClaimGate (stage() == Done + claimRefundEnabled + the
+            contract's committed - accepted refundable). The claim button is fail-closed: it only
+            renders once the contract confirms the self-serve window; a claim-disabled sale shows
+            the refunder-role line instead. onClaim is dev-mocked here (instant Refund sent).
+          </p>
+          {SETTLEMENT_STATES.map((s) => (
+            <div key={s.label} className="flex flex-col gap-1.5">
+              <Caption>{s.label}</Caption>
+              <div className="overflow-hidden rounded-[var(--frame-radius)] border border-border bg-background">
+                <div className="px-6 py-6 lg:px-8">
+                  <div className="bid-capsule px-6 py-5">
+                    <SettlementFlow
+                      clearingPriceUsd={MOCK_COMMITMENT_LIVE.clearingPriceUsd}
+                      myBid={s.myBid}
+                      gate={s.gate}
+                      previewConnected
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
         </GallerySection>
       </div>
     </main>

@@ -4,6 +4,16 @@
 // interfaces/types.sol TokenAmount. Inlined as one `as const` so viem infers arg/return types.
 // Fully re-verify against the deployed bytecode (Etherscan or scripts/probe-sale.mjs) before mainnet.
 
+// Stage enum values (SettlementSale.sol l.288, source-verified). Commitment = bids open;
+// claimRefund() is onlyStage(Done).
+export const SALE_STAGE = {
+  preOpen: 0,
+  commitment: 1,
+  cancellation: 2,
+  settlement: 3,
+  done: 4,
+} as const
+
 export const settlementSaleAbi = [
   {
     type: "function",
@@ -160,8 +170,52 @@ export const settlementSaleAbi = [
       },
     ],
   },
+  // Wallet-scoped view (SettlementSale.sol l.1193): resolves the entity + per-token amounts for a
+  // connected wallet WITHOUT Sonar - the refund gate's entry point at Stage.Done. Reverts
+  // WalletNotInitialized for a wallet with no on-chain position.
+  {
+    type: "function",
+    name: "walletStatesByAddresses",
+    stateMutability: "view",
+    inputs: [{ name: "addrs", type: "address[]" }],
+    outputs: [
+      {
+        type: "tuple[]",
+        components: [
+          { name: "addr", type: "address" },
+          { name: "entityID", type: "bytes16" },
+          {
+            name: "committedAmountByToken",
+            type: "tuple[]",
+            components: [
+              { name: "token", type: "address" },
+              { name: "amount", type: "uint256" },
+            ],
+          },
+          {
+            name: "cancelledAmountByToken",
+            type: "tuple[]",
+            components: [
+              { name: "token", type: "address" },
+              { name: "amount", type: "uint256" },
+            ],
+          },
+          {
+            name: "acceptedAmountByToken",
+            type: "tuple[]",
+            components: [
+              { name: "token", type: "address" },
+              { name: "amount", type: "uint256" },
+            ],
+          },
+        ],
+      },
+    ],
+  },
   // Custom errors we surface to the user (lets viem decode the revert name).
   { type: "error", name: "BidMustHaveLockup", inputs: [] },
+  { type: "error", name: "ClaimRefundDisabled", inputs: [] },
+  { type: "error", name: "AlreadyRefunded", inputs: [{ type: "bytes16" }] },
   {
     type: "error",
     name: "BidPriceBelowMinPrice",
