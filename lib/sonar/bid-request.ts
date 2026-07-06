@@ -2,6 +2,7 @@ import "server-only"
 import { NextResponse } from "next/server"
 import { z } from "zod"
 import { env } from "../env"
+import { errorMessage } from "../log"
 import type { EntitySnapshot } from "../sale/types"
 import { getSession } from "../security/session"
 import { evmAddress } from "../validation"
@@ -39,6 +40,7 @@ export async function resolveBidRequest(request: Request): Promise<BidGate> {
     if (err instanceof SonarAuthError) {
       return { ok: false, res: NextResponse.json({ error: "unauthenticated" }, { status: 401 }) }
     }
+    console.error("sonar-bid-request:", errorMessage(err))
     return { ok: false, res: NextResponse.json({ error: "entity_unavailable" }, { status: 502 }) }
   }
 }

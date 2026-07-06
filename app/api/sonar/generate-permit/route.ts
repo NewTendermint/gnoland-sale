@@ -1,3 +1,4 @@
+import { errorMessage } from "@/lib/log"
 import { ipHmac, parseForwardedFor } from "@/lib/security/ip"
 import { classifyUserAgent } from "@/lib/security/user-agent"
 import { resolveBidRequest } from "@/lib/sonar/bid-request"
@@ -32,6 +33,8 @@ export async function POST(request: Request) {
     if (err instanceof PermitDedupError) {
       return NextResponse.json({ error: "rate_limited" }, { status: 429 })
     }
+    // Fallthrough = unidentified upstream failure; trace it or the 502 is undebuggable.
+    console.error("sonar-generate-permit:", errorMessage(err))
     return NextResponse.json({ error: "permit_failed" }, { status: 502 })
   }
 }

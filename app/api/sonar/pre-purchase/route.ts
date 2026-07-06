@@ -1,3 +1,4 @@
+import { errorMessage } from "@/lib/log"
 import { resolveBidRequest } from "@/lib/sonar/bid-request"
 import { SonarAuthError, prePurchaseCheck } from "@/lib/sonar/permit"
 import { NextResponse } from "next/server"
@@ -17,6 +18,7 @@ export async function POST(request: Request) {
     if (err instanceof SonarAuthError) {
       return NextResponse.json({ error: "unauthenticated" }, { status: 401 })
     }
+    console.error("sonar-pre-purchase:", errorMessage(err))
     return NextResponse.json({ error: "pre_purchase_failed" }, { status: 502 })
   }
 }

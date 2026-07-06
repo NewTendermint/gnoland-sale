@@ -1,4 +1,5 @@
 import { env } from "@/lib/env"
+import { errorMessage } from "@/lib/log"
 import { readCommitments } from "@/lib/sonar/commitments"
 import { NextResponse } from "next/server"
 
@@ -14,7 +15,9 @@ export async function GET() {
     return NextResponse.json(data, {
       headers: { "Cache-Control": "public, max-age=10, stale-while-revalidate=30" },
     })
-  } catch {
+  } catch (err) {
+    // Most-polled route in the app: a Sonar outage surfaces here first, so leave a trace.
+    console.error("sonar-commitments:", errorMessage(err))
     return NextResponse.json({ error: "commitments_unavailable" }, { status: 502 })
   }
 }
