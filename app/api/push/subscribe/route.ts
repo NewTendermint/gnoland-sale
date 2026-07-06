@@ -1,8 +1,9 @@
 import { db } from "@/lib/db/client"
 import { pushSubscriptionInsertSchema, pushSubscriptions } from "@/lib/db/schema"
 import { errorMessage } from "@/lib/log"
+import { classifyBid } from "@/lib/push/detect"
 import { getSession } from "@/lib/security/session"
-import { readCommitments } from "@/lib/sonar/commitments"
+import { readCommitmentsCached } from "@/lib/sonar/commitments"
 import { eq } from "drizzle-orm"
 import { NextResponse } from "next/server"
 
@@ -28,22 +29,25 @@ export async function POST(req: Request) {
   }
   const row = parsed.data
   // The UI allows opting in with a bidLimitUsd already below the clearing price, so the schema's
-  // "winning" default would be wrong from the start and fire a bogus outbid push on the next cron
-  // tick. Comparison mirrors detect.ts so subscribe-time and cron-time classification agree. If the
-  // metrics read fails, fall back to "winning": a false "winning" self-corrects at the next cron
-  // tick, whereas rejecting the subscribe loses the user.
-  let clearingPriceUsd: number | null = null
-  try {
-    ;({ clearingPriceUsd } = await readCommitments())
-  } catch (err) {
+  // "winning" default would seed a bogus outbid push on the next cron tick. The read is cached
+  // (~10s): PushLimitSync re-POSTs this route on every page load of a subscribed bidder. A failed
+  // read falls back to "winning" - a wrong seed self-corrects at the next cron tick, whereas
+  // rejecting the subscribe loses the user.
+  const metrics = await readCommitmentsCached().catch((err) => {
     console.error("push-subscribe: commitments read failed:", errorMessage(err))
-  }
-  const lastStatus: "winning" | "outbid" =
-    clearingPriceUsd == null || row.bidLimitUsd >= clearingPriceUsd ? "winning" : "outbid"
+    return null
+  })
+  const clearingPriceUsd = metrics?.clearingPriceUsd ?? null
+  const lastStatus =
+    clearingPriceUsd == null ? "winning" : classifyBid(row.bidLimitUsd, clearingPriceUsd)
   // Footgun: keys must refresh on upsert - the push service cannot verify e2e-encryption
   // keys, so a row holding stale p256dh/auth would keep "delivering" (no 404/410 to prune on) while
   // the browser silently fails to decrypt - a dead row forever. Refreshing them on every upsert
   // makes that state unrepresentable.
+  // lastStatus is seeded on INSERT only, never in the conflict set: after insert, the cron is the
+  // sole writer (its persist-before-send ordering is the once-per-transition guarantee). Writing it
+  // here on every re-POST could swallow a pending alert, resend a delivered one after a failed
+  // metrics read, or clobber a fresher cron-written status.
   await db
     .insert(pushSubscriptions)
     .values({ ...row, lastStatus })
@@ -53,7 +57,6 @@ export async function POST(req: Request) {
         p256dh: row.p256dh,
         auth: row.auth,
         bidLimitUsd: row.bidLimitUsd,
-        lastStatus,
         updatedAt: new Date(),
       },
     })

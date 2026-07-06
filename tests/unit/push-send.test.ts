@@ -14,16 +14,16 @@ vi.mock("@/lib/env", () => ({
 }))
 
 const target = { endpoint: "https://fcm.googleapis.com/fcm/send/abc", p256dh: "k", auth: "a" }
+// Any positive TTL: the failure tests exercise error handling, not the TTL value.
+const ANY_TTL_S = 60
 
 beforeEach(() => {
   vi.resetModules()
+  sendNotification.mockReset()
 })
 
 afterEach(() => {
   vi.restoreAllMocks()
-  vi.unstubAllEnvs()
-  vi.useRealTimers()
-  sendNotification.mockReset()
 })
 
 describe("sendOutbidNotifications failures", () => {
@@ -31,7 +31,7 @@ describe("sendOutbidNotifications failures", () => {
     const { sendOutbidNotifications } = await import("../../lib/push/send")
     sendNotification.mockRejectedValueOnce({ statusCode: 410 })
     const spy = vi.spyOn(console, "error").mockImplementation(() => {})
-    const res = await sendOutbidNotifications([target])
+    const res = await sendOutbidNotifications([target], ANY_TTL_S)
     expect(res.expiredEndpoints).toEqual([target.endpoint])
     expect(spy).not.toHaveBeenCalled()
   })
@@ -40,7 +40,7 @@ describe("sendOutbidNotifications failures", () => {
     const { sendOutbidNotifications } = await import("../../lib/push/send")
     sendNotification.mockRejectedValueOnce({ statusCode: 403 })
     const spy = vi.spyOn(console, "error").mockImplementation(() => {})
-    const res = await sendOutbidNotifications([target])
+    const res = await sendOutbidNotifications([target], ANY_TTL_S)
     expect(res.expiredEndpoints).toEqual([])
     expect(res.sent).toBe(0)
     expect(spy).toHaveBeenCalledWith("push-send: fcm.googleapis.com -> 403")
@@ -48,43 +48,15 @@ describe("sendOutbidNotifications failures", () => {
 })
 
 describe("sendOutbidNotifications delivery options", () => {
-  it("sends with urgency high, a 5s timeout, and TTL clamped to 6h when sale close is far away", async () => {
-    vi.stubEnv("NEXT_PUBLIC_SALE_CLOSES", "2099-01-01T00:00:00Z")
-    const { sendOutbidNotifications } = await import("../../lib/push/send")
+  it("passes the caller's TTL through with urgency high and the socket timeout", async () => {
+    const CALLER_TTL_S = 1234
+    const { SEND_SOCKET_TIMEOUT_MS, sendOutbidNotifications } = await import("../../lib/push/send")
     sendNotification.mockResolvedValueOnce(undefined)
-    await sendOutbidNotifications([target])
+    await sendOutbidNotifications([target], CALLER_TTL_S)
     expect(sendNotification).toHaveBeenCalledWith(expect.anything(), expect.anything(), {
-      TTL: 6 * 60 * 60,
+      TTL: CALLER_TTL_S,
       urgency: "high",
-      timeout: 5000,
-    })
-  })
-
-  it("shrinks TTL to the time remaining before sale close when under 6h away", async () => {
-    vi.useFakeTimers()
-    vi.setSystemTime(new Date("2026-01-01T00:00:00Z"))
-    vi.stubEnv("NEXT_PUBLIC_SALE_CLOSES", "2026-01-01T03:00:00Z")
-    const { sendOutbidNotifications } = await import("../../lib/push/send")
-    sendNotification.mockResolvedValueOnce(undefined)
-    await sendOutbidNotifications([target])
-    expect(sendNotification).toHaveBeenCalledWith(expect.anything(), expect.anything(), {
-      TTL: 3 * 60 * 60,
-      urgency: "high",
-      timeout: 5000,
-    })
-  })
-
-  it("floors TTL at 0 once the sale has already closed", async () => {
-    vi.useFakeTimers()
-    vi.setSystemTime(new Date("2026-01-02T00:00:00Z"))
-    vi.stubEnv("NEXT_PUBLIC_SALE_CLOSES", "2026-01-01T00:00:00Z")
-    const { sendOutbidNotifications } = await import("../../lib/push/send")
-    sendNotification.mockResolvedValueOnce(undefined)
-    await sendOutbidNotifications([target])
-    expect(sendNotification).toHaveBeenCalledWith(expect.anything(), expect.anything(), {
-      TTL: 0,
-      urgency: "high",
-      timeout: 5000,
+      timeout: SEND_SOCKET_TIMEOUT_MS,
     })
   })
 })

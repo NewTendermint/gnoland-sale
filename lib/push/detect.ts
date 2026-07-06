@@ -8,11 +8,17 @@ export type Detection = {
   statusUpdates: { endpoint: string; status: "winning" | "outbid" }[]
 }
 
+/** The one winning/outbid rule, shared by cron detection and subscribe-time seeding so the two
+ *  classifications can never drift apart (at-clearing counts as winning). */
+export function classifyBid(bidLimitUsd: number, clearingPriceUsd: number): "winning" | "outbid" {
+  return bidLimitUsd >= clearingPriceUsd ? "winning" : "outbid"
+}
+
 export function detectTransitions(subs: DetectSub[], clearingPriceUsd: number): Detection {
   const toNotify: string[] = []
   const statusUpdates: { endpoint: string; status: "winning" | "outbid" }[] = []
   for (const s of subs) {
-    const status = s.bidLimitUsd >= clearingPriceUsd ? "winning" : "outbid"
+    const status = classifyBid(s.bidLimitUsd, clearingPriceUsd)
     if (status !== s.lastStatus) statusUpdates.push({ endpoint: s.endpoint, status })
     if (status === "outbid" && s.lastStatus === "winning") toNotify.push(s.endpoint)
   }
