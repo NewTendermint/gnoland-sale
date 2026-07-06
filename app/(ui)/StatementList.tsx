@@ -60,12 +60,12 @@ export function StatementList({
                       <Icon
                         name={item.icon}
                         index={1}
-                        className="h-9 w-9 shrink-0 text-foreground md:mr-2 md:h-12 md:w-12"
+                        className="h-9 w-9 shrink-0 text-foreground md:mr-4 md:h-12 md:w-12"
                       />
                       <Reveal
                         as="h3"
                         index={1}
-                        className="text-left text-base font-bold uppercase leading-tight tracking-tight text-foreground md:text-right md:text-xs md:pt-1.5"
+                        className="text-left text-base font-bold uppercase leading-tight tracking-tight text-foreground md:text-right md:text-lg md:pt-1"
                       >
                         {item.title}
                       </Reveal>
@@ -73,7 +73,7 @@ export function StatementList({
                     <Reveal
                       as="p"
                       index={2}
-                      className="text-2xl text-foreground md:col-span-7 md:col-start-4 md:pt-6"
+                      className="text-2xl text-muted md:col-span-7 md:col-start-4 md:pt-6"
                     >
                       {item.body}
                     </Reveal>
