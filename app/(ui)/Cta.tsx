@@ -13,6 +13,7 @@ const VARIANTS = {
 } as const
 
 const SIZES = {
+  xs: "px-4 py-2 text-xs",
   sm: "px-5 py-2.5 text-sm",
   md: "px-6 py-3 text-xs",
   lg: "px-7 py-3.5 text-xs",
@@ -27,6 +28,7 @@ type CtaProps = {
   arrow?: boolean | "diagonal"
   ariaLabel?: string
   ariaExpanded?: boolean
+  ariaControls?: string
   buttonRef?: Ref<HTMLButtonElement>
   disabled?: boolean
   variant?: keyof typeof VARIANTS
@@ -44,6 +46,7 @@ export function Cta({
   arrow = false,
   ariaLabel,
   ariaExpanded,
+  ariaControls,
   buttonRef,
   disabled,
   variant = "solid",
@@ -76,6 +79,7 @@ export function Cta({
         disabled={disabled}
         aria-label={ariaLabel}
         aria-expanded={ariaExpanded}
+        aria-controls={ariaControls}
         title={title}
         className={cls}
       >
