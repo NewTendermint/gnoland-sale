@@ -60,6 +60,8 @@ export async function POST(req: Request) {
 }
 
 // DELETE /api/push/subscribe - remove a subscription by its endpoint on unsubscribe.
+// Accepted risk (issue #73): no owner binding - the row deliberately stores nothing traceable, so
+// the high-entropy endpoint acts as a capability URL, behind the session gate + edge rate limit.
 export async function DELETE(req: Request) {
   const session = await getSession()
   if (!session.sessionId) {
