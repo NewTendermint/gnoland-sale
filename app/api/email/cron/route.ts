@@ -77,14 +77,20 @@ export async function POST(req: Request) {
       }
     }
 
-    return NextResponse.json({
-      decision: label,
-      dryRun,
-      sent,
-      clearingPriceUsd,
-      lastSentPriceUsd: state?.lastSentPriceUsd ?? null,
-      lastSentAt: state?.lastSentAt?.toISOString() ?? null,
-    })
+    // A send was attempted but did not land exactly when: send decided, not a dry run, not sent.
+    // 502 lets the fan-out's ok-check tell a failed send apart from a healthy skip.
+    const sendFailed = decision.action === "send" && !dryRun && !sent
+    return NextResponse.json(
+      {
+        decision: label,
+        dryRun,
+        sent,
+        clearingPriceUsd,
+        lastSentPriceUsd: state?.lastSentPriceUsd ?? null,
+        lastSentAt: state?.lastSentAt?.toISOString() ?? null,
+      },
+      sendFailed ? { status: 502 } : undefined,
+    )
   } finally {
     await releaseCronLease("email-cron")
   }

@@ -17,8 +17,10 @@ import {
   formatSaleMonth,
 } from "../../lib/sale/economics"
 import { fmtPrice } from "../../lib/sale/format"
+import { SUPPORT_CONTACT_HREF } from "../../lib/sale/labels"
 
-export type FaqBlock = string | { strong: string }
+export type FaqLink = { label: string; href: string }
+export type FaqBlock = string | { strong: string } | { parts: Array<string | FaqLink> }
 
 export const faq: Array<{ q: string; a: string | FaqBlock[] }> = [
   {
@@ -97,5 +99,25 @@ export const faq: Array<{ q: string; a: string | FaqBlock[] }> = [
   {
     q: "Can I withdraw my bid?",
     a: "No. You cannot lower or cancel a bid while the sale is running. If your bid ends below the final clearing price, your committed funds are refunded after settlement.",
+  },
+  // Keep this entry LAST: the help channels stay visible at the bottom of the list.
+  {
+    q: "How do I get help?",
+    a: [
+      {
+        parts: [
+          ...(SUPPORT_CONTACT_HREF
+            ? [
+                "For issues with your bid, verification, or payment, email ",
+                { label: SUPPORT_CONTACT_HREF.replace(/^mailto:/, ""), href: SUPPORT_CONTACT_HREF },
+                ". ",
+              ]
+            : []),
+          "For general questions, join the ",
+          { label: "Gno.land Discord", href: "https://discord.gg/gnoland" },
+          ". We will never DM you first or ask for your seed phrase.",
+        ],
+      },
+    ],
   },
 ]

@@ -970,8 +970,19 @@ function BidRow({
           />
           {/* w-0 min-w-full: the note adopts the field's width instead of stretching the column. */}
           {priceError || amountError ? null : submitError ? (
-            <p className="w-0 min-w-full truncate text-xs font-medium text-danger" role="alert">
-              {submitError}
+            <p
+              className="flex w-0 min-w-full items-baseline gap-1.5 text-xs font-medium text-danger"
+              role="alert"
+            >
+              <span className="truncate">{submitError}</span>
+              {SUPPORT_CONTACT_HREF ? (
+                <a
+                  href={SUPPORT_CONTACT_HREF}
+                  className="shrink-0 underline underline-offset-2 hover:opacity-75"
+                >
+                  Support
+                </a>
+              ) : null}
             </p>
           ) : raiseNote ? (
             <p className="w-0 min-w-full truncate text-xs text-muted">{raiseNote}</p>
