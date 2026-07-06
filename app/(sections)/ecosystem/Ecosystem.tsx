@@ -28,13 +28,13 @@ export function Ecosystem() {
                   <div className="grid grid-cols-1 gap-2 md:grid-cols-10 md:gap-6">
                     <div className="flex flex-row-reverse items-start justify-between gap-3 md:col-span-3 md:flex-row md:self-start md:pr-4 md:pt-6">
                       <span className="shrink-0 text-faint">
-                        <Icon name={p.icon} index={1} className="h-9 w-9 md:h-12 md:w-12" />
+                        <Icon name={p.icon} index={1} className="h-9 w-9 md:mr-4 md:h-12 md:w-12" />
                       </span>
                       <div>
                         <Reveal
                           as="h3"
                           index={1}
-                          className="text-left text-xl font-semibold leading-tight tracking-tight text-foreground md:text-right md:text-lg md:pt-0.5"
+                          className="text-left text-xl font-bold uppercase leading-tight tracking-tight text-foreground md:text-right md:text-lg md:pt-1"
                         >
                           {p.name}
                         </Reveal>
@@ -48,7 +48,7 @@ export function Ecosystem() {
                       </div>
                     </div>
                     <div className="md:col-span-7 md:col-start-4 md:pt-6">
-                      <Reveal as="p" index={2} className="text-2xl text-foreground">
+                      <Reveal as="p" index={2} className="text-2xl text-muted">
                         {p.body}
                       </Reveal>
                       {p.href ? (

@@ -47,7 +47,7 @@ export function Partners() {
                       p.name
                     )}
                   </Reveal>
-                  <Reveal as="p" index={1} className="mt-3 text-xl leading-snug text-foreground">
+                  <Reveal as="p" index={1} className="mt-3 text-xl leading-snug text-muted">
                     {p.body}
                   </Reveal>
                 </RevealGroup>
