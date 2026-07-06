@@ -3,6 +3,7 @@ import type { ReadCommitmentDataResponse } from "@echoxyz/sonar-core"
 import { env } from "../env"
 import type { CommitmentMetrics, MyBid } from "../sale/types"
 import { createSonarClient } from "./client"
+import { pickEntity } from "./entity"
 import { withSonarAuth } from "./permit"
 
 const MICRO_USD = 1_000_000
@@ -56,7 +57,8 @@ export async function readMyBid(sessionId: string): Promise<MyBid> {
   const entities = await withSonarAuth(sessionId, (accessToken) =>
     createSonarClient(accessToken).listAvailableEntities({ saleUUID: env.SONAR_SALE_UUID }),
   )
-  const entity = entities.Entities[0]
+  // Same ranked pick as getEntity: the position MUST belong to the same entity the journey shows.
+  const entity = pickEntity(entities.Entities)
   if (!entity) {
     return null
   }
