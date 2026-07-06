@@ -12,7 +12,8 @@ const FUNNEL: { label: string; states: JourneyState[] }[] = [
 export function FunnelSteps({ journey }: { journey: JourneyState }) {
   const current = FUNNEL.findIndex((s) => s.states.includes(journey))
   return (
-    <ol className="flex flex-wrap items-center gap-x-2.5 gap-y-2">
+    // Hidden below xl: at narrow widths the steps are context the header cannot afford.
+    <ol className="hidden items-center gap-x-2.5 gap-y-2 xl:flex">
       {FUNNEL.map((step, i) => {
         const phase = i < current ? "done" : i === current ? "current" : "upcoming"
         return (

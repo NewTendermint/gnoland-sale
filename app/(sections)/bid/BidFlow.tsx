@@ -22,7 +22,7 @@ import {
 } from "../../../lib/sale/calc"
 import { SALE_CHAIN } from "../../../lib/sale/contracts"
 import { SALE_ECONOMICS } from "../../../lib/sale/economics"
-import { fmtGnot, fmtPrice, fmtUsd } from "../../../lib/sale/format"
+import { fmtCompact, fmtGnot, fmtPrice, fmtUsd } from "../../../lib/sale/format"
 import { usePaymentTokens } from "../../../lib/sale/hooks"
 import {
   SUPPORT_CONTACT_HREF,
@@ -71,29 +71,46 @@ const WALLET_ICON_SRC: Record<string, string> = {
 }
 
 /** Renders the wallet's local SVG, falling back to a generic wallet glyph if it is missing/unknown. */
-function WalletIcon({ src }: { src?: string }) {
+function WalletIcon({ src, className = "" }: { src?: string; className?: string }) {
   const [failed, setFailed] = useState(false)
   if (!src || failed) {
-    return <Icon name="wallet" draw={false} className="h-5 w-5 text-muted" />
+    return <Icon name="wallet" draw={false} className={`h-5 w-5 text-muted ${className}`} />
   }
-  return <img src={src} alt="" className="h-6 w-6 rounded-md" onError={() => setFailed(true)} />
+  return (
+    <img
+      src={src}
+      alt=""
+      className={`h-6 w-6 rounded-md ${className}`}
+      onError={() => setFailed(true)}
+    />
+  )
 }
 
-// Channel pitches (validated copy, single source: the menu composes them, each dedicated view
-// reuses its own). PUSH_HINT is the settings tooltip for the granted state.
-const EMAIL_PITCH = "Price updates by email - never linked to your wallet or bids."
+// Channel pitches (validated copy, single source): the compact menu is CTAs only, each dedicated
+// view shows its own channel pitch (the CTA label already names the channel, so the email pitch
+// carries only the privacy promise). PUSH_HINT is the settings tooltip for the granted state.
+const EMAIL_PITCH = "Never linked to your wallet or bids."
 const PUSH_PITCH = "Outbid alerts in your browser - never linked to your wallet or bids."
-const BOTH_PITCH =
-  "Outbid alerts in your browser or price updates by email - never linked to your wallet or bids."
 const PUSH_HINT =
   "Not receiving them? Turn on notifications for your browser in your system settings."
 
 /** Post-bid opt-in row. Compact menu: one explainer + two icon CTAs (check icon once a channel
  *  is active). Clicking a CTA switches the slot to that channel's dedicated view; success and
  *  error copy lives ONLY in the dedicated views. Exported for the /dev/states gallery. */
-export function PostBidOptIns({ bidLimitUsd }: { bidLimitUsd: number }) {
+export function PostBidOptIns({
+  bidLimitUsd,
+  onDetailChange,
+}: {
+  bidLimitUsd: number
+  /** Fires when the slot enters/leaves a dedicated view, so the row can free horizontal space. */
+  onDetailChange?: (detail: boolean) => void
+}) {
   const { supported, status, enable } = usePushAlerts(bidLimitUsd)
-  const [view, setView] = useState<"menu" | "email" | "push">("menu")
+  const [view, setViewRaw] = useState<"menu" | "email" | "push">("menu")
+  const setView = (v: "menu" | "email" | "push") => {
+    setViewRaw(v)
+    onDetailChange?.(v !== "menu")
+  }
   const [emailDone, setEmailDone] = useState(false)
   const emailEnabled = newsletterEnabled()
 
@@ -104,15 +121,10 @@ export function PostBidOptIns({ bidLimitUsd }: { bidLimitUsd: number }) {
 
   const pushGranted = status === "granted"
   const pushOffered = supported && status !== "unsupported"
-  // The explainer only sells the channels still on offer; nothing left -> no sentence.
-  const emailPitch = emailEnabled && !emailDone
-  const pushPitch = pushOffered && !pushGranted
-  const sentence =
-    emailPitch && pushPitch ? BOTH_PITCH : emailPitch ? EMAIL_PITCH : pushPitch ? PUSH_PITCH : null
 
   if (view === "email") {
     return (
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+      <div className="ml-auto flex min-w-0 items-center justify-end gap-x-4">
         <div aria-hidden="true" className="h-8 w-px shrink-0 bg-border" />
         {emailDone ? (
           // Re-opened from the checked CTA: the subscription already happened, show the state,
@@ -135,12 +147,16 @@ export function PostBidOptIns({ bidLimitUsd }: { bidLimitUsd: number }) {
           </>
         ) : (
           <>
-            <p className="max-w-[36ch] text-right text-xs text-muted">{EMAIL_PITCH}</p>
-            <NewsletterForm
-              variant="inline"
-              inputId="bid-panel-email"
-              onSuccess={() => setEmailDone(true)}
-            />
+            <p className="min-w-0 max-w-[36ch] shrink text-right text-xs text-muted">
+              {EMAIL_PITCH}
+            </p>
+            <span className="shrink-0">
+              <NewsletterForm
+                variant="inline"
+                inputId="bid-panel-email"
+                onSuccess={() => setEmailDone(true)}
+              />
+            </span>
           </>
         )}
         <CloseButton label="Back to notification options" onClick={() => setView("menu")} />
@@ -150,12 +166,12 @@ export function PostBidOptIns({ bidLimitUsd }: { bidLimitUsd: number }) {
 
   if (view === "push") {
     return (
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+      <div className="ml-auto flex min-w-0 items-center justify-end gap-x-4">
         <div aria-hidden="true" className="h-8 w-px shrink-0 bg-border" />
         {status === "working" ? (
-          <p className="max-w-[36ch] text-right text-xs text-muted">{PUSH_PITCH}</p>
+          <p className="min-w-0 max-w-[36ch] shrink text-right text-xs text-muted">{PUSH_PITCH}</p>
         ) : status === "error" ? (
-          <p className="max-w-[44ch] text-right text-xs text-muted">
+          <p className="min-w-0 max-w-[44ch] shrink text-right text-xs text-muted">
             Could not enable alerts. Check that notifications are allowed for your browser in your
             system settings, then retry.
           </p>
@@ -199,9 +215,7 @@ export function PostBidOptIns({ bidLimitUsd }: { bidLimitUsd: number }) {
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
-      <div aria-hidden="true" className="h-8 w-px shrink-0 bg-border" />
-      {sentence ? <p className="max-w-[36ch] text-right text-xs text-muted">{sentence}</p> : null}
+    <div className="ml-auto flex min-w-0 items-center justify-end gap-x-3">
       {emailEnabled ? (
         <Cta
           variant="ghost-contrast"
@@ -214,7 +228,7 @@ export function PostBidOptIns({ bidLimitUsd }: { bidLimitUsd: number }) {
             draw={false}
             className={`h-4 w-4 shrink-0 ${emailDone ? "text-mint" : ""}`}
           />
-          {emailDone ? "Subscribed" : "Subscribe"}
+          {emailDone ? "Price updates on" : "Price updates"}
         </Cta>
       ) : null}
       {pushOffered ? (
@@ -233,7 +247,7 @@ export function PostBidOptIns({ bidLimitUsd }: { bidLimitUsd: number }) {
             draw={false}
             className={`h-4 w-4 shrink-0 ${pushGranted ? "text-mint" : ""}`}
           />
-          {pushGranted ? "Alerts on" : "Enable alerts"}
+          {pushGranted ? "Outbid alerts on" : "Outbid alerts"}
         </Cta>
       ) : null}
     </div>
@@ -377,7 +391,6 @@ function GateContent({
         <GateRow
           icon={VERIFY_INCOMPLETE.icon}
           title={VERIFY_INCOMPLETE.title}
-          body={VERIFY_INCOMPLETE.body}
           cta={VERIFY_INCOMPLETE.cta}
           ctaHref={setupHref}
         />
@@ -390,19 +403,6 @@ function GateContent({
           body={WELCOME_BACK.body}
           cta={WELCOME_BACK.cta}
           onCta={onConnectSonar}
-          // The escape from a stale recognition (e.g. a different Sonar account behind the same
-          // browser): signing out clears the seen marker, and the next login derives fresh.
-          secondary={
-            onSignOut ? (
-              <button
-                type="button"
-                onClick={onSignOut}
-                className="text-[11px] text-muted underline underline-offset-2 transition-colors hover:text-foreground"
-              >
-                Sign out of Sonar
-              </button>
-            ) : undefined
-          }
         />
       ) : (
         <GateRow
@@ -458,7 +458,7 @@ function GateRow({
 }: {
   icon: string
   title: string
-  body: string
+  body?: string
   cta?: string
   onCta?: () => void
   ctaHref?: string
@@ -475,10 +475,10 @@ function GateRow({
         />
         <p className="text-sm">
           <span className="font-medium text-foreground">{title}.</span>
-          <span className="ml-1.5 text-muted">{body}</span>
+          {body ? <span className="ml-1.5 text-muted">{body}</span> : null}
         </p>
       </div>
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+      <div className="ml-auto flex flex-wrap items-center justify-end gap-x-4 gap-y-2">
         {ctaHref && cta ? (
           <Cta variant="solid-contrast" href={ctaHref} external>
             {cta}
@@ -527,15 +527,17 @@ export function ConnectChoices({
           </span>
         </p>
       </div>
-      <div className="flex flex-wrap items-center justify-end gap-2">
+      <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+        {/* Same dashed DNA as the not-installed wallets, grouped with them on the left. */}
         <a
           href={FIND_WALLET_URL}
           target="_blank"
           rel="noreferrer noopener"
-          className="mr-1 inline-flex items-center gap-1 text-xs text-muted underline-offset-4 transition-colors hover:text-foreground hover:underline focus-visible:text-foreground focus-visible:underline"
+          aria-label="Don't have a wallet? Find one (opens in a new tab)"
+          title="Don't have one? Find a wallet"
+          className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-dashed border-faint bg-surface-alt opacity-70 transition-all hover:opacity-100 focus-visible:opacity-100"
         >
-          Don't have one? Find a wallet
-          <span aria-hidden="true">↗</span>
+          <Icon name="search" draw={false} className="h-5 w-5 text-muted" />
         </a>
         {missing.map((rec) => (
           <a
@@ -547,7 +549,7 @@ export function ConnectChoices({
             title={`${rec.name} - not installed, click to get it`}
             className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-dashed border-faint bg-surface-alt opacity-70 transition-all hover:opacity-100 focus-visible:opacity-100"
           >
-            <WalletIcon src={WALLET_ICON_SRC[rec.id]} />
+            <WalletIcon src={WALLET_ICON_SRC[rec.id]} className="grayscale" />
           </a>
         ))}
         {live.map((connector) => {
@@ -594,6 +596,7 @@ function SwitchNetworkGate() {
       </div>
       <Cta
         variant="solid-contrast"
+        className="ml-auto"
         onClick={() => switchChain({ chainId: SALE_CHAIN.id })}
         disabled={isPending}
       >
@@ -681,6 +684,9 @@ function BidRow({
         ]
       : paymentTokens
   const [submitState, setSubmitState] = useState<SubmitState>(preview?.state ?? "idle")
+  // True while the post-bid opt-in slot shows a dedicated view: the receipt row then hides its
+  // Transaction link to free horizontal space for the email field / status text.
+  const [optInDetail, setOptInDetail] = useState(false)
   const [txHash, setTxHash] = useState<string | null>(preview?.txHash ?? null)
   const [submitError, setSubmitError] = useState<string | null>(preview?.error ?? null)
   const aliveRef = useRef(true)
@@ -824,8 +830,11 @@ function BidRow({
               Commit {fmtUsd(amountNum)} at {fmtPrice(priceNum)} per GNOT?
             </span>
             <span className="ml-1.5 text-muted">
-              You pay the final clearing price. Est. ~{fmtGnot(est)} GNOT. Bids can be raised but
-              not cancelled.
+              You pay the final clearing price. Est.{" "}
+              {estAtBid != null && estAtBid < est
+                ? `~${fmtGnot(estAtBid)}-${fmtGnot(est)} GNOT`
+                : `~${fmtGnot(est)} GNOT`}
+              . Bids can be raised but not cancelled.
             </span>
           </p>
           {prevBid ? (
@@ -836,7 +845,7 @@ function BidRow({
             </p>
           ) : null}
         </div>
-        <div className="flex flex-wrap items-center gap-4">
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-4">
           <Cta variant="solid-contrast" onClick={runSubmit}>
             Confirm bid
             <DeltaCapsule added={prevBid ? amountNum - prevBid.committedUsd : 0} />
@@ -881,29 +890,29 @@ function BidRow({
 
   if (submitState === "submitted") {
     const explorer = txHash ? txExplorerUrl(txHash, chainId) : null
-    // flex-wrap is the safety net: one line at desktop widths, graceful wrap instead of
-    // clipping when the panel is at funnel-minimum width.
+    // One line, always: the confirmation and CTAs never wrap or shrink; the tiny privacy note
+    // inside PostBidOptIns is the only elastic element (min-w-0, wraps its own text).
     return (
-      <div className="flex flex-wrap items-center justify-between gap-x-10 gap-y-3">
-        <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between gap-x-10">
+        <div className="flex shrink-0 items-center gap-3">
           <Icon name="shield-check" draw={false} className="h-5 w-5 shrink-0 text-mint" />
           <p className="whitespace-nowrap text-sm text-foreground">
             Bid submitted - {fmtUsd(amountNum)} at {fmtPrice(priceNum)} per GNOT.
           </p>
-          {explorer ? (
+          {optInDetail ? null : explorer ? (
             <a
               href={explorer}
               target="_blank"
               rel="noreferrer"
               className="whitespace-nowrap text-xs text-muted underline underline-offset-2 hover:text-foreground"
             >
-              View transaction
+              Transaction
             </a>
           ) : txHash ? (
             <span className="font-mono text-[11px] text-muted">tx {txHash}</span>
           ) : null}
         </div>
-        <PostBidOptIns bidLimitUsd={priceNum} />
+        <PostBidOptIns bidLimitUsd={priceNum} onDetailChange={setOptInDetail} />
       </div>
     )
   }
@@ -915,32 +924,53 @@ function BidRow({
           You've been outbid. Increase your bid to stay in the sale.
         </p>
       ) : null}
-      <div className="flex flex-wrap items-start gap-x-8 gap-y-4">
-        <InputCell
-          id="bid-price"
-          label="Bid price"
-          value={price}
-          onChange={setPrice}
-          readOnly
-          stepper={{
-            onUp: () => stepPrice(1),
-            onDown: () => stepPrice(-1),
-            upDisabled: snappedRef != null && nextUp === snappedRef,
-            downDisabled:
-              snappedRef != null && (nextDown === snappedRef || (nextDown ?? 0) < floor),
-            upLabel: "Raise the price one step",
-            downLabel: "Lower the price one step",
-          }}
-          invalid={priceShown && priceCheck !== "ok"}
-          hint={`If your bid meets or exceeds the final clearing price, it wins. You pay the clearing price, not your original bid. Bids are placed in $${increment} increments, starting from the $${minPrice} starting price.`}
-          suffix={
-            <>
-              USD <span className="text-[0.7em] opacity-60">/ GNOT</span>
-            </>
-          }
-          error={priceError}
-          className="w-24"
-        />
+      <div className="flex flex-wrap items-start gap-x-5 gap-y-4">
+        <div className="flex flex-col gap-1.5">
+          <InputCell
+            id="bid-price"
+            label="Bid price"
+            value={price}
+            onChange={setPrice}
+            readOnly
+            stepper={{
+              onUp: () => stepPrice(1),
+              onDown: () => stepPrice(-1),
+              upDisabled: snappedRef != null && nextUp === snappedRef,
+              downDisabled:
+                snappedRef != null && (nextDown === snappedRef || (nextDown ?? 0) < floor),
+              upLabel: "Raise the price one step",
+              downLabel: "Lower the price one step",
+            }}
+            invalid={priceShown && priceCheck !== "ok"}
+            hint={`If your bid meets or exceeds the final clearing price, it wins. You pay the clearing price, not your original bid. Bids are placed in $${increment} increments, starting from the $${minPrice} starting price.`}
+            suffix={
+              <>
+                USD <span className="text-[0.7em] opacity-60">/ GNOT</span>
+              </>
+            }
+            error={priceError}
+            className="w-24"
+          />
+          {/* w-0 min-w-full: the note adopts the field's width instead of stretching the column. */}
+          {priceError || amountError ? null : submitError ? (
+            <p className="w-0 min-w-full truncate text-xs font-medium text-danger" role="alert">
+              {submitError}
+            </p>
+          ) : raiseNote ? (
+            <p className="w-0 min-w-full truncate text-xs text-muted">{raiseNote}</p>
+          ) : clearingNote ? (
+            <p
+              className={`w-0 min-w-full whitespace-nowrap text-xs ${
+                clearingNote.tone === "warn" ? "font-medium text-amber" : "text-muted"
+              }`}
+            >
+              {clearingNote.text}
+              {clearingNote.tone === "ok" && estAtBid != null && estAtBid < est
+                ? ` You'd still get ~${fmtCompact(estAtBid)} GNOT.`
+                : ""}
+            </p>
+          ) : null}
+        </div>
         <InputCell
           id="bid-amount"
           label="Amount (USD)"
@@ -972,15 +1002,8 @@ function BidRow({
               ~{fmtGnot(est)}
               <span className="ml-0.5 text-muted">GNOT</span>
             </span>
-            <span className="text-[11px] leading-snug text-muted">
-              at the current clearing price
-              {estAtBid != null ? (
-                <>
-                  <br />~{fmtGnot(estAtBid)} if the price rises to your max bid
-                </>
-              ) : null}
-            </span>
           </div>
+          <p className="max-w-md truncate text-xs text-muted">at the current clearing price</p>
         </div>
 
         <div className="ml-auto flex flex-col gap-1.5">
@@ -1002,21 +1025,6 @@ function BidRow({
           </div>
         </div>
       </div>
-      {priceError || amountError ? null : submitError ? (
-        <p className="max-w-md truncate text-xs font-medium text-danger" role="alert">
-          {submitError}
-        </p>
-      ) : raiseNote ? (
-        <p className="max-w-md truncate text-xs text-muted">{raiseNote}</p>
-      ) : clearingNote ? (
-        <p
-          className={`max-w-md truncate text-xs ${
-            clearingNote.tone === "warn" ? "font-medium text-amber" : "text-muted"
-          }`}
-        >
-          {clearingNote.text}
-        </p>
-      ) : null}
     </div>
   )
 }

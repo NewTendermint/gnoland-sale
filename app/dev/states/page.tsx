@@ -73,16 +73,16 @@ function MetricsRow({
 }) {
   return (
     <div className="border-t border-border py-4 sm:py-6">
-      <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4">
+      <div className="flex flex-wrap items-start justify-between gap-x-8 gap-y-4">
         <div
-          className={`flex flex-wrap items-center ${
-            dense ? "gap-x-5 gap-y-2 sm:gap-x-7" : "gap-8 sm:gap-10"
+          className={`flex flex-wrap items-start ${
+            dense ? "gap-x-5 gap-y-2 sm:gap-x-7" : "gap-5 xl:gap-7"
           }`}
         >
           {metrics.map((m, i) => (
             <div
               key={m.label}
-              className={`flex items-center ${dense ? "gap-x-5 sm:gap-x-7" : "gap-8 sm:gap-10"}`}
+              className={`flex items-start ${dense ? "gap-x-5 sm:gap-x-7" : "gap-5 xl:gap-7"}`}
             >
               {i > 0 ? (
                 <div aria-hidden="true" className="hidden h-8 w-px bg-border sm:block" />
@@ -106,7 +106,7 @@ function MetricsRow({
             </div>
           ))}
         </div>
-        {right}
+        <div className="ml-auto flex justify-end">{right}</div>
       </div>
     </div>
   )
@@ -204,8 +204,12 @@ function CompactPreview({
         <div className="flex flex-wrap items-center justify-between gap-6 border-t border-border py-4 sm:py-6">
           <div>
             <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted">{lead}</p>
-            <p className="mt-1 text-2xl font-semibold tracking-tight text-foreground">{headline}</p>
-            <p className="mt-1 text-sm text-muted">{sub}</p>
+            <p className="mt-1 flex items-baseline gap-3">
+              <span className="text-2xl font-semibold tracking-tight text-foreground">
+                {headline}
+              </span>
+              <span className="text-sm text-muted">{sub}</span>
+            </p>
           </div>
           <Cta variant="solid" arrow>
             {cta}
@@ -456,7 +460,7 @@ export default function DevStatesPage() {
                       Bid submitted - $1,000 at $0.086 per GNOT.
                     </p>
                     <span className="whitespace-nowrap text-xs text-muted underline underline-offset-2">
-                      View transaction
+                      Transaction
                     </span>
                   </div>
                   <PostBidOptIns bidLimitUsd={0.086} />
