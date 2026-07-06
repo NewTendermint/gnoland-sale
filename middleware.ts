@@ -22,11 +22,17 @@ import { NextResponse } from "next/server"
 export function middleware(request: NextRequest) {
   const nonce = btoa(crypto.randomUUID())
 
+  // Both policies report to /api/csp-report: report-uri for Firefox/Safari, report-to (wired to
+  // the Reporting-Endpoints header below) for Chromium. Without these the Report-Only policy only
+  // ever reached the local DevTools console - zero field data.
+  const reporting = "report-uri /api/csp-report; report-to csp-report"
+
   const enforcedCsp = [
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
     "frame-ancestors 'none'",
+    reporting,
   ].join("; ")
 
   const reportOnlyCsp = [
@@ -43,6 +49,7 @@ export function middleware(request: NextRequest) {
     "connect-src 'self' https://ethereum-rpc.publicnode.com https://ethereum-sepolia-rpc.publicnode.com https://eth.merkle.io https://*.rpc.thirdweb.com wss://relay.walletconnect.com wss://relay.walletconnect.org https://*.walletconnect.com https://*.walletconnect.org https://*.web3modal.org https://*.reown.com https://*.coinbase.com https://*.cbhq.net",
     "frame-src 'self' https://*.walletconnect.org https://*.walletconnect.com https://*.coinbase.com",
     "worker-src 'self' blob:",
+    reporting,
   ].join("; ")
 
   const requestHeaders = new Headers(request.headers)
@@ -52,6 +59,8 @@ export function middleware(request: NextRequest) {
 
   response.headers.set("Content-Security-Policy", enforcedCsp)
   response.headers.set("Content-Security-Policy-Report-Only", reportOnlyCsp)
+  // Named endpoint the report-to directive points at (Reporting API v1).
+  response.headers.set("Reporting-Endpoints", 'csp-report="/api/csp-report"')
 
   // Enforced hard headers (safe, no breakage risk).
   response.headers.set("X-Frame-Options", "DENY")
