@@ -135,7 +135,7 @@ export function BarCountdown({ targetIso, caption }: { targetIso: string; captio
       <Icon name="clock" draw={false} className="h-[18px] w-[18px]" />
       <div>
         <p className="font-mono text-2xl font-medium tracking-tight tabular-nums sm:text-3xl">
-          <Countdown targetIso={targetIso} />
+          <Countdown targetIso={targetIso} label={caption} />
         </p>
         <p className="mt-0.5 text-[10px] uppercase tracking-[0.2em] text-muted">{caption}</p>
       </div>
@@ -155,7 +155,7 @@ export function liveMetrics(
     },
     {
       icon: "clock",
-      value: <Countdown targetIso={SALE_ECONOMICS.saleClosesIso} />,
+      value: <Countdown targetIso={SALE_ECONOMICS.saleClosesIso} label="Time left" />,
       label: "Time left",
     },
     {
@@ -182,7 +182,9 @@ export function liveKeyMetrics(commitment: CommitmentData): BarMetric[] {
     },
     {
       icon: "clock",
-      value: <Countdown targetIso={SALE_ECONOMICS.saleClosesIso} seconds={false} />,
+      value: (
+        <Countdown targetIso={SALE_ECONOMICS.saleClosesIso} seconds={false} label="Time left" />
+      ),
       label: "Time left",
     },
     { icon: "database", value: fmtCompactUsd(commitment.totalCommittedUsd), label: "Raised" },

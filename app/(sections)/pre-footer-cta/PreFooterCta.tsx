@@ -71,6 +71,7 @@ export function PreFooterCta() {
                           ? SALE_ECONOMICS.saleOpensIso
                           : SALE_ECONOMICS.registrationOpensIso
                       }
+                      label={registrationOpen ? "Sale opens in" : "Registration opens in"}
                     />
                   </p>
                 </FadeIn>
