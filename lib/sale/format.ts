@@ -1,5 +1,20 @@
 // Shared USD / number formatters for the sale UI.
 
+/** Parse a user-typed decimal, accepting the EU comma-decimal and US comma-grouping. */
+export function parseDecimal(v: string): number {
+  return Number(normalizeComma(v))
+}
+
+// "," is the EU decimal key but a grouping separator in "1,000" / "1,234.56": grouping
+// when a dot coexists, several commas appear, or a lone comma ends in exactly 3 digits.
+function normalizeComma(v: string): string {
+  const commas = v.split(",").length - 1
+  if (commas === 0) return v
+  if (commas > 1 || v.includes(".")) return v.replaceAll(",", "")
+  const [int = "", frac = ""] = v.split(",")
+  return frac.length === 3 && /[1-9]/.test(int) ? v.replace(",", "") : v.replace(",", ".")
+}
+
 /** Price with 2-4 decimals, e.g. "$0.12" / "$0.0645". */
 export const fmtPrice = (n: number) =>
   `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`

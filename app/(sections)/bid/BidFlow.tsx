@@ -23,7 +23,7 @@ import {
 } from "../../../lib/sale/calc"
 import { SALE_CHAIN } from "../../../lib/sale/contracts"
 import { SALE_ECONOMICS } from "../../../lib/sale/economics"
-import { fmtCompact, fmtGnot, fmtPrice, fmtUsd } from "../../../lib/sale/format"
+import { fmtCompact, fmtGnot, fmtPrice, fmtUsd, parseDecimal } from "../../../lib/sale/format"
 import { usePaymentTokens } from "../../../lib/sale/hooks"
 import {
   SUPPORT_CONTACT_HREF,
@@ -696,7 +696,7 @@ function BidRow({
   const viewRef = useViewFocus<HTMLDivElement>(submitState)
 
   const priceNum = Number(price)
-  const amountNum = Number(amount)
+  const amountNum = parseDecimal(amount)
   const priceCheck = validateBidPrice(priceNum, {
     minPriceUsd: minPrice,
     incrementUsd: increment,
@@ -1064,8 +1064,8 @@ function BidRow({
 }
 
 function sanitizeDecimal(v: string): string {
-  // EU keyboards emit "," as the decimal key; normalize before stripping.
-  const cleaned = v.replace(/,/g, ".").replace(/[^0-9.]/g, "")
+  // Commas stay visible as typed (EU decimal key / US grouping); parseDecimal disambiguates.
+  const cleaned = v.replace(/[^0-9.,]/g, "")
   const [head, ...rest] = cleaned.split(".")
   return rest.length > 0 ? `${head}.${rest.join("")}` : head
 }

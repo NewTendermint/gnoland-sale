@@ -1,5 +1,31 @@
 import { describe, expect, it } from "vitest"
-import { fmtCompactUsd, fmtCountdown } from "../../../lib/sale/format"
+import { fmtCompactUsd, fmtCountdown, parseDecimal } from "../../../lib/sale/format"
+
+describe("parseDecimal", () => {
+  it("parses plain decimals unchanged", () => {
+    expect(parseDecimal("0.0645")).toBe(0.0645)
+    expect(parseDecimal("1000")).toBe(1000)
+    expect(parseDecimal("")).toBe(0)
+  })
+
+  it("reads the EU comma as a decimal point", () => {
+    expect(parseDecimal("0,0645")).toBe(0.0645)
+    expect(parseDecimal("0,086")).toBe(0.086)
+    expect(parseDecimal("1500,50")).toBe(1500.5)
+    expect(parseDecimal("1,5")).toBe(1.5)
+  })
+
+  it("reads grouping commas as thousands separators", () => {
+    expect(parseDecimal("1,000")).toBe(1000)
+    expect(parseDecimal("150,000")).toBe(150000)
+    expect(parseDecimal("1,000,000")).toBe(1000000)
+    expect(parseDecimal("1,234.56")).toBe(1234.56)
+  })
+
+  it("keeps a trailing comma harmless while typing", () => {
+    expect(parseDecimal("150,")).toBe(150)
+  })
+})
 
 // fmtCompactUsd is hand-rolled for deterministic output across JS engines; these
 // assertions pin its exact format.
