@@ -12,10 +12,11 @@ vi.mock("@/lib/sale/live-window", () => ({
   saleIsLive: (...a: unknown[]) => saleIsLive(...a),
 }))
 const acquireCronLease = vi.fn()
+const releaseCronLease = vi.fn()
 vi.mock("@/lib/db/lease", () => ({
   CRON_LEASE_TTL_S: 240,
   acquireCronLease: (...a: unknown[]) => acquireCronLease(...a),
-  releaseCronLease: vi.fn(),
+  releaseCronLease: (...a: unknown[]) => releaseCronLease(...a),
 }))
 vi.mock("@/lib/db/client", () => ({
   db: {
@@ -24,6 +25,10 @@ vi.mock("@/lib/db/client", () => ({
       values: (v: unknown) => ({ onConflictDoUpdate: (u: unknown) => dbInsert(v, u) }),
     }),
   },
+}))
+const sendPriceCampaign = vi.fn()
+vi.mock("@/lib/newsletter/campaign", () => ({
+  sendPriceCampaign: (...a: unknown[]) => sendPriceCampaign(...a),
 }))
 
 async function call(auth?: string) {
@@ -48,6 +53,8 @@ beforeEach(() => {
   dbInsert.mockReset()
   acquireCronLease.mockReset()
   acquireCronLease.mockResolvedValue(true)
+  releaseCronLease.mockReset()
+  sendPriceCampaign.mockReset()
   saleIsLive.mockReset()
   saleIsLive.mockResolvedValue(true)
 })
@@ -100,5 +107,21 @@ describe("POST /api/email/cron", () => {
     const body = await res.json()
     expect(body.decision).toBe("skip:cooldown")
     expect(dbInsert).not.toHaveBeenCalled()
+  })
+
+  it("502s and does not advance state when the Mailchimp send fails, but still releases the lease", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {})
+    vi.stubEnv("EMAIL_ALERTS_ENABLED", "1")
+    readCommitments.mockResolvedValue({ clearingPriceUsd: 0.09 })
+    dbSelect.mockResolvedValue([{ id: 1, lastSentPriceUsd: 0.07, lastSentAt: new Date(0) }])
+    sendPriceCampaign.mockResolvedValue({ outcome: "error", step: "send", status: 500 })
+    const res = await call("Bearer s3cret")
+    expect(res.status).toBe(502)
+    const body = await res.json()
+    expect(body.sent).toBe(false)
+    expect(dbInsert).not.toHaveBeenCalled()
+    expect(releaseCronLease).toHaveBeenCalledWith("email-cron")
+    expect(errorSpy).toHaveBeenCalledWith("email-cron: mailchimp send -> HTTP 500")
+    errorSpy.mockRestore()
   })
 })

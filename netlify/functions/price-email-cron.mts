@@ -9,15 +9,21 @@ const TARGETS = [
 export default async function handler() {
   const secret = process.env.CRON_SECRET
   if (!secret) return
-  await Promise.all(
-    [...new Set(TARGETS.filter(Boolean))].map(async (base) => {
-      const res = await fetch(`${base}/api/email/cron`, {
-        method: "POST",
-        headers: { authorization: `Bearer ${secret}` },
-      }).catch(() => null)
-      if (!res?.ok) console.error(`price-email-cron: ${base} -> ${res?.status ?? "unreachable"}`)
-    }),
-  )
+  const failures = (
+    await Promise.all(
+      [...new Set(TARGETS.filter(Boolean))].map(async (base) => {
+        const res = await fetch(`${base}/api/email/cron`, {
+          method: "POST",
+          headers: { authorization: `Bearer ${secret}` },
+        }).catch(() => null)
+        if (res?.ok) return null
+        const msg = `price-email-cron: ${base} -> ${res?.status ?? "unreachable"}`
+        console.error(msg)
+        return msg
+      }),
+    )
+  ).filter((msg): msg is string => msg !== null)
+  if (failures.length > 0) throw new Error(failures.join("; "))
 }
 
 export const config = { schedule: "0 * * * *" }

@@ -14,6 +14,8 @@ function createDb() {
 
 let cachedDb: Db | null = null
 function getDb(): Db {
+  // Captures NETLIFY_DB_URL once per warm instance: the netlify-db adapter has no rotation
+  // handling, so a credential rotation needs a redeploy to reach already-warm instances.
   cachedDb ??= createDb()
   return cachedDb
 }

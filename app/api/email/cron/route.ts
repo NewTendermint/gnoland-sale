@@ -61,6 +61,7 @@ export async function POST(req: Request) {
         })
 
     let sent = false
+    let sendFailed = false
     if (decision.action === "skip" && decision.reason === "first-run-baseline") {
       await recordState(null)
     } else if (decision.action === "send" && !dryRun) {
@@ -74,17 +75,21 @@ export async function POST(req: Request) {
       } else {
         // State NOT advanced: the next hourly run retries. The log carries the failing step.
         console.error(`email-cron: mailchimp ${res.step} -> HTTP ${res.status}`)
+        sendFailed = true
       }
     }
 
-    return NextResponse.json({
-      decision: label,
-      dryRun,
-      sent,
-      clearingPriceUsd,
-      lastSentPriceUsd: state?.lastSentPriceUsd ?? null,
-      lastSentAt: state?.lastSentAt?.toISOString() ?? null,
-    })
+    return NextResponse.json(
+      {
+        decision: label,
+        dryRun,
+        sent,
+        clearingPriceUsd,
+        lastSentPriceUsd: state?.lastSentPriceUsd ?? null,
+        lastSentAt: state?.lastSentAt?.toISOString() ?? null,
+      },
+      sendFailed ? { status: 502 } : undefined,
+    )
   } finally {
     await releaseCronLease("email-cron")
   }
