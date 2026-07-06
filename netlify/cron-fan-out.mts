@@ -21,6 +21,8 @@ async function post(base: string, route: string, secret: string): Promise<string
 
 export async function fanOutCron(label: string, route: string): Promise<void> {
   const secret = process.env.CRON_SECRET
+  // Quiet by design, unlike the no-prod-target throw below: an absent CRON_SECRET is the
+  // documented off-switch for the whole cron feature (lib/env.ts), not a resolution bug.
   if (!secret) return
   // `||` not `??`: a var blanked to "" (instead of deleted, e.g. at the DNS cutover) must
   // fall through to the next candidate, not silently drop the target and leave runs green.
@@ -34,7 +36,7 @@ export async function fanOutCron(label: string, route: string): Promise<void> {
   }
   const [prodFailure, stagingFailure] = await Promise.all([
     post(prod, route, secret),
-    staging && staging !== prod ? post(staging, route, secret) : Promise.resolve(null),
+    staging && staging !== prod ? post(staging, route, secret) : null,
   ])
   // Log staging so a wrong secret / access-gated leg stays visible in the function logs.
   if (stagingFailure !== null) console.error(`${label}: staging ${stagingFailure}`)

@@ -9,6 +9,9 @@ export default defineConfig({
     // assertion failure must not bleed into the file's remaining tests. Module-scope vi.fn
     // mocks are NOT touched - each suite still owns its beforeEach resets.
     restoreMocks: true,
+    // Same hygiene for vi.stubEnv: every suite re-stubs what it needs per test, so stubs
+    // must never outlive the test that made them.
+    unstubEnvs: true,
     setupFiles: ["./tests/setup.ts"],
     include: ["tests/unit/**/*.{test,spec}.{ts,tsx}"],
     // Server-only modules (lib/env, lib/security/*) validate these at import time.
