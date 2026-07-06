@@ -53,10 +53,19 @@ describe("sendPriceCampaign", () => {
     expect(res).toEqual({ outcome: "error", step, status: 400 })
   })
 
-  it("dev/test without credentials mocks ok without calling fetch (same gate as subscribe)", async () => {
+  it("dev/test without credentials fails closed unless MAILCHIMP_MOCK=1 (same gate as subscribe)", async () => {
     const fetchSpy = vi.fn()
-    const res = await sendPriceCampaign(0.08, fetchSpy as unknown as typeof fetch)
-    expect(res).toEqual({ outcome: "ok", campaignId: "mock" })
+    vi.stubEnv("MAILCHIMP_MOCK", "")
+    await expect(sendPriceCampaign(0.08, fetchSpy as unknown as typeof fetch)).resolves.toEqual({
+      outcome: "error",
+      step: "create",
+      status: 0,
+    })
+    vi.stubEnv("MAILCHIMP_MOCK", "1")
+    await expect(sendPriceCampaign(0.08, fetchSpy as unknown as typeof fetch)).resolves.toEqual({
+      outcome: "ok",
+      campaignId: "mock",
+    })
     expect(fetchSpy).not.toHaveBeenCalled()
   })
 
