@@ -968,34 +968,40 @@ function BidRow({
             error={priceError}
             className="w-24"
           />
-          {/* w-0 min-w-full: the note adopts the field's width instead of stretching the column. */}
           {priceError || amountError ? null : submitError ? (
             <p
-              className="flex w-0 min-w-full items-baseline gap-1.5 text-xs font-medium text-danger"
+              className="w-0 min-w-full whitespace-nowrap text-xs font-medium text-danger"
               role="alert"
             >
-              <span className="truncate">{submitError}</span>
+              <span className="inline-block max-w-[52ch] truncate align-bottom">{submitError}</span>
               {SUPPORT_CONTACT_HREF ? (
-                <a
-                  href={SUPPORT_CONTACT_HREF}
-                  className="shrink-0 underline underline-offset-2 hover:opacity-75"
-                >
-                  Support
-                </a>
+                <>
+                  {" "}
+                  <a
+                    href={SUPPORT_CONTACT_HREF}
+                    className="underline underline-offset-2 hover:opacity-75"
+                  >
+                    Support
+                  </a>
+                </>
               ) : null}
             </p>
           ) : raiseNote ? (
-            <p className="w-0 min-w-full truncate text-xs text-muted">{raiseNote}</p>
+            <p className="w-0 min-w-full whitespace-nowrap text-xs text-muted">
+              <span className="inline-block max-w-[60ch] truncate align-bottom">{raiseNote}</span>
+            </p>
           ) : clearingNote ? (
             <p
               className={`w-0 min-w-full whitespace-nowrap text-xs ${
                 clearingNote.tone === "warn" ? "font-medium text-amber" : "text-muted"
               }`}
             >
-              {clearingNote.text}
-              {clearingNote.tone === "ok" && estAtBid != null && estAtBid < est
-                ? ` You'd still get ~${fmtCompact(estAtBid)} GNOT.`
-                : ""}
+              <span className="inline-block max-w-[60ch] truncate align-bottom">
+                {clearingNote.text}
+                {clearingNote.tone === "ok" && estAtBid != null && estAtBid < est
+                  ? ` You'd still get ~${fmtCompact(estAtBid)} GNOT.`
+                  : ""}
+              </span>
             </p>
           ) : null}
         </div>
