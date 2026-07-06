@@ -1,3 +1,4 @@
+import { errorMessage } from "@/lib/log"
 import { getSession } from "@/lib/security/session"
 import { getEntity } from "@/lib/sonar/entity"
 import { SonarAuthError } from "@/lib/sonar/permit"
@@ -25,6 +26,7 @@ export async function GET() {
     if (err instanceof SonarAuthError) {
       return NextResponse.json({ error: "unauthenticated" }, { status: 401 })
     }
+    console.error("sonar-entity:", errorMessage(err))
     return NextResponse.json({ error: "entity_unavailable" }, { status: 502 })
   }
 }

@@ -17,6 +17,7 @@ import { SALE_CHAIN, saleContractsFor } from "./contracts"
 import {
   type ClaimResult,
   claimRefundOnChain,
+  readClaimGate,
   resolvePaymentTokens,
   submitBidOnChain,
 } from "./onchain"
@@ -39,6 +40,9 @@ export function useSaleData() {
     queryKey: ["sale", "commitments"],
     queryFn: getCommitments,
     refetchInterval: 10_000,
+    // Footgun: without this the poll pauses on blur and the TabAlert outbid overlay (which exists
+    // FOR backgrounded tabs) can never fire on data that arrives while hidden.
+    refetchIntervalInBackground: true,
     initialData: EMPTY_COMMITMENT,
   })
 }
@@ -63,6 +67,15 @@ export function useEntity(opts?: { enabled?: boolean }) {
 export function useMyBid(opts?: { enabled?: boolean }) {
   const { isConnected, address } = useAccount()
   const pending = usePendingBid(address)
+  const queryClient = useQueryClient()
+  // A disconnected wallet must not keep showing the previous session's position (the query is
+  // merely disabled, its cache would survive and the journey would still read "Raise bid").
+  // Footgun: removeQueries, not resetQueries - reset refetches through enabled:false and the
+  // Sonar session (still alive server-side) would repopulate the position we just cleared.
+  useEffect(() => {
+    if (isConnected) return
+    queryClient.removeQueries({ queryKey: ["sale", "my-bid"] })
+  }, [isConnected, queryClient])
   const query = useQuery({
     queryKey: ["sale", "my-bid"],
     // Null-confirming read (see confirmed-read): an unexpected null while this browser has a bid
@@ -183,6 +196,22 @@ export function useBid() {
   }
 
   return { submit }
+}
+
+/** The on-chain refund claim gate for the ended phase (stage/claimRefundEnabled/refundable).
+ *  `data` stays undefined while unresolved or without a wallet; the UI hides the claim button
+ *  until the contract confirms the self-serve window is open (fail-closed). */
+export function useClaimGate(opts?: { enabled?: boolean }) {
+  const { address } = useAccount()
+  return useQuery({
+    queryKey: ["sale", "claim-gate", address],
+    queryFn: () => readClaimGate(address as `0x${string}`),
+    enabled: Boolean(address) && (opts?.enabled ?? true),
+    staleTime: 60_000,
+    // The gate flips rarely (stage transitions, admin toggle); once refunded it can never change
+    // again, so stop polling then.
+    refetchInterval: (query) => (query.state.data?.refunded ? false : 60_000),
+  })
 }
 
 /** Refund claim for the ended phase: hands off to claimRefundOnChain, no Sonar gate. */

@@ -18,7 +18,7 @@ import { postSonarLogout, redirectToSonarLogin } from "../../lib/sale/api"
 import { gnotEstimate } from "../../lib/sale/calc"
 import { SALE_ECONOMICS, formatSaleDate } from "../../lib/sale/economics"
 import { fmtGnot, fmtPrice, fmtUsd } from "../../lib/sale/format"
-import { useBid, useClaim } from "../../lib/sale/hooks"
+import { useBid, useClaim, useClaimGate } from "../../lib/sale/hooks"
 import { derivePreSaleBar } from "../../lib/sale/journey"
 import {
   SUPPORT_CONTACT_HREF,
@@ -65,6 +65,7 @@ export function BidPanelDesktop() {
   } = useSale()
   const bid = useBid()
   const claim = useClaim()
+  const claimGate = useClaimGate({ enabled: phase === "ended" })
   const sonarSeen = useSonarSeen()
   const { isConnected } = useAccount()
   const queryClient = useQueryClient()
@@ -192,6 +193,7 @@ export function BidPanelDesktop() {
                   clearingPriceUsd={commitment.clearingPriceUsd}
                   myBid={myBid}
                   onClaim={claim.claim}
+                  gate={claimGate.data}
                 />
               </div>
             </div>

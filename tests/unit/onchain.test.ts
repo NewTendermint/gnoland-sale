@@ -4,6 +4,7 @@ import {
   assertUniformDecimals,
   bidPreflightReason,
   interpretBidReceipt,
+  refundableUnits,
   selectPaymentToken,
   submitBidOnChain,
 } from "../../lib/sale/onchain"
@@ -88,12 +89,70 @@ describe("interpretBidReceipt (mined receipt + replacement -> bid result)", () =
 
   it("keeps a speed-up/reprice as a submitted bid at the mined (replacement) hash", () => {
     const mined = "0xnew"
-    for (const reason of ["replaced", "repriced"] as const) {
-      expect(interpretBidReceipt({ status: "success", transactionHash: mined }, reason)).toEqual({
-        status: "submitted",
-        txHash: mined,
-      })
-    }
+    expect(interpretBidReceipt({ status: "success", transactionHash: mined }, "repriced")).toEqual({
+      status: "submitted",
+      txHash: mined,
+    })
+  })
+
+  it("rejects a 'replaced' tx: a different call won the nonce, the receipt is not our bid", () => {
+    // viem only says "repriced" for identical to+value+input; "replaced" can be ANY other tx
+    // (another dapp, another transfer) mining "success" - it must never read as a placed bid.
+    expect(
+      interpretBidReceipt({ status: "success", transactionHash: "0xnew" }, "replaced"),
+    ).toEqual({
+      status: "reverted",
+      reason: "The transaction was replaced in your wallet",
+    })
+  })
+})
+
+describe("refundableUnits (on-chain committed - accepted, the contract's _refund arithmetic)", () => {
+  const USDC = "0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" as const
+  const USDT = "0xBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB" as const
+  const ws = (committed: [string, bigint][], accepted: [string, bigint][]) => ({
+    committedAmountByToken: committed.map(([token, amount]) => ({
+      token: token as `0x${string}`,
+      amount,
+    })),
+    acceptedAmountByToken: accepted.map(([token, amount]) => ({
+      token: token as `0x${string}`,
+      amount,
+    })),
+  })
+
+  it("includes a WINNER's pro-rata partial refund (the case the Sonar derivation shows as zero)", () => {
+    // Committed 1000, accepted 800 after pro-rata scaling -> 200 refundable.
+    expect(refundableUnits([ws([[USDC, 1_000_000_000n]], [[USDC, 800_000_000n]])])).toBe(
+      200_000_000n,
+    )
+  })
+
+  it("refunds the full commitment for an outbid entity (nothing accepted)", () => {
+    expect(refundableUnits([ws([[USDC, 500_000_000n]], [])])).toBe(500_000_000n)
+  })
+
+  it("sums across wallets and tokens, matching accepted to committed by token address", () => {
+    const walletA = ws([[USDC, 1_000n]], [[USDC, 400n]])
+    const walletB = ws(
+      [
+        [USDT, 2_000n],
+        [USDC, 100n],
+      ],
+      [[USDT, 1_500n]],
+    )
+    expect(refundableUnits([walletA, walletB])).toBe(600n + 500n + 100n)
+  })
+
+  it("matches token addresses case-insensitively and never goes negative", () => {
+    expect(refundableUnits([ws([[USDC.toLowerCase(), 100n]], [[USDC, 100n]])])).toBe(0n)
+    // Defensive: accepted > committed must clamp at 0, not underflow the total.
+    expect(refundableUnits([ws([[USDC, 100n]], [[USDC, 150n]])])).toBe(0n)
+  })
+
+  it("is zero for a fully-filled winner and for no position", () => {
+    expect(refundableUnits([ws([[USDC, 100n]], [[USDC, 100n]])])).toBe(0n)
+    expect(refundableUnits([])).toBe(0n)
   })
 })
 

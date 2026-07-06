@@ -50,9 +50,13 @@ export async function subscribePending(
       body: JSON.stringify({ email_address: email, status_if_new: "pending" }),
       signal: AbortSignal.timeout(8000),
     })
+    // Status code only - the response body can echo the email back.
+    if (!res.ok) console.error(`newsletter: mailchimp -> HTTP ${res.status}`)
     return res.ok ? "ok" : "upstream-error"
-  } catch {
-    // Never rethrow with the email in scope.
+  } catch (err) {
+    // Never rethrow with the email in scope; log the error class only (a fetch/abort message
+    // carries no address, but keep it minimal by design).
+    console.error(`newsletter: mailchimp -> ${err instanceof Error ? err.name : "error"}`)
     return "upstream-error"
   }
 }

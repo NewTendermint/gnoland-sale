@@ -8,6 +8,7 @@ import { mainnet, sepolia } from "viem/chains"
 import { db } from "../db/client"
 import { type AuditMetadata, auditLog, auditMetadataSchema } from "../db/schema"
 import { env } from "../env"
+import { errorMessage } from "../log"
 import type { PrePurchaseFailureReason, PrePurchaseResult } from "../sale/types"
 import { createSonarClient } from "./client"
 import { sonarMockEnabled } from "./mock-config"
@@ -222,6 +223,17 @@ export async function generatePurchasePermit(args: {
   userAgentClass?: string | null
 }): Promise<GeneratePurchasePermitResponse> {
   checkPermitDedup(args.wallet)
+  const base = {
+    entityId: args.entityId,
+    wallet: args.wallet,
+    ipHmac: args.ipHmac ?? null,
+    userAgentClass: args.userAgentClass ?? null,
+  }
+  // Two-step audit: the request row is written BEFORE Sonar issues anything, and a failure here
+  // is FATAL - a permit must never exist without an audit trail. The issued row (below) is the
+  // opposite: the permit is already live and spendable, so losing that write must not turn into
+  // a lying 502 - log loudly and return the permit.
+  await recordAudit("permit_requested", { ...base, metadata: { chain_id: auditChainId() } })
   const response = await withSonarAuth(args.sessionId, (accessToken) =>
     createSonarClient(accessToken).generatePurchasePermit({
       saleUUID: env.SONAR_SALE_UUID,
@@ -229,13 +241,17 @@ export async function generatePurchasePermit(args: {
       walletAddress: args.wallet,
     }),
   )
-  await recordAudit("permit_issued", {
-    entityId: args.entityId,
-    wallet: args.wallet,
-    ipHmac: args.ipHmac ?? null,
-    userAgentClass: args.userAgentClass ?? null,
-    // Short correlator (signature prefix), never the full sig.
-    metadata: { permit_id_prefix: response.Signature.slice(0, 10), chain_id: auditChainId() },
-  })
+  try {
+    await recordAudit("permit_issued", {
+      ...base,
+      // Short correlator (signature prefix), never the full sig.
+      metadata: { permit_id_prefix: response.Signature.slice(0, 10), chain_id: auditChainId() },
+    })
+  } catch (err) {
+    console.error(
+      "audit: permit_issued write FAILED (permit live, reconcile against permit_requested):",
+      errorMessage(err),
+    )
+  }
   return response
 }

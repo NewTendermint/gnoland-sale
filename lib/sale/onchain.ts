@@ -13,7 +13,8 @@ import {
   waitForTransactionReceipt,
   writeContract,
 } from "@wagmi/core"
-import { erc20Abi, settlementSaleAbi } from "./abi"
+import { BaseError, ChainMismatchError, ContractFunctionRevertedError } from "viem"
+import { SALE_STAGE, erc20Abi, settlementSaleAbi } from "./abi"
 import { priceUsdToOnchainPrice, usdToTokenUnits } from "./calc"
 import { SALE_CHAIN, saleContractsFor } from "./contracts"
 import { SALE_ECONOMICS } from "./economics"
@@ -44,10 +45,29 @@ const EIP2612_PERMIT_TYPES = {
   ],
 } as const
 
+/** Failure cases shared by the bid and claim paths: user rejection and a mid-flow wallet network
+ *  switch (chainId is pinned on every write, so the tx was blocked, never sent on the wrong
+ *  chain). "wrong-chain" is the existing sentinel the flows already render switch-back copy for.
+ *  cancelledCopy names what the user rejected: the bid flow signs (EIP-2612 permit), the claim
+ *  flow only confirms a transaction. */
+function sharedWalletErrorReason(
+  err: unknown,
+  cancelledCopy = "You cancelled the signature",
+): string | null {
+  if (err instanceof BaseError && err.walk((e) => e instanceof ChainMismatchError)) {
+    return "wrong-chain"
+  }
+  const msg = err instanceof Error ? err.message : String(err)
+  if (/rejected|denied/i.test(msg)) return cancelledCopy
+  if (/does not match the target chain|chain mismatch/i.test(msg)) return "wrong-chain"
+  return null
+}
+
 /** One user-facing line for a wallet/contract failure (never leak raw revert data to the UI). */
 function bidRevertReason(err: unknown, tokenSymbol = "USDC"): string {
+  const shared = sharedWalletErrorReason(err)
+  if (shared) return shared
   const msg = err instanceof Error ? err.message : String(err)
-  if (/rejected|denied/i.test(msg)) return "You cancelled the signature"
   if (/insufficient|exceeds balance|transfer amount exceeds/i.test(msg)) {
     return `Insufficient ${tokenSymbol} balance`
   }
@@ -133,6 +153,7 @@ async function tokenSupportsPermit(token: PaymentToken, wallet: `0x${string}`): 
       abi: erc20Abi,
       functionName: "nonces",
       args: [wallet],
+      chainId: SALE_CHAIN.id,
     })
     return true
   } catch {
@@ -152,16 +173,29 @@ export async function resolvePaymentTokens(
   const key = `${chainId}:${settlementSale}`
   const cached = paymentTokensCache.get(key)
   if (cached) return cached
+  // Callers only reach this after the chainId === SALE_CHAIN.id gate, so the reads pin to
+  // SALE_CHAIN: a wallet network switch mid-flight cannot route them to another chain's RPC.
   const addresses = await readContract(wagmiConfig, {
     address: settlementSale,
     abi: settlementSaleAbi,
     functionName: "paymentTokens",
+    chainId: SALE_CHAIN.id,
   })
   const tokens = await Promise.all(
     addresses.map(async (address) => {
       const [symbol, decimals] = await Promise.all([
-        readContract(wagmiConfig, { address, abi: erc20Abi, functionName: "symbol" }),
-        readContract(wagmiConfig, { address, abi: erc20Abi, functionName: "decimals" }),
+        readContract(wagmiConfig, {
+          address,
+          abi: erc20Abi,
+          functionName: "symbol",
+          chainId: SALE_CHAIN.id,
+        }),
+        readContract(wagmiConfig, {
+          address,
+          abi: erc20Abi,
+          functionName: "decimals",
+          chainId: SALE_CHAIN.id,
+        }),
       ])
       return { address, symbol, decimals: Number(decimals) }
     }),
@@ -171,22 +205,72 @@ export async function resolvePaymentTokens(
   return tokens
 }
 
+type ReplacementReason = "replaced" | "repriced" | "cancelled" | null
+
 /**
- * Decide the bid outcome from the mined receipt + any replacement. A wallet "cancel" is a 0-value
- * self-send that mines "success", so a cancellation must read as a reverted bid, not a placed one;
- * a speed-up/reprice ("replaced"/"repriced") is the SAME bid and stays valid, at the mined hash.
+ * A wallet "cancel" is a 0-value self-send that mines "success", so a cancellation must read as a
+ * failure, not a landed tx. Only "repriced" is provably the SAME call (viem: identical
+ * to+value+input, gas-only bump) and stays valid at the mined hash; "replaced" means a DIFFERENT
+ * call won the nonce - the receipt in hand is for some other transaction. Shared by the bid and
+ * claim paths; returns the user-facing failure line, or null when the receipt is still ours.
  */
+export function replacementFailure(reason: ReplacementReason): string | null {
+  if (reason === "cancelled") return "You cancelled the transaction"
+  if (reason === "replaced") return "The transaction was replaced in your wallet"
+  return null
+}
+
+/** Decide the bid outcome from the mined receipt + any replacement (see replacementFailure). */
 export function interpretBidReceipt(
   receipt: { status: "success" | "reverted"; transactionHash: string },
-  replacementReason: "replaced" | "repriced" | "cancelled" | null,
+  replacementReason: ReplacementReason,
 ): BidResult {
-  if (replacementReason === "cancelled") {
-    return { status: "reverted", reason: "You cancelled the transaction" }
+  const replaced = replacementFailure(replacementReason)
+  if (replaced) {
+    return { status: "reverted", reason: replaced }
   }
   if (receipt.status !== "success") {
     return { status: "reverted", reason: "The bid transaction failed on-chain" }
   }
   return { status: "submitted", txHash: receipt.transactionHash }
+}
+
+/** The one receipt wait for every tx this module sends: pins the sale chain and captures a wallet
+ *  replacement so no caller can mistake a cancel/foreign tx for its own mined call. */
+async function waitWithReplacement(hash: `0x${string}`): Promise<{
+  receipt: { status: "success" | "reverted"; transactionHash: string }
+  reason: ReplacementReason
+}> {
+  let reason: ReplacementReason = null
+  const receipt = await waitForTransactionReceipt(wagmiConfig, {
+    hash,
+    chainId: SALE_CHAIN.id,
+    onReplaced: (r) => {
+      reason = r.reason
+    },
+  })
+  return { receipt, reason }
+}
+
+type SalePublicClient = NonNullable<ReturnType<typeof getPublicClient>>
+
+/** Explicit gas with a generous ceiling: wallets (esp. Keplr's EVM path) under-estimate the nested
+ *  permit+transferFrom call (EIP-150 63/64 rule). Our own RPC estimate x3 over a floor safely above
+ *  the ~393k a first bid measured on Sepolia; unused gas is refunded, so the ceiling is free. */
+async function generousGas(
+  estimate: (client: SalePublicClient) => Promise<bigint>,
+): Promise<bigint> {
+  let gas = 600_000n
+  try {
+    const publicClient = getPublicClient(wagmiConfig, { chainId: SALE_CHAIN.id })
+    if (publicClient) {
+      const estimated = (await estimate(publicClient)) * 3n
+      if (estimated > gas) gas = estimated
+    }
+  } catch {
+    // estimate failed (network/state); keep the floor
+  }
+  return gas
 }
 
 /**
@@ -252,6 +336,7 @@ export async function submitBidOnChain(args: OnChainBidArgs): Promise<BidResult>
       abi: settlementSaleAbi,
       functionName: "entityStatesByIDs",
       args: [[purchasePermit.saleSpecificEntityID]],
+      chainId: SALE_CHAIN.id,
     })
     const prevAmount = states[0]?.currentBid.amount ?? 0n
     const amountDelta = bid.amount > prevAmount ? bid.amount - prevAmount : 0n
@@ -265,6 +350,7 @@ export async function submitBidOnChain(args: OnChainBidArgs): Promise<BidResult>
             abi: erc20Abi,
             functionName: "balanceOf",
             args: [wallet],
+            chainId: SALE_CHAIN.id,
           })
         : 0n
     const preflight = bidPreflightReason(
@@ -287,6 +373,7 @@ export async function submitBidOnChain(args: OnChainBidArgs): Promise<BidResult>
         abi: erc20Abi,
         functionName: "allowance",
         args: [wallet, contracts.settlementSale],
+        chainId: SALE_CHAIN.id,
       })
       const plan = approvalPlan(allowance, amountDelta)
       if (plan) {
@@ -298,9 +385,14 @@ export async function submitBidOnChain(args: OnChainBidArgs): Promise<BidResult>
             functionName: "approve",
             args: [contracts.settlementSale, 0n],
             account: wallet,
+            chainId: SALE_CHAIN.id,
           })
-          const resetReceipt = await waitForTransactionReceipt(wagmiConfig, { hash: resetHash })
-          if (resetReceipt.status !== "success") {
+          const reset = await waitWithReplacement(resetHash)
+          const resetFailure = replacementFailure(reset.reason)
+          if (resetFailure) {
+            return { status: "reverted", reason: resetFailure }
+          }
+          if (reset.receipt.status !== "success") {
             return { status: "reverted", reason: "The approval transaction failed on-chain" }
           }
         }
@@ -310,9 +402,14 @@ export async function submitBidOnChain(args: OnChainBidArgs): Promise<BidResult>
           functionName: "approve",
           args: [contracts.settlementSale, plan.amount],
           account: wallet,
+          chainId: SALE_CHAIN.id,
         })
-        const approveReceipt = await waitForTransactionReceipt(wagmiConfig, { hash: approveHash })
-        if (approveReceipt.status !== "success") {
+        const approve = await waitWithReplacement(approveHash)
+        const approveFailure = replacementFailure(approve.reason)
+        if (approveFailure) {
+          return { status: "reverted", reason: approveFailure }
+        }
+        if (approve.receipt.status !== "success") {
           return { status: "reverted", reason: "The approval transaction failed on-chain" }
         }
       }
@@ -322,28 +419,14 @@ export async function submitBidOnChain(args: OnChainBidArgs): Promise<BidResult>
         functionName: "replaceBidWithApproval",
         args: [payment.address, bid, purchasePermit, permit.Signature as `0x${string}`],
         account: wallet,
+        chainId: SALE_CHAIN.id,
       } as const
       await simulateContract(wagmiConfig, call) // pre-flight: surface reverts before the wallet popup
       args.onStage?.("signing")
-      let gas = 600_000n
-      try {
-        const publicClient = getPublicClient(wagmiConfig)
-        if (publicClient) {
-          const generous = (await publicClient.estimateContractGas(call)) * 3n
-          if (generous > gas) gas = generous
-        }
-      } catch {
-        // estimate failed (network/state); keep the floor
-      }
+      const gas = await generousGas((client) => client.estimateContractGas(call))
       const txHash = await writeContract(wagmiConfig, { ...call, gas })
-      let replacementReason: "replaced" | "repriced" | "cancelled" | null = null
-      const receipt = await waitForTransactionReceipt(wagmiConfig, {
-        hash: txHash,
-        onReplaced: (r) => {
-          replacementReason = r.reason
-        },
-      })
-      return interpretBidReceipt(receipt, replacementReason)
+      const wait = await waitWithReplacement(txHash)
+      return interpretBidReceipt(wait.receipt, wait.reason)
     }
 
     let erc20PermitDeadline = 0n
@@ -356,17 +439,20 @@ export async function submitBidOnChain(args: OnChainBidArgs): Promise<BidResult>
           address: payment.address,
           abi: erc20Abi,
           functionName: "name",
+          chainId: SALE_CHAIN.id,
         }),
         readContract(wagmiConfig, {
           address: payment.address,
           abi: erc20Abi,
           functionName: "version",
+          chainId: SALE_CHAIN.id,
         }).catch(() => "2"),
         readContract(wagmiConfig, {
           address: payment.address,
           abi: erc20Abi,
           functionName: "nonces",
           args: [wallet],
+          chainId: SALE_CHAIN.id,
         }),
       ])
       erc20PermitDeadline = BigInt(Math.floor(Date.now() / 1000) + PERMIT_TTL_S)
@@ -398,39 +484,123 @@ export async function submitBidOnChain(args: OnChainBidArgs): Promise<BidResult>
         erc20PermitSignature,
       ],
       account: wallet,
+      chainId: SALE_CHAIN.id,
     } as const
 
     await simulateContract(wagmiConfig, call) // pre-flight: surface reverts before the wallet popup
     args.onStage?.("signing")
-
-    // Wallets (esp. Keplr's EVM path) under-estimate gas for this nested call - the permit + transferFrom
-    // hit the EIP-150 63/64 forwarding rule, which eth_estimateGas under-counts too. Set the limit
-    // explicitly from our own RPC (x3) over a floor safely above the ~393k a first bid measured on
-    // Sepolia (used only if the estimate throws). Unused gas is refunded, so a high ceiling is free.
-    let gas = 600_000n
-    try {
-      const publicClient = getPublicClient(wagmiConfig)
-      if (publicClient) {
-        const generous = (await publicClient.estimateContractGas(call)) * 3n
-        if (generous > gas) gas = generous
-      }
-    } catch {
-      // estimate failed (network/state); keep the floor
-    }
+    const gas = await generousGas((client) => client.estimateContractGas(call))
     const txHash = await writeContract(wagmiConfig, { ...call, gas })
-    // A wallet "cancel" replaces the bid tx with a 0-value self-send that MINES SUCCESSFULLY, so the
-    // receipt reads "success" for a tx that never placed the bid. Capture any replacement and let
-    // interpretBidReceipt tell a cancellation apart from a real bid (a speed-up/reprice stays valid).
-    let replacementReason: "replaced" | "repriced" | "cancelled" | null = null
-    const receipt = await waitForTransactionReceipt(wagmiConfig, {
-      hash: txHash,
-      onReplaced: (r) => {
-        replacementReason = r.reason
-      },
-    })
-    return interpretBidReceipt(receipt, replacementReason)
+    const wait = await waitWithReplacement(txHash)
+    return interpretBidReceipt(wait.receipt, wait.reason)
   } catch (err) {
     return { status: "reverted", reason: bidRevertReason(err, paySymbol) }
+  }
+}
+
+type TokenAmount = { token: `0x${string}`; amount: bigint }
+type WalletTokenState = {
+  committedAmountByToken: readonly TokenAmount[]
+  acceptedAmountByToken: readonly TokenAmount[]
+}
+
+/** True refundable amount in token units: committed minus accepted per token across the entity's
+ *  wallets - exactly the contract's _refund() arithmetic, so pro-rata partial refunds for WINNERS
+ *  are included (the Sonar-derived settlement can only show those as zero). */
+export function refundableUnits(walletStates: readonly WalletTokenState[]): bigint {
+  let total = 0n
+  for (const w of walletStates) {
+    for (const committed of w.committedAmountByToken) {
+      const accepted =
+        w.acceptedAmountByToken.find((a) => a.token.toLowerCase() === committed.token.toLowerCase())
+          ?.amount ?? 0n
+      const delta = committed.amount - accepted
+      if (delta > 0n) total += delta
+    }
+  }
+  return total
+}
+
+export type ClaimGate = {
+  /** stage() == Done: the only stage where claimRefund() executes and accepted amounts are final.
+   *  false also covers "no contract configured" - the UI must not claim anything either way. */
+  done: boolean
+  /** The raw on-chain self-serve toggle (only meaningful once done). */
+  claimEnabled: boolean
+  /** The entity's refund already went out (refunder-role processed or claimed). */
+  refunded: boolean
+  /** On-chain refundable in USD (1:1 token parity), or null when this wallet holds no on-chain
+   *  position or the contract has not reached Done. */
+  refundableUsd: number | null
+}
+
+/** True only for the contract's own WalletNotInitialized revert - a transient RPC failure must
+ *  NOT read as "no position" (that would resolve the gate on wrong data). */
+function isWalletNotInitialized(err: unknown): boolean {
+  if (err instanceof BaseError) {
+    const revert = err.walk((e) => e instanceof ContractFunctionRevertedError)
+    if (revert instanceof ContractFunctionRevertedError) {
+      return revert.data?.errorName === "WalletNotInitialized"
+    }
+  }
+  return false
+}
+
+/** Read the refund claim gate from the deployed contract (the authoritative source; the
+ *  Sonar-derived settlement stays a display estimate, see lib/sale/settlement.ts). Throws on
+ *  transient read failures so the query stays unresolved (fail-closed) instead of caching a
+ *  gate built on partial data. */
+export async function readClaimGate(wallet: `0x${string}`): Promise<ClaimGate> {
+  const contracts = saleContractsFor(SALE_CHAIN.id)
+  if (!contracts) return { done: false, claimEnabled: false, refunded: false, refundableUsd: null }
+  const address = contracts.settlementSale
+  const [stage, enabled, walletView] = await Promise.all([
+    readContract(wagmiConfig, {
+      address,
+      abi: settlementSaleAbi,
+      functionName: "stage",
+      chainId: SALE_CHAIN.id,
+    }),
+    readContract(wagmiConfig, {
+      address,
+      abi: settlementSaleAbi,
+      functionName: "claimRefundEnabled",
+      chainId: SALE_CHAIN.id,
+    }),
+    readContract(wagmiConfig, {
+      address,
+      abi: settlementSaleAbi,
+      functionName: "walletStatesByAddresses",
+      args: [[wallet]],
+      chainId: SALE_CHAIN.id,
+    }).then(
+      ([view]) => view ?? null,
+      (err) => {
+        if (isWalletNotInitialized(err)) return null // this wallet never committed on-chain
+        throw err
+      },
+    ),
+  ])
+  const done = stage === SALE_STAGE.done
+  if (!done || !walletView) {
+    return { done, claimEnabled: enabled, refunded: false, refundableUsd: null }
+  }
+  const [entity] = await readContract(wagmiConfig, {
+    address,
+    abi: settlementSaleAbi,
+    functionName: "entityStatesByIDs",
+    args: [[walletView.entityID]],
+    chainId: SALE_CHAIN.id,
+  })
+  const [token] = await resolvePaymentTokens(address, SALE_CHAIN.id)
+  if (!entity || !token) {
+    return { done, claimEnabled: enabled, refunded: false, refundableUsd: null }
+  }
+  return {
+    done,
+    claimEnabled: enabled,
+    refunded: entity.refunded,
+    refundableUsd: Number(refundableUnits(entity.walletStates)) / 10 ** token.decimals,
   }
 }
 
@@ -453,15 +623,28 @@ export async function claimRefundOnChain(args: { wallet: `0x${string}` }): Promi
       functionName: "claimRefund",
       args: [],
       account: args.wallet,
+      chainId: SALE_CHAIN.id,
     } as const
     await simulateContract(wagmiConfig, call)
     const txHash = await writeContract(wagmiConfig, call)
-    const receipt = await waitForTransactionReceipt(wagmiConfig, { hash: txHash })
-    if (receipt.status !== "success") {
+    // Same wallet-replacement trap as the bid path: a cancel mines "success" as a self-send and a
+    // foreign replacement wins the nonce - neither is a claim, so neither may read as "claimed".
+    const wait = await waitWithReplacement(txHash)
+    const failure = replacementFailure(wait.reason)
+    if (failure) {
+      return { status: "reverted", reason: failure }
+    }
+    if (wait.receipt.status !== "success") {
       return { status: "reverted", reason: "The refund transaction failed" }
     }
-    return { status: "claimed", txHash }
-  } catch {
-    return { status: "reverted", reason: "Could not claim your refund" }
+    // The mined hash, not txHash: a repriced (sped-up) claim mines under a new hash.
+    return { status: "claimed", txHash: wait.receipt.transactionHash }
+  } catch (err) {
+    return {
+      status: "reverted",
+      reason:
+        sharedWalletErrorReason(err, "You cancelled the transaction") ??
+        "Could not claim your refund",
+    }
   }
 }

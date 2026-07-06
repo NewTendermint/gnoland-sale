@@ -6,11 +6,12 @@ import { WalletButton } from "../../(layout)/WalletButton"
 import { Cta } from "../../(ui)/Cta"
 import { GnotCoin } from "../../(ui)/GnotCoin"
 import { Icon } from "../../(ui)/Icon"
+import { useViewFocus } from "../../../lib/a11y/focus"
 import { SALE_CHAIN } from "../../../lib/sale/contracts"
 import { SALE_ECONOMICS, formatSaleDate } from "../../../lib/sale/economics"
 import { fmtGnot, fmtPrice, fmtUsd } from "../../../lib/sale/format"
-import type { ClaimResult } from "../../../lib/sale/onchain"
-import { deriveSettlement } from "../../../lib/sale/settlement"
+import type { ClaimGate, ClaimResult } from "../../../lib/sale/onchain"
+import { deriveClaimView, deriveSettlement } from "../../../lib/sale/settlement"
 import type { MyBid } from "../../../lib/sale/types"
 import { ConnectChoices } from "./BidFlow"
 
@@ -29,16 +30,27 @@ export function SettlementFlow({
   clearingPriceUsd,
   myBid,
   onClaim,
+  gate,
+  previewConnected,
 }: {
   clearingPriceUsd: number | null
   myBid: MyBid
   onClaim?: () => Promise<ClaimResult>
+  /** On-chain claim gate (stage Done + claimRefundEnabled + true refundable). undefined =
+   *  unresolved: the claim button stays hidden (fail-closed) and derived numbers display. */
+  gate?: ClaimGate
+  /** Dev-gallery override (same precedent as BidFlow's preview); production leaves it unset. */
+  previewConnected?: boolean
 }) {
   const { isConnected } = useAccount()
+  const connected = previewConnected ?? isConnected
   const [claimState, setClaimState] = useState<"idle" | "claiming" | "claimed">("idle")
   const [claimError, setClaimError] = useState<string | null>(null)
+  // The claim button disables on "claiming" and unmounts on "claimed", both of which drop focus
+  // to <body>; refocus the flow so the outcome is reachable and announced.
+  const viewRef = useViewFocus<HTMLDivElement>(claimState)
 
-  if (!isConnected) {
+  if (!connected) {
     return (
       <ConnectChoices prompt="Connect the wallet you bid with to see your results and claim any refund." />
     )
@@ -57,9 +69,12 @@ export function SettlementFlow({
     )
   }
 
-  const { status, committedUsd, refundableUsd, gnotAllocation } = settlement
+  const { status, committedUsd } = settlement
   const won = status === "won"
-  const canClaim = refundableUsd > 0
+  // All claim assertions come from the pure merge in lib/sale/settlement.ts (fail-closed: only
+  // the contract's own numbers open the button).
+  const { refundableUsd, gnotAllocation, refunded, showClaimButton, showAutoRefundLine } =
+    deriveClaimView(settlement, gate, claimState === "claimed")
 
   async function onClaimClick() {
     setClaimState("claiming")
@@ -74,7 +89,7 @@ export function SettlementFlow({
   }
 
   return (
-    <div className="flex flex-col gap-5">
+    <div ref={viewRef} tabIndex={-1} className="flex flex-col gap-5 focus:outline-none">
       <div className="flex items-center gap-3">
         <Icon
           name="shield-check"
@@ -104,12 +119,12 @@ export function SettlementFlow({
         </div>
 
         <div className="ml-auto flex items-center gap-4">
-          {claimState === "claimed" ? (
-            <span className="inline-flex items-center gap-2 text-sm font-medium text-foreground">
+          {refunded ? (
+            <output className="inline-flex items-center gap-2 text-sm font-medium text-foreground">
               <Icon name="shield-check" draw={false} className="h-5 w-5 shrink-0 text-mint" />
               Refund sent
-            </span>
-          ) : canClaim ? (
+            </output>
+          ) : showClaimButton ? (
             <Cta
               variant="solid-contrast"
               onClick={onClaimClick}
@@ -117,13 +132,15 @@ export function SettlementFlow({
             >
               {claimState === "claiming" ? "Claiming..." : `Claim ${fmtUsd(refundableUsd)}`}
             </Cta>
+          ) : showAutoRefundLine ? (
+            <span className="text-sm text-muted">Refunds are processed automatically.</span>
           ) : null}
           <WalletButton />
         </div>
       </div>
 
       {claimError ? (
-        <p className="text-xs font-medium text-danger">
+        <p role="alert" className="text-xs font-medium text-danger">
           {claimError === "wrong-chain"
             ? `Switch to ${SALE_CHAIN.name} in your wallet to claim your refund.`
             : claimError}

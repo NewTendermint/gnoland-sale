@@ -18,7 +18,10 @@ export const SALE_ECONOMICS = {
   multipleWalletsPerEntity: true,
   // The 3 dates drive the page PHASE (pre-sale/live/ended, lib/sale/phase.ts) + the countdowns.
   // Bidding is still enforced on-chain (the contract stage + permit window), so these dates never
-  // gate money. Keep in sync with the Sonar dashboard (no SDK endpoint exposes them).
+  // gate money. LOUD WARNING: keep in sync with the Sonar dashboard (no SDK endpoint exposes
+  // them) - if Sonar shifts the schedule, ALL page copy/countdowns/phases here drift. The
+  // push/email crons read the contract stage first (lib/sale/live-window.ts) and only fall back
+  // to these dates; the UI phase relies on them entirely.
   registrationOpensIso: process.env.NEXT_PUBLIC_REGISTRATION_OPENS ?? "2026-07-08T22:00:00Z", // Wed Jul 8, 22:00 UTC (Sonar dashboard)
   saleOpensIso: process.env.NEXT_PUBLIC_SALE_OPENS ?? "2026-07-20T22:00:00Z", // Mon Jul 20, 22:00 UTC (Sonar dashboard)
   saleClosesIso: process.env.NEXT_PUBLIC_SALE_CLOSES ?? "2026-07-27T22:00:00Z", // Mon Jul 27, 22:00 UTC (Sonar dashboard)
