@@ -5,8 +5,9 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     globals: true,
-    // Restore every spy/mock before each test: a console spy left behind by a mid-test
-    // assertion failure must not bleed into the file's remaining tests.
+    // Restore every vi.spyOn spy before each test: a console spy left behind by a mid-test
+    // assertion failure must not bleed into the file's remaining tests. Module-scope vi.fn
+    // mocks are NOT touched - each suite still owns its beforeEach resets.
     restoreMocks: true,
     setupFiles: ["./tests/setup.ts"],
     include: ["tests/unit/**/*.{test,spec}.{ts,tsx}"],

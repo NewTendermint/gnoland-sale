@@ -61,7 +61,6 @@ export async function POST(req: Request) {
         })
 
     let sent = false
-    let sendFailed = false
     if (decision.action === "skip" && decision.reason === "first-run-baseline") {
       await recordState(null)
     } else if (decision.action === "send" && !dryRun) {
@@ -75,10 +74,12 @@ export async function POST(req: Request) {
       } else {
         // State NOT advanced: the next hourly run retries. The log carries the failing step.
         console.error(`email-cron: mailchimp ${res.step} -> HTTP ${res.status}`)
-        sendFailed = true
       }
     }
 
+    // A send was attempted but did not land exactly when: send decided, not a dry run, not sent.
+    // 502 lets the fan-out's ok-check tell a failed send apart from a healthy skip.
+    const sendFailed = decision.action === "send" && !dryRun && !sent
     return NextResponse.json(
       {
         decision: label,

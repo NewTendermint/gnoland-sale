@@ -122,6 +122,5 @@ describe("POST /api/email/cron", () => {
     expect(dbInsert).not.toHaveBeenCalled()
     expect(releaseCronLease).toHaveBeenCalledWith("email-cron")
     expect(errorSpy).toHaveBeenCalledWith("email-cron: mailchimp send -> HTTP 500")
-    errorSpy.mockRestore()
   })
 })
