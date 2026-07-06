@@ -1,6 +1,7 @@
 import "server-only"
 import * as webpush from "web-push"
 import { env } from "../env"
+import { SALE_ECONOMICS } from "../sale/economics"
 
 let configured = false
 // Lazily wire VAPID once. Returns false when push is not configured (env absent) so callers no-op.
@@ -26,12 +27,26 @@ const OUTBID_PAYLOAD = JSON.stringify({
 
 export type SendTarget = { endpoint: string; p256dh: string; auth: string }
 
+const MAX_OUTBID_TTL_S = 6 * 60 * 60
+
+// Outbid pushes fire once per winning->outbid transition (debounced via lastStatus), so a short TTL
+// would permanently drop the alert for a briefly-offline user. Cap it instead to the time left
+// before the sale closes (an outbid alert is meaningless after that), clamped at 6h so a push
+// service never holds a stale alert for days.
+function outbidTtlSeconds(now: number): number {
+  const saleCloseMs = new Date(SALE_ECONOMICS.saleClosesIso).getTime()
+  return Math.max(0, Math.min(Math.floor((saleCloseMs - now) / 1000), MAX_OUTBID_TTL_S))
+}
+
 // Sends the outbid push to each target in parallel. Returns endpoints the push service reports as
 // gone (404/410) for the caller to delete; transient errors are swallowed (the next run retries).
 export async function sendOutbidNotifications(
   targets: SendTarget[],
 ): Promise<{ sent: number; expiredEndpoints: string[] }> {
   if (!ensureVapid()) return { sent: 0, expiredEndpoints: [] }
+  // Options, not the default: an unset TTL defaults to 4 weeks (stale alerts) and an unset timeout
+  // lets one stalled socket hang the cron's Promise.all until Netlify kills the function.
+  const options = { TTL: outbidTtlSeconds(Date.now()), urgency: "high" as const, timeout: 5000 }
   const expiredEndpoints: string[] = []
   let sent = 0
   await Promise.all(
@@ -40,6 +55,7 @@ export async function sendOutbidNotifications(
         await webpush.sendNotification(
           { endpoint: t.endpoint, keys: { p256dh: t.p256dh, auth: t.auth } },
           OUTBID_PAYLOAD,
+          options,
         )
         sent++
       } catch (err) {
