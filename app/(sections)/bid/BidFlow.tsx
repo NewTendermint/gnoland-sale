@@ -1064,7 +1064,9 @@ function BidRow({
 }
 
 function sanitizeDecimal(v: string): string {
-  const cleaned = v.replace(/[^0-9.]/g, "")
+  // Accept the comma as a decimal separator: the field is inputMode="decimal", and on most
+  // non-US locale keyboards the decimal key emits "," - stripping it turned "0,0645" into "645".
+  const cleaned = v.replace(/,/g, ".").replace(/[^0-9.]/g, "")
   const [head, ...rest] = cleaned.split(".")
   return rest.length > 0 ? `${head}.${rest.join("")}` : head
 }
