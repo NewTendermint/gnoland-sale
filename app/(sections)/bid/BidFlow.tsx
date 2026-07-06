@@ -1064,7 +1064,8 @@ function BidRow({
 }
 
 function sanitizeDecimal(v: string): string {
-  const cleaned = v.replace(/[^0-9.]/g, "")
+  // EU keyboards emit "," as the decimal key; normalize before stripping.
+  const cleaned = v.replace(/,/g, ".").replace(/[^0-9.]/g, "")
   const [head, ...rest] = cleaned.split(".")
   return rest.length > 0 ? `${head}.${rest.join("")}` : head
 }
