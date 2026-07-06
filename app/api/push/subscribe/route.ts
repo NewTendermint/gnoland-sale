@@ -25,12 +25,21 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "invalid_subscription" }, { status: 400 })
   }
   const row = parsed.data
+  // Footgun: keys must refresh on upsert - the push service cannot verify e2e-encryption
+  // keys, so a row holding stale p256dh/auth would keep "delivering" (no 404/410 to prune on) while
+  // the browser silently fails to decrypt - a dead row forever. Refreshing them on every upsert
+  // makes that state unrepresentable.
   await db
     .insert(pushSubscriptions)
     .values(row)
     .onConflictDoUpdate({
       target: pushSubscriptions.endpoint,
-      set: { bidLimitUsd: row.bidLimitUsd, updatedAt: new Date() },
+      set: {
+        p256dh: row.p256dh,
+        auth: row.auth,
+        bidLimitUsd: row.bidLimitUsd,
+        updatedAt: new Date(),
+      },
     })
   return NextResponse.json({ ok: true })
 }

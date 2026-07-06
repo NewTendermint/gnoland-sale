@@ -115,6 +115,14 @@ export const pushSubscriptionInsertSchema = z
   })
   .strict()
 
+// Single-row-per-cron lease: stops overlapping runs (schedule + manual invocation, or
+// a slow run outliving the next tick). Acquired via conditional upsert on DB time (no lambda clock
+// trust); an expired lease is simply re-acquired, so a crashed run self-heals at TTL.
+export const cronLeases = pgTable("cron_leases", {
+  name: text("name").primaryKey(),
+  leasedUntil: timestamp("leased_until", { withTimezone: true }).notNull(),
+})
+
 // Ephemeral OAuth PKCE state. Single-use (deleted on consume), TTL enforced on read via expires_at.
 // No PII; verifier is a throwaway nonce.
 // Expired/abandoned rows swept daily by /api/db/cleanup (consumed rows self-delete on consume).

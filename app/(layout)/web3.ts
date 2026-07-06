@@ -2,6 +2,7 @@
 import { mainnet, sepolia } from "viem/chains"
 import { http, createConfig, fallback } from "wagmi"
 import { coinbaseWallet, walletConnect } from "wagmi/connectors"
+import { rpcUrlsFor } from "../../lib/sale/rpc"
 
 // The projectId is a PUBLIC client id (not a secret) from Reown/WalletConnect Cloud; usage is
 // locked to our domains via the Reown AllowList, not by hiding the id.
@@ -16,23 +17,10 @@ export const wagmiConfig = createConfig({
     walletConnect({ projectId: wcProjectId, showQrModal: true }),
   ],
   transports: {
-    // Failover order per chain: dedicated keyed RPC (env, provision before launch) -> publicnode
-    // (free, per-visitor-IP limits) -> viem's chain default. Every host here must stay allowlisted
-    // in the CSP connect-src (middleware.ts).
-    [mainnet.id]: fallback([
-      ...(process.env.NEXT_PUBLIC_MAINNET_RPC_URL
-        ? [http(process.env.NEXT_PUBLIC_MAINNET_RPC_URL)]
-        : []),
-      http("https://ethereum-rpc.publicnode.com"),
-      http(),
-    ]),
-    [sepolia.id]: fallback([
-      ...(process.env.NEXT_PUBLIC_SEPOLIA_RPC_URL
-        ? [http(process.env.NEXT_PUBLIC_SEPOLIA_RPC_URL)]
-        : []),
-      http("https://ethereum-sepolia-rpc.publicnode.com"),
-      http(),
-    ]),
+    // Failover order per chain lives in lib/sale/rpc.ts (shared with the server-side readers);
+    // the trailing http() is viem's chain default.
+    [mainnet.id]: fallback([...rpcUrlsFor(mainnet.id).map((url) => http(url)), http()]),
+    [sepolia.id]: fallback([...rpcUrlsFor(sepolia.id).map((url) => http(url)), http()]),
   },
   ssr: true,
 })

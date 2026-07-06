@@ -6,6 +6,17 @@ const dbInsert = vi.fn()
 vi.mock("@/lib/sonar/commitments", () => ({
   readCommitments: (...a: unknown[]) => readCommitments(...a),
 }))
+const saleIsLive = vi.fn()
+// Mocked: the real saleIsLive would hit an RPC whenever a sandbox contract is configured.
+vi.mock("@/lib/sale/live-window", () => ({
+  saleIsLive: (...a: unknown[]) => saleIsLive(...a),
+}))
+const acquireCronLease = vi.fn()
+vi.mock("@/lib/db/lease", () => ({
+  CRON_LEASE_TTL_S: 240,
+  acquireCronLease: (...a: unknown[]) => acquireCronLease(...a),
+  releaseCronLease: vi.fn(),
+}))
 vi.mock("@/lib/db/client", () => ({
   db: {
     select: () => ({ from: () => dbSelect() }),
@@ -35,6 +46,10 @@ beforeEach(() => {
   readCommitments.mockReset()
   dbSelect.mockReset()
   dbInsert.mockReset()
+  acquireCronLease.mockReset()
+  acquireCronLease.mockResolvedValue(true)
+  saleIsLive.mockReset()
+  saleIsLive.mockResolvedValue(true)
 })
 
 describe("POST /api/email/cron", () => {
@@ -47,6 +62,13 @@ describe("POST /api/email/cron", () => {
     vi.stubEnv("NEXT_PUBLIC_SALE_OPENS", "2099-01-01T00:00:00Z")
     const res = await call("Bearer s3cret")
     expect(await res.json()).toEqual({ skipped: "not-live" })
+  })
+
+  it("skips when another run holds the lease", async () => {
+    acquireCronLease.mockResolvedValue(false)
+    const res = await call("Bearer s3cret")
+    expect(await res.json()).toEqual({ skipped: "locked" })
+    expect(readCommitments).not.toHaveBeenCalled()
   })
 
   it("first run records a baseline, sends nothing, and says so", async () => {
