@@ -617,6 +617,7 @@ export function PreSaleRight({
           icon={VERIFY_STATUS.verified.icon}
           tone={VERIFY_STATUS.verified.tone}
           title={`${VERIFY_STATUS.verified.title}.`}
+          body="Nothing more to do until the sale opens."
           onSignOut={onSignOut}
           withCalendar
         />
