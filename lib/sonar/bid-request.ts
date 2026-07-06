@@ -52,6 +52,14 @@ export async function resolveBidRequest(request: Request): Promise<BidGate> {
     if (!entity) {
       return { ok: false, res: NextResponse.json({ error: "no_entity" }, { status: 409 }) }
     }
+    // Fail closed on the entity's own state: whether Sonar refuses ineligible entities server-side
+    // is unverified, and the "unknown" normalization sentinels must never reach permit issuance.
+    if (entity.eligibility !== "eligible" || entity.setupState !== "complete") {
+      return {
+        ok: false,
+        res: NextResponse.json({ error: "entity_not_eligible" }, { status: 403 }),
+      }
+    }
     return { ok: true, ctx: { sessionId: session.sessionId, wallet: parsed.data.wallet, entity } }
   } catch (err) {
     if (err instanceof SonarAuthError) {

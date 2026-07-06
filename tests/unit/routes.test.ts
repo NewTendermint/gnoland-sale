@@ -149,6 +149,22 @@ describe("POST /api/sonar/pre-purchase", () => {
     expect(res.status).toBe(400)
     expect(mockedGetEntity).not.toHaveBeenCalled()
   })
+
+  it("fails closed (403) on a non-eligible or incomplete entity, before any Sonar call", async () => {
+    mockedGetSession.mockResolvedValue(sessionStub("sess-1"))
+    for (const overrides of [
+      { eligibility: "not-eligible" as const },
+      { eligibility: "unknown-setup-incomplete" as const },
+      { setupState: "in-progress" as const },
+      { setupState: "unknown" as const },
+    ]) {
+      mockedPrePurchase.mockClear()
+      mockedGetEntity.mockResolvedValue({ ...entitySnap, ...overrides })
+      const res = await prePurchasePOST(req({ wallet }))
+      expect(res.status).toBe(403)
+      expect(mockedPrePurchase).not.toHaveBeenCalled()
+    }
+  })
 })
 
 describe("POST /api/sonar/generate-permit", () => {
