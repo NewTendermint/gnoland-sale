@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react"
 import type { ReactNode } from "react"
 import { sepolia } from "viem/chains"
-import { useChainId, useConnect, useSwitchChain } from "wagmi"
+import { useAccount, useChainId, useConnect, useSwitchChain } from "wagmi"
 import { NewsletterForm } from "../../(layout)/NewsletterForm"
 import { CloseButton } from "../../(ui)/CloseButton"
 import { Cta } from "../../(ui)/Cta"
@@ -662,10 +662,25 @@ function BidRow({
   const [amount, setAmount] = useState(
     preview ? String(preview.amountUsd) : prevBid ? String(prevBid.committedUsd) : "",
   )
+  const { address: draftAddress } = useAccount()
   function onAmountChange(v: string) {
     setTouched(true)
     setAmount(v)
+    if (!preview && draftAddress) writeBidDraft(v, draftAddress)
   }
+  // Restore a fresh draft once, after a disconnect remount (client-only: sessionStorage is
+  // unavailable during SSR, and seeding state in the initializer would desync hydration).
+  // Never in a raise (prevBid seeds the committed floor) and never across wallets. touched
+  // stays false so the price keeps tracking the live floor until the user actually interacts.
+  const draftRestored = useRef(false)
+  useEffect(() => {
+    if (draftRestored.current || preview || prevBid || !draftAddress) return
+    draftRestored.current = true
+    const draft = readBidDraft(draftAddress)
+    if (draft !== null && draft !== "") {
+      setAmount(draft)
+    }
+  }, [preview, prevBid, draftAddress])
   const chainId = useChainId()
   // Funding token for THIS transaction (contract model: one bid, per-tx payment token). The picker
   // only exists once the sale registers several tokens; until then behavior is byte-identical.
@@ -685,6 +700,9 @@ function BidRow({
         ]
       : paymentTokens
   const [submitState, setSubmitState] = useState<SubmitState>(preview?.state ?? "idle")
+  useEffect(() => {
+    if (!preview && submitState === "submitted") clearBidDraft()
+  }, [submitState, preview])
   // True while the post-bid opt-in slot shows a dedicated view: the receipt row then hides its
   // Transaction link to free horizontal space for the email field / status text.
   const [optInDetail, setOptInDetail] = useState(false)
@@ -1061,6 +1079,44 @@ function BidRow({
       </div>
     </div>
   )
+}
+
+// A mid-bid wallet disconnect unmounts BidRow with the journey and used to come back to an empty
+// form. Session-scoped (per tab), short TTL, keyed to the wallet (a different account must never
+// inherit the draft); amount only - the price re-seeds from the live floor.
+const BID_DRAFT_KEY = "gnot:bid-draft"
+const BID_DRAFT_TTL_MS = 10 * 60 * 1000
+
+function readBidDraft(address: string): string | null {
+  try {
+    const raw = window.sessionStorage.getItem(BID_DRAFT_KEY)
+    if (!raw) return null
+    const draft = JSON.parse(raw) as { amount?: unknown; ts?: unknown; address?: unknown }
+    if (typeof draft.amount !== "string" || typeof draft.ts !== "number") return null
+    if (draft.address !== address.toLowerCase()) return null
+    return Date.now() - draft.ts > BID_DRAFT_TTL_MS ? null : draft.amount
+  } catch {
+    return null // private mode / storage disabled / corrupt entry
+  }
+}
+
+function writeBidDraft(amount: string, address: string): void {
+  try {
+    window.sessionStorage.setItem(
+      BID_DRAFT_KEY,
+      JSON.stringify({ amount, address: address.toLowerCase(), ts: Date.now() }),
+    )
+  } catch {
+    // private mode / storage disabled -> the draft just does not survive the unmount
+  }
+}
+
+function clearBidDraft(): void {
+  try {
+    window.sessionStorage.removeItem(BID_DRAFT_KEY)
+  } catch {
+    // ignore: nothing to clear if storage is unavailable
+  }
 }
 
 function sanitizeDecimal(v: string): string {
