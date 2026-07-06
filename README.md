@@ -4,6 +4,8 @@ Frontend for the GNOT public token sale (`sale.gno.land`), running on [Sonar by 
 
 One Next.js app serves every stage of the sale. Nothing is redeployed between stages: the page reads its phase from the sale clock (the 3 dates in `lib/sale/economics.ts`, with an optional env override) and renders the right surfaces (see "How the site works").
 
+> **Sonar documentation: <https://docs.echo.xyz>** - the reference for everything sale-side (OAuth, purchase permits, the SettlementSale contract, sale lifecycle, refunds). When the docs and the installed `@echoxyz/sonar-core` package disagree, the package's `.d.ts` wins; for the contract, the pinned Solidity source (github `sunrisedotdev/sonar`) wins. The operator dashboard is <https://app.echo.xyz/founder>.
+
 ## Stack
 
 Next.js 15 (App Router) · TypeScript strict · Tailwind v4 · next-themes (light/dark) · Biome · wagmi v3 + viem (Ethereum mainnet / Sepolia only) with bespoke connectors (Coinbase Wallet SDK, WalletConnect, injected EIP-6963) · `@echoxyz/sonar-core` (server-only) · iron-session + libsodium · Drizzle on Netlify Database (GA managed Postgres) · GSAP + baked scene-slot videos · Vitest. Hosted on Netlify (Next.js Runtime + DB). No Sentry, no analytics.
