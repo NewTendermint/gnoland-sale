@@ -81,6 +81,9 @@ function bidRevertReason(err: unknown, tokenSymbol = "USDC"): string {
   if (/CannotBeLowered/i.test(msg)) return "A bid can only be raised, not lowered"
   if (/PurchasePermitExpired/i.test(msg)) return "Your authorization expired - please try again"
   if (/BidOutsideAllowedWindow|SalePaused/i.test(msg)) return "The sale isn't open right now"
+  if (/WalletTiedToAnotherEntity/i.test(msg)) {
+    return "This wallet is already linked to another account"
+  }
   if (/WalletNotAssociatedWithEntity|InvalidSender|UnauthorizedSigner|NotInitialized/i.test(msg)) {
     return "This wallet isn't linked to your verified identity"
   }

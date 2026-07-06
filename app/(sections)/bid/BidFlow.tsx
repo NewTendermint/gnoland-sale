@@ -613,7 +613,7 @@ function reasonToMessage(reason: string): string {
     "wallet-risk": "This wallet can't be used for the sale.",
     "max-wallets-used": "You've reached the wallet limit for this sale.",
     "sale-not-active": "The sale isn't open right now.",
-    "wallet-not-linked": "Link this wallet to your Sonar account first.",
+    "wallet-not-linked": "This wallet is already linked to another account.",
     "outside-time-window": "Bidding is closed right now.",
     "session-expired": "Your Sonar session expired. Reconnect to continue.",
     "Connect your wallet": "Connect your wallet to bid.",
