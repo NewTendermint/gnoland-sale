@@ -148,6 +148,10 @@ describe("on-chain unit conversions", () => {
   it("usdToTokenUnits rounds sub-unit dust instead of truncating", () => {
     expect(usdToTokenUnits(0.1 + 0.2, 6)).toBe(300_000n)
   })
+  it("usdToTokenUnits keeps fractional USD amounts exact (EU cents input)", () => {
+    expect(usdToTokenUnits(1500.5, 6)).toBe(1_500_500_000n)
+    expect(usdToTokenUnits(150.05, 6)).toBe(150_050_000n)
+  })
   it("usdToTokenUnits rejects garbage", () => {
     expect(() => usdToTokenUnits(Number.NaN, 6)).toThrow()
     expect(() => usdToTokenUnits(-1, 6)).toThrow()
