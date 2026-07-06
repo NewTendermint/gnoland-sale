@@ -67,12 +67,14 @@ export function deriveClaimView(
   // refundable amount after "Refund sent" - which is what the cell should keep showing.
   const refundableUsd = onchainRefundable ?? settlement.refundableUsd
   // Keep the two numbers coherent: allocation = accepted / clearing and accepted = committed -
-  // refund, so a winner's estimate scales by the same fill ratio the refund reveals.
+  // refund, so a winner's estimate scales by the same fill ratio the refund reveals. Clamped:
+  // Sonar's committed can lag the chain (indexer delay), which would push the ratio negative.
+  const fillRatio =
+    onchainRefundable != null && settlement.committedUsd > 0
+      ? Math.max(0, (settlement.committedUsd - onchainRefundable) / settlement.committedUsd)
+      : 1
   const gnotAllocation =
-    settlement.status === "won" && onchainRefundable != null && settlement.committedUsd > 0
-      ? settlement.gnotAllocation *
-        ((settlement.committedUsd - onchainRefundable) / settlement.committedUsd)
-      : settlement.gnotAllocation
+    settlement.status === "won" ? settlement.gnotAllocation * fillRatio : settlement.gnotAllocation
   return {
     refundableUsd,
     gnotAllocation,

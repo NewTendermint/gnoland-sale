@@ -111,6 +111,11 @@ describe("deriveClaimView (Sonar estimate x on-chain gate, fail-closed)", () => 
     expect(v.gnotAllocation).toBe(27562)
   })
 
+  it("clamps the allocation at zero when Sonar's committed lags the on-chain refund", () => {
+    const v = deriveClaimView(winner, gate({ refundableUsd: 5000 }), false)
+    expect(v.gnotAllocation).toBe(0)
+  })
+
   it("shows the automatic-refunds line only at Done with self-serve disabled", () => {
     const v = deriveClaimView(outbid, gate({ claimEnabled: false }), false)
     expect(v.showClaimButton).toBe(false)
