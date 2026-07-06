@@ -18,7 +18,7 @@ import {
   generatePurchasePermit,
   prePurchaseCheck,
 } from "@/lib/sonar/permit"
-import { storeTokens } from "@/lib/sonar/tokens"
+import { deleteTokens, storeTokens } from "@/lib/sonar/tokens"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
 // Mock the request-scoped + heavy server deps so each test exercises ONLY the route
@@ -48,7 +48,7 @@ vi.mock("@/lib/sonar/permit", async (importOriginal) => {
   return { ...actual, prePurchaseCheck: vi.fn(), generatePurchasePermit: vi.fn() }
 })
 vi.mock("@/lib/sonar/client", () => ({ createSonarClient: vi.fn() }))
-vi.mock("@/lib/sonar/tokens", () => ({ storeTokens: vi.fn() }))
+vi.mock("@/lib/sonar/tokens", () => ({ storeTokens: vi.fn(), deleteTokens: vi.fn() }))
 
 const mockedGetSession = vi.mocked(getSession)
 const mockedSonarMock = vi.mocked(sonarMockEnabled)
@@ -60,6 +60,7 @@ const mockedPrePurchase = vi.mocked(prePurchaseCheck)
 const mockedGeneratePermit = vi.mocked(generatePurchasePermit)
 const mockedCreateSonarClient = vi.mocked(createSonarClient)
 const mockedStoreTokens = vi.mocked(storeTokens)
+const mockedDeleteTokens = vi.mocked(deleteTokens)
 
 type SessionLike = Awaited<ReturnType<typeof getSession>>
 function sessionStub(sessionId?: string): SessionLike {
@@ -305,8 +306,9 @@ describe("GET /api/auth/sonar/callback", () => {
     expect(mockedStoreTokens).not.toHaveBeenCalled()
   })
 
-  it("on a session-bound callback, exchanges the code and stores the tokens", async () => {
-    mockedGetSession.mockResolvedValue(sessionStub("s1"))
+  it("on a session-bound callback, exchanges the code and stores the tokens under a ROTATED id", async () => {
+    const session = sessionStub("s1")
+    mockedGetSession.mockResolvedValue(session)
     mockedConsumePkce.mockResolvedValue({ sessionId: "s1", codeVerifier: "v" })
     const exchangeAuthorizationCode = vi
       .fn()
@@ -318,10 +320,15 @@ describe("GET /api/auth/sonar/callback", () => {
     const res = await callbackGET(cbReq("code=abc&state=xyz"))
 
     expect(res.headers.get("location")).toContain("auth=ok")
+    // Session-fixation defense: the pre-auth id must never key the tokens - a fresh id does,
+    // and any row under the retired id is dropped.
+    const rotatedId = (session as unknown as { sessionId: string }).sessionId
+    expect(rotatedId).not.toBe("s1")
     expect(mockedStoreTokens).toHaveBeenCalledWith(
-      "s1",
+      rotatedId,
       expect.objectContaining({ accessToken: "at", refreshToken: "rt" }),
     )
+    expect(mockedDeleteTokens).toHaveBeenCalledWith("s1")
   })
 
   it("redirects to auth=error when code or state is missing", async () => {
