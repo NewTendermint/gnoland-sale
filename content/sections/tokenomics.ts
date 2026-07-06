@@ -145,6 +145,6 @@ export const circulating = {
   tokenSaleSupply: 38_760_000,
   /** Verbatim from the team sheet. */
   lockup: "1-Year Lockup for US Investors Only",
-  /** = startingPrice x total supply, single-sourced from SALE_ECONOMICS (85,978,500). */
+  /** = startingPrice x total supply (85,978,500). */
   fdvUsd: SALE_ECONOMICS.fdvUsd,
 }
