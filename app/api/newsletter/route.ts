@@ -36,7 +36,7 @@ export async function POST(request: Request) {
   try {
     if (Number(request.headers.get("content-length")) > MAX_BODY_BYTES) throw new Error("too_large")
     const raw = await request.text()
-    if (raw.length > MAX_BODY_BYTES) throw new Error("too_large")
+    if (Buffer.byteLength(raw) > MAX_BODY_BYTES) throw new Error("too_large")
     parsed = bodySchema.parse(JSON.parse(raw))
   } catch {
     return NextResponse.json({ error: "invalid" }, { status: 400 })

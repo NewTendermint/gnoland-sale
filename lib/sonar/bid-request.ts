@@ -41,7 +41,9 @@ export async function resolveBidRequest(request: Request): Promise<BidGate> {
     return { ok: false, res: NextResponse.json({ error: "invalid_request" }, { status: 413 }) }
   }
   const raw = await request.text().catch(() => "")
-  const parsed = bidBodySchema.safeParse(raw.length <= MAX_BODY_BYTES ? jsonOrNull(raw) : null)
+  const parsed = bidBodySchema.safeParse(
+    Buffer.byteLength(raw) <= MAX_BODY_BYTES ? jsonOrNull(raw) : null,
+  )
   if (!parsed.success) {
     return { ok: false, res: NextResponse.json({ error: "invalid_request" }, { status: 400 }) }
   }

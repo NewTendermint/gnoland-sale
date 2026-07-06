@@ -29,7 +29,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "invalid_subscription" }, { status: 413 })
   }
   const raw = await req.text().catch(() => "")
-  const body = raw.length <= MAX_BODY_BYTES ? jsonOrNull(raw) : null
+  const body = Buffer.byteLength(raw) <= MAX_BODY_BYTES ? jsonOrNull(raw) : null
   const parsed = pushSubscriptionInsertSchema.safeParse({
     endpoint: body?.subscription?.endpoint,
     p256dh: body?.subscription?.keys?.p256dh,
@@ -69,7 +69,7 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ error: "bad_request" }, { status: 413 })
   }
   const raw = await req.text().catch(() => "")
-  const body = raw.length <= MAX_BODY_BYTES ? jsonOrNull(raw) : null
+  const body = Buffer.byteLength(raw) <= MAX_BODY_BYTES ? jsonOrNull(raw) : null
   const endpoint = body?.endpoint
   if (typeof endpoint !== "string") {
     return NextResponse.json({ error: "bad_request" }, { status: 400 })

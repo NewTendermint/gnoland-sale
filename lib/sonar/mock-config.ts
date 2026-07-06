@@ -5,6 +5,8 @@ import "server-only"
  * production, and fail-closed to the sepolia sandbox: any other SALE_CHAIN
  * (mainnet, a typo) disables the mock.
  */
+// Raw process.env on purpose: importing the validated `env` would couple this dev-only
+// seam (and its tests) to the full boot schema.
 export function sonarMockEnabled(): boolean {
   if (process.env.NODE_ENV === "production") return false
   if ((process.env.SALE_CHAIN ?? "sepolia") !== "sepolia") return false // unset = sepolia (lib/env.ts default)
