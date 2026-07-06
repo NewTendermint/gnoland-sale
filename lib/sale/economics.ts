@@ -2,6 +2,9 @@
 // Schedule instants are the exact UTC moments from the Sonar dashboard (all at 22:00Z on the
 // three dates). The Countdown to saleClosesIso and the phase gates derive from these, so the
 // time-of-day is intentional, not midnight.
+import { mainnet } from "viem/chains"
+import { SALE_CHAIN } from "./contracts"
+
 const startingPriceUsd = 0.0645 // = minimum price (= step 0 of the on-chain bid grid)
 const totalSupplyGnot = 1_333_000_000
 
@@ -11,8 +14,9 @@ export const SALE_ECONOMICS = {
   totalSupplyGnot,
   softCapUsd: 2_500_000, // reintroduced 2026-06-30 (~ startingPrice x saleSupply = full subscription at the floor)
   fdvUsd: Math.round(startingPriceUsd * totalSupplyGnot), // 85,978,500
-  // Default = prod $100; NEXT_PUBLIC_MIN_COMMITMENT_USD overrides for staging/local (2).
-  minCommitmentUsd: Number(process.env.NEXT_PUBLIC_MIN_COMMITMENT_USD) || 100,
+  // $100 on mainnet, always; NEXT_PUBLIC_MIN_COMMITMENT_USD only applies off-mainnet (staging/local).
+  minCommitmentUsd:
+    SALE_CHAIN.id === mainnet.id ? 100 : Number(process.env.NEXT_PUBLIC_MIN_COMMITMENT_USD) || 100,
   maxCommitmentUsd: null, // no maximum commitment (team, 2026-06-21; prior $100k provisional cap dropped)
   // On-chain price = round(priceUsd / increment), zero-anchored (calc.priceUsdToOnchainPrice; verified
   // vs the deployed permit). 0.0215 prod + sandbox (Dongwon 2026-06-30; divides the 0.0645 floor -> 3).
