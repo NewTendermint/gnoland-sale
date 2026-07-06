@@ -10,7 +10,7 @@ describe("CLOSING_SOON_WINDOW_MS", () => {
 })
 
 describe("resolveTabAlertState", () => {
-  it("returns 'outbid' whenever the bid is outbid, regardless of time/phase", () => {
+  it("returns 'outbid' while live, regardless of time left", () => {
     expect(
       resolveTabAlertState({
         journey: "has-bid-outbid",
@@ -19,6 +19,19 @@ describe("resolveTabAlertState", () => {
         nowMs: NOW,
       }),
     ).toBe("outbid")
+  })
+
+  it("does not fire 'outbid' outside the live phase (nothing to raise after close)", () => {
+    for (const phase of ["pre-sale", "ended"] as const) {
+      expect(
+        resolveTabAlertState({
+          journey: "has-bid-outbid",
+          phase,
+          saleClosesMs: NOW - 1,
+          nowMs: NOW,
+        }),
+      ).toBeNull()
+    }
   })
 
   it("never fires 'outbid' for a pending (confirmed-but-unreported) bid", () => {

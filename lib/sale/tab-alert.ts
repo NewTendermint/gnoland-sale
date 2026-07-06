@@ -24,7 +24,8 @@ export function resolveTabAlertState(input: {
   saleClosesMs: number
   nowMs: number
 }): TabAlertState {
-  if (input.journey === "has-bid-outbid") return "outbid"
+  // Live-only: after close there is nothing to raise, the settlement UI takes over.
+  if (input.phase === "live" && input.journey === "has-bid-outbid") return "outbid"
   const msLeft = input.saleClosesMs - input.nowMs
   if (input.phase === "live" && msLeft > 0 && msLeft <= CLOSING_SOON_WINDOW_MS) {
     return "closing-soon"
