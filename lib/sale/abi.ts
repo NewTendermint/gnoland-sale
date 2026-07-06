@@ -216,6 +216,14 @@ export const settlementSaleAbi = [
   { type: "error", name: "BidMustHaveLockup", inputs: [] },
   { type: "error", name: "ClaimRefundDisabled", inputs: [] },
   { type: "error", name: "AlreadyRefunded", inputs: [{ type: "bytes16" }] },
+  // A wallet can only ever belong to one entity (SettlementSale.sol _trackEntity). Reachable in
+  // practice: Sonar's already-linked permit check can race across parallel sessions, so the
+  // revert is the hard backstop.
+  {
+    type: "error",
+    name: "WalletTiedToAnotherEntity",
+    inputs: [{ type: "bytes16" }, { type: "bytes16" }, { type: "address" }],
+  },
   {
     type: "error",
     name: "BidPriceBelowMinPrice",

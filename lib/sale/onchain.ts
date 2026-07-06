@@ -48,8 +48,8 @@ const EIP2612_PERMIT_TYPES = {
 /** Failure cases shared by the bid and claim paths: user rejection and a mid-flow wallet network
  *  switch (chainId is pinned on every write, so the tx was blocked, never sent on the wrong
  *  chain). "wrong-chain" is the existing sentinel the flows already render switch-back copy for.
- *  cancelledCopy names what the user rejected: the bid flow signs (EIP-2612 permit), the claim
- *  flow only confirms a transaction. */
+ *  cancelledCopy names what the user rejected: a typed-data signature (EIP-2612 permit) or a
+ *  transaction confirmation - the caller knows which prompt was open. */
 function sharedWalletErrorReason(
   err: unknown,
   cancelledCopy = "You cancelled the signature",
@@ -64,8 +64,8 @@ function sharedWalletErrorReason(
 }
 
 /** One user-facing line for a wallet/contract failure (never leak raw revert data to the UI). */
-function bidRevertReason(err: unknown, tokenSymbol = "USDC"): string {
-  const shared = sharedWalletErrorReason(err)
+function bidRevertReason(err: unknown, tokenSymbol = "USDC", cancelledCopy?: string): string {
+  const shared = sharedWalletErrorReason(err, cancelledCopy)
   if (shared) return shared
   const msg = err instanceof Error ? err.message : String(err)
   if (/insufficient|exceeds balance|transfer amount exceeds/i.test(msg)) {
@@ -81,6 +81,9 @@ function bidRevertReason(err: unknown, tokenSymbol = "USDC"): string {
   if (/CannotBeLowered/i.test(msg)) return "A bid can only be raised, not lowered"
   if (/PurchasePermitExpired/i.test(msg)) return "Your authorization expired - please try again"
   if (/BidOutsideAllowedWindow|SalePaused/i.test(msg)) return "The sale isn't open right now"
+  if (/WalletTiedToAnotherEntity/i.test(msg)) {
+    return "This wallet is already linked to another account"
+  }
   if (/WalletNotAssociatedWithEntity|InvalidSender|UnauthorizedSigner|NotInitialized/i.test(msg)) {
     return "This wallet isn't linked to your verified identity"
   }
@@ -315,6 +318,9 @@ export async function submitBidOnChain(args: OnChainBidArgs): Promise<BidResult>
   }
 
   let paySymbol = "USDC"
+  // Which wallet prompt is open when a rejection lands: every prompt in the flow is a transaction
+  // confirmation except the EIP-2612 typed-data signature - the cancel copy must name the right one.
+  let walletPrompt: "signature" | "transaction" = "transaction"
   try {
     const purchasePermit = toPurchasePermitV3(permit.PermitJSON)
     const payment = selectPaymentToken(
@@ -457,6 +463,7 @@ export async function submitBidOnChain(args: OnChainBidArgs): Promise<BidResult>
       ])
       erc20PermitDeadline = BigInt(Math.floor(Date.now() / 1000) + PERMIT_TTL_S)
       args.onStage?.("approving")
+      walletPrompt = "signature"
       erc20PermitSignature = await signTypedData(wagmiConfig, {
         domain: { name, version, chainId, verifyingContract: payment.address },
         types: EIP2612_PERMIT_TYPES,
@@ -469,6 +476,7 @@ export async function submitBidOnChain(args: OnChainBidArgs): Promise<BidResult>
           deadline: erc20PermitDeadline,
         },
       })
+      walletPrompt = "transaction"
     }
 
     const call = {
@@ -494,7 +502,14 @@ export async function submitBidOnChain(args: OnChainBidArgs): Promise<BidResult>
     const wait = await waitWithReplacement(txHash)
     return interpretBidReceipt(wait.receipt, wait.reason)
   } catch (err) {
-    return { status: "reverted", reason: bidRevertReason(err, paySymbol) }
+    return {
+      status: "reverted",
+      reason: bidRevertReason(
+        err,
+        paySymbol,
+        walletPrompt === "transaction" ? "You cancelled the transaction" : undefined,
+      ),
+    }
   }
 }
 
