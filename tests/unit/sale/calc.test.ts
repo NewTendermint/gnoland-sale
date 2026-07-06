@@ -10,6 +10,23 @@ import {
   validateBidAmount,
   validateBidPrice,
 } from "../../../lib/sale/calc"
+import { SALE_ECONOMICS } from "../../../lib/sale/economics"
+
+// The UI grid steps from the floor, the contract grid from zero (issue #72): they only agree
+// while the floor divides exactly by the step. economics.ts asserts this at boot; pin it here
+// so a provisional-value edit fails a test, not just the build.
+describe("price grid anchoring invariant", () => {
+  it("startingPriceUsd is an integer multiple of bidIncrementUsd (micro-USD)", () => {
+    const micro = (n: number) => Math.round(n * 1e6)
+    expect(micro(SALE_ECONOMICS.startingPriceUsd) % micro(SALE_ECONOMICS.bidIncrementUsd)).toBe(0)
+  })
+
+  it("the floor lands on the on-chain grid step the deployed sale expects", () => {
+    expect(
+      priceUsdToOnchainPrice(SALE_ECONOMICS.startingPriceUsd, SALE_ECONOMICS.bidIncrementUsd),
+    ).toBe(3n)
+  })
+})
 
 describe("forceLockupForRegion", () => {
   it("forces the lockup flag for US entities (Sonar A.17.8: the contract rejects a US bid without it)", () => {
