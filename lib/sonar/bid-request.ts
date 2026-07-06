@@ -12,6 +12,17 @@ import { SonarAuthError } from "./permit"
 // Only the wallet comes from the client; the entity is derived server-side (IDOR defense).
 const bidBodySchema = z.object({ wallet: evmAddress })
 
+// Route handlers get no bodySizeLimit (next.config covers server actions only); cap before parsing.
+const MAX_BODY_BYTES = 1024
+
+function jsonOrNull(raw: string): unknown {
+  try {
+    return JSON.parse(raw)
+  } catch {
+    return null
+  }
+}
+
 export type BidContext = { sessionId: string; wallet: string; entity: EntitySnapshot }
 type BidGate = { ok: true; ctx: BidContext } | { ok: false; res: NextResponse }
 
@@ -26,7 +37,11 @@ export async function resolveBidRequest(request: Request): Promise<BidGate> {
   }
   // Rolling: re-stamp the 2h cookie window on each authenticated action.
   await session.save()
-  const parsed = bidBodySchema.safeParse(await request.json().catch(() => null))
+  if (Number(request.headers.get("content-length")) > MAX_BODY_BYTES) {
+    return { ok: false, res: NextResponse.json({ error: "invalid_request" }, { status: 413 }) }
+  }
+  const raw = await request.text().catch(() => "")
+  const parsed = bidBodySchema.safeParse(raw.length <= MAX_BODY_BYTES ? jsonOrNull(raw) : null)
   if (!parsed.success) {
     return { ok: false, res: NextResponse.json({ error: "invalid_request" }, { status: 400 }) }
   }

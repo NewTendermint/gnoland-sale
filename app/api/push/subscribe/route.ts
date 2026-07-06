@@ -6,6 +6,17 @@ import { NextResponse } from "next/server"
 
 export const runtime = "nodejs"
 
+// Route handlers get no bodySizeLimit (next.config covers server actions only); cap before parsing.
+const MAX_BODY_BYTES = 4096
+
+function jsonOrNull(raw: string) {
+  try {
+    return JSON.parse(raw)
+  } catch {
+    return null
+  }
+}
+
 // POST /api/push/subscribe - upsert this browser's push subscription.
 // A session is required (anti-spam auth gate) but NOT stored: the row holds nothing traceable to a
 // user or wallet. The body is validated strict, so no extra field can be smuggled in.
@@ -14,7 +25,11 @@ export async function POST(req: Request) {
   if (!session.sessionId) {
     return NextResponse.json({ error: "unauthenticated" }, { status: 401 })
   }
-  const body = await req.json().catch(() => null)
+  if (Number(req.headers.get("content-length")) > MAX_BODY_BYTES) {
+    return NextResponse.json({ error: "invalid_subscription" }, { status: 413 })
+  }
+  const raw = await req.text().catch(() => "")
+  const body = raw.length <= MAX_BODY_BYTES ? jsonOrNull(raw) : null
   const parsed = pushSubscriptionInsertSchema.safeParse({
     endpoint: body?.subscription?.endpoint,
     p256dh: body?.subscription?.keys?.p256dh,
@@ -50,7 +65,11 @@ export async function DELETE(req: Request) {
   if (!session.sessionId) {
     return NextResponse.json({ error: "unauthenticated" }, { status: 401 })
   }
-  const body = await req.json().catch(() => null)
+  if (Number(req.headers.get("content-length")) > MAX_BODY_BYTES) {
+    return NextResponse.json({ error: "bad_request" }, { status: 413 })
+  }
+  const raw = await req.text().catch(() => "")
+  const body = raw.length <= MAX_BODY_BYTES ? jsonOrNull(raw) : null
   const endpoint = body?.endpoint
   if (typeof endpoint !== "string") {
     return NextResponse.json({ error: "bad_request" }, { status: 400 })

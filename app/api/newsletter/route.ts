@@ -11,6 +11,9 @@ const bodySchema = z.object({
   topic: z.string().max(200).optional().default(""),
 })
 
+// Route handlers get no bodySizeLimit (next.config covers server actions only); cap before parsing.
+const MAX_BODY_BYTES = 4096
+
 // Per-IP sliding window, in-memory per instance; keyed by HMAC-peppered IP (never raw).
 const WINDOW_MS = 60_000
 const MAX_PER_WINDOW = 5
@@ -31,7 +34,10 @@ function rateLimited(key: string, now: number): boolean {
 export async function POST(request: Request) {
   let parsed: z.infer<typeof bodySchema>
   try {
-    parsed = bodySchema.parse(await request.json())
+    if (Number(request.headers.get("content-length")) > MAX_BODY_BYTES) throw new Error("too_large")
+    const raw = await request.text()
+    if (raw.length > MAX_BODY_BYTES) throw new Error("too_large")
+    parsed = bodySchema.parse(JSON.parse(raw))
   } catch {
     return NextResponse.json({ error: "invalid" }, { status: 400 })
   }
