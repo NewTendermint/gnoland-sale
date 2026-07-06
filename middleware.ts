@@ -2,13 +2,19 @@ import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
 
 /**
- * Security headers + Content-Security-Policy.
+ * Security headers + Content-Security-Policy, split in two (decision recorded in
+ * issue #14, "CSP enforce" under Optional):
  *
- * The hard headers are enforced. The nonce-based CSP ships Report-Only first so it
- * logs violations without blocking the wallet stack (WalletConnect relays over wss,
- * the Ethereum RPC, wasm in crypto libs). Validate the allowlist against real reports,
- * then rename the header to "Content-Security-Policy" to enforce (at which point
- * Next auto-applies the nonce to its own scripts, clearing the script-src reports).
+ * ENFORCED - the injection-hardening directives no page behavior can trip (no <base>,
+ * no native form posts, no plugins, and framing is already denied by X-Frame-Options).
+ * Verified empirically: zero violations across load + funnel interactions.
+ *
+ * REPORT-ONLY - the strict script policy + the wallet-stack allowlist. The page is
+ * statically rendered, so the nonce cannot reach the HTML's own script tags and every
+ * self-hosted chunk reports under strict-dynamic: these reports are aspirational noise,
+ * NOT enforce candidates. Before enforcing connect-src/frame-src, validate the wallet
+ * allowlist (WalletConnect relays over wss, the Ethereum RPC, Coinbase) with a real
+ * wallet journey on a preview.
  *
  * Chain RPC + WalletConnect/Coinbase endpoints are the moving parts of connect-src;
  * everything else is self. No analytics wired yet (add its hosts here when it is).
@@ -16,7 +22,14 @@ import { NextResponse } from "next/server"
 export function middleware(request: NextRequest) {
   const nonce = btoa(crypto.randomUUID())
 
-  const csp = [
+  const enforcedCsp = [
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "frame-ancestors 'none'",
+  ].join("; ")
+
+  const reportOnlyCsp = [
     "default-src 'self'",
     // 'wasm-unsafe-eval' for crypto/wallet libs; strict-dynamic + nonce, never unsafe-inline.
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'wasm-unsafe-eval'`,
@@ -30,10 +43,6 @@ export function middleware(request: NextRequest) {
     "connect-src 'self' https://ethereum-rpc.publicnode.com https://ethereum-sepolia-rpc.publicnode.com https://eth.merkle.io https://*.rpc.thirdweb.com wss://relay.walletconnect.com wss://relay.walletconnect.org https://*.walletconnect.com https://*.walletconnect.org https://*.web3modal.org https://*.reown.com https://*.coinbase.com https://*.cbhq.net",
     "frame-src 'self' https://*.walletconnect.org https://*.walletconnect.com https://*.coinbase.com",
     "worker-src 'self' blob:",
-    "base-uri 'self'",
-    "form-action 'self'",
-    "object-src 'none'",
-    "frame-ancestors 'none'",
   ].join("; ")
 
   const requestHeaders = new Headers(request.headers)
@@ -41,9 +50,8 @@ export function middleware(request: NextRequest) {
 
   const response = NextResponse.next({ request: { headers: requestHeaders } })
 
-  // CSP: Report-Only for now (observe, never block). Rename to
-  // "Content-Security-Policy" to enforce once the allowlist is validated.
-  response.headers.set("Content-Security-Policy-Report-Only", csp)
+  response.headers.set("Content-Security-Policy", enforcedCsp)
+  response.headers.set("Content-Security-Policy-Report-Only", reportOnlyCsp)
 
   // Enforced hard headers (safe, no breakage risk).
   response.headers.set("X-Frame-Options", "DENY")

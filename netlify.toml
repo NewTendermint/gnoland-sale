@@ -42,7 +42,10 @@
   # setup on Echo) and is server-rendered into the page as the Complete-on-Sonar link.
   # FOOTGUN: never add VAPID_PRIVATE_KEY here - it must stay scanned; if it ever lands in output that
   # is a real leak to fix, not to silence.
-  SECRETS_SCAN_OMIT_KEYS = "VAPID_PUBLIC_KEY,NEXT_PUBLIC_VAPID_PUBLIC_KEY,SONAR_SALE_UUID"
+  # SALE_CHAIN / NEXT_PUBLIC_SALE_CHAIN are non-secret chain selectors ("mainnet"/"sepolia"); their
+  # values legitimately appear in the output, and the launch-day SALE_CHAIN=mainnet set would
+  # otherwise fail the deploy on a scanner false-positive.
+  SECRETS_SCAN_OMIT_KEYS = "VAPID_PUBLIC_KEY,NEXT_PUBLIC_VAPID_PUBLIC_KEY,SONAR_SALE_UUID,SALE_CHAIN,NEXT_PUBLIC_SALE_CHAIN"
 
 # Deploy-context-scoped environment variables.
 # Production targets sale.gno.land and Sonar prod + Ethereum mainnet.
