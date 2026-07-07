@@ -1,6 +1,6 @@
 # gnoland-sale
 
-Frontend for the GNOT public token sale (`sale.gno.land`), running on [Sonar by Echo](https://docs.echo.xyz/). Uniform-price (English) auction, USDC on Ethereum, KYC via Sonar OAuth.
+Frontend for the GNOT public token sale (`sale.gno.land`), running on [Sonar by Echo](https://docs.echo.xyz/). Uniform-price (English) auction, USDC & USDT on Ethereum, KYC via Sonar OAuth.
 
 One Next.js app serves every stage of the sale. Nothing is redeployed between stages: the page reads its phase from the sale clock (the 3 dates in `lib/sale/economics.ts`, with an optional env override) and renders the right surfaces (see "How the site works").
 
