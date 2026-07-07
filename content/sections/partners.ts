@@ -29,13 +29,6 @@ export const partners = [
     ] as PartnerTeamMember[],
   },
   {
-    name: "Onbloc",
-    body: "Onbloc is an engineering team building consumer-facing applications on Gno.land, including Adena Wallet, GnoSwap, and GnoScan, some of the ecosystem's most used tools today.",
-    href: "https://www.onbloc.xyz",
-    // TODO: team members pending
-    team: [] as PartnerTeamMember[],
-  },
-  {
     name: "All in Bits",
     body: "All in Bits is the team behind Tendermint BFT and Cosmos, the foundational infrastructure of the Internet of Blockchains ecosystem and the organization building AtomOne, the next chapter of that vision.",
     href: "https://atom.one/",
@@ -45,5 +38,19 @@ export const partners = [
       { name: "Julien Robert", role: "Senior Blockchain Engineer" },
       { name: "Thomas Bruyelle", role: "Senior Blockchain Engineer" },
     ] as PartnerTeamMember[],
+  },
+  {
+    name: "Onbloc",
+    body: "Onbloc is an engineering team building consumer-facing applications on Gno.land, including Adena Wallet, GnoSwap, and GnoScan, some of the ecosystem's most used tools today.",
+    href: "https://www.onbloc.xyz",
+    // TODO: team members pending
+    team: [] as PartnerTeamMember[],
+  },
+  {
+    name: "Oak Security",
+    body: "Oak Security is a leading Web3 security firm specializing in smart contract audits, operational security reviews, penetration testing, and vCISO services.",
+    href: "https://oaksecurity.io/",
+    // TODO: team members pending
+    team: [] as PartnerTeamMember[],
   },
 ]
