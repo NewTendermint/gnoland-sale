@@ -7,8 +7,15 @@ import { LG_MEDIA_QUERY } from "../../lib/device/breakpoints"
 import { useMediaQuery } from "../../lib/device/use-media-query"
 import { shouldAnimate } from "../../lib/motion/should-animate"
 import { SALE_ECONOMICS } from "../../lib/sale/economics"
-import { fmtCompactUsd, fmtCount, fmtPrice } from "../../lib/sale/format"
-import type { CommitmentData } from "../../lib/sale/types"
+import {
+  PENDING_BIDDER_CHIP,
+  PENDING_CHIP_HINT,
+  fmtCompactUsd,
+  fmtCount,
+  fmtPrice,
+  pendingCommittedChip,
+} from "../../lib/sale/format"
+import type { CommitmentData, PendingBidDelta } from "../../lib/sale/types"
 import { Countdown } from "./Countdown"
 
 export const SHELL =
@@ -51,7 +58,20 @@ export function useBarGrow<T extends HTMLElement>() {
   return ref
 }
 
-export type BarMetric = { icon: string; value: ReactNode; label: string }
+export type BarMetric = { icon: string; value: ReactNode; label: string; pending?: string }
+
+/** The single renderer for a metric's pending chip; keep every render site on this component.
+ *  A grey capsule on its own line under the label: zero width impact on the metrics row. */
+export function MetricPendingChip({ label }: { label: string }) {
+  return (
+    <span
+      title={PENDING_CHIP_HINT}
+      className="mt-1 block w-fit rounded-full bg-surface-alt px-2 py-0.5 font-mono text-[8px] normal-case tracking-normal tabular-nums text-foreground"
+    >
+      {label}
+    </span>
+  )
+}
 
 export function BarShell({ children }: { children: ReactNode }) {
   const cardRef = useBarGrow<HTMLDivElement>()
@@ -101,7 +121,10 @@ export function MetricCell({
         {compact ? null : <Icon name={metric.icon} draw={false} className="h-[18px] w-[18px]" />}
         <p className="font-mono text-lg font-medium tracking-tight tabular-nums">{metric.value}</p>
       </div>
-      <p className="mt-0.5 text-[10px] uppercase tracking-[0.2em] text-muted">{metric.label}</p>
+      <p className="mt-0.5 text-[10px] uppercase tracking-[0.2em] text-muted">
+        {metric.label}
+        {metric.pending ? <MetricPendingChip label={metric.pending} /> : null}
+      </p>
     </div>
   )
 }
@@ -112,7 +135,7 @@ export function BarCountdown({ targetIso, caption }: { targetIso: string; captio
       <Icon name="clock" draw={false} className="h-[18px] w-[18px]" />
       <div>
         <p className="font-mono text-2xl font-medium tracking-tight tabular-nums sm:text-3xl">
-          <Countdown targetIso={targetIso} />
+          <Countdown targetIso={targetIso} label={caption} />
         </p>
         <p className="mt-0.5 text-[10px] uppercase tracking-[0.2em] text-muted">{caption}</p>
       </div>
@@ -120,7 +143,10 @@ export function BarCountdown({ targetIso, caption }: { targetIso: string; captio
   )
 }
 
-export function liveMetrics(commitment: CommitmentData): BarMetric[] {
+export function liveMetrics(
+  commitment: CommitmentData,
+  pendingDelta: PendingBidDelta | null = null,
+): BarMetric[] {
   return [
     {
       icon: "clearing",
@@ -129,11 +155,21 @@ export function liveMetrics(commitment: CommitmentData): BarMetric[] {
     },
     {
       icon: "clock",
-      value: <Countdown targetIso={SALE_ECONOMICS.saleClosesIso} />,
+      value: <Countdown targetIso={SALE_ECONOMICS.saleClosesIso} label="Time left" />,
       label: "Time left",
     },
-    { icon: "users-group", value: fmtCount(commitment.uniqueCommitmentCount), label: "Bidders" },
-    { icon: "database", value: fmtCompactUsd(commitment.totalCommittedUsd), label: "Committed" },
+    {
+      icon: "users-group",
+      value: fmtCount(commitment.uniqueCommitmentCount),
+      label: "Bidders",
+      pending: pendingDelta?.newBidder ? PENDING_BIDDER_CHIP : undefined,
+    },
+    {
+      icon: "database",
+      value: fmtCompactUsd(commitment.totalCommittedUsd),
+      label: "Committed",
+      pending: pendingDelta ? pendingCommittedChip(pendingDelta.amountUsd) : undefined,
+    },
   ]
 }
 
@@ -146,7 +182,9 @@ export function liveKeyMetrics(commitment: CommitmentData): BarMetric[] {
     },
     {
       icon: "clock",
-      value: <Countdown targetIso={SALE_ECONOMICS.saleClosesIso} seconds={false} />,
+      value: (
+        <Countdown targetIso={SALE_ECONOMICS.saleClosesIso} seconds={false} label="Time left" />
+      ),
       label: "Time left",
     },
     { icon: "database", value: fmtCompactUsd(commitment.totalCommittedUsd), label: "Raised" },

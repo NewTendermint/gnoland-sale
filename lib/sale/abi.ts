@@ -4,6 +4,16 @@
 // interfaces/types.sol TokenAmount. Inlined as one `as const` so viem infers arg/return types.
 // Fully re-verify against the deployed bytecode (Etherscan or scripts/probe-sale.mjs) before mainnet.
 
+// Stage enum values (SettlementSale.sol l.288, source-verified). Commitment = bids open;
+// claimRefund() is onlyStage(Done).
+export const SALE_STAGE = {
+  preOpen: 0,
+  commitment: 1,
+  cancellation: 2,
+  settlement: 3,
+  done: 4,
+} as const
+
 export const settlementSaleAbi = [
   {
     type: "function",
@@ -40,6 +50,44 @@ export const settlementSaleAbi = [
       { name: "purchasePermitSignature", type: "bytes" },
       { name: "erc20PermitDeadline", type: "uint256" },
       { name: "erc20PermitSignature", type: "bytes" },
+    ],
+    outputs: [],
+  },
+  // Non-permit entry point (SettlementSale.sol): same bid, funded by a prior ERC-20 approval
+  // covering the amount delta - the path for tokens without EIP-2612 (mainnet USDT).
+  {
+    type: "function",
+    name: "replaceBidWithApproval",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "token", type: "address" },
+      {
+        name: "bid",
+        type: "tuple",
+        components: [
+          { name: "lockup", type: "bool" },
+          { name: "price", type: "uint64" },
+          { name: "amount", type: "uint256" },
+        ],
+      },
+      {
+        name: "purchasePermit",
+        type: "tuple",
+        components: [
+          { name: "saleSpecificEntityID", type: "bytes16" },
+          { name: "saleUUID", type: "bytes16" },
+          { name: "wallet", type: "address" },
+          { name: "expiresAt", type: "uint64" },
+          { name: "minAmount", type: "uint256" },
+          { name: "maxAmount", type: "uint256" },
+          { name: "minPrice", type: "uint64" },
+          { name: "maxPrice", type: "uint64" },
+          { name: "opensAt", type: "uint64" },
+          { name: "closesAt", type: "uint64" },
+          { name: "payload", type: "bytes" },
+        ],
+      },
+      { name: "purchasePermitSignature", type: "bytes" },
     ],
     outputs: [],
   },
@@ -122,8 +170,60 @@ export const settlementSaleAbi = [
       },
     ],
   },
+  // Wallet-scoped view (SettlementSale.sol l.1193): resolves the entity + per-token amounts for a
+  // connected wallet WITHOUT Sonar - the refund gate's entry point at Stage.Done. Reverts
+  // WalletNotInitialized for a wallet with no on-chain position.
+  {
+    type: "function",
+    name: "walletStatesByAddresses",
+    stateMutability: "view",
+    inputs: [{ name: "addrs", type: "address[]" }],
+    outputs: [
+      {
+        type: "tuple[]",
+        components: [
+          { name: "addr", type: "address" },
+          { name: "entityID", type: "bytes16" },
+          {
+            name: "committedAmountByToken",
+            type: "tuple[]",
+            components: [
+              { name: "token", type: "address" },
+              { name: "amount", type: "uint256" },
+            ],
+          },
+          {
+            name: "cancelledAmountByToken",
+            type: "tuple[]",
+            components: [
+              { name: "token", type: "address" },
+              { name: "amount", type: "uint256" },
+            ],
+          },
+          {
+            name: "acceptedAmountByToken",
+            type: "tuple[]",
+            components: [
+              { name: "token", type: "address" },
+              { name: "amount", type: "uint256" },
+            ],
+          },
+        ],
+      },
+    ],
+  },
   // Custom errors we surface to the user (lets viem decode the revert name).
   { type: "error", name: "BidMustHaveLockup", inputs: [] },
+  { type: "error", name: "ClaimRefundDisabled", inputs: [] },
+  { type: "error", name: "AlreadyRefunded", inputs: [{ type: "bytes16" }] },
+  // A wallet can only ever belong to one entity (SettlementSale.sol _trackEntity). Reachable in
+  // practice: Sonar's already-linked permit check can race across parallel sessions, so the
+  // revert is the hard backstop.
+  {
+    type: "error",
+    name: "WalletTiedToAnotherEntity",
+    inputs: [{ type: "bytes16" }, { type: "bytes16" }, { type: "address" }],
+  },
   {
     type: "error",
     name: "BidPriceBelowMinPrice",
@@ -219,5 +319,32 @@ export const erc20Abi = [
     stateMutability: "view",
     inputs: [{ name: "owner", type: "address" }],
     outputs: [{ type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "symbol",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ type: "string" }],
+  },
+  {
+    type: "function",
+    name: "allowance",
+    stateMutability: "view",
+    inputs: [
+      { name: "owner", type: "address" },
+      { name: "spender", type: "address" },
+    ],
+    outputs: [{ type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "approve",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "spender", type: "address" },
+      { name: "amount", type: "uint256" },
+    ],
+    outputs: [{ type: "bool" }],
   },
 ] as const

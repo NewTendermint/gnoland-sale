@@ -1,15 +1,13 @@
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import { readCommitments } from "../../lib/sonar/commitments"
 import { getEntity } from "../../lib/sonar/entity"
 import { generatePurchasePermit } from "../../lib/sonar/permit"
 
 // These tests exercise the mock seam, so enable it here only (not globally, so
-// the permit tests still cover the real refresh/coalescing path).
-beforeAll(() => {
+// the permit tests still cover the real refresh/coalescing path). Per test, not
+// beforeAll: the vitest config unstubs every env stub before each test.
+beforeEach(() => {
   vi.stubEnv("SONAR_MOCK", "1")
-})
-afterAll(() => {
-  vi.unstubAllEnvs()
 })
 
 // End-to-end through the REAL plumbing: readCommitments -> real sonar-core SDK

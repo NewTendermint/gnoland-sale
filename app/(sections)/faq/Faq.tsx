@@ -60,9 +60,41 @@ export function Faq() {
                 >
                   <div className="overflow-hidden" inert={!isOpen}>
                     <div className="max-w-3xl space-y-3 pb-6 text-base text-muted md:text-lg lg:pb-8">
-                      {(Array.isArray(item.a) ? item.a : [item.a]).map((para) => (
-                        <p key={para}>{para}</p>
-                      ))}
+                      {(Array.isArray(item.a) ? item.a : [item.a]).map((para) => {
+                        if (typeof para === "string") {
+                          return <p key={para}>{para}</p>
+                        }
+                        if ("strong" in para) {
+                          return (
+                            <p key={para.strong} className="font-semibold text-foreground">
+                              {para.strong}
+                            </p>
+                          )
+                        }
+                        const text = para.parts
+                          .map((part) => (typeof part === "string" ? part : part.label))
+                          .join("")
+                        return (
+                          <p key={text}>
+                            {para.parts.map((part) =>
+                              typeof part === "string" ? (
+                                part
+                              ) : (
+                                <a
+                                  key={part.href}
+                                  href={part.href}
+                                  className="link-underline text-foreground"
+                                  {...(/^https?:/.test(part.href)
+                                    ? { target: "_blank", rel: "noopener noreferrer" }
+                                    : {})}
+                                >
+                                  {part.label}
+                                </a>
+                              ),
+                            )}
+                          </p>
+                        )
+                      })}
                     </div>
                   </div>
                 </div>

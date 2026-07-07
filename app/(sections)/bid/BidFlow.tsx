@@ -3,9 +3,17 @@
 import { useEffect, useRef, useState } from "react"
 import type { ReactNode } from "react"
 import { sepolia } from "viem/chains"
-import { useChainId, useConnect, useSwitchChain } from "wagmi"
+import { useAccount, useChainId, useConnect, useSwitchChain } from "wagmi"
+import { NewsletterForm } from "../../(layout)/NewsletterForm"
+import { CloseButton } from "../../(ui)/CloseButton"
 import { Cta } from "../../(ui)/Cta"
 import { Icon } from "../../(ui)/Icon"
+import { useViewFocus } from "../../../lib/a11y/focus"
+import {
+  clearEmailOptInDone,
+  emailOptInDone,
+  newsletterEnabled,
+} from "../../../lib/newsletter/config"
 import {
   bidHeadroomPct,
   gnotEstimate,
@@ -15,8 +23,15 @@ import {
 } from "../../../lib/sale/calc"
 import { SALE_CHAIN } from "../../../lib/sale/contracts"
 import { SALE_ECONOMICS } from "../../../lib/sale/economics"
-import { fmtGnot, fmtPriceUsdc, fmtUsdc } from "../../../lib/sale/format"
-import { SUPPORT_CONTACT_HREF, VERIFY_STATUS, WELCOME_BACK } from "../../../lib/sale/labels"
+import { fmtCompact, fmtGnot, fmtPrice, fmtUsd, parseDecimal } from "../../../lib/sale/format"
+import { usePaymentTokens } from "../../../lib/sale/hooks"
+import {
+  SUPPORT_CONTACT_HREF,
+  VERIFY_INCOMPLETE,
+  VERIFY_STATUS,
+  WELCOME_BACK,
+} from "../../../lib/sale/labels"
+import { defaultPaymentToken } from "../../../lib/sale/onchain"
 import {
   type BidParams,
   type BidResult,
@@ -24,7 +39,7 @@ import {
   MockBidSubmitter,
 } from "../../../lib/sale/submitter"
 import type { JourneyState, MyBid } from "../../../lib/sale/types"
-import { PushOptIn } from "./PushOptIn"
+import { usePushAlerts } from "./PushOptIn"
 
 const submitter = new MockBidSubmitter()
 
@@ -57,12 +72,187 @@ const WALLET_ICON_SRC: Record<string, string> = {
 }
 
 /** Renders the wallet's local SVG, falling back to a generic wallet glyph if it is missing/unknown. */
-function WalletIcon({ src }: { src?: string }) {
+function WalletIcon({ src, className = "" }: { src?: string; className?: string }) {
   const [failed, setFailed] = useState(false)
   if (!src || failed) {
-    return <Icon name="wallet" draw={false} className="h-5 w-5 text-muted" />
+    return <Icon name="wallet" draw={false} className={`h-5 w-5 text-muted ${className}`} />
   }
-  return <img src={src} alt="" className="h-6 w-6 rounded-md" onError={() => setFailed(true)} />
+  return (
+    <img
+      src={src}
+      alt=""
+      className={`h-6 w-6 rounded-md ${className}`}
+      onError={() => setFailed(true)}
+    />
+  )
+}
+
+// Channel pitches (validated copy, single source): the compact menu is CTAs only, each dedicated
+// view shows its own channel pitch (the CTA label already names the channel, so the email pitch
+// carries only the privacy promise). PUSH_HINT is the settings tooltip for the granted state.
+const EMAIL_PITCH = "Never linked to your wallet or bids."
+const PUSH_PITCH = "Outbid alerts in your browser - never linked to your wallet or bids."
+const PUSH_HINT =
+  "Not receiving them? Turn on notifications for your browser in your system settings."
+
+/** Post-bid opt-in row. Compact menu: one explainer + two icon CTAs (check icon once a channel
+ *  is active). Clicking a CTA switches the slot to that channel's dedicated view; success and
+ *  error copy lives ONLY in the dedicated views. Exported for the /dev/states gallery. */
+export function PostBidOptIns({
+  bidLimitUsd,
+  onDetailChange,
+}: {
+  bidLimitUsd: number
+  /** Fires when the slot enters/leaves a dedicated view, so the row can free horizontal space. */
+  onDetailChange?: (detail: boolean) => void
+}) {
+  const { supported, status, enable } = usePushAlerts(bidLimitUsd)
+  const [view, setViewRaw] = useState<"menu" | "email" | "push">("menu")
+  const setView = (v: "menu" | "email" | "push") => {
+    setViewRaw(v)
+    onDetailChange?.(v !== "menu")
+  }
+  const [emailDone, setEmailDone] = useState(false)
+  const emailEnabled = newsletterEnabled()
+
+  // The flag is written by ANY NewsletterForm instance (footer, tiles, this panel).
+  useEffect(() => {
+    setEmailDone(emailOptInDone())
+  }, [])
+
+  const pushGranted = status === "granted"
+  const pushOffered = supported && status !== "unsupported"
+
+  if (view === "email") {
+    return (
+      <div className="ml-auto flex min-w-0 items-center justify-end gap-x-4">
+        <div aria-hidden="true" className="h-8 w-px shrink-0 bg-border" />
+        {emailDone ? (
+          // Re-opened from the checked CTA: the subscription already happened, show the state,
+          // with an escape hatch for a mistyped address (clears the browser flag only).
+          <>
+            <p className="flex items-center gap-2 whitespace-nowrap text-xs text-mint">
+              <Icon name="shield-check" draw={false} className="h-4 w-4 shrink-0" />
+              Confirmation email sent - check your inbox.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                clearEmailOptInDone()
+                setEmailDone(false)
+              }}
+              className="cursor-pointer whitespace-nowrap text-xs text-muted underline underline-offset-2 hover:text-foreground"
+            >
+              Use another email
+            </button>
+          </>
+        ) : (
+          <>
+            <p className="min-w-0 max-w-[36ch] shrink text-right text-xs text-muted">
+              {EMAIL_PITCH}
+            </p>
+            <span className="shrink-0">
+              <NewsletterForm
+                variant="inline"
+                inputId="bid-panel-email"
+                onSuccess={() => setEmailDone(true)}
+              />
+            </span>
+          </>
+        )}
+        <CloseButton label="Back to notification options" onClick={() => setView("menu")} />
+      </div>
+    )
+  }
+
+  if (view === "push") {
+    return (
+      <div className="ml-auto flex min-w-0 items-center justify-end gap-x-4">
+        <div aria-hidden="true" className="h-8 w-px shrink-0 bg-border" />
+        {status === "working" ? (
+          <p className="min-w-0 max-w-[36ch] shrink text-right text-xs text-muted">{PUSH_PITCH}</p>
+        ) : status === "error" ? (
+          <p className="min-w-0 max-w-[44ch] shrink text-right text-xs text-muted">
+            Could not enable alerts. Check that notifications are allowed for your browser in your
+            system settings, then retry.
+          </p>
+        ) : null}
+        {status === "working" ? (
+          <Cta variant="ghost-contrast" size="sm" className="shrink-0 whitespace-nowrap" disabled>
+            Enabling
+          </Cta>
+        ) : status === "granted" ? (
+          <p
+            className="flex items-center gap-2 whitespace-nowrap text-xs text-mint"
+            title={PUSH_HINT}
+          >
+            <Icon name="shield-check" draw={false} className="h-4 w-4 shrink-0" />
+            Browser alerts on. We'll notify you if you're outbid.
+          </p>
+        ) : status === "denied" ? (
+          <p className="text-xs text-muted">
+            Notifications are blocked. Enable them for your browser in your system settings to get
+            outbid alerts.
+          </p>
+        ) : status === "unsupported" ? (
+          <p className="text-xs text-muted">
+            Notifications are not available in this browser. Use email updates instead.
+          </p>
+        ) : (
+          <Cta
+            variant="ghost-contrast"
+            size="sm"
+            className="shrink-0 whitespace-nowrap"
+            onClick={enable}
+          >
+            Retry
+          </Cta>
+        )}
+        {status !== "working" ? (
+          <CloseButton label="Back to notification options" onClick={() => setView("menu")} />
+        ) : null}
+      </div>
+    )
+  }
+
+  return (
+    <div className="ml-auto flex min-w-0 items-center justify-end gap-x-3">
+      {emailEnabled ? (
+        <Cta
+          variant="ghost-contrast"
+          size="sm"
+          className="shrink-0 whitespace-nowrap"
+          onClick={() => setView("email")}
+        >
+          <Icon
+            name={emailDone ? "shield-check" : "send"}
+            draw={false}
+            className={`h-4 w-4 shrink-0 ${emailDone ? "text-mint" : ""}`}
+          />
+          {emailDone ? "Price updates on" : "Price updates"}
+        </Cta>
+      ) : null}
+      {pushOffered ? (
+        <Cta
+          variant="ghost-contrast"
+          size="sm"
+          className="shrink-0 whitespace-nowrap"
+          title={pushGranted ? PUSH_HINT : undefined}
+          onClick={() => {
+            setView("push")
+            if (status === "idle" || status === "error") enable()
+          }}
+        >
+          <Icon
+            name={pushGranted ? "shield-check" : "browser"}
+            draw={false}
+            className={`h-4 w-4 shrink-0 ${pushGranted ? "text-mint" : ""}`}
+          />
+          {pushGranted ? "Outbid alerts on" : "Outbid alerts"}
+        </Cta>
+      ) : null}
+    </div>
+  )
 }
 
 /** Block-explorer tx link for the receipt; null unless `hash` is a real 32-byte tx hash. */
@@ -95,6 +285,8 @@ export function BidFlow({
   clearingPriceUsd,
   myBid,
   onConnectSonar,
+  onSignOut,
+  setupHref,
   onBid,
   preview,
 }: {
@@ -103,6 +295,8 @@ export function BidFlow({
   clearingPriceUsd: number | null
   myBid: MyBid
   onConnectSonar?: () => void
+  onSignOut?: () => void
+  setupHref: string
   onBid?: (p: BidParams, opts?: { onStage?: (s: BidStage) => void }) => Promise<BidResult>
   preview?: BidPreview
 }) {
@@ -113,6 +307,8 @@ export function BidFlow({
       clearingPriceUsd={clearingPriceUsd}
       myBid={myBid}
       onConnectSonar={onConnectSonar}
+      onSignOut={onSignOut}
+      setupHref={setupHref}
       onBid={onBid}
       preview={preview}
     />
@@ -125,6 +321,8 @@ function StateContent({
   clearingPriceUsd,
   myBid,
   onConnectSonar,
+  onSignOut,
+  setupHref,
   onBid,
   preview,
 }: {
@@ -133,11 +331,18 @@ function StateContent({
   clearingPriceUsd: number | null
   myBid: MyBid
   onConnectSonar?: () => void
+  onSignOut?: () => void
+  setupHref: string
   onBid?: (p: BidParams, opts?: { onStage?: (s: BidStage) => void }) => Promise<BidResult>
   preview?: BidPreview
 }) {
   // Shared render path keeps BidRow's tree position across ready -> has-bid (stable key preserves the receipt).
-  if (journey === "ready" || journey === "has-bid-winning" || journey === "has-bid-outbid") {
+  if (
+    journey === "ready" ||
+    journey === "has-bid-winning" ||
+    journey === "has-bid-outbid" ||
+    journey === "has-bid-pending"
+  ) {
     return (
       <div className="flex w-full flex-col gap-2">
         <BidRow
@@ -154,7 +359,13 @@ function StateContent({
   return (
     <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4">
       <div className="min-w-0 flex-1">
-        <GateContent journey={journey} returning={returning} onConnectSonar={onConnectSonar} />
+        <GateContent
+          journey={journey}
+          returning={returning}
+          onConnectSonar={onConnectSonar}
+          onSignOut={onSignOut}
+          setupHref={setupHref}
+        />
       </div>
     </div>
   )
@@ -164,14 +375,27 @@ function GateContent({
   journey,
   returning,
   onConnectSonar,
+  onSignOut,
+  setupHref,
 }: {
   journey: JourneyState
   returning?: boolean
   onConnectSonar?: () => void
+  onSignOut?: () => void
+  setupHref: string
 }) {
   switch (journey) {
     case "wrong-network":
       return <SwitchNetworkGate />
+    case "kyc-incomplete":
+      return (
+        <GateRow
+          icon={VERIFY_INCOMPLETE.icon}
+          title={VERIFY_INCOMPLETE.title}
+          cta={VERIFY_INCOMPLETE.cta}
+          ctaHref={setupHref}
+        />
+      )
     case "kyc-required":
       return returning ? (
         <GateRow
@@ -230,14 +454,16 @@ function GateRow({
   cta,
   onCta,
   ctaHref,
+  secondary,
   tone = "default",
 }: {
   icon: string
   title: string
-  body: string
+  body?: string
   cta?: string
   onCta?: () => void
   ctaHref?: string
+  secondary?: ReactNode
   tone?: "default" | "danger"
 }) {
   return (
@@ -250,18 +476,21 @@ function GateRow({
         />
         <p className="text-sm">
           <span className="font-medium text-foreground">{title}.</span>
-          <span className="ml-1.5 text-muted">{body}</span>
+          {body ? <span className="ml-1.5 text-muted">{body}</span> : null}
         </p>
       </div>
-      {ctaHref && cta ? (
-        <Cta variant="solid-contrast" href={ctaHref} external>
-          {cta}
-        </Cta>
-      ) : cta ? (
-        <Cta variant="solid-contrast" onClick={onCta}>
-          {cta}
-        </Cta>
-      ) : null}
+      <div className="ml-auto flex flex-wrap items-center justify-end gap-x-4 gap-y-2">
+        {ctaHref && cta ? (
+          <Cta variant="solid-contrast" href={ctaHref} external>
+            {cta}
+          </Cta>
+        ) : cta ? (
+          <Cta variant="solid-contrast" onClick={onCta}>
+            {cta}
+          </Cta>
+        ) : null}
+        {secondary}
+      </div>
     </div>
   )
 }
@@ -299,15 +528,17 @@ export function ConnectChoices({
           </span>
         </p>
       </div>
-      <div className="flex flex-wrap items-center justify-end gap-2">
+      <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+        {/* Same dashed DNA as the not-installed wallets, grouped with them on the left. */}
         <a
           href={FIND_WALLET_URL}
           target="_blank"
           rel="noreferrer noopener"
-          className="mr-1 inline-flex items-center gap-1 text-xs text-muted underline-offset-4 transition-colors hover:text-foreground hover:underline focus-visible:text-foreground focus-visible:underline"
+          aria-label="Don't have a wallet? Find one (opens in a new tab)"
+          title="Don't have one? Find a wallet"
+          className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-dashed border-faint bg-surface-alt opacity-70 transition-all hover:opacity-100 focus-visible:opacity-100"
         >
-          Don't have one? Find a wallet
-          <span aria-hidden="true">↗</span>
+          <Icon name="search" draw={false} className="h-5 w-5 text-muted" />
         </a>
         {missing.map((rec) => (
           <a
@@ -319,7 +550,7 @@ export function ConnectChoices({
             title={`${rec.name} - not installed, click to get it`}
             className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-dashed border-faint bg-surface-alt opacity-70 transition-all hover:opacity-100 focus-visible:opacity-100"
           >
-            <WalletIcon src={WALLET_ICON_SRC[rec.id]} />
+            <WalletIcon src={WALLET_ICON_SRC[rec.id]} className="grayscale" />
           </a>
         ))}
         {live.map((connector) => {
@@ -366,6 +597,7 @@ function SwitchNetworkGate() {
       </div>
       <Cta
         variant="solid-contrast"
+        className="ml-auto"
         onClick={() => switchChain({ chainId: SALE_CHAIN.id })}
         disabled={isPending}
       >
@@ -381,9 +613,10 @@ function reasonToMessage(reason: string): string {
     "wallet-risk": "This wallet can't be used for the sale.",
     "max-wallets-used": "You've reached the wallet limit for this sale.",
     "sale-not-active": "The sale isn't open right now.",
-    "wallet-not-linked": "Link this wallet to your Sonar account first.",
+    "wallet-not-linked": "This wallet is already linked to another account.",
     "outside-time-window": "Bidding is closed right now.",
     "session-expired": "Your Sonar session expired. Reconnect to continue.",
+    "entity-not-eligible": "Your account can't bid yet. Finish verification.",
     "Connect your wallet": "Connect your wallet to bid.",
     "wrong-chain": `Switch to ${SALE_CHAIN.name} to bid.`,
     unknown: "Could not place your bid. Please try again.",
@@ -397,7 +630,7 @@ function DeltaCapsule({ added }: { added: number }) {
   if (!Number.isFinite(added) || added <= 0) return null
   return (
     <span className="rounded-full border border-current px-1.5 py-px text-[0.65em] font-bold tracking-normal opacity-70">
-      +{fmtUsdc(added)}
+      +{fmtUsd(added)}
     </span>
   )
 }
@@ -430,18 +663,59 @@ function BidRow({
   const [amount, setAmount] = useState(
     preview ? String(preview.amountUsd) : prevBid ? String(prevBid.committedUsd) : "",
   )
+  const { address: draftAddress } = useAccount()
   function onAmountChange(v: string) {
     setTouched(true)
     setAmount(v)
+    if (!preview && draftAddress) writeBidDraft(v, draftAddress)
   }
+  // Restore a fresh draft once, after a disconnect remount (client-only: sessionStorage is
+  // unavailable during SSR, and seeding state in the initializer would desync hydration).
+  // Never in a raise (prevBid seeds the committed floor) and never across wallets. touched
+  // stays false so the price keeps tracking the live floor until the user actually interacts.
+  const draftRestored = useRef(false)
+  useEffect(() => {
+    if (draftRestored.current || preview || prevBid || !draftAddress) return
+    draftRestored.current = true
+    const draft = readBidDraft(draftAddress)
+    if (draft !== null && draft !== "") {
+      setAmount(draft)
+    }
+  }, [preview, prevBid, draftAddress])
   const chainId = useChainId()
+  // Funding token for THIS transaction (contract model: one bid, per-tx payment token). The picker
+  // only exists once the sale registers several tokens; until then behavior is byte-identical.
+  const paymentTokens = usePaymentTokens().data
+  const multiToken = (paymentTokens?.length ?? 0) > 1
+  const [payTokenAddress, setPayTokenAddress] = useState<`0x${string}` | null>(null)
+  const payToken = paymentTokens?.length
+    ? (paymentTokens.find((t) => t.address === payTokenAddress) ??
+      defaultPaymentToken(paymentTokens))
+    : undefined
+  // Picker lists the default first, not the contract's registration order.
+  const orderedTokens =
+    multiToken && paymentTokens
+      ? [
+          defaultPaymentToken(paymentTokens),
+          ...paymentTokens.filter((t) => t !== defaultPaymentToken(paymentTokens)),
+        ]
+      : paymentTokens
   const [submitState, setSubmitState] = useState<SubmitState>(preview?.state ?? "idle")
+  useEffect(() => {
+    if (!preview && submitState === "submitted") clearBidDraft()
+  }, [submitState, preview])
+  // True while the post-bid opt-in slot shows a dedicated view: the receipt row then hides its
+  // Transaction link to free horizontal space for the email field / status text.
+  const [optInDetail, setOptInDetail] = useState(false)
   const [txHash, setTxHash] = useState<string | null>(preview?.txHash ?? null)
   const [submitError, setSubmitError] = useState<string | null>(preview?.error ?? null)
   const aliveRef = useRef(true)
+  // One ref shared by the mutually-exclusive view containers below: each submit-state change
+  // unmounts the element that held focus, so the incoming view takes it (and gets announced).
+  const viewRef = useViewFocus<HTMLDivElement>(submitState)
 
   const priceNum = Number(price)
-  const amountNum = Number(amount)
+  const amountNum = parseDecimal(amount)
   const priceCheck = validateBidPrice(priceNum, {
     minPriceUsd: minPrice,
     incrementUsd: increment,
@@ -489,17 +763,17 @@ function BidRow({
 
   const priceError =
     priceShown && priceCheck === "below-min"
-      ? `Min price ${fmtPriceUsdc(minPrice)}.`
+      ? `Min price ${fmtPrice(minPrice)}.`
       : priceShown && priceCheck === "off-increment"
-        ? `Bids move in ${increment} USDC steps.`
+        ? `Bids move in $${increment} steps.`
         : priceShown && priceCheck === "below-previous" && prevBid
-          ? `Raise above your current ${fmtPriceUsdc(prevBid.priceUsd)}.`
+          ? `Raise above your current ${fmtPrice(prevBid.priceUsd)}.`
           : null
   const amountError =
     amountShown && amountCheck === "too-low"
       ? prevBid
-        ? `Can’t go below your committed ${fmtUsdc(prevBid.committedUsd)}.`
-        : `Min ${fmtUsdc(minCommitFloor)}.`
+        ? `Can’t go below your committed ${fmtUsd(prevBid.committedUsd)}.`
+        : `Min ${fmtUsd(minCommitFloor)}.`
       : null
 
   const headroom =
@@ -524,14 +798,19 @@ function BidRow({
 
   const raiseNote =
     prevBid && priceValid && amountValid && !raisesSomething
-      ? "Your bid is unchanged - raise the price or add USDC."
+      ? "Your bid is unchanged - raise the price or add funds."
       : null
 
   async function runSubmit() {
     setSubmitError(null)
     // lockup:false here = the user opt-in (no toggle surfaced). The compliance-forced US lockup
     // is applied in useBid from the trusted server entity region (Sonar A.17.8), not in the form.
-    const params: BidParams = { priceUsd: priceNum, amountUsd: amountNum, lockup: false }
+    const params: BidParams = {
+      priceUsd: priceNum,
+      amountUsd: amountNum,
+      lockup: false,
+      token: payToken?.address,
+    }
     if (onBid) {
       setSubmitState("submitting")
       const result = await onBid(params, {
@@ -567,26 +846,33 @@ function BidRow({
 
   if (submitState === "confirming") {
     return (
-      <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4">
+      <div
+        ref={viewRef}
+        tabIndex={-1}
+        className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4 focus:outline-none"
+      >
         <div className="min-w-0 flex-1">
           <p className="text-sm">
             <span className="font-medium text-foreground">
-              Commit {fmtUsdc(amountNum)} at {fmtPriceUsdc(priceNum)} per GNOT?
+              Commit {fmtUsd(amountNum)} at {fmtPrice(priceNum)} per GNOT?
             </span>
             <span className="ml-1.5 text-muted">
-              You pay the final clearing price. Est. ~{fmtGnot(est)} GNOT. Bids can be raised but
-              not cancelled.
+              You pay the final clearing price. Est.{" "}
+              {estAtBid != null && estAtBid < est
+                ? `~${fmtGnot(estAtBid)}-${fmtGnot(est)} GNOT`
+                : `~${fmtGnot(est)} GNOT`}
+              . Bids can be raised but not cancelled.
             </span>
           </p>
           {prevBid ? (
             <p className="mt-1 text-xs text-muted">
               {amountNum > prevBid.committedUsd
-                ? `Only the ${fmtUsdc(amountNum - prevBid.committedUsd)} difference is charged.`
-                : "No additional USDC - just sign."}
+                ? `Only the ${fmtUsd(amountNum - prevBid.committedUsd)} difference is charged.`
+                : "No additional funds - just sign."}
             </p>
           ) : null}
         </div>
-        <div className="flex flex-wrap items-center gap-4">
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-4">
           <Cta variant="solid-contrast" onClick={runSubmit}>
             Confirm bid
             <DeltaCapsule added={prevBid ? amountNum - prevBid.committedUsd : 0} />
@@ -605,7 +891,11 @@ function BidRow({
 
   if (submitState === "submitting" || submitState === "approving" || submitState === "signing") {
     return (
-      <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4">
+      <div
+        ref={viewRef}
+        tabIndex={-1}
+        className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4 focus:outline-none"
+      >
         <div className="flex items-center gap-3" aria-live="polite">
           <Icon name="clock" draw={false} className="h-5 w-5 shrink-0 text-foreground" />
           <p className="text-sm">
@@ -613,14 +903,14 @@ function BidRow({
               {submitState === "submitting"
                 ? "Placing your bid..."
                 : submitState === "approving"
-                  ? "Approving USDC..."
+                  ? `Approving ${payToken?.symbol ?? "USDC"}...`
                   : "Signing..."}
             </span>
             <span className="ml-1.5 text-muted">
               {submitState === "submitting"
                 ? "Preparing your bid - check your wallet in a moment."
                 : submitState === "approving"
-                  ? "Approve USDC spending in your wallet."
+                  ? `Approve ${payToken?.symbol ?? "USDC"} spending in your wallet.`
                   : "Confirm and sign the bid in your wallet."}
             </span>
           </p>
@@ -631,74 +921,128 @@ function BidRow({
 
   if (submitState === "submitted") {
     const explorer = txHash ? txExplorerUrl(txHash, chainId) : null
+    // One line, always: the confirmation and CTAs never wrap or shrink; the tiny privacy note
+    // inside PostBidOptIns is the only elastic element (min-w-0, wraps its own text).
     return (
-      <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4">
-        <div className="flex flex-wrap items-center gap-3">
+      <div
+        ref={viewRef}
+        tabIndex={-1}
+        aria-live="polite"
+        className="flex items-center justify-between gap-x-10 focus:outline-none"
+      >
+        <div className="flex shrink-0 items-center gap-3">
           <Icon name="shield-check" draw={false} className="h-5 w-5 shrink-0 text-mint" />
-          <p className="text-sm text-foreground">
-            Bid submitted - {fmtUsdc(amountNum)} at {fmtPriceUsdc(priceNum)} per GNOT.
+          <p className="whitespace-nowrap text-sm text-foreground">
+            Bid submitted - {fmtUsd(amountNum)} at {fmtPrice(priceNum)} per GNOT.
           </p>
-          {explorer ? (
+          {optInDetail ? null : explorer ? (
             <a
               href={explorer}
               target="_blank"
               rel="noreferrer"
-              className="text-xs text-muted underline underline-offset-2 hover:text-foreground"
+              className="whitespace-nowrap text-xs text-muted underline underline-offset-2 hover:text-foreground"
             >
-              View transaction
+              Transaction
             </a>
           ) : txHash ? (
             <span className="font-mono text-[11px] text-muted">tx {txHash}</span>
           ) : null}
         </div>
-        <PushOptIn bidLimitUsd={priceNum} />
+        <PostBidOptIns bidLimitUsd={priceNum} onDetailChange={setOptInDetail} />
       </div>
     )
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    <div ref={viewRef} tabIndex={-1} className="flex flex-col gap-2 focus:outline-none">
       {outbid ? (
         <p className="text-xs font-bold text-danger" role="alert">
           You've been outbid. Increase your bid to stay in the sale.
         </p>
       ) : null}
-      <div className="flex flex-wrap items-start gap-x-8 gap-y-4">
-        <InputCell
-          id="bid-price"
-          label="Bid price"
-          value={price}
-          onChange={setPrice}
-          readOnly
-          stepper={{
-            onUp: () => stepPrice(1),
-            onDown: () => stepPrice(-1),
-            upDisabled: snappedRef != null && nextUp === snappedRef,
-            downDisabled:
-              snappedRef != null && (nextDown === snappedRef || (nextDown ?? 0) < floor),
-            upLabel: "Raise the price one step",
-            downLabel: "Lower the price one step",
-          }}
-          invalid={priceShown && priceCheck !== "ok"}
-          hint={`If your bid meets or exceeds the final clearing price, it wins. You pay the clearing price, not your original bid. Bids are placed in $${increment} increments, starting from the $${minPrice} starting price.`}
-          suffix={
-            <>
-              USDC <span className="text-[0.7em] opacity-60">/ GNOT</span>
-            </>
-          }
-          error={priceError}
-          className="w-24"
-        />
+      <div className="flex flex-wrap items-start gap-x-5 gap-y-4">
+        <div className="flex flex-col gap-1.5">
+          <InputCell
+            id="bid-price"
+            label="Bid price"
+            value={price}
+            onChange={setPrice}
+            readOnly
+            stepper={{
+              onUp: () => stepPrice(1),
+              onDown: () => stepPrice(-1),
+              upDisabled: snappedRef != null && nextUp === snappedRef,
+              downDisabled:
+                snappedRef != null && (nextDown === snappedRef || (nextDown ?? 0) < floor),
+              upLabel: "Raise the price one step",
+              downLabel: "Lower the price one step",
+            }}
+            invalid={priceShown && priceCheck !== "ok"}
+            hint={`If your bid meets or exceeds the final clearing price, it wins. You pay the clearing price, not your original bid. Bids are placed in $${increment} increments, starting from the $${minPrice} starting price.`}
+            suffix={
+              <>
+                USD <span className="text-[0.7em] opacity-60">/ GNOT</span>
+              </>
+            }
+            error={priceError}
+            className="w-24"
+          />
+          {priceError || amountError ? null : submitError ? (
+            <p
+              className="w-0 min-w-full whitespace-nowrap text-xs font-medium text-danger"
+              role="alert"
+            >
+              <span className="inline-block max-w-[52ch] truncate align-bottom">{submitError}</span>
+              {SUPPORT_CONTACT_HREF ? (
+                <>
+                  {" "}
+                  <a
+                    href={SUPPORT_CONTACT_HREF}
+                    className="underline underline-offset-2 hover:opacity-75"
+                  >
+                    Support
+                  </a>
+                </>
+              ) : null}
+            </p>
+          ) : raiseNote ? (
+            <p className="w-0 min-w-full whitespace-nowrap text-xs text-muted">
+              <span className="inline-block max-w-[60ch] truncate align-bottom">{raiseNote}</span>
+            </p>
+          ) : clearingNote ? (
+            <p
+              className={`w-0 min-w-full whitespace-nowrap text-xs ${
+                clearingNote.tone === "warn" ? "font-medium text-amber" : "text-muted"
+              }`}
+            >
+              <span className="inline-block max-w-[60ch] truncate align-bottom">
+                {clearingNote.text}
+                {clearingNote.tone === "ok" && estAtBid != null && estAtBid < est
+                  ? ` You'd still get ~${fmtCompact(estAtBid)} GNOT.`
+                  : ""}
+              </span>
+            </p>
+          ) : null}
+        </div>
         <InputCell
           id="bid-amount"
-          label="Amount (USDC)"
+          label="Amount (USD)"
           value={amount}
           onChange={onAmountChange}
           invalid={amountShown && amountCheck !== "ok"}
           placeholder={String(minCommitFloor)}
-          hint={`The total USDC you commit is the amount you pay if your bid wins. If you're outbid, you're fully refunded after the sale. Your GNOT allocation is calculated as: Amount (USDC) / Clearing Price. Minimum commitment is $${fmtUsdc(minCommitFloor)}, with no maximum.`}
+          hint={`The total USD you commit is the amount you pay if your bid wins. If you're outbid, you're fully refunded after the sale. Your GNOT allocation is calculated as: Amount (USD) / Clearing Price. Minimum commitment is ${fmtUsd(minCommitFloor)}, with no maximum.`}
           error={amountError}
           className="w-32"
+          trailing={
+            multiToken && orderedTokens ? (
+              <TokenSelect
+                tokens={orderedTokens}
+                value={payToken?.address}
+                onChange={setPayTokenAddress}
+              />
+            ) : undefined
+          }
         />
 
         <div className="flex flex-col gap-1.5">
@@ -711,15 +1055,8 @@ function BidRow({
               ~{fmtGnot(est)}
               <span className="ml-0.5 text-muted">GNOT</span>
             </span>
-            <span className="text-[11px] leading-snug text-muted">
-              at the current clearing price
-              {estAtBid != null ? (
-                <>
-                  <br />~{fmtGnot(estAtBid)} if the price rises to your max bid
-                </>
-              ) : null}
-            </span>
           </div>
+          <p className="max-w-md truncate text-xs text-muted">at the current clearing price</p>
         </div>
 
         <div className="ml-auto flex flex-col gap-1.5">
@@ -741,27 +1078,51 @@ function BidRow({
           </div>
         </div>
       </div>
-      {priceError || amountError ? null : submitError ? (
-        <p className="max-w-md truncate text-xs font-medium text-danger" role="alert">
-          {submitError}
-        </p>
-      ) : raiseNote ? (
-        <p className="max-w-md truncate text-xs text-muted">{raiseNote}</p>
-      ) : clearingNote ? (
-        <p
-          className={`max-w-md truncate text-xs ${
-            clearingNote.tone === "warn" ? "font-medium text-amber" : "text-muted"
-          }`}
-        >
-          {clearingNote.text}
-        </p>
-      ) : null}
     </div>
   )
 }
 
+// A mid-bid wallet disconnect unmounts BidRow with the journey and used to come back to an empty
+// form. Session-scoped (per tab), short TTL, keyed to the wallet (a different account must never
+// inherit the draft); amount only - the price re-seeds from the live floor.
+const BID_DRAFT_KEY = "gnot:bid-draft"
+const BID_DRAFT_TTL_MS = 10 * 60 * 1000
+
+function readBidDraft(address: string): string | null {
+  try {
+    const raw = window.sessionStorage.getItem(BID_DRAFT_KEY)
+    if (!raw) return null
+    const draft = JSON.parse(raw) as { amount?: unknown; ts?: unknown; address?: unknown }
+    if (typeof draft.amount !== "string" || typeof draft.ts !== "number") return null
+    if (draft.address !== address.toLowerCase()) return null
+    return Date.now() - draft.ts > BID_DRAFT_TTL_MS ? null : draft.amount
+  } catch {
+    return null // private mode / storage disabled / corrupt entry
+  }
+}
+
+function writeBidDraft(amount: string, address: string): void {
+  try {
+    window.sessionStorage.setItem(
+      BID_DRAFT_KEY,
+      JSON.stringify({ amount, address: address.toLowerCase(), ts: Date.now() }),
+    )
+  } catch {
+    // private mode / storage disabled -> the draft just does not survive the unmount
+  }
+}
+
+function clearBidDraft(): void {
+  try {
+    window.sessionStorage.removeItem(BID_DRAFT_KEY)
+  } catch {
+    // ignore: nothing to clear if storage is unavailable
+  }
+}
+
 function sanitizeDecimal(v: string): string {
-  const cleaned = v.replace(/[^0-9.]/g, "")
+  // Commas stay visible as typed (EU decimal key / US grouping); parseDecimal disambiguates.
+  const cleaned = v.replace(/[^0-9.,]/g, "")
   const [head, ...rest] = cleaned.split(".")
   return rest.length > 0 ? `${head}.${rest.join("")}` : head
 }
@@ -777,6 +1138,7 @@ function InputCell({
   readOnly = false,
   prefix,
   suffix,
+  trailing,
   error,
   invalid,
   placeholder,
@@ -791,6 +1153,9 @@ function InputCell({
   readOnly?: boolean
   prefix?: string
   suffix?: ReactNode
+  /** Interactive node after the input (e.g. the payment-token picker) - rendered without the
+   *  decorative suffix's aria-hidden. */
+  trailing?: ReactNode
   error?: string | null
   invalid: boolean
   placeholder?: string
@@ -901,6 +1266,7 @@ function InputCell({
             {suffix}
           </span>
         ) : null}
+        {trailing ?? null}
       </div>
       {error ? (
         <p
@@ -911,6 +1277,45 @@ function InputCell({
         </p>
       ) : null}
     </div>
+  )
+}
+
+/** Per-transaction funding token picker (the "USDC ▾" suffix of the Amount field); rendered only
+ *  once the sale accepts several tokens. Native select: keyboard + screen reader for free. */
+function TokenSelect({
+  tokens,
+  value,
+  onChange,
+}: {
+  tokens: readonly { address: `0x${string}`; symbol: string }[]
+  value?: `0x${string}`
+  onChange: (address: `0x${string}`) => void
+}) {
+  return (
+    <span className="relative ml-1 inline-flex items-center whitespace-nowrap font-mono text-sm text-muted transition-colors focus-within:text-foreground hover:text-foreground">
+      <select
+        aria-label="Payment token"
+        value={value}
+        onChange={(e) => onChange(e.target.value as `0x${string}`)}
+        className="cursor-pointer appearance-none bg-transparent pr-[15px] outline-none"
+      >
+        {tokens.map((t) => (
+          <option key={t.address} value={t.address}>
+            {t.symbol}
+          </option>
+        ))}
+      </select>
+      <svg
+        viewBox="0 0 10 6"
+        className="pointer-events-none absolute right-0 top-1/2 h-[6px] w-[9px] -translate-y-1/2"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        aria-hidden="true"
+      >
+        <path d="M1 1l4 4 4-4" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </span>
   )
 }
 

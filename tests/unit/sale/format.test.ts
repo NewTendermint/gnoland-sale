@@ -1,5 +1,53 @@
 import { describe, expect, it } from "vitest"
-import { fmtCompactUsd, fmtCountdown } from "../../../lib/sale/format"
+import { fmtCompactUsd, fmtCountdown, parseDecimal } from "../../../lib/sale/format"
+
+describe("parseDecimal", () => {
+  it("parses plain decimals unchanged", () => {
+    expect(parseDecimal("0.0645")).toBe(0.0645)
+    expect(parseDecimal("1000")).toBe(1000)
+    expect(parseDecimal("")).toBe(0)
+  })
+
+  it("reads the EU comma as a decimal point", () => {
+    expect(parseDecimal("0,0645")).toBe(0.0645)
+    expect(parseDecimal("0,086")).toBe(0.086)
+    expect(parseDecimal("1500,50")).toBe(1500.5)
+    expect(parseDecimal("1,5")).toBe(1.5)
+  })
+
+  it("reads grouping commas as thousands separators", () => {
+    expect(parseDecimal("1,000")).toBe(1000)
+    expect(parseDecimal("150,000")).toBe(150000)
+    expect(parseDecimal("1,000,000")).toBe(1000000)
+    expect(parseDecimal("1,234.56")).toBe(1234.56)
+  })
+
+  it("keeps a trailing comma harmless while typing", () => {
+    expect(parseDecimal("150,")).toBe(150)
+  })
+
+  it("pins the deliberate lone-comma-plus-3-digits grouping call", () => {
+    // Same reading as the sale's original comma-strip behavior; ambiguity guarded by the confirm step.
+    expect(parseDecimal("5,000")).toBe(5000)
+    expect(parseDecimal("1,500")).toBe(1500)
+    expect(parseDecimal("0,000")).toBe(0) // zero integer part reads as a decimal
+  })
+
+  it("resolves comma boundaries around the 3-digit rule", () => {
+    expect(parseDecimal("12,34")).toBe(12.34)
+    expect(parseDecimal("1,2345")).toBe(1.2345)
+    expect(parseDecimal(",5")).toBe(0.5)
+  })
+
+  it("under-parses EU dot-grouped input toward rejection, never inflation", () => {
+    expect(parseDecimal("1.000,50")).toBe(1.0005)
+  })
+
+  it("propagates NaN on garbage so validation rejects it", () => {
+    expect(parseDecimal(",")).toBeNaN()
+    expect(parseDecimal(".")).toBeNaN()
+  })
+})
 
 // fmtCompactUsd is hand-rolled for deterministic output across JS engines; these
 // assertions pin its exact format.
@@ -8,17 +56,22 @@ describe("fmtCompactUsd", () => {
     expect(fmtCompactUsd(0)).toBe("$0")
   })
 
-  it("formats thousands / millions / billions with one decimal", () => {
-    expect(fmtCompactUsd(1500)).toBe("$1.5K")
-    expect(fmtCompactUsd(1247)).toBe("$1.2K")
+  it("rounds thousands to a whole K (no decimal below $1M)", () => {
+    expect(fmtCompactUsd(1500)).toBe("$2K")
+    expect(fmtCompactUsd(1247)).toBe("$1K")
+    expect(fmtCompactUsd(720_900)).toBe("$721K")
+  })
+
+  it("keeps one decimal from millions up", () => {
     expect(fmtCompactUsd(1_000_000)).toBe("$1M")
     expect(fmtCompactUsd(1_200_000)).toBe("$1.2M")
     expect(fmtCompactUsd(2_000_000)).toBe("$2M")
     expect(fmtCompactUsd(2_400_000_000)).toBe("$2.4B")
   })
 
-  it("carries a rounding overflow up to the next unit (999_960 -> $1M)", () => {
-    expect(fmtCompactUsd(999_960)).toBe("$1M")
+  it("carries a rounding overflow up to the next unit (999_600 -> $1M)", () => {
+    expect(fmtCompactUsd(999_600)).toBe("$1M")
+    expect(fmtCompactUsd(999_499)).toBe("$999K")
   })
 
   it("rounds sub-$1 amounts down to $0", () => {

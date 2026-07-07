@@ -1,5 +1,20 @@
 // Shared USD / number formatters for the sale UI.
 
+/** Parse a user-typed decimal, accepting the EU comma-decimal and US comma-grouping. */
+export function parseDecimal(v: string): number {
+  return Number(normalizeComma(v))
+}
+
+// "," is the EU decimal key but a grouping separator in "1,000" / "1,234.56": grouping
+// when a dot coexists, several commas appear, or a lone comma ends in exactly 3 digits.
+function normalizeComma(v: string): string {
+  const commas = v.split(",").length - 1
+  if (commas === 0) return v
+  if (commas > 1 || v.includes(".")) return v.replaceAll(",", "")
+  const [int = "", frac = ""] = v.split(",")
+  return frac.length === 3 && /[1-9]/.test(int) ? v.replace(",", "") : v.replace(",", ".")
+}
+
 /** Price with 2-4 decimals, e.g. "$0.12" / "$0.0645". */
 export const fmtPrice = (n: number) =>
   `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`
@@ -7,19 +22,19 @@ export const fmtPrice = (n: number) =>
 /** Whole-dollar USD amount, e.g. "$3,200". */
 export const fmtUsd = (n: number) => `$${n.toLocaleString("en-US", { maximumFractionDigits: 0 })}`
 
-/** Whole USDC amount, e.g. "3,200 USDC". */
-export const fmtUsdc = (n: number) =>
-  `${n.toLocaleString("en-US", { maximumFractionDigits: 0 })} USDC`
+// Pending-chip copy. Single source for the live bar AND the /dev/states gallery (this module is
+// server-importable, unlike the client metric components). Rendered as a capsule on its own line
+// under the metric label; the tooltip (PENDING_CHIP_HINT) spells out the indexing lag.
+export const PENDING_BIDDER_CHIP = "+1 pending"
+export const pendingCommittedChip = (amountUsd: number) => `+${fmtUsd(amountUsd)} pending`
+export const PENDING_CHIP_HINT = "Confirmed on-chain, not yet indexed"
 
-/** USDC price with 2-4 decimals, e.g. "0.1226 USDC". */
-export const fmtPriceUsdc = (n: number) =>
-  `${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 4 })} USDC`
-
-/** Compact USD, e.g. "$1.2M" (deterministic across JS engines, unlike Intl compact). */
-export const fmtCompactUsd = (n: number) => {
+/** Compact number, e.g. "721K" / "1.2M" (deterministic across JS engines, unlike Intl compact).
+ * One decimal from millions up only; K amounts round to a whole number. */
+export const fmtCompact = (n: number) => {
   const sign = n < 0 ? "-" : ""
   const abs = Math.abs(n)
-  if (abs < 1000) return `${sign}$${Math.round(abs)}`
+  if (abs < 1000) return `${sign}${Math.round(abs)}`
   const units = ["K", "M", "B", "T"]
   let v = abs
   let i = -1
@@ -27,13 +42,16 @@ export const fmtCompactUsd = (n: number) => {
     v /= 1000
     i++
   }
-  let rounded = Math.round(v * 10) / 10
+  let rounded = i === 0 ? Math.round(v) : Math.round(v * 10) / 10
   if (rounded >= 1000 && i < units.length - 1) {
     rounded /= 1000
     i++
   }
-  return `${sign}$${rounded}${units[i]}`
+  return `${sign}${rounded}${units[i]}`
 }
+
+/** Compact USD, e.g. "$721K" / "$1.2M". */
+export const fmtCompactUsd = (n: number) => (n < 0 ? `-$${fmtCompact(-n)}` : `$${fmtCompact(n)}`)
 
 /** Plain count, e.g. "1,247". */
 export const fmtCount = (n: number) => n.toLocaleString("en-US")

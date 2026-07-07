@@ -35,12 +35,29 @@
 # Newsletter capture UI on (required explicitly in production builds). Stays on at launch.
 [build.environment]
   NEXT_PUBLIC_NEWSLETTER_ENABLED = "1"
+  # The web-push VAPID PUBLIC key is client-exposed by design: NEXT_PUBLIC_VAPID_PUBLIC_KEY mirrors
+  # VAPID_PUBLIC_KEY and is inlined into the client bundle, so its value legitimately appears in the
+  # build output and would otherwise trip Netlify's secret scanner. Exempt only the two PUBLIC keys.
+  # SONAR_SALE_UUID is a public identifier (it is in the URL of every user who completes entity
+  # setup on Echo) and is server-rendered into the page as the Complete-on-Sonar link.
+  # FOOTGUN: never add VAPID_PRIVATE_KEY here - it must stay scanned; if it ever lands in output that
+  # is a real leak to fix, not to silence.
+  # SALE_CHAIN / NEXT_PUBLIC_SALE_CHAIN are non-secret chain selectors ("mainnet"/"sepolia"); their
+  # values legitimately appear in the output, and the launch-day SALE_CHAIN=mainnet set would
+  # otherwise fail the deploy on a scanner false-positive.
+  SECRETS_SCAN_OMIT_KEYS = "VAPID_PUBLIC_KEY,NEXT_PUBLIC_VAPID_PUBLIC_KEY,SONAR_SALE_UUID,SALE_CHAIN,NEXT_PUBLIC_SALE_CHAIN"
 
 # Deploy-context-scoped environment variables.
 # Production targets sale.gno.land and Sonar prod + Ethereum mainnet.
 # Preview deploys hit Sonar sandbox + Sepolia (set per Netlify dashboard).
 [context.production.environment]
   NEXT_PUBLIC_SITE_URL = "https://sale.gno.land"
+
+  # Fan-out target for the scheduled cron functions (outbid-cron, db-cleanup). Netlify only schedules
+  # the PRODUCTION deploy, so the single prod run needs the staging URL to also poke staging's own
+  # routes. Under production for that reason (not branch-deploy). Unset -> the staging leg is skipped.
+  # Non-secret URL; move it to the Netlify dashboard if you'd rather change it without a redeploy.
+  CRON_STAGING_URL = "https://staging--gnoland-sonar.netlify.app"
 
   # Sale phase is derived purely from the 3 dates in lib/sale/economics.ts (pre-sale -> live ->
   # ended), resolved server-side in app/page.tsx + re-resolved on the clock every 60s. There is no

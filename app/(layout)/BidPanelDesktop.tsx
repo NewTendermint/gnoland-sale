@@ -6,6 +6,7 @@ import { useAccount } from "wagmi"
 import { BidFlow } from "../(sections)/bid/BidFlow"
 import { BidStatusTag, FunnelSteps } from "../(sections)/bid/FunnelSteps"
 import { SettlementFlow } from "../(sections)/bid/SettlementFlow"
+import { CloseButton } from "../(ui)/CloseButton"
 import { Cta } from "../(ui)/Cta"
 import { DrawLine } from "../(ui)/DrawLine"
 import { Entrance } from "../(ui)/Entrance"
@@ -16,16 +17,18 @@ import { newsletterEnabled } from "../../lib/newsletter/config"
 import { postSonarLogout, redirectToSonarLogin } from "../../lib/sale/api"
 import { gnotEstimate } from "../../lib/sale/calc"
 import { SALE_ECONOMICS, formatSaleDate } from "../../lib/sale/economics"
-import { fmtGnot, fmtPriceUsdc, fmtUsdc } from "../../lib/sale/format"
-import { useBid, useClaim } from "../../lib/sale/hooks"
+import { fmtGnot, fmtPrice, fmtUsd } from "../../lib/sale/format"
+import { useBid, useClaim, useClaimGate } from "../../lib/sale/hooks"
 import { derivePreSaleBar } from "../../lib/sale/journey"
 import {
   SUPPORT_CONTACT_HREF,
+  VERIFY_INCOMPLETE,
   VERIFY_STATUS,
   WELCOME_BACK,
   bidCtaLabel,
   bidSectionTitle,
 } from "../../lib/sale/labels"
+import { clearPendingBid } from "../../lib/sale/pending-bid"
 import { clearSonarSeen, useSonarSeen } from "../../lib/sale/returning"
 import type { JourneyState, MyBid, PreSaleBarState } from "../../lib/sale/types"
 import { AddToCalendarButton } from "./AddToCalendarButton"
@@ -35,6 +38,7 @@ import {
   BarStatus,
   CARD,
   MetricCell,
+  MetricPendingChip,
   SHELL,
   finalMetrics,
   liveMetrics,
@@ -51,12 +55,17 @@ export function BidPanelDesktop() {
     journey,
     commitment,
     myBid,
+    pendingBidDelta,
+    entityResolved,
+    positionResolved,
     sonarReturn,
+    sonarSetupUrl,
     bidPanelOpen: expanded,
     setBidPanelOpen: setExpanded,
   } = useSale()
   const bid = useBid()
   const claim = useClaim()
+  const claimGate = useClaimGate({ enabled: phase === "ended" })
   const sonarSeen = useSonarSeen()
   const { isConnected } = useAccount()
   const queryClient = useQueryClient()
@@ -78,6 +87,7 @@ export function BidPanelDesktop() {
     postSonarLogout().then(
       () => {
         clearSonarSeen()
+        clearPendingBid()
         queryClient.invalidateQueries({ queryKey: ["sale", "entity"] })
         queryClient.invalidateQueries({ queryKey: ["sale", "my-bid"] })
       },
@@ -122,13 +132,16 @@ export function BidPanelDesktop() {
                 : `Registration opens ${formatSaleDate(SALE_ECONOMICS.registrationOpensIso, false)}`
             }
           />
-          <PreSaleRight
-            state={barState}
-            returning={sonarSeen}
-            onRegister={redirectToSonarLogin}
-            onSignOut={handleSignOut}
-            onRefresh={handleRefresh}
-          />
+          <div className="ml-auto flex justify-end">
+            <PreSaleRight
+              state={barState}
+              returning={sonarSeen}
+              setupHref={sonarSetupUrl}
+              onRegister={redirectToSonarLogin}
+              onSignOut={handleSignOut}
+              onRefresh={handleRefresh}
+            />
+          </div>
         </div>
       </BarShell>
     )
@@ -146,11 +159,12 @@ export function BidPanelDesktop() {
             ))}
           </div>
           {expanded ? (
-            <CloseButton onClick={() => setExpanded(false)} />
+            <CloseButton className="ml-auto" onClick={() => setExpanded(false)} />
           ) : (
             <Cta
               variant="solid"
               arrow
+              className="ml-auto"
               onClick={() => setExpanded(true)}
               buttonRef={triggerRef}
               ariaExpanded={expanded}
@@ -179,6 +193,7 @@ export function BidPanelDesktop() {
                   clearingPriceUsd={commitment.clearingPriceUsd}
                   myBid={myBid}
                   onClaim={claim.claim}
+                  gate={claimGate.data}
                 />
               </div>
             </div>
@@ -188,7 +203,18 @@ export function BidPanelDesktop() {
     )
   }
 
-  const metrics = liveMetrics(commitment)
+  const metrics = liveMetrics(commitment, pendingBidDelta)
+
+  // The journey reads missing data as "unverified"/"no bid", so rendering it before the reads
+  // settle would flash a false status (reconnect prompt, "place your bid") on every load. Hold a
+  // neutral skeleton until the claims are backed by data; the position read only matters once the
+  // journey needs it (its query is disabled until the wallet connects).
+  const positionRelevant =
+    journey === "ready" ||
+    journey === "has-bid-winning" ||
+    journey === "has-bid-outbid" ||
+    journey === "has-bid-pending"
+  const statusResolved = entityResolved && (!positionRelevant || positionResolved)
 
   return (
     <aside aria-label="Bid panel" data-component="bid-panel" className={SHELL}>
@@ -197,20 +223,20 @@ export function BidPanelDesktop() {
           <Entrance className="band-10">
             <DrawLine immediate delayMs={200} />
             <div className="py-4 sm:py-6">
-              <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4">
+              <div className="flex flex-wrap items-start justify-between gap-x-8 gap-y-4">
                 <Stagger
                   as="div"
                   immediate
                   delayMs={900}
-                  className={`flex flex-wrap items-center ${
-                    expanded ? "gap-x-5 gap-y-2 sm:gap-x-7" : "gap-6 gap-y-2 sm:gap-7"
+                  className={`flex flex-wrap items-start ${
+                    expanded ? "gap-x-5 gap-y-2 sm:gap-x-7" : "gap-5 gap-y-2 xl:gap-7"
                   }`}
                 >
                   {metrics.map((m, i) => (
                     <div
                       key={m.label}
-                      className={`flex items-center ${
-                        expanded ? "gap-x-5 sm:gap-x-7" : "gap-6 sm:gap-7"
+                      className={`flex items-start ${
+                        expanded ? "gap-x-5 sm:gap-x-7" : "gap-5 xl:gap-7"
                       }`}
                     >
                       {i > 0 ? (
@@ -221,7 +247,7 @@ export function BidPanelDesktop() {
                           <Icon name={m.icon} draw={false} className="h-[18px] w-[18px]" />
                           <p
                             className={`font-mono font-medium tracking-tight tabular-nums ${
-                              expanded ? "text-lg" : "text-2xl sm:text-3xl"
+                              expanded ? "text-lg" : "text-2xl xl:text-3xl"
                             }`}
                           >
                             {m.value}
@@ -229,16 +255,24 @@ export function BidPanelDesktop() {
                         </div>
                         <p className="mt-0.5 text-[10px] uppercase tracking-[0.2em] text-muted">
                           {m.label}
+                          {m.pending ? <MetricPendingChip label={m.pending} /> : null}
                         </p>
                       </div>
                     </div>
                   ))}
                 </Stagger>
 
-                <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+                <div className="ml-auto flex flex-wrap items-center justify-end gap-3 sm:gap-4">
                   {expanded ? (
                     <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-                      <FunnelSteps journey={journey} />
+                      {statusResolved ? (
+                        <FunnelSteps journey={journey} />
+                      ) : (
+                        <div
+                          aria-hidden="true"
+                          className="hidden h-4 w-56 animate-pulse rounded-full bg-border motion-reduce:animate-none xl:block"
+                        />
+                      )}
                       <CloseButton onClick={() => setExpanded(false)} />
                     </div>
                   ) : (
@@ -289,23 +323,31 @@ export function BidPanelDesktop() {
                       expanded ? "opacity-100" : "opacity-0"
                     }`}
                   >
-                    {isConnected ? (
-                      <BidSectionHeader
-                        journey={journey}
-                        myBid={myBid}
-                        clearingPriceUsd={commitment.clearingPriceUsd}
-                        wallet={<WalletButton />}
-                      />
-                    ) : null}
-                    <BidFlow
-                      key={bidFlowEpoch}
-                      journey={journey}
-                      returning={sonarSeen}
-                      clearingPriceUsd={commitment.clearingPriceUsd}
-                      myBid={myBid}
-                      onConnectSonar={redirectToSonarLogin}
-                      onBid={bid.submit}
-                    />
+                    {statusResolved ? (
+                      <>
+                        {isConnected ? (
+                          <BidSectionHeader
+                            journey={journey}
+                            myBid={myBid}
+                            clearingPriceUsd={commitment.clearingPriceUsd}
+                            wallet={<WalletButton />}
+                          />
+                        ) : null}
+                        <BidFlow
+                          key={bidFlowEpoch}
+                          journey={journey}
+                          returning={sonarSeen}
+                          clearingPriceUsd={commitment.clearingPriceUsd}
+                          myBid={myBid}
+                          onConnectSonar={redirectToSonarLogin}
+                          onSignOut={handleSignOut}
+                          setupHref={sonarSetupUrl}
+                          onBid={bid.submit}
+                        />
+                      </>
+                    ) : (
+                      <BidPanelSkeleton />
+                    )}
                   </div>
                 </div>
               </div>
@@ -329,7 +371,8 @@ export function BidSectionHeader({
   clearingPriceUsd: number | null
   wallet: ReactNode
 }) {
-  const hasBid = journey === "has-bid-winning" || journey === "has-bid-outbid"
+  const hasBid =
+    journey === "has-bid-winning" || journey === "has-bid-outbid" || journey === "has-bid-pending"
   return (
     <div className="mb-4 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-b border-border pb-3">
       {hasBid && myBid ? (
@@ -337,16 +380,28 @@ export function BidSectionHeader({
           <span className="mr-3 text-sm font-semibold tracking-tight text-foreground">
             Your bid
           </span>
-          <HeaderCell label="Committed" value={fmtUsdc(myBid.committedUsd)} />
-          <HeaderCell label="Your max price" value={`${fmtPriceUsdc(myBid.priceUsd)} / GNOT`} />
+          <HeaderCell label="Committed" value={fmtUsd(myBid.committedUsd)} />
+          <HeaderCell label="Your max price" value={`${fmtPrice(myBid.priceUsd)} / GNOT`} />
           <HeaderCell
             label="Est. allocation"
             value={`~${fmtGnot(gnotEstimate(myBid.committedUsd, clearingPriceUsd))} GNOT`}
           />
           <HeaderCell
             label="Current status"
-            value={journey === "has-bid-winning" ? "Winning" : "Outbid"}
-            tone={journey === "has-bid-winning" ? "ok" : "warn"}
+            value={
+              journey === "has-bid-pending"
+                ? "Pending"
+                : journey === "has-bid-winning"
+                  ? "Winning"
+                  : "Outbid"
+            }
+            tone={
+              journey === "has-bid-pending"
+                ? undefined
+                : journey === "has-bid-winning"
+                  ? "ok"
+                  : "warn"
+            }
           />
         </div>
       ) : (
@@ -378,37 +433,23 @@ function HeaderCell({
   )
 }
 
-function CloseButton({ onClick }: { onClick: () => void }) {
+// Neutral placeholder shown while the entity/position reads settle - the panel must not claim
+// "verify"/"reconnect"/"place your bid" before the data backs it. Mirrors the panel's layout
+// (header row + input row) so the resolve does not shift the bar's height.
+function BidPanelSkeleton() {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label="Close"
-      className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border text-muted transition-colors duration-300 hover:border-surface-contrast hover:bg-surface-contrast hover:text-on-contrast"
-    >
-      <svg
-        viewBox="0 0 16 16"
-        className="h-3.5 w-3.5"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        aria-hidden="true"
-      >
-        <path d="M3 3l10 10M13 3L3 13" strokeLinecap="round" />
-      </svg>
-    </button>
-  )
-}
-
-function SignOutLink({ onClick }: { onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="text-[11px] text-muted underline underline-offset-2 transition-colors hover:text-foreground"
-    >
-      Sign out of Sonar
-    </button>
+    <div aria-busy="true" className="animate-pulse motion-reduce:animate-none">
+      <div className="mb-4 flex items-center justify-between gap-x-6 border-b border-border pb-3">
+        <div className="h-5 w-44 rounded-md bg-border" />
+        <div className="h-9 w-36 rounded-full bg-border" />
+      </div>
+      <div className="flex flex-wrap items-center gap-x-8 gap-y-4">
+        <div className="h-12 w-40 rounded-[var(--radius-md)] bg-border" />
+        <div className="h-12 w-48 rounded-[var(--radius-md)] bg-border" />
+        <div className="h-12 w-44 rounded-[var(--radius-md)] bg-border" />
+        <div className="ml-auto h-12 w-36 rounded-full bg-border" />
+      </div>
+    </div>
   )
 }
 
@@ -439,6 +480,7 @@ function StatusRow({
   tone = "default",
   title,
   body,
+  action,
   onSignOut,
   onRefresh,
   withCalendar = false,
@@ -448,6 +490,7 @@ function StatusRow({
   tone?: "default" | "danger" | "ok"
   title: string
   body?: string
+  action?: ReactNode
   onSignOut: () => void
   onRefresh?: () => void | Promise<void>
   withCalendar?: boolean
@@ -457,6 +500,7 @@ function StatusRow({
     <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
         <BarStatus icon={icon} tone={tone} title={title} body={body} />
+        {action}
         {contactHref ? (
           <a
             href={contactHref}
@@ -468,7 +512,6 @@ function StatusRow({
           </a>
         ) : null}
         {onRefresh ? <RefreshButton onRefresh={onRefresh} /> : null}
-        <SignOutLink onClick={onSignOut} />
       </div>
       {withCalendar ? <AddToCalendarButton milestone="sale" variant="bar" /> : null}
     </div>
@@ -478,12 +521,14 @@ function StatusRow({
 export function PreSaleRight({
   state,
   returning,
+  setupHref,
   onRegister = () => {},
   onSignOut = () => {},
   onRefresh = () => {},
 }: {
   state: PreSaleBarState
   returning: boolean
+  setupHref: string
   onRegister?: () => void
   onSignOut?: () => void
   onRefresh?: () => void | Promise<void>
@@ -517,6 +562,19 @@ export function PreSaleRight({
             <span>Register now</span>
           </Cta>
         </div>
+      )
+    case "incomplete":
+      return (
+        <StatusRow
+          icon={VERIFY_INCOMPLETE.icon}
+          title={`${VERIFY_INCOMPLETE.title}.`}
+          action={
+            <Cta variant="solid" arrow href={setupHref} external>
+              <span>{VERIFY_INCOMPLETE.cta}</span>
+            </Cta>
+          }
+          onSignOut={onSignOut}
+        />
       )
     case "pending":
       return (
@@ -559,6 +617,7 @@ export function PreSaleRight({
           icon={VERIFY_STATUS.verified.icon}
           tone={VERIFY_STATUS.verified.tone}
           title={`${VERIFY_STATUS.verified.title}.`}
+          body="Nothing more to do until the sale opens."
           onSignOut={onSignOut}
           withCalendar
         />

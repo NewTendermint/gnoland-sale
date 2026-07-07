@@ -51,6 +51,14 @@ describe("POST /api/newsletter", () => {
     expect(subscribeMock).not.toHaveBeenCalled()
   })
 
+  it("rejects an oversized body with 400 before any upstream call", async () => {
+    const res = await POST(
+      makeRequest({ email: "user@example.com", topic: "", pad: "x".repeat(8192) }, nextIp()),
+    )
+    expect(res.status).toBe(400)
+    expect(subscribeMock).not.toHaveBeenCalled()
+  })
+
   it("rejects a non-JSON body with 400", async () => {
     const res = await POST(
       new Request("http://localhost/api/newsletter", {
