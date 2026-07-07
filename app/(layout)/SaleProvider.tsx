@@ -42,6 +42,8 @@ type SaleContextValue = {
   sonarReturn: SonarReturn
   /** Echo's hosted entity-setup page for this sale (app.echo.xyz/sonar/{saleUUID}). */
   sonarSetupUrl: string
+  /** Sonar label of the active entity (display-only PII, never logged); null while unknown. */
+  entityLabel: string | null
   bidPanelOpen: boolean
   setBidPanelOpen: (open: boolean) => void
 }
@@ -160,6 +162,7 @@ export function SaleProvider({
       positionResolved: position.isSuccess,
       sonarReturn,
       sonarSetupUrl,
+      entityLabel: snapshot?.label ?? null,
       bidPanelOpen,
       setBidPanelOpen,
     }

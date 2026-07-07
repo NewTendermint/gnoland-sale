@@ -36,6 +36,7 @@ describe("Sonar mock-fetch seam (real SDK + fixtures)", () => {
       setupState: "complete",
       eligibility: "eligible",
       investingRegion: "other",
+      label: "Mock investor",
     })
   })
 

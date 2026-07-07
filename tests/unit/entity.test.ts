@@ -49,7 +49,7 @@ describe("getEntity", () => {
     })
   })
 
-  it("normalizes the session's first entity (id + setup + eligibility + region)", async () => {
+  it("normalizes the session's first entity (id + setup + eligibility + region + label)", async () => {
     listAvailableEntitiesMock.mockResolvedValue({
       Entities: [
         {
@@ -57,6 +57,7 @@ describe("getEntity", () => {
           EntitySetupState: "complete",
           SaleEligibility: "eligible",
           InvestingRegion: "us",
+          Label: "  Jane Cooper Ltd  ",
         },
       ],
     })
@@ -65,6 +66,7 @@ describe("getEntity", () => {
       setupState: "complete",
       eligibility: "eligible",
       investingRegion: "us",
+      label: "Jane Cooper Ltd",
     })
   })
 
@@ -89,6 +91,7 @@ describe("getEntity", () => {
       setupState: "unknown",
       eligibility: "unknown-setup-incomplete",
       investingRegion: "unknown",
+      label: null,
     })
   })
 

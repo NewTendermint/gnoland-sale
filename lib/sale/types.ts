@@ -51,6 +51,8 @@ export type EntitySnapshot = {
   eligibility: SaleEligibility
   // Server-derived from Sonar EntityDetails.InvestingRegion; drives the forced US lockup at bid time.
   investingRegion: InvestingRegion
+  // Sonar EntityDetails.Label ("Jane Cooper Ltd"): display-only PII - shown to its owner, NEVER logged.
+  label: string | null
 }
 
 // Derived from filtering Commitments[] by my SaleSpecificEntityID

@@ -10,6 +10,7 @@ const ENTITY: EntitySnapshot = {
   setupState: "complete",
   eligibility: "eligible",
   investingRegion: "eu",
+  label: "Test Entity",
 }
 const ENTITY_READ: EntityRead = { status: "entity", entity: ENTITY }
 const NO_SESSION: EntityRead = { status: "no-session" }

@@ -73,6 +73,7 @@ const entitySnap: EntitySnapshot = {
   setupState: "complete",
   eligibility: "eligible",
   investingRegion: "other",
+  label: "Test Entity",
 }
 
 afterEach(() => {

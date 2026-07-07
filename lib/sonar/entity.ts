@@ -98,5 +98,14 @@ export async function getEntity(sessionId: string): Promise<EntitySnapshot | nul
     setupState: normalizeSetup(entity.EntitySetupState),
     eligibility: normalizeEligibility(entity.SaleEligibility),
     investingRegion: normalizeRegion(entity.InvestingRegion),
+    label: normalizeLabel(entity.Label),
   }
+}
+
+// Untrusted upstream string, display-only: control/bidi chars stripped (Trojan-Source guard),
+// trimmed, capped, null when unusable. NEVER log it (PII).
+function normalizeLabel(value: unknown): string | null {
+  if (typeof value !== "string") return null
+  const trimmed = value.replace(/[\p{Cc}\p{Cf}]/gu, "").trim()
+  return trimmed ? trimmed.slice(0, 80) : null
 }

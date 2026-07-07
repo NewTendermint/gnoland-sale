@@ -7,6 +7,7 @@ const ENTITY: EntitySnapshot = {
   setupState: "complete",
   eligibility: "eligible",
   investingRegion: "eu",
+  label: "Test Entity",
 }
 
 function stubFetch(status: number, body: unknown) {
