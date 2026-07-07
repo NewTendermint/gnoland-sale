@@ -11,6 +11,7 @@ import { SALE_CHAIN } from "../../../lib/sale/contracts"
 import { SALE_ECONOMICS, formatSaleDate } from "../../../lib/sale/economics"
 import { fmtGnot, fmtPrice, fmtUsd } from "../../../lib/sale/format"
 import type { ClaimGate, ClaimResult } from "../../../lib/sale/onchain"
+import { usePendingBid } from "../../../lib/sale/pending-bid"
 import { deriveClaimView, deriveSettlement } from "../../../lib/sale/settlement"
 import type { MyBid } from "../../../lib/sale/types"
 import { ConnectChoices } from "./BidFlow"
@@ -42,8 +43,10 @@ export function SettlementFlow({
   /** Dev-gallery override (same precedent as BidFlow's preview); production leaves it unset. */
   previewConnected?: boolean
 }) {
-  const { isConnected } = useAccount()
+  const { isConnected, address } = useAccount()
   const connected = previewConnected ?? isConnected
+  // Existence only, never its numbers: the settlement figures stay pure Sonar/on-chain data.
+  const pendingBid = usePendingBid(address)
   const [claimState, setClaimState] = useState<"idle" | "claiming" | "claimed">("idle")
   const [claimError, setClaimError] = useState<string | null>(null)
   // The claim button disables on "claiming" and unmounts on "claimed", both of which drop focus
@@ -58,14 +61,29 @@ export function SettlementFlow({
 
   const settlement = deriveSettlement(myBid, clearingPriceUsd)
   if (!settlement) {
+    // A bid confirmed in the last pre-close minute outruns Sonar's indexer: until it reports (the
+    // pending poll self-resolves this) or the pending TTL lapses, an empty answer is not "no bid".
+    // One shared live region for both messages, so the finalizing -> no-commitment transition
+    // mutates an existing region and gets announced.
     return (
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <p className="text-sm">
-          <span className="font-medium text-foreground">No commitment for this wallet.</span>{" "}
-          <span className="text-muted">Switch to the wallet you bid with.</span>
-        </p>
-        <WalletButton />
-      </div>
+      <output className="flex flex-wrap items-center justify-between gap-4">
+        {pendingBid ? (
+          <p className="text-sm">
+            <span className="font-medium text-foreground">Finalizing your results.</span>{" "}
+            <span className="text-muted">
+              Your bid is confirmed on-chain. The indexer is catching up.
+            </span>
+          </p>
+        ) : (
+          <>
+            <p className="text-sm">
+              <span className="font-medium text-foreground">No commitment for this wallet.</span>{" "}
+              <span className="text-muted">Switch to the wallet you bid with.</span>
+            </p>
+            <WalletButton />
+          </>
+        )}
+      </output>
     )
   }
 

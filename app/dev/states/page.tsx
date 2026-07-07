@@ -354,9 +354,14 @@ const MONEY_LOOP: ReadonlyArray<{ label: string; journey: JourneyState; preview:
 // (stage Done + claimRefundEnabled + committed - accepted), fixtures here, real reads live.
 const SETTLEMENT_STATES: ReadonlyArray<{
   label: string
-  myBid: MyBid
+  myBid: MyBid | null
   gate: ClaimGate | undefined
 }> = [
+  {
+    label: "Empty Sonar answer, no pending entry (the no-commitment fallback)",
+    myBid: null,
+    gate: undefined,
+  },
   {
     label: "Gate unresolved (contract read pending) - claim button hidden, fail-closed",
     myBid: MOCK_JOURNEY_INPUTS["has-bid-outbid"].myBid,
