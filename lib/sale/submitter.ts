@@ -10,9 +10,9 @@ export type BidResult =
   | { status: "submitted"; txHash: string }
   | { status: "reverted"; reason: string }
 
-// Real wallet-prompt stages the bid flow emits so the UI shows a state only when the wallet
-// actually opens: "approving" = EIP-2612 USDC permit signature, "signing" = the bid transaction.
-export type BidStage = "approving" | "signing"
+// Real stages the bid flow emits: "approving" = EIP-2612 USDC permit signature, "signing" = the
+// bid transaction wallet prompt, "pending" = signed and broadcast, waiting for the receipt.
+export type BidStage = "approving" | "signing" | "pending"
 
 // Preview-only submitter for /dev/states.
 export class MockBidSubmitter {

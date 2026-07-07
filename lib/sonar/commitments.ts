@@ -50,13 +50,16 @@ export async function readSaleDecimals(): Promise<number> {
 
 /**
  * Extract the session entity's own position from the commitment set, by per-sale id.
- * null when no commitment; lockup defaults to false (absent from the Sonar shape).
- * TODO(real-data): confirm against real Sonar - the lockup source, the price field
- * (PriceMicroUSD vs numerator/denominator), and whether an entity can hold multiple
- * commitments (this takes the first match; amounts are summed across its wallets).
+ * null when no commitment.
+ * TODO(real-data): confirm against real Sonar - the price field (PriceMicroUSD vs
+ * numerator/denominator), and whether an entity can hold multiple commitments
+ * (this takes the first match; amounts are summed across its wallets).
  */
 export function mapMyBid(res: ReadCommitmentDataResponse, saleSpecificEntityId: string): MyBid {
-  const mine = res.Commitments.find((c) => c.SaleSpecificEntityID === saleSpecificEntityId)
+  // listAvailableEntities and readCommitmentData are two different Sonar endpoints with no
+  // guaranteed hex-casing agreement; compare case-insensitively (both are already 0x-prefixed).
+  const wanted = saleSpecificEntityId.toLowerCase()
+  const mine = res.Commitments.find((c) => c.SaleSpecificEntityID.toLowerCase() === wanted)
   if (!mine) {
     return null
   }
@@ -66,10 +69,11 @@ export function mapMyBid(res: ReadCommitmentDataResponse, saleSpecificEntityId: 
       : Number(mine.PriceNumerator) / Number(mine.PriceDenominator)
   const committedUsd =
     mine.Amounts.reduce((sum, a) => sum + Number(a.Amount), 0) / 10 ** res.PaymentTokenDecimals
-  return { priceUsd, committedUsd, lockup: false }
+  return { priceUsd, committedUsd }
 }
 
-/** Read the session's position (authenticated); null when no entity or no commitment. */
+/** Read the session's position (entity lookup authenticated, commitment read public);
+ *  null when no entity or no commitment. */
 export async function readMyBid(sessionId: string): Promise<MyBid> {
   const entities = await withSonarAuth(sessionId, (accessToken) =>
     createSonarClient(accessToken).listAvailableEntities({ saleUUID: env.SONAR_SALE_UUID }),
@@ -79,8 +83,7 @@ export async function readMyBid(sessionId: string): Promise<MyBid> {
   if (!entity) {
     return null
   }
-  const data = await withSonarAuth(sessionId, (accessToken) =>
-    createSonarClient(accessToken).readCommitmentData({ saleUUID: env.SONAR_SALE_UUID }),
-  )
+  // readCommitmentData is public; only the entity lookup above needs the session's token.
+  const data = await createSonarClient().readCommitmentData({ saleUUID: env.SONAR_SALE_UUID })
   return mapMyBid(data, entity.SaleSpecificEntityID)
 }

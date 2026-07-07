@@ -18,7 +18,7 @@ const FAR_FUTURE = 4_102_444_800 // 2100-01-01, so the mock permit never reads a
 const MOCK_ENTITY: EntityDetails = {
   Label: "Mock investor",
   EntityID: "11111111-1111-1111-1111-111111111111",
-  SaleSpecificEntityID: hex("11".repeat(32)),
+  SaleSpecificEntityID: hex("11".repeat(16)),
   EntityType: sonarCore.EntityType.USER,
   EntitySetupState: sonarCore.EntitySetupState.COMPLETE,
   SaleEligibility: sonarCore.SaleEligibility.ELIGIBLE,
@@ -46,7 +46,7 @@ export const mockFixtures = {
     Commitments: [
       {
         CommitmentID: hex("c0".repeat(16)),
-        SaleSpecificEntityID: hex("99".repeat(32)),
+        SaleSpecificEntityID: hex("99".repeat(16)),
         PriceNumerator: "150000",
         PriceDenominator: "1000000",
         PriceMicroUSD: "150000",
@@ -68,8 +68,8 @@ export const mockFixtures = {
 
   permit: {
     PermitJSON: {
-      SaleSpecificEntityID: hex("11".repeat(32)),
-      SaleUUID: hex("22".repeat(32)),
+      SaleSpecificEntityID: hex("11".repeat(16)),
+      SaleUUID: hex("22".repeat(16)),
       Wallet: hex("33".repeat(20)),
       ExpiresAt: FAR_FUTURE,
       MinAmount: "0",

@@ -125,7 +125,7 @@ const WALLET_CONNECTED_STATES: JourneyState[] = [
 function MockWalletChip() {
   return (
     <span className="inline-flex h-8 items-center gap-2 rounded-full border border-border px-3 font-mono text-[11px] text-foreground">
-      <span aria-hidden="true" className="h-1 w-1 rounded-full bg-foreground" />
+      <Icon name="wallet" draw={false} className="h-3.5 w-3.5 shrink-0" />
       0x2074…491f
       <svg
         viewBox="0 0 24 24"
@@ -164,6 +164,8 @@ function ExpandedBar({
               myBid={input.myBid}
               clearingPriceUsd={input.clearingPriceUsd}
               wallet={<MockWalletChip />}
+              manageEntitiesHref={SETUP_URL_PREVIEW}
+              entityLabel="Jane Cooper Ltd"
             />
           ) : null}
           <BidFlow
@@ -172,6 +174,7 @@ function ExpandedBar({
             clearingPriceUsd={input.clearingPriceUsd}
             myBid={input.myBid}
             setupHref={SETUP_URL_PREVIEW}
+            entityLabel="Jane Cooper Ltd"
             preview={preview}
           />
         </div>
@@ -263,7 +266,12 @@ function PreSaleBarPreview({
             Opens July 20, 2026
           </p>
         </div>
-        <PreSaleRight state={state} returning={returning} setupHref={SETUP_URL_PREVIEW} />
+        <PreSaleRight
+          state={state}
+          returning={returning}
+          setupHref={SETUP_URL_PREVIEW}
+          entityLabel="Jane Cooper Ltd"
+        />
       </div>
     </div>
   )
@@ -331,9 +339,24 @@ const MONEY_LOOP: ReadonlyArray<{ label: string; journey: JourneyState; preview:
   { label: "Approving USDC", journey: "ready", preview: { state: "approving", amountUsd: 1000 } },
   { label: "Signing the bid", journey: "ready", preview: { state: "signing", amountUsd: 1000 } },
   {
+    label: "Confirming on-chain (signed, waiting for the receipt)",
+    journey: "ready",
+    preview: { state: "pending", amountUsd: 1000 },
+  },
+  {
     label: "Submitted (receipt + View transaction)",
     journey: "ready",
     preview: { state: "submitted", amountUsd: 1000, txHash: `0x${"a1b2c3d4".repeat(8)}` },
+  },
+  {
+    label: "Submitted + Raise bid (live: remounts onto the raise form)",
+    journey: "has-bid-winning",
+    preview: {
+      state: "submitted",
+      amountUsd: 5000,
+      txHash: `0x${"a1b2c3d4".repeat(8)}`,
+      raiseCta: true,
+    },
   },
   {
     label: "Submit failed (technical issue)",
@@ -341,6 +364,7 @@ const MONEY_LOOP: ReadonlyArray<{ label: string; journey: JourneyState; preview:
     preview: {
       state: "idle",
       amountUsd: 1000,
+      balanceUsd: 2500,
       error: "Could not place your bid. Please try again.",
     },
   },
@@ -353,6 +377,35 @@ const MONEY_LOOP: ReadonlyArray<{ label: string; journey: JourneyState; preview:
     label: "Raise - same amount (no extra USDC, just sign)",
     journey: "has-bid-winning",
     preview: { state: "confirming", amountUsd: 3200 },
+  },
+  {
+    label: "Confirm with a liveness blocker surfaced early (advisory, links out)",
+    journey: "ready",
+    preview: {
+      state: "confirming",
+      amountUsd: 1000,
+      precheck: { reason: "requires-liveness", livenessUrl: "https://verify.example.com/s/123" },
+    },
+  },
+  {
+    label: "Balance line - wallet holds $2,500, bid $1,000 (covered)",
+    journey: "ready",
+    preview: { state: "idle", amountUsd: 1000, balanceUsd: 2500 },
+  },
+  {
+    label: "Balance insufficient - first bid $1,000 > $250 wallet (CTA disabled)",
+    journey: "ready",
+    preview: { state: "idle", amountUsd: 1000, balanceUsd: 250 },
+  },
+  {
+    label: "Raise covered by DELTA - $5,000 bid, $2,500 wallet, only +$1,800 moves (no error)",
+    journey: "has-bid-winning",
+    preview: { state: "idle", amountUsd: 5000, balanceUsd: 2500 },
+  },
+  {
+    label: "Raise delta NOT covered - +$1,800 needed, $1,500 wallet (CTA disabled)",
+    journey: "has-bid-winning",
+    preview: { state: "idle", amountUsd: 5000, balanceUsd: 1500 },
   },
 ]
 
@@ -517,7 +570,7 @@ export default function DevStatesPage() {
                       Bid submitted - $1,000 at $0.086 per GNOT.
                     </p>
                     <span className="whitespace-nowrap text-xs text-muted underline underline-offset-2">
-                      Transaction
+                      View tx
                     </span>
                   </div>
                   <PostBidOptIns bidLimitUsd={0.086} />

@@ -64,7 +64,11 @@ function sharedWalletErrorReason(
 }
 
 /** One user-facing line for a wallet/contract failure (never leak raw revert data to the UI). */
-function bidRevertReason(err: unknown, tokenSymbol = "USDC", cancelledCopy?: string): string {
+export function bidRevertReason(
+  err: unknown,
+  tokenSymbol = "USDC",
+  cancelledCopy?: string,
+): string {
   const shared = sharedWalletErrorReason(err, cancelledCopy)
   if (shared) return shared
   const msg = err instanceof Error ? err.message : String(err)
@@ -80,7 +84,11 @@ function bidRevertReason(err: unknown, tokenSymbol = "USDC", cancelledCopy?: str
   if (/BidMustHaveLockup/i.test(msg)) return "This bid must include the lockup."
   if (/CannotBeLowered/i.test(msg)) return "A bid can only be raised, not lowered."
   if (/PurchasePermitExpired/i.test(msg)) return "Your authorization expired, please try again."
-  if (/BidOutsideAllowedWindow|SalePaused/i.test(msg)) return "The sale isn't open right now."
+  // Genuinely a timing/window problem, unlike BidFlow's pre-purchase "sale-not-active" copy
+  // (usually an account/eligibility issue) - keep the two distinguishable.
+  if (/BidOutsideAllowedWindow|SalePaused/i.test(msg)) {
+    return "The sale isn't accepting bids right now."
+  }
   if (/WalletTiedToAnotherEntity/i.test(msg)) {
     return "This wallet is already linked to another account."
   }
@@ -276,6 +284,21 @@ async function generousGas(
   return gas
 }
 
+/** The connected wallet's balance of a payment token, in base units. Read on the pinned sale
+ *  chain only - callers treat a failure as "unknown" (fail-open), never as zero. */
+export async function readTokenBalance(
+  token: `0x${string}`,
+  wallet: `0x${string}`,
+): Promise<bigint> {
+  return readContract(wagmiConfig, {
+    address: token,
+    abi: erc20Abi,
+    functionName: "balanceOf",
+    args: [wallet],
+    chainId: SALE_CHAIN.id,
+  })
+}
+
 /**
  * Cheap pre-signature guards from data already in hand (the permit + one balance read): reject a
  * doomed bid BEFORE the EIP-2612 wallet popup so no unused approval is signed. Returns a user-facing
@@ -388,16 +411,7 @@ export async function submitBidOnChain(args: OnChainBidArgs): Promise<BidResult>
 
     // Pre-signature guards: catch a dead permit / underfunded wallet BEFORE the EIP-2612 popup, so a
     // doomed bid never leaves an unused signed approval. Balance is only read when there's a delta.
-    const usdcBalance =
-      amountDelta > 0n
-        ? await readContract(wagmiConfig, {
-            address: payment.address,
-            abi: erc20Abi,
-            functionName: "balanceOf",
-            args: [wallet],
-            chainId: SALE_CHAIN.id,
-          })
-        : 0n
+    const usdcBalance = amountDelta > 0n ? await readTokenBalance(payment.address, wallet) : 0n
     const preflight = bidPreflightReason(
       permit.PermitJSON,
       bid,
@@ -477,6 +491,7 @@ export async function submitBidOnChain(args: OnChainBidArgs): Promise<BidResult>
       args.onStage?.("signing")
       const gas = await generousGas((client) => client.estimateContractGas(call))
       const txHash = await writeContract(wagmiConfig, { ...call, gas })
+      args.onStage?.("pending")
       const wait = await waitWithReplacement(txHash)
       return interpretBidReceipt(wait.receipt, wait.reason)
     }
@@ -545,6 +560,7 @@ export async function submitBidOnChain(args: OnChainBidArgs): Promise<BidResult>
     args.onStage?.("signing")
     const gas = await generousGas((client) => client.estimateContractGas(call))
     const txHash = await writeContract(wagmiConfig, { ...call, gas })
+    args.onStage?.("pending")
     const wait = await waitWithReplacement(txHash)
     return interpretBidReceipt(wait.receipt, wait.reason)
   } catch (err) {

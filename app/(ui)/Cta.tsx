@@ -62,9 +62,17 @@ export function Cta({
     <span className="inline-flex items-center gap-2">
       {children ?? label}
       {diagonal ? (
-        <span className="transition-transform group-hover:translate-x-1" aria-hidden="true">
-          ↗
-        </span>
+        // Inline SVG, not the U+2197 glyph: some Windows fonts promote it to emoji.
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          className="h-[0.85em] w-[0.85em] shrink-0 transition-transform group-hover:translate-x-1"
+          aria-hidden="true"
+        >
+          <path d="M7 17 17 7M9 7h8v8" />
+        </svg>
       ) : arrow ? (
         <CtaArrow />
       ) : null}
