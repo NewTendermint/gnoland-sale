@@ -24,6 +24,23 @@ export async function readCommitments(): Promise<CommitmentMetrics> {
   return mapCommitmentData(res)
 }
 
+// Mirrors the public GET route's 10s CDN window; per-instance and best-effort by design.
+export const COMMITMENTS_CACHE_MS = 10_000
+
+let commitmentsCache: { at: number; value: CommitmentMetrics } | null = null
+
+/** readCommitments behind a short cache: shields Sonar from high-frequency server-side readers
+ *  (the subscribe route is re-POSTed by PushLimitSync on every page load of a subscribed bidder).
+ *  Failures are never cached - the next call retries upstream. */
+export async function readCommitmentsCached(now: number = Date.now()): Promise<CommitmentMetrics> {
+  if (commitmentsCache && now - commitmentsCache.at < COMMITMENTS_CACHE_MS) {
+    return commitmentsCache.value
+  }
+  const value = await readCommitments()
+  commitmentsCache = { at: now, value }
+  return value
+}
+
 /** The sale's payment-token decimals from Sonar (public). The source of truth for converting
  *  smallest-units amounts (limits, commitments) to USD - read, never hardcoded. */
 export async function readSaleDecimals(): Promise<number> {

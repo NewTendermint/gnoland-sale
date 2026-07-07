@@ -3,8 +3,8 @@ import { CRON_LEASE_TTL_S, acquireCronLease, releaseCronLease } from "@/lib/db/l
 import { pushSubscriptions } from "@/lib/db/schema"
 import { env } from "@/lib/env"
 import { detectTransitions } from "@/lib/push/detect"
-import { sendOutbidNotifications } from "@/lib/push/send"
-import { saleIsLive } from "@/lib/sale/live-window"
+import { OUTBID_TTL_CAP_S, sendOutbidNotifications } from "@/lib/push/send"
+import { pushTtlSeconds, saleIsLive } from "@/lib/sale/live-window"
 import { timingSafeEqualStr } from "@/lib/security/secret-compare"
 import { readCommitments } from "@/lib/sonar/commitments"
 import { inArray } from "drizzle-orm"
@@ -49,7 +49,10 @@ export async function POST(req: Request) {
 
     const notify = new Set(toNotify)
     const targets = subs.filter((s) => notify.has(s.endpoint))
-    const { sent, expiredEndpoints } = await sendOutbidNotifications(targets)
+    // The cron owns the TTL policy: it already resolves the sale window chain-first (saleIsLive
+    // gate above), so it also decides how long an alert stays deliverable.
+    const ttlSeconds = pushTtlSeconds(Date.now(), OUTBID_TTL_CAP_S)
+    const { sent, expiredEndpoints } = await sendOutbidNotifications(targets, ttlSeconds)
 
     if (expiredEndpoints.length > 0) {
       await db
