@@ -65,6 +65,27 @@ export function validateBidPrice(
   return "ok"
 }
 
+/** Form-level mirror of the balance check in bidPreflightReason (onchain.ts): only the delta
+ *  above the committed floor is transferred, compared exactly in token base units.
+ *  null = unknown (unreadable balance, bad input) and MUST fail open in the caller - the
+ *  on-chain preflight stays the authority; this only saves the user a wasted confirm step. */
+export function balanceCoversBid(
+  amountUsd: number,
+  committedUsd: number,
+  balanceUnits: bigint | null,
+  decimals: number,
+): boolean | null {
+  if (balanceUnits == null) return null
+  if (!Number.isFinite(amountUsd) || !Number.isFinite(committedUsd)) return null
+  if (!Number.isInteger(decimals) || decimals < 0 || decimals > 18) return null
+  const deltaUsd = amountUsd - committedUsd
+  if (deltaUsd <= 0) return true
+  const deltaUnits = Math.round(deltaUsd * 10 ** decimals)
+  // A delta too large to represent exactly is beyond any real balance; never throw in render.
+  if (!Number.isSafeInteger(deltaUnits)) return false
+  return BigInt(deltaUnits) <= balanceUnits
+}
+
 // On-chain unit conversions for the bid seam. Integer-exact: round once, then BigInt.
 
 /** USD amount -> payment-token base units. `decimals` must come from token data, never hardcoded. */

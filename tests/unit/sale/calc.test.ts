@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
 import {
+  balanceCoversBid,
   bidHeadroomPct,
   bidStatus,
   forceLockupForRegion,
@@ -206,5 +207,54 @@ describe("snapBidPrice", () => {
   })
   it("leaves on-grid prices untouched", () => {
     expect(snapBidPrice(0.129, band)).toBeCloseTo(0.129, 10) // floor + 3 steps
+  })
+})
+
+// The form-level mirror of bidPreflightReason's balance check (onchain.ts): same delta semantics
+// (only the amount ABOVE the committed floor is transferred), exact token-unit compare. Fail-open
+// by contract: an unknown balance returns null and must never block - the on-chain preflight is
+// the authority.
+describe("balanceCoversBid", () => {
+  const units = (usd: number) => usdToTokenUnits(usd, 6)
+
+  it("covers a first bid within balance", () => {
+    expect(balanceCoversBid(1_000, 0, units(2_500), 6)).toBe(true)
+  })
+  it("rejects a first bid above balance", () => {
+    expect(balanceCoversBid(1_000, 0, units(250), 6)).toBe(false)
+  })
+  it("covers an exact-balance bid (boundary)", () => {
+    expect(balanceCoversBid(1_000, 0, units(1_000), 6)).toBe(true)
+  })
+  it("covers a raise whose amount exceeds balance but whose DELTA does not", () => {
+    // committed $3,200, raising to $5,000: only $1,800 moves - a $2,500 balance covers it.
+    expect(balanceCoversBid(5_000, 3_200, units(2_500), 6)).toBe(true)
+  })
+  it("rejects a raise whose delta exceeds balance", () => {
+    expect(balanceCoversBid(5_000, 3_200, units(1_500), 6)).toBe(false)
+  })
+  it("covers a price-only raise (zero delta) even with a zero balance", () => {
+    expect(balanceCoversBid(3_200, 3_200, 0n, 6)).toBe(true)
+  })
+  it("covers a negative delta (amount below committed - other validation owns that case)", () => {
+    expect(balanceCoversBid(1_000, 3_200, 0n, 6)).toBe(true)
+  })
+  it("is exact at cent precision", () => {
+    expect(balanceCoversBid(100.5, 0, units(100.49), 6)).toBe(false)
+    expect(balanceCoversBid(100.5, 0, units(100.5), 6)).toBe(true)
+  })
+  it("returns null (fail-open) when the balance is unknown", () => {
+    expect(balanceCoversBid(1_000, 0, null, 6)).toBe(null)
+  })
+  it("returns null on a non-finite amount", () => {
+    expect(balanceCoversBid(Number.NaN, 0, units(1_000), 6)).toBe(null)
+    expect(balanceCoversBid(Number.POSITIVE_INFINITY, 0, units(1_000), 6)).toBe(null)
+  })
+  it("returns null on out-of-range decimals", () => {
+    expect(balanceCoversBid(1_000, 0, units(1_000), 19)).toBe(null)
+    expect(balanceCoversBid(1_000, 0, units(1_000), 1.5)).toBe(null)
+  })
+  it("rejects a delta beyond the safe-integer range instead of throwing", () => {
+    expect(balanceCoversBid(1e16, 0, units(1_000), 6)).toBe(false)
   })
 })
