@@ -25,7 +25,7 @@ export function Partners() {
           <div className="lg:col-span-6">
             <RevealBoundary>
               <ParallaxBox
-                className="aspect-[3/2] lg:aspect-[4/5]"
+                className="aspect-3/2 lg:aspect-4/5"
                 strength={90}
                 sceneVideo={sceneVideos.partnersA}
               />
@@ -120,8 +120,8 @@ export function Partners() {
           </div>
           <RevealBoundary>
             <ParallaxBox
-              className="mt-4 aspect-[3/2] lg:mt-64 lg:aspect-[4/5]"
-              strength={320}
+              className="mt-4 aspect-3/2 lg:mt-89 lg:aspect-4/5"
+              strength={720}
               sceneVideo={sceneVideos.partnersB}
             />
           </RevealBoundary>
