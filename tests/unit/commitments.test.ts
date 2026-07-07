@@ -1,5 +1,12 @@
-import type { ReadCommitmentDataResponse } from "@echoxyz/sonar-core"
-import { describe, expect, it } from "vitest"
+import {
+  type EntityDetails,
+  EntitySetupState,
+  EntityType,
+  InvestingRegion,
+  type ReadCommitmentDataResponse,
+  SaleEligibility,
+} from "@echoxyz/sonar-core"
+import { describe, expect, it, vi } from "vitest"
 import { mapCommitmentData, mapMyBid } from "../../lib/sonar/commitments"
 
 // Mirrors the live mock (MOCK_COMMITMENT_LIVE): 1.2M USDC committed at 6
@@ -67,7 +74,7 @@ describe("mapMyBid", () => {
         ExtraDataParsed: null,
       },
     ])
-    expect(mapMyBid(res, MINE)).toEqual({ priceUsd: 0.15, committedUsd: 3200, lockup: false })
+    expect(mapMyBid(res, MINE)).toEqual({ priceUsd: 0.15, committedUsd: 3200 })
   })
 
   it("falls back to the numerator/denominator ratio when PriceMicroUSD is absent", () => {
@@ -84,5 +91,55 @@ describe("mapMyBid", () => {
       },
     ])
     expect(mapMyBid(res, MINE)).toMatchObject({ priceUsd: 0.2, committedUsd: 1 })
+  })
+
+  it("matches the entity regardless of hex casing between the two Sonar endpoints", () => {
+    const entityId = hex("ab".repeat(32))
+    const res = withCommitments([
+      {
+        CommitmentID: hex("c0".repeat(16)),
+        SaleSpecificEntityID: hex(entityId.slice(2).toUpperCase()),
+        PriceNumerator: "1",
+        PriceDenominator: "5",
+        PriceMicroUSD: "200000",
+        Amounts: [{ Wallet: hex("33".repeat(20)), Token: hex("44".repeat(20)), Amount: "1000000" }],
+        CreatedAt: "2026-06-01T00:00:00Z",
+        ExtraRaw: hex(""),
+        ExtraDataParsed: null,
+      },
+    ])
+    expect(mapMyBid(res, entityId)).toEqual({ priceUsd: 0.2, committedUsd: 1 })
+  })
+})
+
+describe("readMyBid", () => {
+  it("reads the public commitment data unauthenticated - only the entity lookup needs a token", async () => {
+    vi.resetModules()
+    const entity: EntityDetails = {
+      Label: "Test investor",
+      EntityID: "e1",
+      SaleSpecificEntityID: MINE,
+      EntityType: EntityType.USER,
+      EntitySetupState: EntitySetupState.COMPLETE,
+      SaleEligibility: SaleEligibility.ELIGIBLE,
+      InvestingRegion: InvestingRegion.OTHER,
+    }
+    const listAvailableEntities = vi.fn().mockResolvedValue({ Entities: [entity] })
+    const readCommitmentData = vi.fn().mockResolvedValue(response)
+    const createSonarClient = vi.fn((_accessToken?: string) => ({
+      listAvailableEntities,
+      readCommitmentData,
+    }))
+    const withSonarAuth = vi.fn((_sessionId: string, fn: (accessToken: string) => unknown) =>
+      fn("mock-token"),
+    )
+    vi.doMock("../../lib/sonar/client", () => ({ createSonarClient }))
+    vi.doMock("../../lib/sonar/permit", () => ({ withSonarAuth }))
+    const { readMyBid } = await import("../../lib/sonar/commitments")
+
+    await readMyBid("session-1")
+
+    expect(withSonarAuth).toHaveBeenCalledTimes(1)
+    expect(createSonarClient).toHaveBeenLastCalledWith()
   })
 })

@@ -614,7 +614,7 @@ function reasonToMessage(reason: string): string {
     "requires-liveness": "An identity check is needed before bidding.",
     "wallet-risk": "This wallet can't be used for the sale.",
     "max-wallets-used": "You've reached the wallet limit for this sale.",
-    "sale-not-active": "The sale isn't open right now.",
+    "sale-not-active": "Bidding isn't available for your account right now.",
     "wallet-not-linked": "This wallet is already linked to another account.",
     "outside-time-window": "Bidding is closed right now.",
     "session-expired": "Your Sonar session expired. Reconnect to continue.",

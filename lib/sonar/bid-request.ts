@@ -50,7 +50,9 @@ export async function resolveBidRequest(request: Request): Promise<BidGate> {
   try {
     const entity = await getEntity(session.sessionId)
     if (!entity) {
-      return { ok: false, res: NextResponse.json({ error: "no_entity" }, { status: 409 }) }
+      // Same status + marker as GET /api/sonar/entity's no_entity, for cross-route consistency;
+      // the bid-route client treats any non-2xx generically (only 401/403 are special-cased).
+      return { ok: false, res: NextResponse.json({ error: "no_entity" }, { status: 404 }) }
     }
     // Fail closed on the entity's own state: whether Sonar refuses ineligible entities server-side
     // is unverified, and the "unknown" normalization sentinels must never reach permit issuance.

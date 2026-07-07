@@ -12,10 +12,10 @@ import type { MyBid } from "../../../lib/sale/types"
 
 const ADDR = "0xAbC0000000000000000000000000000000000001"
 const OTHER = "0xDef0000000000000000000000000000000000002"
-const BID = { committedUsd: 500, priceUsd: 0.0645, lockup: false }
+const BID = { committedUsd: 500, priceUsd: 0.0645 }
 const PENDING: PendingBid = { ...BID, address: ADDR.toLowerCase(), timestamp: 0 }
-const SONAR_LOWER: MyBid = { committedUsd: 200, priceUsd: 0.06, lockup: false }
-const SONAR_CAUGHT_UP: MyBid = { committedUsd: 500, priceUsd: 0.0645, lockup: false }
+const SONAR_LOWER: MyBid = { committedUsd: 200, priceUsd: 0.06 }
+const SONAR_CAUGHT_UP: MyBid = { committedUsd: 500, priceUsd: 0.0645 }
 
 beforeEach(() => {
   window.localStorage.clear()
@@ -106,7 +106,7 @@ describe("derivePendingView (the single pending derivation)", () => {
   })
 
   it("keeps the pending position and stays neutral on a same-amount price raise", () => {
-    const sonarOldPrice: MyBid = { committedUsd: 500, priceUsd: 0.043, lockup: false }
+    const sonarOldPrice: MyBid = { committedUsd: 500, priceUsd: 0.043 }
     expect(derivePendingView(PENDING, sonarOldPrice)).toEqual({
       myBid: BID,
       pendingIndexing: true,
@@ -155,7 +155,7 @@ describe("reconcilePendingBid", () => {
 
   it("keeps the entry when the amount matches but the price is still the old one", () => {
     writePendingBid(BID, ADDR)
-    reconcilePendingBid({ committedUsd: 500, priceUsd: 0.043, lockup: false }, ADDR)
+    reconcilePendingBid({ committedUsd: 500, priceUsd: 0.043 }, ADDR)
     expect(readPendingBid(ADDR)).not.toBeNull()
   })
 

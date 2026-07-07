@@ -27,7 +27,7 @@ vi.mock("../../../lib/sale/onchain", () => ({
   submitBidOnChain: vi.fn(),
 }))
 
-const BID: MyBid = { priceUsd: 0.09, committedUsd: 500, lockup: false }
+const BID: MyBid = { priceUsd: 0.09, committedUsd: 500 }
 
 function setup() {
   const queryClient = new QueryClient({
@@ -81,7 +81,7 @@ describe("useMyBid on wallet disconnect (G-G)", () => {
     rerender()
     await waitFor(() => expect(result.current.data).toBeUndefined())
 
-    const NEXT: MyBid = { priceUsd: 0.12, committedUsd: 800, lockup: false }
+    const NEXT: MyBid = { priceUsd: 0.12, committedUsd: 800 }
     readMyPosition.mockResolvedValue(NEXT)
     accountState.isConnected = true
     accountState.address = "0x2222222222222222222222222222222222222222"

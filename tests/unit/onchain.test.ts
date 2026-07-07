@@ -3,6 +3,7 @@ import {
   approvalPlan,
   assertUniformDecimals,
   bidPreflightReason,
+  bidRevertReason,
   interpretBidReceipt,
   refundableUnits,
   selectPaymentToken,
@@ -60,6 +61,17 @@ describe("submitBidOnChain (on-chain seam)", () => {
   it("refuses when the purchase permit has no signature", async () => {
     const res = await submitBidOnChain({ ...ARGS, permit: { ...ARGS.permit, Signature: "" } })
     expect(res).toEqual({ status: "reverted", reason: "Missing purchase permit." })
+  })
+})
+
+describe("bidRevertReason (timing vs eligibility copy stay distinct)", () => {
+  it("reports a timing failure for the on-chain window/pause reverts", () => {
+    expect(bidRevertReason(new Error("BidOutsideAllowedWindow"))).toBe(
+      "The sale isn't accepting bids right now.",
+    )
+    expect(bidRevertReason(new Error("SalePaused"))).toBe(
+      "The sale isn't accepting bids right now.",
+    )
   })
 })
 

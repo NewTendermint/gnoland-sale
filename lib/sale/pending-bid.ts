@@ -25,7 +25,6 @@ export type PendingBid = {
   // overwrite and the reconcile comparison below is scope-consistent.
   committedUsd: number
   priceUsd: number
-  lockup: boolean
   address: string
   timestamp: number
 }
@@ -44,7 +43,7 @@ function emitChange(): void {
 
 /** Persist the just-confirmed bid (memory fallback if storage is blocked). */
 export function writePendingBid(
-  bid: { committedUsd: number; priceUsd: number; lockup: boolean },
+  bid: { committedUsd: number; priceUsd: number },
   address: string,
 ): void {
   const entry: PendingBid = {
@@ -98,7 +97,6 @@ function parsePendingBid(
   if (
     typeof entry?.committedUsd !== "number" ||
     typeof entry.priceUsd !== "number" ||
-    typeof entry.lockup !== "boolean" ||
     typeof entry.address !== "string" ||
     typeof entry.timestamp !== "number"
   ) {
@@ -135,7 +133,6 @@ export function derivePendingView(
   const asBid = {
     priceUsd: pending.priceUsd,
     committedUsd: pending.committedUsd,
-    lockup: pending.lockup,
   }
   if (sonar === undefined) return { myBid: asBid, pendingIndexing: true, delta: null }
   const unreported = pending.committedUsd - (sonar?.committedUsd ?? 0)

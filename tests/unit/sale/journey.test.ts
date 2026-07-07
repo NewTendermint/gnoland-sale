@@ -143,7 +143,7 @@ describe("deriveJourney - eligibility + bid tail", () => {
     expect(
       deriveJourney({
         ...cleared,
-        myBid: { priceUsd: 0.2, committedUsd: 1000, lockup: false },
+        myBid: { priceUsd: 0.2, committedUsd: 1000 },
         clearingPriceUsd: 0.15,
       }),
     ).toBe("has-bid-winning")
@@ -152,7 +152,7 @@ describe("deriveJourney - eligibility + bid tail", () => {
     expect(
       deriveJourney({
         ...cleared,
-        myBid: { priceUsd: 0.1, committedUsd: 1000, lockup: false },
+        myBid: { priceUsd: 0.1, committedUsd: 1000 },
         clearingPriceUsd: 0.15,
       }),
     ).toBe("has-bid-outbid")
@@ -161,7 +161,7 @@ describe("deriveJourney - eligibility + bid tail", () => {
     expect(
       deriveJourney({
         ...cleared,
-        myBid: { priceUsd: 0.1, committedUsd: 1000, lockup: false },
+        myBid: { priceUsd: 0.1, committedUsd: 1000 },
         clearingPriceUsd: null,
       }),
     ).toBe("has-bid-winning")
@@ -172,7 +172,7 @@ describe("deriveJourney - eligibility + bid tail", () => {
       expect(
         deriveJourney({
           ...cleared,
-          myBid: { priceUsd, committedUsd: 1000, lockup: false },
+          myBid: { priceUsd, committedUsd: 1000 },
           pendingIndexing: true,
           clearingPriceUsd: 0.15,
         }),

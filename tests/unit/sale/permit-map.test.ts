@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { toPurchasePermitV3, uuidToBytes16 } from "../../../lib/sale/permit-map"
+import { mockFixtures } from "../../../lib/sonar/mock-fixtures"
 
 describe("uuidToBytes16", () => {
   it("strips dashes and 0x-prefixes a dashed UUID (verified vs on-chain saleUUID())", () => {
@@ -57,5 +58,9 @@ describe("toPurchasePermitV3", () => {
 
   it("throws on a malformed UUID instead of forwarding bad calldata", () => {
     expect(() => toPurchasePermitV3({ ...SAMPLE, SaleUUID: "not-a-uuid" })).toThrow()
+  })
+
+  it("accepts the SONAR_MOCK permit fixture (bytes16 ids, matching the on-chain ABI)", () => {
+    expect(() => toPurchasePermitV3(mockFixtures.permit.PermitJSON)).not.toThrow()
   })
 })
