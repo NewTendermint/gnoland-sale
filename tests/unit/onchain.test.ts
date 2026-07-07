@@ -167,7 +167,7 @@ describe("bidPreflightReason (pre-signature guards)", () => {
 
   it("rejects an expired permit before signing", () => {
     expect(bidPreflightReason(permit({ ExpiresAt: NOW - 1 }), BID, 100n, 1000n, NOW)).toBe(
-      "Your authorization expired - please try again",
+      "Your authorization expired, please try again",
     )
   })
 
