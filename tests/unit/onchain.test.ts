@@ -59,7 +59,7 @@ describe("submitBidOnChain (on-chain seam)", () => {
 
   it("refuses when the purchase permit has no signature", async () => {
     const res = await submitBidOnChain({ ...ARGS, permit: { ...ARGS.permit, Signature: "" } })
-    expect(res).toEqual({ status: "reverted", reason: "Missing purchase permit" })
+    expect(res).toEqual({ status: "reverted", reason: "Missing purchase permit." })
   })
 })
 
@@ -69,14 +69,14 @@ describe("interpretBidReceipt (mined receipt + replacement -> bid result)", () =
     // A cancel is a 0-value self-send that mines "success" - must NOT read as submitted.
     expect(interpretBidReceipt({ status: "success", transactionHash: hash }, "cancelled")).toEqual({
       status: "reverted",
-      reason: "You cancelled the transaction",
+      reason: "You cancelled the transaction.",
     })
   })
 
   it("reverts on a reverted receipt", () => {
     expect(interpretBidReceipt({ status: "reverted", transactionHash: hash }, null)).toEqual({
       status: "reverted",
-      reason: "The bid transaction failed on-chain",
+      reason: "The bid transaction failed on-chain.",
     })
   })
 
@@ -102,7 +102,7 @@ describe("interpretBidReceipt (mined receipt + replacement -> bid result)", () =
       interpretBidReceipt({ status: "success", transactionHash: "0xnew" }, "replaced"),
     ).toEqual({
       status: "reverted",
-      reason: "The transaction was replaced in your wallet",
+      reason: "The transaction was replaced in your wallet.",
     })
   })
 })
@@ -167,7 +167,7 @@ describe("bidPreflightReason (pre-signature guards)", () => {
 
   it("rejects an expired permit before signing", () => {
     expect(bidPreflightReason(permit({ ExpiresAt: NOW - 1 }), BID, 100n, 1000n, NOW)).toBe(
-      "Your authorization expired, please try again",
+      "Your authorization expired, please try again.",
     )
   })
 
@@ -177,13 +177,13 @@ describe("bidPreflightReason (pre-signature guards)", () => {
 
   it("rejects when the USDC balance is below the amount delta", () => {
     expect(bidPreflightReason(permit({ ExpiresAt: NOW + 600 }), BID, 100n, 99n, NOW)).toBe(
-      "Insufficient USDC balance",
+      "Insufficient USDC balance.",
     )
   })
 
   it("names the selected token in the balance message (USDT approval path)", () => {
     expect(bidPreflightReason(permit({ ExpiresAt: NOW + 600 }), BID, 100n, 99n, NOW, "USDT")).toBe(
-      "Insufficient USDT balance",
+      "Insufficient USDT balance.",
     )
   })
 
@@ -200,10 +200,10 @@ describe("bidPreflightReason (pre-signature guards)", () => {
   it("rejects a price outside a set MinPrice/MaxPrice with the on-chain wording", () => {
     const p = permit({ MinPrice: 3, MaxPrice: 40 })
     expect(bidPreflightReason(p, { ...BID, price: 2n }, 0n, 0n, NOW)).toBe(
-      "Your price is outside the allowed range",
+      "Your price is outside the allowed range.",
     )
     expect(bidPreflightReason(p, { ...BID, price: 41n }, 0n, 0n, NOW)).toBe(
-      "Your price is outside the allowed range",
+      "Your price is outside the allowed range.",
     )
     expect(bidPreflightReason(p, { ...BID, price: 40n }, 0n, 0n, NOW)).toBeNull()
   })
@@ -211,10 +211,10 @@ describe("bidPreflightReason (pre-signature guards)", () => {
   it("rejects an amount outside a set MinAmount/MaxAmount with the on-chain wording", () => {
     const p = permit({ MinAmount: "100000000", MaxAmount: "500000000000000" })
     expect(bidPreflightReason(p, { ...BID, amount: 99_999_999n }, 0n, 0n, NOW)).toBe(
-      "Your amount is outside the allowed range",
+      "Your amount is outside the allowed range.",
     )
     expect(bidPreflightReason(p, { ...BID, amount: 500_000_000_000_001n }, 0n, 0n, NOW)).toBe(
-      "Your amount is outside the allowed range",
+      "Your amount is outside the allowed range.",
     )
     expect(bidPreflightReason(p, { ...BID, amount: 100_000_000n }, 0n, 0n, NOW)).toBeNull()
   })

@@ -193,7 +193,7 @@ export function useBid() {
       if (err instanceof HttpError && err.status === 403) {
         return { status: "reverted", reason: "entity-not-eligible" }
       }
-      return { status: "reverted", reason: "Could not place bid" }
+      return { status: "reverted", reason: "Could not place bid." }
     } finally {
       bidInFlight = false
     }
@@ -229,7 +229,7 @@ export function useClaim() {
     try {
       return await claimRefundOnChain({ wallet: address })
     } catch {
-      return { status: "reverted", reason: "Could not claim your refund" }
+      return { status: "reverted", reason: "Could not claim your refund." }
     }
   }
 

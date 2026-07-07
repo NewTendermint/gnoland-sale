@@ -52,7 +52,7 @@ const EIP2612_PERMIT_TYPES = {
  *  transaction confirmation - the caller knows which prompt was open. */
 function sharedWalletErrorReason(
   err: unknown,
-  cancelledCopy = "You cancelled the signature",
+  cancelledCopy = "You cancelled the signature.",
 ): string | null {
   if (err instanceof BaseError && err.walk((e) => e instanceof ChainMismatchError)) {
     return "wrong-chain"
@@ -69,25 +69,25 @@ function bidRevertReason(err: unknown, tokenSymbol = "USDC", cancelledCopy?: str
   if (shared) return shared
   const msg = err instanceof Error ? err.message : String(err)
   if (/insufficient|exceeds balance|transfer amount exceeds/i.test(msg)) {
-    return `Insufficient ${tokenSymbol} balance`
+    return `Insufficient ${tokenSymbol} balance.`
   }
   if (/BidPriceBelowMinPrice|BidPriceExceedsMaxPrice/i.test(msg)) {
-    return "Your price is outside the allowed range"
+    return "Your price is outside the allowed range."
   }
   if (/BidBelowMinAmount|BidExceedsMaxAmount/i.test(msg)) {
-    return "Your amount is outside the allowed range"
+    return "Your amount is outside the allowed range."
   }
-  if (/BidMustHaveLockup/i.test(msg)) return "This bid must include the lockup"
-  if (/CannotBeLowered/i.test(msg)) return "A bid can only be raised, not lowered"
-  if (/PurchasePermitExpired/i.test(msg)) return "Your authorization expired, please try again"
-  if (/BidOutsideAllowedWindow|SalePaused/i.test(msg)) return "The sale isn't open right now"
+  if (/BidMustHaveLockup/i.test(msg)) return "This bid must include the lockup."
+  if (/CannotBeLowered/i.test(msg)) return "A bid can only be raised, not lowered."
+  if (/PurchasePermitExpired/i.test(msg)) return "Your authorization expired, please try again."
+  if (/BidOutsideAllowedWindow|SalePaused/i.test(msg)) return "The sale isn't open right now."
   if (/WalletTiedToAnotherEntity/i.test(msg)) {
-    return "This wallet is already linked to another account"
+    return "This wallet is already linked to another account."
   }
   if (/WalletNotAssociatedWithEntity|InvalidSender|UnauthorizedSigner|NotInitialized/i.test(msg)) {
-    return "This wallet isn't linked to your verified identity"
+    return "This wallet isn't linked to your verified identity."
   }
-  return "Could not place bid"
+  return "Could not place bid."
 }
 
 export type PaymentToken = { address: `0x${string}`; symbol: string; decimals: number }
@@ -218,8 +218,8 @@ type ReplacementReason = "replaced" | "repriced" | "cancelled" | null
  * claim paths; returns the user-facing failure line, or null when the receipt is still ours.
  */
 export function replacementFailure(reason: ReplacementReason): string | null {
-  if (reason === "cancelled") return "You cancelled the transaction"
-  if (reason === "replaced") return "The transaction was replaced in your wallet"
+  if (reason === "cancelled") return "You cancelled the transaction."
+  if (reason === "replaced") return "The transaction was replaced in your wallet."
   return null
 }
 
@@ -233,7 +233,7 @@ export function interpretBidReceipt(
     return { status: "reverted", reason: replaced }
   }
   if (receipt.status !== "success") {
-    return { status: "reverted", reason: "The bid transaction failed on-chain" }
+    return { status: "reverted", reason: "The bid transaction failed on-chain." }
   }
   return { status: "submitted", txHash: receipt.transactionHash }
 }
@@ -293,20 +293,20 @@ export function bidPreflightReason(
 ): string | null {
   const expiresAt = Number(permit.ExpiresAt)
   if (expiresAt > 0 && nowSec >= expiresAt) {
-    return "Your authorization expired, please try again"
+    return "Your authorization expired, please try again."
   }
   const minPrice = BigInt(permit.MinPrice)
   const maxPrice = BigInt(permit.MaxPrice)
   if ((minPrice > 0n && bid.price < minPrice) || (maxPrice > 0n && bid.price > maxPrice)) {
-    return "Your price is outside the allowed range"
+    return "Your price is outside the allowed range."
   }
   const minAmount = BigInt(permit.MinAmount)
   const maxAmount = BigInt(permit.MaxAmount)
   if ((minAmount > 0n && bid.amount < minAmount) || (maxAmount > 0n && bid.amount > maxAmount)) {
-    return "Your amount is outside the allowed range"
+    return "Your amount is outside the allowed range."
   }
   if (amountDelta > 0n && usdcBalance < amountDelta) {
-    return `Insufficient ${tokenSymbol} balance`
+    return `Insufficient ${tokenSymbol} balance.`
   }
   return null
 }
@@ -314,7 +314,7 @@ export function bidPreflightReason(
 export async function submitBidOnChain(args: OnChainBidArgs): Promise<BidResult> {
   const { params, permit, wallet } = args
   if (!permit?.Signature) {
-    return { status: "reverted", reason: "Missing purchase permit" }
+    return { status: "reverted", reason: "Missing purchase permit." }
   }
 
   const { chainId } = getAccount(wagmiConfig)
@@ -412,7 +412,7 @@ export async function submitBidOnChain(args: OnChainBidArgs): Promise<BidResult>
             return { status: "reverted", reason: resetFailure }
           }
           if (reset.receipt.status !== "success") {
-            return { status: "reverted", reason: "The approval transaction failed on-chain" }
+            return { status: "reverted", reason: "The approval transaction failed on-chain." }
           }
         }
         const approveHash = await writeContract(wagmiConfig, {
@@ -429,7 +429,7 @@ export async function submitBidOnChain(args: OnChainBidArgs): Promise<BidResult>
           return { status: "reverted", reason: approveFailure }
         }
         if (approve.receipt.status !== "success") {
-          return { status: "reverted", reason: "The approval transaction failed on-chain" }
+          return { status: "reverted", reason: "The approval transaction failed on-chain." }
         }
       }
       const call = {
@@ -520,7 +520,7 @@ export async function submitBidOnChain(args: OnChainBidArgs): Promise<BidResult>
       reason: bidRevertReason(
         err,
         paySymbol,
-        walletPrompt === "transaction" ? "You cancelled the transaction" : undefined,
+        walletPrompt === "transaction" ? "You cancelled the transaction." : undefined,
       ),
     }
   }
@@ -663,7 +663,7 @@ export async function claimRefundOnChain(args: { wallet: `0x${string}` }): Promi
       return { status: "reverted", reason: failure }
     }
     if (wait.receipt.status !== "success") {
-      return { status: "reverted", reason: "The refund transaction failed" }
+      return { status: "reverted", reason: "The refund transaction failed." }
     }
     // The mined hash, not txHash: a repriced (sped-up) claim mines under a new hash.
     return { status: "claimed", txHash: wait.receipt.transactionHash }
@@ -671,8 +671,8 @@ export async function claimRefundOnChain(args: { wallet: `0x${string}` }): Promi
     return {
       status: "reverted",
       reason:
-        sharedWalletErrorReason(err, "You cancelled the transaction") ??
-        "Could not claim your refund",
+        sharedWalletErrorReason(err, "You cancelled the transaction.") ??
+        "Could not claim your refund.",
     }
   }
 }

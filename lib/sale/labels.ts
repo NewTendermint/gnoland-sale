@@ -90,6 +90,37 @@ export const WELCOME_BACK = {
 /** Support contact (mailto) shown on a failed verification. null hides the CTA. */
 export const SUPPORT_CONTACT_HREF: string | null = "mailto:tokensale@newtendermint.org"
 
+/** Appends terminal punctuation when missing; idempotent. */
+export function punctuate(msg: string): string {
+  const m = msg.trim()
+  return /[.!?]$/.test(m) ? m : `${m}.`
+}
+
+/** Prefilled support mailto; falsy detail lines are dropped. FOOTGUN: the body is client-built
+ *  and must stay PII-free (no wallet, tx hash or identity data). */
+export function supportMailtoHref(
+  subject: string,
+  details: (string | false | null | undefined)[],
+): string | null {
+  if (!SUPPORT_CONTACT_HREF) return null
+  const body = [
+    ...details.filter((line): line is string => Boolean(line)),
+    "",
+    "Please describe what happened, any detail helps (steps, what you clicked, screenshots):",
+    "",
+    "",
+    "Privacy: no personal info needed - leave out your wallet address, transaction hashes, amounts and identity documents. Support will ask if anything more is required.",
+  ].join("\r\n")
+  const sep = SUPPORT_CONTACT_HREF.includes("?") ? "&" : "?"
+  return `${SUPPORT_CONTACT_HREF}${sep}subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+}
+
+/** Failed-verification support link, shared by the bid gate row and the side panel. */
+export const SUPPORT_VERIFY_FAILED_HREF = supportMailtoHref(
+  `sale.gno.land - ${VERIFY_STATUS.failed.title}`,
+  [`My verification status shows: "${punctuate(VERIFY_STATUS.failed.title)}"`],
+)
+
 /** Awareness-mode "continue on desktop" copy. */
 export const DESKTOP_ONLY = {
   register: {
