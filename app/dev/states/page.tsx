@@ -8,13 +8,7 @@ import { BidStatusTag, FunnelSteps } from "../../(sections)/bid/FunnelSteps"
 import { SettlementFlow } from "../../(sections)/bid/SettlementFlow"
 import { Cta } from "../../(ui)/Cta"
 import { Icon } from "../../(ui)/Icon"
-import {
-  PENDING_BIDDER_CHIP,
-  fmtCompactUsd,
-  fmtCount,
-  fmtPrice,
-  pendingCommittedChip,
-} from "../../../lib/sale/format"
+import { fmtCompactUsd, fmtCount, fmtPrice, pendingCommittedChip } from "../../../lib/sale/format"
 import { bidCtaLabel } from "../../../lib/sale/labels"
 import { MOCK_COMMITMENT_LIVE, MOCK_JOURNEY_INPUTS } from "../../../lib/sale/mock"
 import type { ClaimGate } from "../../../lib/sale/onchain"
@@ -45,14 +39,11 @@ const METRICS: PreviewMetric[] = [
   },
 ]
 
-// Mirrors liveMetrics with a PendingBidDelta (first bid, $500). Chip copy comes from the same
-// format helpers as production, so the gallery cannot drift.
+// Mirrors liveMetrics with a PendingBidDelta ($500). Chip copy comes from the same format
+// helper as production, so the gallery cannot drift. Committed only: it is the last metric,
+// so the inline chip never shifts a neighbour when it appears or vanishes.
 const METRICS_PENDING: PreviewMetric[] = METRICS.map((m) =>
-  m.label === "Bidders"
-    ? { ...m, pending: PENDING_BIDDER_CHIP }
-    : m.label === "Committed"
-      ? { ...m, pending: pendingCommittedChip(500) }
-      : m,
+  m.label === "Committed" ? { ...m, pending: pendingCommittedChip(500) } : m,
 )
 
 function CtaPill({ journey }: { journey: JourneyState }) {
