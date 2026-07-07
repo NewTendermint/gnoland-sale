@@ -189,34 +189,49 @@ function ExpandedBar({
   )
 }
 
-function CompactPreview({
-  lead,
-  headline,
-  sub,
-  cta,
-}: {
-  lead: string
-  headline: string
-  sub: string
-  cta: string
-}) {
+// Mirrors the real ended collapsed bar (BidPanelDesktop, phase === "ended"): Ended pill +
+// finalMetrics + View results. Values come from the same format helpers as production, and the
+// cell markup mirrors MetricCell (BidBarShell), so the gallery cannot drift. Built inline (not by
+// calling finalMetrics) because this is a Server Component and finalMetrics lives in a client module.
+const ENDED_METRICS: PreviewMetric[] = [
+  {
+    icon: "clearing",
+    value: fmtPrice(MOCK_COMMITMENT_LIVE.clearingPriceUsd ?? 0),
+    label: "Final price",
+  },
+  {
+    icon: "database",
+    value: fmtCompactUsd(MOCK_COMMITMENT_LIVE.totalCommittedUsd),
+    label: "Raised",
+  },
+  {
+    icon: "users-group",
+    value: fmtCount(MOCK_COMMITMENT_LIVE.uniqueCommitmentCount),
+    label: "Bidders",
+  },
+]
+
+function EndedBarPreview() {
   return (
-    <div className="rounded-[var(--frame-radius)] border border-border bg-background">
-      <div className="px-6 lg:px-8">
-        <div className="flex flex-wrap items-center justify-between gap-6 border-t border-border py-4 sm:py-6">
-          <div>
-            <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted">{lead}</p>
-            <p className="mt-1 flex items-baseline gap-3">
-              <span className="text-2xl font-semibold tracking-tight text-foreground">
-                {headline}
-              </span>
-              <span className="text-sm text-muted">{sub}</span>
-            </p>
-          </div>
-          <Cta variant="solid" arrow>
-            {cta}
-          </Cta>
+    <div className="rounded-[var(--frame-radius)] border border-border bg-background px-6 lg:px-8">
+      <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4 border-t border-border py-4 sm:py-6">
+        <div className="flex flex-wrap items-center gap-x-7 gap-y-3 sm:gap-x-9">
+          <span className="status-pill">Ended</span>
+          {ENDED_METRICS.map((m) => (
+            <div key={m.label}>
+              <div className="flex items-center gap-2">
+                <Icon name={m.icon} className="h-[18px] w-[18px]" />
+                <p className="font-mono text-lg font-medium tracking-tight tabular-nums">
+                  {m.value}
+                </p>
+              </div>
+              <p className="mt-0.5 text-[10px] uppercase tracking-[0.2em] text-muted">{m.label}</p>
+            </div>
+          ))}
         </div>
+        <Cta variant="solid" arrow className="ml-auto">
+          <span>View results</span>
+        </Cta>
       </div>
     </div>
   )
@@ -517,12 +532,7 @@ export default function DevStatesPage() {
         </GallerySection>
 
         <GallerySection title="Ended · collapsed (metrics + View results)">
-          <CompactPreview
-            lead="Public sale"
-            headline="Ended"
-            sub="Final price $0.1161"
-            cta="View results"
-          />
+          <EndedBarPreview />
           <p className="text-xs text-muted">
             won - expand, connect, allocation · outbid - expand, connect, claim
           </p>
