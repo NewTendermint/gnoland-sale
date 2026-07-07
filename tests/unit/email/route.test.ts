@@ -65,10 +65,25 @@ describe("POST /api/email/cron", () => {
     expect(res.status).toBe(401)
   })
 
-  it("skips outside the sale window", async () => {
+  it("skips outside the sale window, warning when the contract disagrees (schedule drift)", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {})
     vi.stubEnv("NEXT_PUBLIC_SALE_OPENS", "2099-01-01T00:00:00Z")
     const res = await call("Bearer s3cret")
     expect(await res.json()).toEqual({ skipped: "not-live" })
+    // saleIsLive is mocked true: the chain says live while the env dates say not - the skip is
+    // the announced-window policy, but it must be LOUD so a drifted economics.ts gets noticed.
+    expect(warnSpy).toHaveBeenCalledWith(
+      "email-cron: contract is live but the announced dates say not-live - check economics.ts / NEXT_PUBLIC_SALE_* dates",
+    )
+  })
+
+  it("skips silently when the dates and the contract agree not-live", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {})
+    vi.stubEnv("NEXT_PUBLIC_SALE_OPENS", "2099-01-01T00:00:00Z")
+    saleIsLive.mockResolvedValue(false)
+    const res = await call("Bearer s3cret")
+    expect(await res.json()).toEqual({ skipped: "not-live" })
+    expect(warnSpy).not.toHaveBeenCalled()
   })
 
   it("skips when another run holds the lease", async () => {

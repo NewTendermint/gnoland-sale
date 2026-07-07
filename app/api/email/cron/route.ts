@@ -26,7 +26,16 @@ export async function POST(req: Request) {
   const now = Date.now()
   // Outbound marketing stays inside the ANNOUNCED window AND a live contract - unlike the push
   // cron, a campaign sent before the public open (early Commitment stage) would be wrong.
-  if (resolveSalePhase(now) !== "live" || !(await saleIsLive(now))) {
+  const announcedLive = resolveSalePhase(now) === "live"
+  const chainLive = await saleIsLive(now)
+  if (!announcedLive || !chainLive) {
+    // Announced-window policy holds, but a disagreement means the schedule drifted: stale
+    // economics.ts dates would otherwise suppress every price email without a trace.
+    if (chainLive && !announcedLive) {
+      console.warn(
+        "email-cron: contract is live but the announced dates say not-live - check economics.ts / NEXT_PUBLIC_SALE_* dates",
+      )
+    }
     return NextResponse.json({ skipped: "not-live" })
   }
 

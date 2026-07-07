@@ -26,8 +26,18 @@ export function saleContractsFor(chainId: number | undefined): SaleContracts | u
   return chainId == null ? undefined : CONTRACTS[chainId]
 }
 
-// Default = prod mainnet; NEXT_PUBLIC_SALE_CHAIN overrides for staging/local (sepolia).
+// Default = prod mainnet (unset/empty only); NEXT_PUBLIC_SALE_CHAIN overrides for staging/local
+// (sepolia). Any OTHER value throws at module scope = the build fails: a typo must never pick a
+// chain silently while the server (z.enum in env.ts, fail-closed) resolves a different one.
+// KNOWN divergence-by-omission: with BOTH vars unset the server defaults to sepolia while this
+// defaults to mainnet - harmless while CONTRACTS has no mainnet entry (every bid is chain-blocked)
+// but the launch checklist REQUIRES setting the pair explicitly in every Netlify context.
 const SALE_CHAINS_BY_NAME = { mainnet, sepolia } as const
+const SALE_CHAIN_NAME = process.env.NEXT_PUBLIC_SALE_CHAIN
+if (SALE_CHAIN_NAME && !Object.hasOwn(SALE_CHAINS_BY_NAME, SALE_CHAIN_NAME)) {
+  throw new Error(
+    `NEXT_PUBLIC_SALE_CHAIN: unknown chain "${SALE_CHAIN_NAME}" (expected "mainnet" or "sepolia")`,
+  )
+}
 export const SALE_CHAIN =
-  SALE_CHAINS_BY_NAME[process.env.NEXT_PUBLIC_SALE_CHAIN as keyof typeof SALE_CHAINS_BY_NAME] ??
-  mainnet
+  SALE_CHAINS_BY_NAME[SALE_CHAIN_NAME as keyof typeof SALE_CHAINS_BY_NAME] ?? mainnet

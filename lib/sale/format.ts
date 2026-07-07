@@ -23,9 +23,8 @@ export const fmtPrice = (n: number) =>
 export const fmtUsd = (n: number) => `$${n.toLocaleString("en-US", { maximumFractionDigits: 0 })}`
 
 // Pending-chip copy. Single source for the live bar AND the /dev/states gallery (this module is
-// server-importable, unlike the client metric components). Rendered as a capsule on its own line
-// under the metric label; the tooltip (PENDING_CHIP_HINT) spells out the indexing lag.
-export const PENDING_BIDDER_CHIP = "+1 pending"
+// server-importable, unlike the client metric components). Rendered as an inline capsule after
+// the Committed label only; the tooltip (PENDING_CHIP_HINT) spells out the indexing lag.
 export const pendingCommittedChip = (amountUsd: number) => `+${fmtUsd(amountUsd)} pending`
 export const PENDING_CHIP_HINT = "Confirmed on-chain, not yet indexed"
 

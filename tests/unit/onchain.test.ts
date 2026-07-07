@@ -24,7 +24,9 @@ const ARGS = {
       MinPrice: 0,
       MaxPrice: 0,
       OpensAt: 0,
-      ClosesAt: 0,
+      // Far future, matching lib/sonar/mock-fixtures.ts: closesAt 0 is NOT "unset" for the
+      // contract (timestamp >= 0 rejects every bid), so the neutral fixture must be open.
+      ClosesAt: 4_102_444_800,
       Payload: "0x",
     },
     Signature: "0xabc123",
@@ -227,6 +229,91 @@ describe("bidPreflightReason (pre-signature guards)", () => {
         0n,
         0n,
         NOW,
+      ),
+    ).toBeNull()
+  })
+
+  // Permit sale window (contract: timestamp < opensAt || timestamp >= closesAt), with a 120s
+  // client-clock margin: nowSec is Date.now, not block.timestamp, so a skewed clock must never
+  // hard-refuse a bid the contract would take - edge cases fall through to simulateContract
+  // (chain truth). Clearly outside, the refusal lands BEFORE the USDT approve tx spends gas.
+  it("rejects a bid clearly before OpensAt with the on-chain wording", () => {
+    expect(bidPreflightReason(permit({ OpensAt: NOW + 300 }), BID, 0n, 0n, NOW)).toBe(
+      "The sale isn't open right now.",
+    )
+  })
+
+  it("rejects a bid clearly past ClosesAt, leaving the skew margin to the simulate", () => {
+    expect(bidPreflightReason(permit({ ClosesAt: NOW - 120 }), BID, 0n, 0n, NOW)).toBe(
+      "The sale isn't open right now.",
+    )
+    // Inside the 120s margin: the client clock may be wrong, so the chain decides.
+    expect(bidPreflightReason(permit({ ClosesAt: NOW - 119 }), BID, 0n, 0n, NOW)).toBeNull()
+    expect(bidPreflightReason(permit({ OpensAt: NOW + 120 }), BID, 0n, 0n, NOW)).toBeNull()
+  })
+
+  it("ignores OpensAt 0 (mock permits) but rejects ClosesAt 0 like the contract (>= 0 always)", () => {
+    expect(bidPreflightReason(permit({ OpensAt: 0 }), BID, 0n, 0n, NOW)).toBeNull()
+    expect(bidPreflightReason(permit({ OpensAt: 0, ClosesAt: 0 }), BID, 0n, 0n, NOW)).toBe(
+      "The sale isn't open right now.",
+    )
+  })
+
+  // Monotonicity vs the CHAIN's current bid (already fetched for the delta): the contract reverts
+  // BidPriceCannotBeLowered / BidLockupCannotBeUndone - both free to refuse pre-wallet, and the
+  // chain value beats the UI's Sonar-lagging floor.
+  it("rejects lowering the price below the chain's current bid", () => {
+    const prev = { price: 10n, lockup: false }
+    expect(bidPreflightReason(permit({}), { ...BID, price: 5n }, 0n, 0n, NOW, "USDC", prev)).toBe(
+      "A bid can only be raised, not lowered.",
+    )
+    expect(
+      bidPreflightReason(permit({}), { ...BID, price: 10n }, 0n, 0n, NOW, "USDC", prev),
+    ).toBeNull()
+  })
+
+  it("rejects undoing an on-chain lockup", () => {
+    const prev = { price: 1n, lockup: true }
+    expect(
+      bidPreflightReason(permit({}), { ...BID, lockup: false }, 0n, 0n, NOW, "USDC", prev),
+    ).toBe("This bid must include the lockup.")
+    expect(
+      bidPreflightReason(permit({}), { ...BID, lockup: true }, 0n, 0n, NOW, "USDC", prev),
+    ).toBeNull()
+  })
+
+  it("imposes nothing on a first-time bidder (zeroed chain state or missing read)", () => {
+    const fresh = { price: 0n, lockup: false }
+    expect(bidPreflightReason(permit({}), BID, 0n, 0n, NOW, "USDC", fresh)).toBeNull()
+    expect(bidPreflightReason(permit({}), BID, 0n, 0n, NOW, "USDC", null)).toBeNull()
+  })
+
+  // The permit is bound to one wallet (contract: InvalidSender): a mid-flow wallet switch is
+  // deterministic and free to catch before any gas or signature.
+  it("rejects a connected wallet that differs from the permit's wallet, case-insensitively", () => {
+    const w = ARGS.permit.PermitJSON.Wallet as `0x${string}`
+    expect(
+      bidPreflightReason(
+        permit({}),
+        BID,
+        0n,
+        0n,
+        NOW,
+        "USDC",
+        null,
+        "0x00000000000000000000000000000000000000ff",
+      ),
+    ).toBe("This wallet isn't linked to your verified identity.")
+    expect(
+      bidPreflightReason(
+        permit({}),
+        BID,
+        0n,
+        0n,
+        NOW,
+        "USDC",
+        null,
+        w.toUpperCase().replace("0X", "0x") as `0x${string}`,
       ),
     ).toBeNull()
   })

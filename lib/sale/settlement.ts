@@ -43,6 +43,12 @@ export type ClaimView = {
    *  contract's refundable is readable (accepted = committed - refund), else the derived upper
    *  bound. Zero for outbid. */
   gnotAllocation: number
+  /** "Won" per Sonar but the CONTRACT refunds the full commitment (fill ratio 0): the UI must
+   *  render the refund-only state, not "cleared / here's your allocation" over ~0 GNOT. */
+  zeroFill: boolean
+  /** The banner switch: won status minus the zeroFill downgrade. The UI consumes this directly
+   *  so the state mapping lives (and is tested) here, not in JSX. */
+  won: boolean
   refunded: boolean
   showClaimButton: boolean
   showAutoRefundLine: boolean
@@ -75,9 +81,16 @@ export function deriveClaimView(
       : 1
   const gnotAllocation =
     settlement.status === "won" ? settlement.gnotAllocation * fillRatio : settlement.gnotAllocation
+  // Only the contract's own numbers may downgrade a win to refund-only: an unreadable gate
+  // keeps the derived upper bound (fillRatio defaults to 1 above, so this stays false). The
+  // epsilon absorbs dust fills (pro-rata floor rounding leaves ~1 unit accepted): an exact 0
+  // would render "cleared / ~0 GNOT" over a full-looking refund.
+  const zeroFill = settlement.status === "won" && onchainRefundable != null && fillRatio < 1e-6
   return {
     refundableUsd,
     gnotAllocation,
+    zeroFill,
+    won: settlement.status === "won" && !zeroFill,
     refunded,
     // Both assertions key on the CONTRACT's amount, never the estimate: a wallet that is not the
     // one that committed on-chain must get neither the button nor the automatic-refunds promise.
