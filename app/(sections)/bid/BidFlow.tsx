@@ -15,6 +15,7 @@ import {
   newsletterEnabled,
 } from "../../../lib/newsletter/config"
 import {
+  balanceCoversBid,
   bidHeadroomPct,
   gnotEstimate,
   snapBidPrice,
@@ -24,7 +25,7 @@ import {
 import { SALE_CHAIN } from "../../../lib/sale/contracts"
 import { SALE_ECONOMICS } from "../../../lib/sale/economics"
 import { fmtCompact, fmtGnot, fmtPrice, fmtUsd, parseDecimal } from "../../../lib/sale/format"
-import { usePaymentTokens } from "../../../lib/sale/hooks"
+import { type BidPrecheck, usePaymentTokens, useTokenBalance } from "../../../lib/sale/hooks"
 import {
   SUPPORT_VERIFY_FAILED_HREF,
   VERIFY_INCOMPLETE,
@@ -41,6 +42,7 @@ import {
   MockBidSubmitter,
 } from "../../../lib/sale/submitter"
 import type { JourneyState, MyBid } from "../../../lib/sale/types"
+import { ManageEntityCta } from "./ManageEntity"
 import { usePushAlerts } from "./PushOptIn"
 
 const submitter = new MockBidSubmitter()
@@ -270,7 +272,14 @@ const devStepPause = () =>
     ? Promise.resolve()
     : new Promise<void>((resolve) => setTimeout(resolve, 650))
 
-type SubmitState = "idle" | "confirming" | "submitting" | "approving" | "signing" | "submitted"
+type SubmitState =
+  | "idle"
+  | "confirming"
+  | "submitting"
+  | "approving"
+  | "signing"
+  | "pending"
+  | "submitted"
 
 /** Dev-only: seed BidRow into a money-loop sub-state for the /dev/states gallery. */
 export type BidPreview = {
@@ -279,6 +288,19 @@ export type BidPreview = {
   priceUsd?: number
   txHash?: string
   error?: string
+  raiseCta?: boolean
+  /** Seeds the wallet-balance line + delta check (the gallery has no wallet to read). */
+  balanceUsd?: number
+  /** Seeds the confirm-step advisory blocker (the gallery has no Sonar to precheck). */
+  precheck?: { reason: string; livenessUrl?: string }
+}
+
+// Gallery balance seeds use USDC-like 6 decimals; null on anything out of range (never throw in render).
+const PREVIEW_DECIMALS = 6
+function previewBalanceUnits(usd?: number): bigint | null {
+  if (usd == null || !Number.isFinite(usd) || usd < 0) return null
+  const units = Math.round(usd * 10 ** PREVIEW_DECIMALS)
+  return Number.isSafeInteger(units) ? BigInt(units) : null
 }
 
 export function BidFlow({
@@ -290,6 +312,10 @@ export function BidFlow({
   onSignOut,
   setupHref,
   onBid,
+  onRaise,
+  onPrecheck,
+  active,
+  entityLabel,
   preview,
 }: {
   journey: JourneyState
@@ -300,6 +326,12 @@ export function BidFlow({
   onSignOut?: () => void
   setupHref: string
   onBid?: (p: BidParams, opts?: { onStage?: (s: BidStage) => void }) => Promise<BidResult>
+  onRaise?: () => void
+  onPrecheck?: () => Promise<BidPrecheck>
+  /** False while the panel is collapsed: pauses the wallet-balance polling. */
+  active?: boolean
+  /** Sonar label of the active entity, for the manage CTA on the KYC gates. */
+  entityLabel?: string | null
   preview?: BidPreview
 }) {
   return (
@@ -312,6 +344,10 @@ export function BidFlow({
       onSignOut={onSignOut}
       setupHref={setupHref}
       onBid={onBid}
+      onRaise={onRaise}
+      onPrecheck={onPrecheck}
+      active={active}
+      entityLabel={entityLabel}
       preview={preview}
     />
   )
@@ -326,6 +362,10 @@ function StateContent({
   onSignOut,
   setupHref,
   onBid,
+  onRaise,
+  onPrecheck,
+  active,
+  entityLabel,
   preview,
 }: {
   journey: JourneyState
@@ -336,6 +376,10 @@ function StateContent({
   onSignOut?: () => void
   setupHref: string
   onBid?: (p: BidParams, opts?: { onStage?: (s: BidStage) => void }) => Promise<BidResult>
+  onRaise?: () => void
+  onPrecheck?: () => Promise<BidPrecheck>
+  active?: boolean
+  entityLabel?: string | null
   preview?: BidPreview
 }) {
   // Shared render path keeps BidRow's tree position across ready -> has-bid (stable key preserves the receipt).
@@ -353,6 +397,9 @@ function StateContent({
           prevBid={journey === "ready" ? undefined : myBid}
           outbid={journey === "has-bid-outbid"}
           onBid={onBid}
+          onRaise={onRaise}
+          onPrecheck={onPrecheck}
+          active={active}
           preview={preview}
         />
       </div>
@@ -367,6 +414,7 @@ function StateContent({
           onConnectSonar={onConnectSonar}
           onSignOut={onSignOut}
           setupHref={setupHref}
+          entityLabel={entityLabel}
         />
       </div>
     </div>
@@ -379,13 +427,19 @@ function GateContent({
   onConnectSonar,
   onSignOut,
   setupHref,
+  entityLabel,
 }: {
   journey: JourneyState
   returning?: boolean
   onConnectSonar?: () => void
   onSignOut?: () => void
   setupHref: string
+  entityLabel?: string | null
 }) {
+  // Dark-capsule variant of the pre-sale bar's manage CTA (same states, same destination).
+  const manageCta = (
+    <ManageEntityCta href={setupHref} label={entityLabel} variant="ghost-contrast" />
+  )
   switch (journey) {
     case "wrong-network":
       return <SwitchNetworkGate />
@@ -422,6 +476,7 @@ function GateContent({
           icon={VERIFY_STATUS.pending.icon}
           title={VERIFY_STATUS.pending.title}
           body={VERIFY_STATUS.pending.body}
+          secondary={manageCta}
         />
       )
     case "kyc-failed":
@@ -433,6 +488,7 @@ function GateContent({
           body={VERIFY_STATUS.failed.body}
           cta={SUPPORT_VERIFY_FAILED_HREF ? "Contact support" : undefined}
           ctaHref={SUPPORT_VERIFY_FAILED_HREF ?? undefined}
+          secondary={manageCta}
         />
       )
     case "not-eligible":
@@ -442,6 +498,7 @@ function GateContent({
           tone={VERIFY_STATUS["not-eligible"].tone}
           title={VERIFY_STATUS["not-eligible"].title}
           body={VERIFY_STATUS["not-eligible"].body}
+          secondary={manageCta}
         />
       )
     default:
@@ -642,12 +699,18 @@ function BidRow({
   prevBid,
   outbid,
   onBid,
+  onRaise,
+  onPrecheck,
+  active,
   preview,
 }: {
   clearingPriceUsd: number | null
   prevBid?: MyBid
   outbid?: boolean
   onBid?: (p: BidParams, opts?: { onStage?: (s: BidStage) => void }) => Promise<BidResult>
+  onRaise?: () => void
+  onPrecheck?: () => Promise<BidPrecheck>
+  active?: boolean
   preview?: BidPreview
 }) {
   const minPrice = SALE_ECONOMICS.startingPriceUsd
@@ -703,6 +766,30 @@ function BidRow({
         ]
       : paymentTokens
   const [submitState, setSubmitState] = useState<SubmitState>(preview?.state ?? "idle")
+  // Advisory confirm-step blocker; display-only, the submit-time prePurchaseCheck stays the authority.
+  const [precheckNotice, setPrecheckNotice] = useState<{
+    reason: string
+    livenessUrl: string | null
+  } | null>(
+    preview?.precheck
+      ? { reason: preview.precheck.reason, livenessUrl: preview.precheck.livenessUrl ?? null }
+      : null,
+  )
+  // FOOTGUN: monotonic token - without it a slow earlier precheck can overwrite a newer answer
+  // and resurface a stale blocker after the user already cleared it.
+  const precheckSeq = useRef(0)
+  function enterConfirm() {
+    setSubmitState("confirming")
+    if (!onPrecheck) return
+    setPrecheckNotice(null)
+    const seq = ++precheckSeq.current
+    onPrecheck()
+      .then((r) => {
+        if (!aliveRef.current || seq !== precheckSeq.current) return
+        setPrecheckNotice(r.ready ? null : { reason: r.reason, livenessUrl: r.livenessUrl })
+      })
+      .catch(() => {}) // onPrecheck is fail-open today; guards future wiring
+  }
   useEffect(() => {
     if (!preview && submitState === "submitted") clearBidDraft()
   }, [submitState, preview])
@@ -740,6 +827,24 @@ function BidRow({
   const priceShown = price !== "" && !Number.isNaN(priceNum)
   const amountShown = amount !== "" && !Number.isNaN(amountNum)
 
+  // Wallet balance for the balance line + delta cover check. Fail-open: an unknown balance
+  // renders nothing and blocks nothing - the on-chain preflight stays the authority. The read
+  // is disabled while the panel is collapsed (active=false) so no idle polling runs off-screen.
+  const liveBalance = useTokenBalance(preview || active === false ? undefined : payToken)
+  const balanceDecimals = preview ? PREVIEW_DECIMALS : (payToken?.decimals ?? null)
+  const balanceUnits = preview
+    ? previewBalanceUnits(preview.balanceUsd)
+    : (liveBalance.data ?? null)
+  // Floored so the line never overstates what the wallet holds.
+  const balanceUsdShown =
+    balanceUnits != null && balanceDecimals != null
+      ? Math.floor(Number(balanceUnits) / 10 ** balanceDecimals)
+      : null
+  const balanceCovered =
+    amountShown && balanceDecimals != null
+      ? balanceCoversBid(amountNum, prevBid?.committedUsd ?? 0, balanceUnits, balanceDecimals)
+      : null
+
   const snappedRef = Number.isFinite(priceNum) && priceNum > 0 ? snapBidPrice(priceNum, band) : null
   const nextUp = snappedRef != null ? snapBidPrice(snappedRef + increment, band) : null
   const nextDown = snappedRef != null ? snapBidPrice(snappedRef - increment, band) : null
@@ -765,7 +870,12 @@ function BidRow({
   const amountValid = amountShown && amountCheck === "ok"
   const raisesSomething =
     !prevBid || priceNum > prevBid.priceUsd || amountNum > prevBid.committedUsd
-  const canSubmit = priceValid && amountValid && raisesSomething && submitState === "idle"
+  const canSubmit =
+    priceValid &&
+    amountValid &&
+    raisesSomething &&
+    balanceCovered !== false &&
+    submitState === "idle"
   const est = gnotEstimate(amountValid ? amountNum : 0, clearingPriceUsd ?? minPrice)
   // Second estimate at the bidder's own max price - only meaningful while winning with margin
   // (bid > clearing). It is the floor of what they receive if the price climbs to their max.
@@ -786,6 +896,13 @@ function BidRow({
       ? prevBid
         ? `Can’t go below your committed ${fmtUsd(prevBid.committedUsd)}.`
         : `Min ${fmtUsd(minCommitFloor)}.`
+      : null
+  // Delta-aware: only the amount above the committed floor is transferred on a raise.
+  const balanceError =
+    amountShown && amountCheck === "ok" && balanceCovered === false
+      ? prevBid
+        ? `Balance can’t cover the +${fmtUsd(amountNum - prevBid.committedUsd)}.`
+        : `Insufficient ${payToken?.symbol ?? "USDC"} balance.`
       : null
 
   const headroom =
@@ -868,6 +985,8 @@ function BidRow({
       setSubmitState("idle")
       return
     }
+    setSubmitState("pending")
+    await devStepPause()
     await submitter.submit(params)
     if (!aliveRef.current) return
     setSubmitState("submitted")
@@ -900,6 +1019,24 @@ function BidRow({
                 : "No additional funds - just sign."}
             </p>
           ) : null}
+          {precheckNotice ? (
+            <p className="mt-1 text-xs font-medium text-amber" role="alert">
+              {reasonToMessage(precheckNotice.reason)}
+              {precheckNotice.livenessUrl ? (
+                <>
+                  {" "}
+                  <a
+                    href={precheckNotice.livenessUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="underline underline-offset-2 hover:opacity-75"
+                  >
+                    Start identity check
+                  </a>
+                </>
+              ) : null}
+            </p>
+          ) : null}
         </div>
         <div className="ml-auto flex flex-wrap items-center justify-end gap-4">
           <Cta variant="solid-contrast" onClick={runSubmit}>
@@ -918,7 +1055,26 @@ function BidRow({
     )
   }
 
-  if (submitState === "submitting" || submitState === "approving" || submitState === "signing") {
+  if (
+    submitState === "submitting" ||
+    submitState === "approving" ||
+    submitState === "signing" ||
+    submitState === "pending"
+  ) {
+    const sym = payToken?.symbol ?? "USDC"
+    // One entry per in-flight stage: title + detail live together so they can never desync.
+    const stageCopy: Record<typeof submitState, { title: string; detail: string }> = {
+      submitting: {
+        title: "Placing your bid...",
+        detail: "Preparing your bid - check your wallet in a moment.",
+      },
+      approving: {
+        title: `Approving ${sym}...`,
+        detail: `Approve ${sym} spending in your wallet.`,
+      },
+      signing: { title: "Signing...", detail: "Confirm and sign the bid in your wallet." },
+      pending: { title: "Confirming...", detail: "Bid signed. Waiting for on-chain confirmation." },
+    }
     return (
       <div
         ref={viewRef}
@@ -928,20 +1084,8 @@ function BidRow({
         <div className="flex items-center gap-3" aria-live="polite">
           <Icon name="clock" draw={false} className="h-5 w-5 shrink-0 text-foreground" />
           <p className="text-sm">
-            <span className="font-medium text-foreground">
-              {submitState === "submitting"
-                ? "Placing your bid..."
-                : submitState === "approving"
-                  ? `Approving ${payToken?.symbol ?? "USDC"}...`
-                  : "Signing..."}
-            </span>
-            <span className="ml-1.5 text-muted">
-              {submitState === "submitting"
-                ? "Preparing your bid - check your wallet in a moment."
-                : submitState === "approving"
-                  ? `Approve ${payToken?.symbol ?? "USDC"} spending in your wallet.`
-                  : "Confirm and sign the bid in your wallet."}
-            </span>
+            <span className="font-medium text-foreground">{stageCopy[submitState].title}</span>
+            <span className="ml-1.5 text-muted">{stageCopy[submitState].detail}</span>
           </p>
         </div>
       </div>
@@ -971,10 +1115,21 @@ function BidRow({
               rel="noreferrer"
               className="whitespace-nowrap text-xs text-muted underline underline-offset-2 hover:text-foreground"
             >
-              Transaction
+              View tx
             </a>
           ) : txHash ? (
             <span className="font-mono text-[11px] text-muted">tx {txHash}</span>
+          ) : null}
+          {/* Live: onRaise remounts BidFlow (epoch bump) so the form re-seeds from the fresh
+              position. The in-place reset is the gallery fallback (preview has no panel). */}
+          {(onRaise || preview?.raiseCta) && !optInDetail ? (
+            <button
+              type="button"
+              onClick={() => (onRaise ? onRaise() : setSubmitState("idle"))}
+              className="whitespace-nowrap text-xs text-muted underline underline-offset-2 hover:text-foreground"
+            >
+              Raise bid
+            </button>
           ) : null}
         </div>
         <PostBidOptIns bidLimitUsd={priceNum} onDetailChange={setOptInDetail} />
@@ -1016,7 +1171,7 @@ function BidRow({
             error={priceError}
             className="w-24"
           />
-          {priceError || amountError ? null : submitFailure ? (
+          {priceError || amountError || balanceError ? null : submitFailure ? (
             <p
               className="w-0 min-w-full whitespace-nowrap text-xs font-medium text-danger"
               role="alert"
@@ -1057,18 +1212,29 @@ function BidRow({
           label="Amount (USD)"
           value={amount}
           onChange={onAmountChange}
-          invalid={amountShown && amountCheck !== "ok"}
+          invalid={amountShown && (amountCheck !== "ok" || balanceCovered === false)}
           placeholder={String(minCommitFloor)}
           hint={`The total USD you commit is the amount you pay if your bid wins. If you're outbid, you're fully refunded after the sale. Your GNOT allocation is calculated as: Amount (USD) / Clearing Price. Minimum commitment is ${fmtUsd(minCommitFloor)}, with no maximum.`}
-          error={amountError}
+          error={amountError ?? balanceError}
           className="w-32"
           trailing={
-            multiToken && orderedTokens ? (
-              <TokenSelect
-                tokens={orderedTokens}
-                value={payToken?.address}
-                onChange={setPayTokenAddress}
-              />
+            (multiToken && orderedTokens) || balanceUsdShown != null ? (
+              // Stacked suffix: token picker on top, wallet balance tucked under it - the
+              // field keeps its h-12 (select ~20px + 10px line fit the box).
+              <span className="flex flex-col items-end justify-center">
+                {multiToken && orderedTokens ? (
+                  <TokenSelect
+                    tokens={orderedTokens}
+                    value={payToken?.address}
+                    onChange={setPayTokenAddress}
+                  />
+                ) : null}
+                {balanceUsdShown != null ? (
+                  <span className="ml-1 whitespace-nowrap text-[9px] uppercase tracking-wide text-muted tabular-nums">
+                    Bal {fmtUsd(balanceUsdShown)}
+                  </span>
+                ) : null}
+              </span>
             ) : undefined
           }
         />
@@ -1095,11 +1261,7 @@ function BidRow({
             .
           </span>
           <div className="flex h-12 items-center gap-4">
-            <Cta
-              variant="solid-contrast"
-              onClick={() => setSubmitState("confirming")}
-              disabled={!canSubmit}
-            >
+            <Cta variant="solid-contrast" onClick={enterConfirm} disabled={!canSubmit}>
               {prevBid ? "Raise bid" : "Place bid"}
               <DeltaCapsule added={prevBid ? amountNum - prevBid.committedUsd : 0} />
             </Cta>

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useAccount, useDisconnect } from "wagmi"
+import { Icon } from "../(ui)/Icon"
 
 function truncate(address: string): string {
   return `${address.slice(0, 6)}…${address.slice(-4)}`
@@ -23,7 +24,7 @@ export function WalletButton() {
       title="Disconnect"
       className="group inline-flex h-8 items-center gap-2 rounded-full border border-border px-3 font-mono text-[11px] tabular-nums text-foreground transition-colors hover:border-border-strong"
     >
-      <span aria-hidden="true" className="h-1 w-1 rounded-full bg-foreground" />
+      <Icon name="wallet" draw={false} className="h-3.5 w-3.5 shrink-0" />
       {truncate(address)}
       <svg
         viewBox="0 0 24 24"

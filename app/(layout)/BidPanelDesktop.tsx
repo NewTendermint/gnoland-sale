@@ -5,6 +5,7 @@ import { type ReactNode, useEffect, useRef, useState } from "react"
 import { useAccount } from "wagmi"
 import { BidFlow } from "../(sections)/bid/BidFlow"
 import { BidStatusTag, FunnelSteps } from "../(sections)/bid/FunnelSteps"
+import { ManageEntityCta } from "../(sections)/bid/ManageEntity"
 import { SettlementFlow } from "../(sections)/bid/SettlementFlow"
 import { CloseButton } from "../(ui)/CloseButton"
 import { Cta } from "../(ui)/Cta"
@@ -18,7 +19,7 @@ import { postSonarLogout, redirectToSonarLogin } from "../../lib/sale/api"
 import { gnotEstimate } from "../../lib/sale/calc"
 import { SALE_ECONOMICS, formatSaleDate } from "../../lib/sale/economics"
 import { fmtGnot, fmtPrice, fmtUsd } from "../../lib/sale/format"
-import { useBid, useClaim, useClaimGate } from "../../lib/sale/hooks"
+import { useBid, useBidPrecheck, useClaim, useClaimGate } from "../../lib/sale/hooks"
 import { derivePreSaleBar } from "../../lib/sale/journey"
 import {
   SUPPORT_VERIFY_FAILED_HREF,
@@ -60,10 +61,12 @@ export function BidPanelDesktop() {
     positionResolved,
     sonarReturn,
     sonarSetupUrl,
+    entityLabel,
     bidPanelOpen: expanded,
     setBidPanelOpen: setExpanded,
   } = useSale()
   const bid = useBid()
+  const { precheck } = useBidPrecheck()
   const claim = useClaim()
   const claimGate = useClaimGate({ enabled: phase === "ended" })
   const sonarSeen = useSonarSeen()
@@ -137,6 +140,7 @@ export function BidPanelDesktop() {
               state={barState}
               returning={sonarSeen}
               setupHref={sonarSetupUrl}
+              entityLabel={entityLabel}
               onRegister={redirectToSonarLogin}
               onSignOut={handleSignOut}
               onRefresh={handleRefresh}
@@ -185,7 +189,7 @@ export function BidPanelDesktop() {
                 ref={panelRef}
                 tabIndex={-1}
                 inert={!expanded}
-                className={`bid-capsule max-h-[60vh] overflow-y-auto px-6 py-5 transition-opacity duration-500 ease-reveal focus:outline-none motion-reduce:transition-none ${
+                className={`bid-capsule max-h-[60vh] overflow-y-auto overscroll-contain px-6 py-5 transition-opacity duration-500 ease-reveal focus:outline-none motion-reduce:transition-none ${
                   expanded ? "opacity-100" : "opacity-0"
                 }`}
               >
@@ -319,7 +323,7 @@ export function BidPanelDesktop() {
                     ref={panelRef}
                     tabIndex={-1}
                     inert={!expanded}
-                    className={`bid-capsule max-h-[60vh] overflow-y-auto px-6 py-5 transition-opacity duration-500 ease-reveal focus:outline-none motion-reduce:transition-none ${
+                    className={`bid-capsule max-h-[60vh] overflow-y-auto overscroll-contain px-6 py-5 transition-opacity duration-500 ease-reveal focus:outline-none motion-reduce:transition-none ${
                       expanded ? "opacity-100" : "opacity-0"
                     }`}
                   >
@@ -331,6 +335,8 @@ export function BidPanelDesktop() {
                             myBid={myBid}
                             clearingPriceUsd={commitment.clearingPriceUsd}
                             wallet={<WalletButton />}
+                            manageEntitiesHref={sonarSetupUrl}
+                            entityLabel={entityLabel}
                           />
                         ) : null}
                         <BidFlow
@@ -343,6 +349,10 @@ export function BidPanelDesktop() {
                           onSignOut={handleSignOut}
                           setupHref={sonarSetupUrl}
                           onBid={bid.submit}
+                          onRaise={() => setBidFlowEpoch((n) => n + 1)}
+                          onPrecheck={precheck}
+                          active={expanded}
+                          entityLabel={entityLabel}
                         />
                       </>
                     ) : (
@@ -360,16 +370,53 @@ export function BidPanelDesktop() {
 }
 
 // wallet: live WalletButton, or a static chip in dev fixtures.
+/** The active Sonar entity as a quiet underlined link out to Sonar account management
+ *  (add a business entity, switch, finish setup). Not a pill: that shape belongs to the
+ *  wallet. Label = user's own PII, shown only to them. */
+export function ManageEntityLink({ href, label }: { href: string; label?: string | null }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer noopener"
+      title="Manage your Sonar account"
+      aria-label="Manage your Sonar account"
+      className="inline-flex items-center gap-1.5 font-mono text-[11px] text-muted transition-colors hover:text-foreground"
+    >
+      <Icon name="shield-check" draw={false} className="h-3.5 w-3.5 shrink-0" />
+      <span className="max-w-[18ch] truncate underline underline-offset-2">
+        {label ?? "Sonar account"}
+      </span>
+      {/* Inline SVG, not the U+2197 glyph: some Windows fonts promote it to emoji. */}
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        className="h-3 w-3 shrink-0"
+        aria-hidden="true"
+      >
+        <path d="M7 17 17 7M9 7h8v8" />
+      </svg>
+    </a>
+  )
+}
+
 export function BidSectionHeader({
   journey,
   myBid,
   clearingPriceUsd,
   wallet,
+  manageEntitiesHref,
+  entityLabel,
 }: {
   journey: JourneyState
   myBid: MyBid
   clearingPriceUsd: number | null
   wallet: ReactNode
+  /** Sonar-hosted entity management (add a business entity, finish setup); opens in a new tab. */
+  manageEntitiesHref?: string
+  entityLabel?: string | null
 }) {
   const hasBid =
     journey === "has-bid-winning" || journey === "has-bid-outbid" || journey === "has-bid-pending"
@@ -409,7 +456,12 @@ export function BidSectionHeader({
           {bidSectionTitle(journey)}
         </span>
       )}
-      {wallet}
+      <div className="flex items-center gap-6">
+        {manageEntitiesHref ? (
+          <ManageEntityLink href={manageEntitiesHref} label={entityLabel} />
+        ) : null}
+        {wallet}
+      </div>
     </div>
   )
 }
@@ -481,6 +533,7 @@ function StatusRow({
   title,
   body,
   action,
+  manage,
   onSignOut,
   onRefresh,
   withCalendar = false,
@@ -491,6 +544,8 @@ function StatusRow({
   title: string
   body?: string
   action?: ReactNode
+  /** The entity manage link, shown across every KYC state that has a Sonar entity. */
+  manage?: ReactNode
   onSignOut: () => void
   onRefresh?: () => void | Promise<void>
   withCalendar?: boolean
@@ -500,7 +555,6 @@ function StatusRow({
     <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
         <BarStatus icon={icon} tone={tone} title={title} body={body} />
-        {action}
         {contactHref ? (
           <a
             href={contactHref}
@@ -513,7 +567,11 @@ function StatusRow({
         ) : null}
         {onRefresh ? <RefreshButton onRefresh={onRefresh} /> : null}
       </div>
-      {withCalendar ? <AddToCalendarButton milestone="sale" variant="bar" /> : null}
+      <div className="flex flex-wrap items-center gap-3">
+        {manage}
+        {action}
+        {withCalendar ? <AddToCalendarButton milestone="sale" variant="bar" /> : null}
+      </div>
     </div>
   )
 }
@@ -522,6 +580,7 @@ export function PreSaleRight({
   state,
   returning,
   setupHref,
+  entityLabel,
   onRegister = () => {},
   onSignOut = () => {},
   onRefresh = () => {},
@@ -529,6 +588,7 @@ export function PreSaleRight({
   state: PreSaleBarState
   returning: boolean
   setupHref: string
+  entityLabel?: string | null
   onRegister?: () => void
   onSignOut?: () => void
   onRefresh?: () => void | Promise<void>
@@ -583,6 +643,7 @@ export function PreSaleRight({
           tone={VERIFY_STATUS.pending.tone}
           title={`${VERIFY_STATUS.pending.title}.`}
           body={VERIFY_STATUS.pending.body}
+          manage={<ManageEntityCta href={setupHref} label={entityLabel} />}
           onSignOut={onSignOut}
           onRefresh={onRefresh}
           withCalendar
@@ -595,6 +656,7 @@ export function PreSaleRight({
           tone={VERIFY_STATUS.failed.tone}
           title={`${VERIFY_STATUS.failed.title}.`}
           body={VERIFY_STATUS.failed.body}
+          manage={<ManageEntityCta href={setupHref} label={entityLabel} />}
           onSignOut={onSignOut}
           withCalendar
           contactHref={SUPPORT_VERIFY_FAILED_HREF ?? undefined}
@@ -607,6 +669,7 @@ export function PreSaleRight({
           tone={VERIFY_STATUS["not-eligible"].tone}
           title={`${VERIFY_STATUS["not-eligible"].title}.`}
           body={VERIFY_STATUS["not-eligible"].body}
+          manage={<ManageEntityCta href={setupHref} label={entityLabel} />}
           onSignOut={onSignOut}
           withCalendar
         />
@@ -618,6 +681,7 @@ export function PreSaleRight({
           tone={VERIFY_STATUS.verified.tone}
           title={`${VERIFY_STATUS.verified.title}.`}
           body="Nothing more to do until the sale opens."
+          manage={<ManageEntityCta href={setupHref} label={entityLabel} />}
           onSignOut={onSignOut}
           withCalendar
         />
