@@ -175,11 +175,7 @@ export function useBid() {
         // Footgun: never setQueryData(["sale","my-bid"]) here - the pending-bid store is the only
         // optimistic layer, and the query cache must stay Sonar's real answer (the delta baseline).
         writePendingBid(
-          {
-            priceUsd: bidParams.priceUsd,
-            committedUsd: bidParams.amountUsd,
-            lockup: bidParams.lockup,
-          },
+          { priceUsd: bidParams.priceUsd, committedUsd: bidParams.amountUsd },
           address,
         )
       }

@@ -57,7 +57,6 @@ export type EntitySnapshot = {
 export type MyBid = {
   priceUsd: number
   committedUsd: number
-  lockup: boolean
 } | null
 
 export type JourneyState =

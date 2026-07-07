@@ -199,11 +199,12 @@ describe("POST /api/sonar/generate-permit", () => {
     expect(mockedGetEntity).not.toHaveBeenCalled()
   })
 
-  it("returns 409 when the session has no entity", async () => {
+  it("returns 404 when the session has no entity (matches GET /api/sonar/entity's no_entity)", async () => {
     mockedGetSession.mockResolvedValue(sessionStub("sess-1"))
     mockedGetEntity.mockResolvedValue(null)
     const res = await generatePermitPOST(req({ wallet }))
-    expect(res.status).toBe(409)
+    expect(res.status).toBe(404)
+    expect(await res.json()).toEqual({ error: "no_entity" })
     expect(mockedGeneratePermit).not.toHaveBeenCalled()
   })
 
@@ -291,10 +292,10 @@ describe("GET /api/sonar/my-position", () => {
 
   it("returns the position for an authenticated session", async () => {
     mockedGetSession.mockResolvedValue(sessionStub("sess-1"))
-    mockedReadMyBid.mockResolvedValue({ priceUsd: 0.2, committedUsd: 1000, lockup: false })
+    mockedReadMyBid.mockResolvedValue({ priceUsd: 0.2, committedUsd: 1000 })
     const res = await myPositionGET()
     expect(res.status).toBe(200)
-    expect(await res.json()).toEqual({ priceUsd: 0.2, committedUsd: 1000, lockup: false })
+    expect(await res.json()).toEqual({ priceUsd: 0.2, committedUsd: 1000 })
   })
 
   it("maps a revoked token (SonarAuthError) to 401", async () => {
