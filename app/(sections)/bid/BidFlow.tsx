@@ -840,6 +840,8 @@ function BidRow({
     balanceUnits != null && balanceDecimals != null
       ? Math.floor(Number(balanceUnits) / 10 ** balanceDecimals)
       : null
+  // FOOTGUN: the slot must exist during the in-flight read, or the token picker jumps on load.
+  const balanceSlot = balanceUsdShown != null || (!preview && liveBalance.isLoading)
   const balanceCovered =
     amountShown && balanceDecimals != null
       ? balanceCoversBid(amountNum, prevBid?.committedUsd ?? 0, balanceUnits, balanceDecimals)
@@ -1218,9 +1220,8 @@ function BidRow({
           error={amountError ?? balanceError}
           className="w-32"
           trailing={
-            (multiToken && orderedTokens) || balanceUsdShown != null ? (
-              // Stacked suffix: token picker on top, wallet balance tucked under it - the
-              // field keeps its h-12 (select ~20px + 10px line fit the box).
+            (multiToken && orderedTokens) || balanceSlot ? (
+              // Stacked suffix: token picker on top, wallet balance under it, inside the h-12 box.
               <span className="flex flex-col items-end justify-center">
                 {multiToken && orderedTokens ? (
                   <TokenSelect
@@ -1229,9 +1230,9 @@ function BidRow({
                     onChange={setPayTokenAddress}
                   />
                 ) : null}
-                {balanceUsdShown != null ? (
+                {balanceSlot ? (
                   <span className="ml-1 whitespace-nowrap text-[9px] uppercase tracking-wide text-muted tabular-nums">
-                    Bal {fmtUsd(balanceUsdShown)}
+                    Bal {balanceUsdShown != null ? fmtUsd(balanceUsdShown) : "…"}
                   </span>
                 ) : null}
               </span>

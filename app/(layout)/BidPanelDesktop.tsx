@@ -189,7 +189,7 @@ export function BidPanelDesktop() {
                 ref={panelRef}
                 tabIndex={-1}
                 inert={!expanded}
-                className={`bid-capsule max-h-[60vh] overflow-y-auto overscroll-contain px-6 py-5 transition-opacity duration-500 ease-reveal focus:outline-none motion-reduce:transition-none ${
+                className={`bid-capsule max-h-[60vh] overflow-y-auto overscroll-none px-6 py-5 transition-opacity duration-500 ease-reveal focus:outline-none motion-reduce:transition-none ${
                   expanded ? "opacity-100" : "opacity-0"
                 }`}
               >
@@ -323,7 +323,7 @@ export function BidPanelDesktop() {
                     ref={panelRef}
                     tabIndex={-1}
                     inert={!expanded}
-                    className={`bid-capsule max-h-[60vh] overflow-y-auto overscroll-contain px-6 py-5 transition-opacity duration-500 ease-reveal focus:outline-none motion-reduce:transition-none ${
+                    className={`bid-capsule max-h-[60vh] overflow-y-auto overscroll-none px-6 py-5 transition-opacity duration-500 ease-reveal focus:outline-none motion-reduce:transition-none ${
                       expanded ? "opacity-100" : "opacity-0"
                     }`}
                   >
