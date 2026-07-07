@@ -19,7 +19,10 @@ vi.mock("@/lib/db/lease", () => ({
   acquireCronLease: (...a: unknown[]) => acquireCronLease(...a),
   releaseCronLease: (...a: unknown[]) => releaseCronLease(...a),
 }))
+// Named via vi.hoisted: vi.mock factories are hoisted above module-scope consts.
+const { MOCK_TTL_CAP_S } = vi.hoisted(() => ({ MOCK_TTL_CAP_S: 6 * 60 * 60 }))
 vi.mock("@/lib/push/send", () => ({
+  OUTBID_TTL_CAP_S: MOCK_TTL_CAP_S,
   sendOutbidNotifications: (...a: unknown[]) => {
     calls.push("send")
     return sendOutbidNotifications(...a)
@@ -27,6 +30,7 @@ vi.mock("@/lib/push/send", () => ({
 }))
 vi.mock("@/lib/sale/live-window", () => ({
   saleIsLive: (...a: unknown[]) => saleIsLive(...a),
+  pushTtlSeconds: () => MOCK_TTL_CAP_S,
 }))
 vi.mock("@/lib/db/client", () => ({
   db: {
@@ -97,6 +101,8 @@ describe("POST /api/push/cron", () => {
     // the same transition every 5 min and spams "You've been outbid".
     expect(calls.indexOf("persist")).toBeGreaterThanOrEqual(0)
     expect(calls.indexOf("persist")).toBeLessThan(calls.indexOf("send"))
+    // The cron owns the TTL policy (chain-first close-date handling); the transport just carries it.
+    expect(sendOutbidNotifications).toHaveBeenCalledWith(expect.anything(), MOCK_TTL_CAP_S)
     expect(releaseCronLease).toHaveBeenCalledWith("push-cron")
   })
 

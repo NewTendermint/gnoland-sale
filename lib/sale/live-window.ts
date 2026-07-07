@@ -3,6 +3,7 @@ import { http, createPublicClient, fallback } from "viem"
 import { errorMessage } from "../log"
 import { SALE_STAGE, settlementSaleAbi } from "./abi"
 import { SALE_CHAIN, saleContractsFor } from "./contracts"
+import { SALE_ECONOMICS } from "./economics"
 import { resolveSalePhase } from "./phase"
 import { rpcUrlsFor } from "./rpc"
 
@@ -41,4 +42,16 @@ export async function saleIsLive(nowMs: number): Promise<boolean> {
     }
   }
   return resolveSalePhase(nowMs) === "live"
+}
+
+/**
+ * Push-notification TTL from the sale window: the time left before the env close date, capped.
+ * The cap alone when that date is malformed (NaN must never reach a TTL header) or already past
+ * while the chain-first caller still says live - economics.ts warns the env dates drift and the
+ * sale can be extended, and a 0 TTL would silently drop the one-shot alert for offline users.
+ */
+export function pushTtlSeconds(nowMs: number, capSeconds: number): number {
+  const closeMs = new Date(SALE_ECONOMICS.saleClosesIso).getTime()
+  if (!Number.isFinite(closeMs) || closeMs <= nowMs) return capSeconds
+  return Math.min(Math.floor((closeMs - nowMs) / 1000), capSeconds)
 }
