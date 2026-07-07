@@ -17,7 +17,7 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000. With no env set, development runs fully mocked (Sonar fixtures + Mailchimp mock + phase `live`), enough to work on every UI surface.
+Open http://localhost:3000. Mocks are explicit opt-in: `SONAR_MOCK=1` runs the Sonar surface on local fixtures and `MAILCHIMP_MOCK=1` mocks the newsletter (both in `.env.local`); the phase always derives from the sale clock.
 
 Two cases need real config (copy `.env.example` to `.env.local`):
 
@@ -36,7 +36,7 @@ Two cases need real config (copy `.env.example` to `.env.local`):
 ```
 npm run dev          start dev server (mocked, no DB, :3000)
 npm run dev:db       start via Netlify CLI (local DB + injected env, :8888)
-npm run build        production build (includes the client-bundle secret scan)
+npm run build        production build (the client-bundle secret scan runs in CI)
 npm run lint         Biome
 npm run typecheck    tsc strict
 npm run test         Vitest unit suite
@@ -60,7 +60,6 @@ Three phases drive every surface (`lib/sale/phase.ts`):
 Resolution order (first match wins):
 
 1. **The sale clock** - the dates in `lib/sale/economics.ts` (`saleOpensIso`, `saleClosesIso`), each overridable via its `NEXT_PUBLIC_*` env var: `pre-sale` before it opens, `live` during the window, `ended` after it closes. This is the production default: set the 3 dates and the page serves the right version itself, no deploy. Resolved server-side (`app/page.tsx`, ISR ~30s) and re-resolved client-side every 60s so an open tab flips without a reload. There is no direct phase-override env var; the phase always follows the dates.
-2. Dev default: `live`.
 
 ### The two pre-sale stages (automatic flip)
 
@@ -117,7 +116,7 @@ Copy `.env.example` to `.env.local`. Production secrets live in Netlify env, nev
 | `NETLIFY_DB_URL` | Netlify Database (GA). Auto-injected on Netlify; the app reads it via the `drizzle-orm/netlify-db` adapter. Set it locally for `next dev` + `db:migrate`/`db:studio` (`DATABASE_URL` overrides it for drizzle-kit only) |
 | `SALE_PAUSED` | `true` = kill switch |
 | `SALE_CHAIN` | `mainnet` (prod) / `sepolia` (preview); drives the audit chain_id and chain branching |
-| `MAILCHIMP_API_KEY` / `MAILCHIMP_AUDIENCE_ID` | Newsletter upstream (absent = dev mocks, prod fails closed) |
+| `MAILCHIMP_API_KEY` / `MAILCHIMP_AUDIENCE_ID` | Newsletter upstream (absent = fails closed; mock only via explicit `MAILCHIMP_MOCK=1`, never in prod) |
 | `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` | Web Push signing (outbid alerts) |
 | `CRON_SECRET` | Bearer for the scheduled outbid-cron route |
 | `SONAR_MOCK` / `MAILCHIMP_MOCK` | Dev-only: `1` serves local fixtures instead of the real APIs |
@@ -164,7 +163,7 @@ Deploys are driven by **Netlify**, not GitHub Actions. There are no GitHub deplo
 
 `NEXT_PUBLIC_STATE_OVERRIDES` (dev state-preview) is set only in the dashboard, scoped to branch + preview contexts, never production, and not committed.
 
-CI (`.github/workflows/ci.yml`) runs on every PR and on push to `main`: Biome lint, secretlint source scan, typecheck, Vitest, build, client-bundle secret scan (`scripts/check-secrets.mjs`), and `npm audit --audit-level=high`. Protecting `main` with a required-CI rule is recommended before opening the repo.
+CI (`.github/workflows/checks.yml`, `test.yml`, `database.yml`) runs on every PR and on push to `main`: Biome lint, secretlint source scan, typecheck, Vitest, build, client-bundle secret scan (`scripts/check-secrets.mjs`), migration-drift guard, and `npm audit --omit=dev`. Branch protection is active: `main` requires a PR, the `validate` check and signed commits; `staging` requires signed commits.
 
 ## Before public launch
 
@@ -179,7 +178,7 @@ Tracked items that must be set when going live (most are config, not code):
 
 ## Development and review
 
-- `SONAR_MOCK=1` (the default in dev with no creds): the whole Sonar surface runs on local fixtures (`lib/sonar/mock-*`), including a slowly climbing mock clearing price.
+- `SONAR_MOCK=1` (explicit opt-in, dev + sepolia only, fail-closed elsewhere): the whole Sonar surface runs on local fixtures (`lib/sonar/mock-*`), including a slowly climbing mock clearing price.
 - `/dev/states`: every funnel state, collapsed + expanded, without a wallet or Sonar. Gated by `stateOverridesEnabled()` (`lib/sale/overrides.ts`), local dev only - the live page has no URL overrides anymore; to reproduce a state for real, use Sonar sandbox entity overrides.
 - Testing + KYC handling guide: `docs/specs/launch-and-test-checklist.md` - the evergreen register (security gates before LIVE, funnel E2E against the Sonar sandbox + Sepolia, KYC states); the KYC state map is `docs/ux-kyc-states.svg`. `docs/` is local-only (not committed).
 
@@ -196,5 +195,5 @@ Design and architecture decision records live in `docs/` (internal, not committe
 
 - All Sonar API calls, OAuth tokens and secrets are server-side; the client gets derived JSON only.
 - OAuth tokens encrypted at rest (libsodium envelope), sessions HttpOnly/Secure/Lax, PKCE state single-use and session-bound.
-- CSP nonce-based via middleware (Report-Only pending enforcement); CI build fails if a server-only secret name appears in client output.
+- CSP via middleware: `object-src`/`base-uri`/`form-action`/`frame-ancestors` enforced, the strict script/connect/frame policy still Report-Only pending wallet testing; CI build fails if a server-only secret name appears in client output.
 - No PII in logs: IPs HMAC-peppered, newsletter emails pass through without persistence.
