@@ -97,6 +97,8 @@ export function SaleProvider({
       setPreSaleStage(resolvePreSaleStage(Date.now()))
       setPhase(resolveSalePhase(Date.now()))
     }
+    // ISR can serve an initialPhase up to ~30s stale around a boundary; correct it on mount.
+    resolve()
     const id = setInterval(resolve, 60_000)
     document.addEventListener("visibilitychange", resolve)
     // The 60s poll can lag a boundary by up to a minute, leaving the wrong surface up after the
