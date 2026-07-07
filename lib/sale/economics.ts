@@ -2,14 +2,23 @@
 // Schedule instants are the exact UTC moments from the Sonar dashboard (all at 22:00Z on the
 // three dates). The Countdown to saleClosesIso and the phase gates derive from these, so the
 // time-of-day is intentional, not midnight.
+import { mainnet } from "viem/chains"
+import { SALE_CHAIN } from "./contracts"
+
+const startingPriceUsd = 0.0645 // = minimum price (= step 0 of the on-chain bid grid)
+const totalSupplyGnot = 1_333_000_000
+
 export const SALE_ECONOMICS = {
-  startingPriceUsd: 0.0645, // = minimum price (= step 0 of the on-chain bid grid)
+  startingPriceUsd,
   saleSupplyGnot: 38_760_000, // ~2.9% of supply (was 77.5M / ~5.8%, halved 2026-06-30)
-  totalSupplyGnot: 1_333_000_000,
+  totalSupplyGnot,
+  // Display-only (token-details section): no code enforces it, a soft-cap decision at settlement
+  // is a MANUAL action on the Sonar side, never automatic (team, 2026-06-25).
   softCapUsd: 2_500_000, // reintroduced 2026-06-30 (~ startingPrice x saleSupply = full subscription at the floor)
-  fdvUsd: 86_000_000,
-  // Default = prod $100; NEXT_PUBLIC_MIN_COMMITMENT_USD overrides for staging/local (2).
-  minCommitmentUsd: Number(process.env.NEXT_PUBLIC_MIN_COMMITMENT_USD) || 100,
+  fdvUsd: Math.round(startingPriceUsd * totalSupplyGnot), // 85,978,500
+  // $100 on mainnet, always; NEXT_PUBLIC_MIN_COMMITMENT_USD only applies off-mainnet (staging/local).
+  minCommitmentUsd:
+    SALE_CHAIN.id === mainnet.id ? 100 : Number(process.env.NEXT_PUBLIC_MIN_COMMITMENT_USD) || 100,
   maxCommitmentUsd: null, // no maximum commitment (team, 2026-06-21; prior $100k provisional cap dropped)
   // On-chain price = round(priceUsd / increment), zero-anchored (calc.priceUsdToOnchainPrice; verified
   // vs the deployed permit). 0.0215 prod + sandbox (Dongwon 2026-06-30; divides the 0.0645 floor -> 3).
@@ -26,6 +35,17 @@ export const SALE_ECONOMICS = {
   saleOpensIso: process.env.NEXT_PUBLIC_SALE_OPENS ?? "2026-07-20T22:00:00Z", // Mon Jul 20, 22:00 UTC (Sonar dashboard)
   saleClosesIso: process.env.NEXT_PUBLIC_SALE_CLOSES ?? "2026-07-27T22:00:00Z", // Mon Jul 27, 22:00 UTC (Sonar dashboard)
 } as const
+
+// Boot invariant: the UI price grid steps from the floor while the contract grid is zero-anchored
+// (calc.priceUsdToOnchainPrice), so they only agree while the floor is an exact multiple of the
+// step. Integer micro-USD, float modulo would never be 0. Throws at build/boot, never mid-flow.
+if (
+  Math.round(SALE_ECONOMICS.startingPriceUsd * 1e6) %
+    Math.round(SALE_ECONOMICS.bidIncrementUsd * 1e6) !==
+  0
+) {
+  throw new Error("SALE_ECONOMICS: startingPriceUsd must be an integer multiple of bidIncrementUsd")
+}
 
 /** Display a sale ISO date, e.g. "July 15, 2026" (UTC-fixed so SSR and client agree). */
 export function formatSaleDate(iso: string, withYear = true): string {

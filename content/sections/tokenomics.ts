@@ -10,6 +10,8 @@
  * quantities sum to 1,333,000,000 GNOT and each percent = quantity / total.
  */
 
+import { SALE_ECONOMICS } from "../../lib/sale/economics"
+
 export type AllocationRow = {
   category: string
   /** Share of total supply, percent (e.g. 26.26). */
@@ -143,6 +145,6 @@ export const circulating = {
   tokenSaleSupply: 38_760_000,
   /** Verbatim from the team sheet. */
   lockup: "1-Year Lockup for US Investors Only",
-  /** = startingPrice $0.0645 x TOTAL_SUPPLY 1,333,000,000. */
-  fdvUsd: 85_948_500,
+  /** = startingPrice x total supply (85,978,500). */
+  fdvUsd: SALE_ECONOMICS.fdvUsd,
 }

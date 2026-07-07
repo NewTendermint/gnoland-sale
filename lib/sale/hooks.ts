@@ -189,6 +189,10 @@ export function useBid() {
       if (err instanceof HttpError && err.status === 401) {
         return { status: "reverted", reason: "session-expired" }
       }
+      // 403 = the server-side eligibility gate (bid-request.ts): retrying cannot help.
+      if (err instanceof HttpError && err.status === 403) {
+        return { status: "reverted", reason: "entity-not-eligible" }
+      }
       return { status: "reverted", reason: "Could not place bid" }
     } finally {
       bidInFlight = false

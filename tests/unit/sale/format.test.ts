@@ -1,5 +1,53 @@
 import { describe, expect, it } from "vitest"
-import { fmtCompactUsd, fmtCountdown } from "../../../lib/sale/format"
+import { fmtCompactUsd, fmtCountdown, parseDecimal } from "../../../lib/sale/format"
+
+describe("parseDecimal", () => {
+  it("parses plain decimals unchanged", () => {
+    expect(parseDecimal("0.0645")).toBe(0.0645)
+    expect(parseDecimal("1000")).toBe(1000)
+    expect(parseDecimal("")).toBe(0)
+  })
+
+  it("reads the EU comma as a decimal point", () => {
+    expect(parseDecimal("0,0645")).toBe(0.0645)
+    expect(parseDecimal("0,086")).toBe(0.086)
+    expect(parseDecimal("1500,50")).toBe(1500.5)
+    expect(parseDecimal("1,5")).toBe(1.5)
+  })
+
+  it("reads grouping commas as thousands separators", () => {
+    expect(parseDecimal("1,000")).toBe(1000)
+    expect(parseDecimal("150,000")).toBe(150000)
+    expect(parseDecimal("1,000,000")).toBe(1000000)
+    expect(parseDecimal("1,234.56")).toBe(1234.56)
+  })
+
+  it("keeps a trailing comma harmless while typing", () => {
+    expect(parseDecimal("150,")).toBe(150)
+  })
+
+  it("pins the deliberate lone-comma-plus-3-digits grouping call", () => {
+    // Same reading as the sale's original comma-strip behavior; ambiguity guarded by the confirm step.
+    expect(parseDecimal("5,000")).toBe(5000)
+    expect(parseDecimal("1,500")).toBe(1500)
+    expect(parseDecimal("0,000")).toBe(0) // zero integer part reads as a decimal
+  })
+
+  it("resolves comma boundaries around the 3-digit rule", () => {
+    expect(parseDecimal("12,34")).toBe(12.34)
+    expect(parseDecimal("1,2345")).toBe(1.2345)
+    expect(parseDecimal(",5")).toBe(0.5)
+  })
+
+  it("under-parses EU dot-grouped input toward rejection, never inflation", () => {
+    expect(parseDecimal("1.000,50")).toBe(1.0005)
+  })
+
+  it("propagates NaN on garbage so validation rejects it", () => {
+    expect(parseDecimal(",")).toBeNaN()
+    expect(parseDecimal(".")).toBeNaN()
+  })
+})
 
 // fmtCompactUsd is hand-rolled for deterministic output across JS engines; these
 // assertions pin its exact format.

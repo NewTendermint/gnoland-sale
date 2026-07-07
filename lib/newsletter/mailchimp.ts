@@ -7,11 +7,11 @@ export type SubscribeOutcome = "ok" | "upstream-error"
 
 type FetchLike = typeof fetch
 
-// Dev-only mock gate; never in production (prod fails closed on missing creds).
+// Dev-only mock gate; never in production, and explicit-only (a missing API key alone fails
+// closed as upstream-error instead of silently mocking - same opt-in contract as SONAR_MOCK).
 export function mailchimpMockEnabled(): boolean {
   if (process.env.NODE_ENV === "production") return false
-  if (process.env.MAILCHIMP_MOCK === "1") return true
-  return !process.env.MAILCHIMP_API_KEY
+  return process.env.MAILCHIMP_MOCK === "1"
 }
 
 // Single source for the credential plumbing (dc-suffix parsing, Basic auth, API base) shared by
