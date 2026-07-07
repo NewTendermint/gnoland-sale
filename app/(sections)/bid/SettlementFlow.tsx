@@ -87,12 +87,19 @@ export function SettlementFlow({
     )
   }
 
-  const { status, committedUsd } = settlement
-  const won = status === "won"
-  // All claim assertions come from the pure merge in lib/sale/settlement.ts (fail-closed: only
-  // the contract's own numbers open the button).
-  const { refundableUsd, gnotAllocation, refunded, showClaimButton, showAutoRefundLine } =
-    deriveClaimView(settlement, gate, claimState === "claimed")
+  const { committedUsd } = settlement
+  // All display assertions come from the pure merge in lib/sale/settlement.ts (fail-closed: only
+  // the contract's own numbers open the button, and `won` already carries the zero-fill
+  // downgrade to the refund-only rendering).
+  const {
+    refundableUsd,
+    gnotAllocation,
+    won,
+    zeroFill,
+    refunded,
+    showClaimButton,
+    showAutoRefundLine,
+  } = deriveClaimView(settlement, gate, claimState === "claimed")
 
   async function onClaimClick() {
     setClaimState("claiming")
@@ -117,7 +124,9 @@ export function SettlementFlow({
         <p className="text-sm text-foreground">
           {won
             ? "Your bid cleared. Here's your allocation."
-            : "You were outbid. Your full commitment is refundable."}
+            : zeroFill
+              ? "Your bid didn't receive an allocation. Your full commitment is refundable."
+              : "You were outbid. Your full commitment is refundable."}
         </p>
       </div>
 

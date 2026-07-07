@@ -398,6 +398,11 @@ const SETTLEMENT_STATES: ReadonlyArray<{
     gate: { done: true, claimEnabled: true, refunded: false, refundableUsd: 480 },
   },
   {
+    label: "Winner with ZERO fill (contract refunds all) - no-allocation copy, refund only",
+    myBid: MOCK_JOURNEY_INPUTS["has-bid-winning"].myBid,
+    gate: { done: true, claimEnabled: true, refunded: false, refundableUsd: 3200 },
+  },
+  {
     label: "Claim disabled on-chain - refunds processed automatically (refunder role)",
     myBid: MOCK_JOURNEY_INPUTS["has-bid-outbid"].myBid,
     gate: { done: true, claimEnabled: false, refunded: false, refundableUsd: 3200 },

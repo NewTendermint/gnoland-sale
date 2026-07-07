@@ -285,15 +285,42 @@ async function generousGas(
  */
 export function bidPreflightReason(
   permit: SonarPermitV3,
-  bid: { price: bigint; amount: bigint },
+  bid: { price: bigint; amount: bigint; lockup?: boolean },
   amountDelta: bigint,
   usdcBalance: bigint,
   nowSec: number,
   tokenSymbol = "USDC",
+  prevBid?: { price: bigint; lockup: boolean } | null,
+  wallet?: `0x${string}`,
 ): string | null {
   const expiresAt = Number(permit.ExpiresAt)
   if (expiresAt > 0 && nowSec >= expiresAt) {
     return "Your authorization expired, please try again."
+  }
+  // The permit binds ONE wallet (contract: InvalidSender): a mid-flow account switch is free to
+  // catch here. Case-insensitive - the connected address may carry EIP-55 checksum casing.
+  if (wallet && permit.Wallet.toLowerCase() !== wallet.toLowerCase()) {
+    return "This wallet isn't linked to your verified identity."
+  }
+  // Monotonicity vs the CHAIN's current bid (BidPriceCannotBeLowered / BidLockupCannotBeUndone):
+  // a zeroed fresh state imposes nothing, so the caller can pass currentBid unconditionally.
+  if (prevBid) {
+    if (bid.price < prevBid.price) {
+      return "A bid can only be raised, not lowered."
+    }
+    if (prevBid.lockup && !bid.lockup) {
+      return "This bid must include the lockup."
+    }
+  }
+  // Sale window (contract: timestamp < opensAt || timestamp >= closesAt), refused pre-wallet so
+  // the USDT approval path never mines an approve for a doomed bid. nowSec is the CLIENT clock,
+  // not block.timestamp: a 120s margin keeps a skewed clock from hard-refusing a bid the contract
+  // would take - inside the margin the simulateContract (chain truth) still decides.
+  const CLOCK_SKEW_MARGIN_S = 120
+  const opensAt = Number(permit.OpensAt)
+  const closesAt = Number(permit.ClosesAt)
+  if (nowSec < opensAt - CLOCK_SKEW_MARGIN_S || nowSec >= closesAt + CLOCK_SKEW_MARGIN_S) {
+    return "The sale isn't open right now."
   }
   const minPrice = BigInt(permit.MinPrice)
   const maxPrice = BigInt(permit.MaxPrice)
@@ -378,6 +405,8 @@ export async function submitBidOnChain(args: OnChainBidArgs): Promise<BidResult>
       usdcBalance,
       Math.floor(Date.now() / 1000),
       payment.symbol,
+      states[0]?.currentBid ?? null,
+      wallet,
     )
     if (preflight) {
       return { status: "reverted", reason: preflight }
@@ -385,7 +414,11 @@ export async function submitBidOnChain(args: OnChainBidArgs): Promise<BidResult>
 
     // Approval path - tokens without EIP-2612 (e.g. USDT): fund the delta with a plain approve tx
     // (zeroing a leftover allowance first, USDT requirement), then bid via replaceBidWithApproval.
-    // The permit path below stays untouched for USDC.
+    // The permit path below stays untouched for USDC. The bid CANNOT be simulated before the
+    // approve mines: replaceBidWithApproval safeTransferFroms the delta, and this branch only
+    // runs when the allowance is short - that simulation would always revert. Every deterministic
+    // revert is refused in the preflight above instead; the post-approve simulate below covers
+    // only the inherently racy remainder (stage flip, pause, expiry race).
     if (amountDelta > 0n && !(await tokenSupportsPermit(payment, wallet))) {
       const allowance = await readContract(wagmiConfig, {
         address: payment.address,

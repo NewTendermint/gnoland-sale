@@ -140,4 +140,49 @@ describe("deriveClaimView (Sonar estimate x on-chain gate, fail-closed)", () => 
     expect(v.refunded).toBe(true)
     expect(v.showClaimButton).toBe(false)
   })
+
+  // A "won" status with a contract-confirmed 0 fill must not render the "cleared / here's your
+  // allocation" banner over ~0 GNOT - the UI keys the refund-only state on zeroFill.
+  it("flags zeroFill when the contract refunds a winner's full commitment", () => {
+    const v = deriveClaimView(winner, gate({ refundableUsd: 3200 }), false)
+    expect(v.zeroFill).toBe(true)
+    expect(v.gnotAllocation).toBe(0)
+  })
+
+  it("does not flag zeroFill for a partial pro-rata fill", () => {
+    const v = deriveClaimView(winner, gate({ refundableUsd: 480 }), false)
+    expect(v.zeroFill).toBe(false)
+  })
+
+  it("does not flag zeroFill while the contract's refund is unreadable (estimate stays the display)", () => {
+    const v = deriveClaimView(winner, undefined, false)
+    expect(v.zeroFill).toBe(false)
+  })
+
+  it("never flags zeroFill for an outbid bidder (its refund copy is already correct)", () => {
+    const v = deriveClaimView(outbid, gate({}), false)
+    expect(v.zeroFill).toBe(false)
+  })
+
+  it("flags zeroFill when Sonar's lagging committed clamps the ratio to zero", () => {
+    const v = deriveClaimView(winner, gate({ refundableUsd: 5000 }), false)
+    expect(v.zeroFill).toBe(true)
+  })
+
+  it("treats a dust fill (pro-rata floor rounding) as zeroFill, not exact zero only", () => {
+    // 1 micro-USD accepted out of $3,200: ratio ~3e-10, allocation far below display precision -
+    // an exact `=== 0` would let the "cleared / ~0 GNOT" contradiction through.
+    const v = deriveClaimView(winner, gate({ refundableUsd: 3200 - 0.000001 }), false)
+    expect(v.zeroFill).toBe(true)
+  })
+
+  // `won` is the banner switch the UI consumes directly - derived HERE so the downgrade (won
+  // status + contract-confirmed 0 fill renders refund-only) is pinned by tests, not by
+  // unwitnessed JSX wiring.
+  it("exposes won = status won minus the zeroFill downgrade", () => {
+    expect(deriveClaimView(winner, gate({ refundableUsd: 480 }), false).won).toBe(true)
+    expect(deriveClaimView(winner, undefined, false).won).toBe(true)
+    expect(deriveClaimView(winner, gate({ refundableUsd: 3200 }), false).won).toBe(false)
+    expect(deriveClaimView(outbid, gate({}), false).won).toBe(false)
+  })
 })
