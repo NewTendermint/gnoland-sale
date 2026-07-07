@@ -616,6 +616,7 @@ function reasonToMessage(reason: string): string {
     "wallet-not-linked": "This wallet is already linked to another account.",
     "outside-time-window": "Bidding is closed right now.",
     "session-expired": "Your Sonar session expired. Reconnect to continue.",
+    "entity-not-eligible": "Your account can't bid yet. Finish verification.",
     "Connect your wallet": "Connect your wallet to bid.",
     "wrong-chain": `Switch to ${SALE_CHAIN.name} to bid.`,
     unknown: "Could not place your bid. Please try again.",
