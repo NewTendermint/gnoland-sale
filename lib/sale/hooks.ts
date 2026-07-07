@@ -18,13 +18,14 @@ import {
   type ClaimResult,
   claimRefundOnChain,
   readClaimGate,
+  readTokenBalance,
   resolvePaymentTokens,
   submitBidOnChain,
 } from "./onchain"
 import { reconcilePendingBid, usePendingBid, writePendingBid } from "./pending-bid"
 import { sonarQueryRetry, sonarQueryRetryDelay } from "./query-retry"
 import type { BidParams, BidResult, BidStage } from "./submitter"
-import type { CommitmentData } from "./types"
+import type { CommitmentData, PrePurchaseResult } from "./types"
 
 // Neutral zeros until the first fetch resolves; as initialData, types `data` as always-defined.
 const EMPTY_COMMITMENT: CommitmentData = {
@@ -114,6 +115,23 @@ export function usePaymentTokens() {
   })
 }
 
+/** The connected wallet's balance of a payment token (base units), feeding the bid form's
+ *  balance line + delta check (balanceCoversBid). Fail-open by design: `data` stays undefined
+ *  without a wallet, off the sale chain, or on read failure - the form never blocks on it and
+ *  the on-chain preflight remains the authority. */
+export function useTokenBalance(token?: { address: `0x${string}` }) {
+  const { address, chainId } = useAccount()
+  return useQuery({
+    queryKey: ["sale", "token-balance", address, token?.address],
+    queryFn: () => readTokenBalance(token?.address as `0x${string}`, address as `0x${string}`),
+    enabled: Boolean(address) && Boolean(token) && chainId === SALE_CHAIN.id,
+    staleTime: 30_000,
+    // FOOTGUN: without the poll, a wallet funded from another device never unlocks the CTA
+    // until a tab refocus. Foreground only; the caller disables the query when off-screen.
+    refetchInterval: 15_000,
+  })
+}
+
 /** True only for a well-formed https: URL; guards against a javascript:/data: redirect sink. */
 function isSafeHttpUrl(value: string | undefined): value is string {
   if (!value) return false
@@ -122,6 +140,45 @@ function isSafeHttpUrl(value: string | undefined): value is string {
   } catch {
     return false
   }
+}
+
+/** The validated liveness URL of a blocked pre-purchase answer, or null. Single source for the
+ *  advisory confirm-step link AND the submit-path redirect, so the two can never disagree.
+ *  TODO(real-data): tighten to a host allowlist once the liveness vendor's host is confirmed. */
+function livenessUrlFrom(pre: PrePurchaseResult): string | null {
+  return !pre.readyToPurchase &&
+    pre.failureReason === "requires-liveness" &&
+    isSafeHttpUrl(pre.livenessCheckUrl)
+    ? pre.livenessCheckUrl
+    : null
+}
+
+/** Advisory answer for the confirm step; `ready:false` carries the user-facing blocker. */
+export type BidPrecheck =
+  | { ready: true }
+  | { ready: false; reason: string; livenessUrl: string | null }
+
+/** Advisory pre-purchase check fired when the user reaches the confirm step, so a blocker
+ *  (liveness above all) surfaces BEFORE the wallet opens. Fail-open by contract: no wallet,
+ *  transport error, expired session - all resolve ready:true and change nothing. The submit
+ *  path's own prePurchaseCheck (useBid) remains the authority and is NOT skipped; this one
+ *  never redirects, it only reports. */
+export function useBidPrecheck() {
+  const { address } = useAccount()
+
+  async function precheck(): Promise<BidPrecheck> {
+    if (!address) return { ready: true }
+    try {
+      const pre = await postPrePurchase(address)
+      if (pre.readyToPurchase) return { ready: true }
+      // Rendered as a link the user chooses to follow, never an auto-redirect.
+      return { ready: false, reason: pre.failureReason, livenessUrl: livenessUrlFrom(pre) }
+    } catch {
+      return { ready: true }
+    }
+  }
+
+  return { precheck }
 }
 
 // Module-level so the guard survives a BidFlow remount (panel collapse/expand). One bidder per client.
@@ -148,10 +205,9 @@ export function useBid() {
     try {
       const pre = await postPrePurchase(address)
       if (!pre.readyToPurchase) {
-        // Validate the scheme before navigating (untrusted upstream value).
-        // TODO(real-data): tighten to a host allowlist once the liveness vendor's host is confirmed against Sonar.
-        if (pre.failureReason === "requires-liveness" && isSafeHttpUrl(pre.livenessCheckUrl)) {
-          window.location.href = pre.livenessCheckUrl
+        const livenessUrl = livenessUrlFrom(pre)
+        if (livenessUrl) {
+          window.location.href = livenessUrl
         }
         return { status: "reverted", reason: pre.failureReason }
       }
