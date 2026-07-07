@@ -26,10 +26,12 @@ import { SALE_ECONOMICS } from "../../../lib/sale/economics"
 import { fmtCompact, fmtGnot, fmtPrice, fmtUsd, parseDecimal } from "../../../lib/sale/format"
 import { usePaymentTokens } from "../../../lib/sale/hooks"
 import {
-  SUPPORT_CONTACT_HREF,
+  SUPPORT_VERIFY_FAILED_HREF,
   VERIFY_INCOMPLETE,
   VERIFY_STATUS,
   WELCOME_BACK,
+  punctuate,
+  supportMailtoHref,
 } from "../../../lib/sale/labels"
 import { defaultPaymentToken } from "../../../lib/sale/onchain"
 import {
@@ -429,8 +431,8 @@ function GateContent({
           tone={VERIFY_STATUS.failed.tone}
           title={VERIFY_STATUS.failed.title}
           body={VERIFY_STATUS.failed.body}
-          cta={SUPPORT_CONTACT_HREF ? "Contact support" : undefined}
-          ctaHref={SUPPORT_CONTACT_HREF ?? undefined}
+          cta={SUPPORT_VERIFY_FAILED_HREF ? "Contact support" : undefined}
+          ctaHref={SUPPORT_VERIFY_FAILED_HREF ?? undefined}
         />
       )
     case "not-eligible":
@@ -663,7 +665,7 @@ function BidRow({
   const [amount, setAmount] = useState(
     preview ? String(preview.amountUsd) : prevBid ? String(prevBid.committedUsd) : "",
   )
-  const { address: draftAddress } = useAccount()
+  const { address: draftAddress, connector } = useAccount()
   function onAmountChange(v: string) {
     setTouched(true)
     setAmount(v)
@@ -708,7 +710,17 @@ function BidRow({
   // Transaction link to free horizontal space for the email field / status text.
   const [optInDetail, setOptInDetail] = useState(false)
   const [txHash, setTxHash] = useState<string | null>(preview?.txHash ?? null)
-  const [submitError, setSubmitError] = useState<string | null>(preview?.error ?? null)
+  // Atomic failure snapshot: wallet/token/time are captured when the error lands, so a later
+  // connector or token switch cannot desync the support mail from the failure it describes.
+  const [submitFailure, setSubmitFailure] = useState<{
+    message: string
+    at?: string
+    wallet?: string
+    token?: string
+  } | null>(preview?.error ? { message: preview.error } : null)
+  // UA read post-mount: SSR has no navigator and hydration must render the same href.
+  const [browserInfo, setBrowserInfo] = useState<string | null>(null)
+  useEffect(() => setBrowserInfo(navigator.userAgent), [])
   const aliveRef = useRef(true)
   // One ref shared by the mutually-exclusive view containers below: each submit-state change
   // unmounts the element that held focus, so the incoming view takes it (and gets announced).
@@ -801,8 +813,19 @@ function BidRow({
       ? "Your bid is unchanged - raise the price or add funds."
       : null
 
+  const supportHref = submitFailure
+    ? supportMailtoHref(`sale.gno.land bid error - ${submitFailure.message}`, [
+        `The bid panel showed: "${punctuate(submitFailure.message)}"`,
+        submitFailure.wallet && `Wallet: ${submitFailure.wallet}`,
+        submitFailure.token && `Payment token: ${submitFailure.token}`,
+        `Network: ${SALE_CHAIN.name}`,
+        submitFailure.at && `When: ${submitFailure.at}`,
+        browserInfo && `Browser: ${browserInfo}`,
+      ])
+    : null
+
   async function runSubmit() {
-    setSubmitError(null)
+    setSubmitFailure(null)
     // lockup:false here = the user opt-in (no toggle surfaced). The compliance-forced US lockup
     // is applied in useBid from the trusted server entity region (Sonar A.17.8), not in the form.
     const params: BidParams = {
@@ -824,7 +847,13 @@ function BidRow({
         setSubmitState("submitted")
       } else {
         setSubmitState("idle")
-        setSubmitError(reasonToMessage(result.reason))
+        setSubmitFailure({
+          message: reasonToMessage(result.reason),
+          // Minute precision: enough for triage, too coarse to correlate with on-chain txs.
+          at: `${new Date().toISOString().slice(0, 16)}Z`,
+          wallet: connector?.name,
+          token: payToken?.symbol,
+        })
       }
       return
     }
@@ -987,19 +1016,18 @@ function BidRow({
             error={priceError}
             className="w-24"
           />
-          {priceError || amountError ? null : submitError ? (
+          {priceError || amountError ? null : submitFailure ? (
             <p
               className="w-0 min-w-full whitespace-nowrap text-xs font-medium text-danger"
               role="alert"
             >
-              <span className="inline-block max-w-[52ch] truncate align-bottom">{submitError}</span>
-              {SUPPORT_CONTACT_HREF ? (
+              <span className="inline-block max-w-[52ch] truncate align-bottom">
+                {punctuate(submitFailure.message)}
+              </span>
+              {supportHref ? (
                 <>
                   {" "}
-                  <a
-                    href={SUPPORT_CONTACT_HREF}
-                    className="underline underline-offset-2 hover:opacity-75"
-                  >
+                  <a href={supportHref} className="underline underline-offset-2 hover:opacity-75">
                     Support
                   </a>
                 </>

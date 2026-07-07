@@ -21,7 +21,7 @@ import { fmtGnot, fmtPrice, fmtUsd } from "../../lib/sale/format"
 import { useBid, useClaim, useClaimGate } from "../../lib/sale/hooks"
 import { derivePreSaleBar } from "../../lib/sale/journey"
 import {
-  SUPPORT_CONTACT_HREF,
+  SUPPORT_VERIFY_FAILED_HREF,
   VERIFY_INCOMPLETE,
   VERIFY_STATUS,
   WELCOME_BACK,
@@ -597,7 +597,7 @@ export function PreSaleRight({
           body={VERIFY_STATUS.failed.body}
           onSignOut={onSignOut}
           withCalendar
-          contactHref={SUPPORT_CONTACT_HREF ?? undefined}
+          contactHref={SUPPORT_VERIFY_FAILED_HREF ?? undefined}
         />
       )
     case "not-eligible":
