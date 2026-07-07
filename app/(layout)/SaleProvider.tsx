@@ -131,8 +131,8 @@ export function SaleProvider({
     const onSaleChain = chainId === SALE_CHAIN.id
     const read = entity.data
     const snapshot = read?.status === "entity" ? read.entity : null
-    // The pending overlay only applies while the sale is LIVE: the ended/settlement UI must
-    // compute refunds and allocations from Sonar's settled answer, never from local optimism.
+    // The numeric pending overlay is live-only: settlement derives refunds and allocations from
+    // Sonar's settled answer, never local optimism (the pending entry is read for existence only).
     const pendingView = derivePendingView(phase === "live" ? position.pending : null, position.data)
     const journeyInput: JourneyInput = {
       isConnected,

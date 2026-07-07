@@ -82,9 +82,8 @@ export function usdToTokenUnits(amountUsd: number, decimals: number): bigint {
   return BigInt(units)
 }
 
-/** USD price -> SettlementSale `uint64` price = increment count, round(priceUsd / increment). Verified
- *  against the deployed permit (sandbox): floor 0.0645 / 0.00645 = minPrice 10, cap 0.258 = maxPrice 40.
- *  FOOTGUN: zero-anchored (the floor is increment*N), NOT floor-anchored - the floor-anchored bug sent 0. */
+/** USD price -> SettlementSale `uint64` price = increment count, round(priceUsd / increment).
+ *  FOOTGUN: zero-anchored (the floor is increment*N), NOT floor-anchored - a floor-anchored count sends 0. */
 export function priceUsdToOnchainPrice(priceUsd: number, incrementUsd: number): bigint {
   if (!Number.isFinite(priceUsd) || priceUsd < 0) {
     throw new Error("priceUsdToOnchainPrice: price must be a finite positive number")
