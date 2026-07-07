@@ -13,10 +13,10 @@ import { HEADING_TITLE } from "../../(ui)/SectionHeading"
 import { newsletterEnabled } from "../../../lib/newsletter/config"
 import { redirectToSonarLogin } from "../../../lib/sale/api"
 import { SALE_ECONOMICS, formatSaleDate } from "../../../lib/sale/economics"
-import { DESKTOP_ONLY } from "../../../lib/sale/labels"
+import { VERIFY_INCOMPLETE } from "../../../lib/sale/labels"
 
 export function PreFooterCta() {
-  const { phase, preSaleStage, setBidPanelOpen } = useSale()
+  const { phase, preSaleStage, journey, sonarSetupUrl } = useSale()
   const preSale = phase === "pre-sale"
   const ended = phase === "ended"
   const registrationOpen = preSaleStage === "registration-open"
@@ -71,6 +71,7 @@ export function PreFooterCta() {
                           ? SALE_ECONOMICS.saleOpensIso
                           : SALE_ECONOMICS.registrationOpensIso
                       }
+                      label={registrationOpen ? "Sale opens in" : "Registration opens in"}
                     />
                   </p>
                 </FadeIn>
@@ -80,13 +81,26 @@ export function PreFooterCta() {
                   registrationOpen ? (
                     <div className="flex flex-col items-center gap-6">
                       <div className="hidden funnel:block">
-                        <Cta
-                          onClick={redirectToSonarLogin}
-                          label="Register now"
-                          arrow
-                          variant="solid-contrast"
-                          size="lg"
-                        />
+                        {journey === "kyc-incomplete" ? (
+                          // Re-running OAuth cannot advance an unfinished setup - link to Echo's
+                          // hosted setup page instead (same destination as the sticky-bar CTA).
+                          <Cta
+                            href={sonarSetupUrl}
+                            external
+                            label={VERIFY_INCOMPLETE.cta}
+                            arrow
+                            variant="solid-contrast"
+                            size="lg"
+                          />
+                        ) : (
+                          <Cta
+                            onClick={redirectToSonarLogin}
+                            label="Register now"
+                            arrow
+                            variant="solid-contrast"
+                            size="lg"
+                          />
+                        )}
                       </div>
                       {newsletterEnabled() ? (
                         <div className="flex flex-wrap items-start justify-center gap-6">
@@ -115,18 +129,11 @@ export function PreFooterCta() {
                   />
                 ) : (
                   <>
-                    <div className="hidden funnel:block">
-                      <Cta
-                        onClick={() => setBidPanelOpen(true)}
-                        label="Place a bid"
-                        arrow
-                        variant="solid-contrast"
-                        size="lg"
-                      />
-                    </div>
-                    <p className="w-full text-sm text-on-contrast-muted funnel:hidden">
-                      {`${DESKTOP_ONLY.live.title}. ${DESKTOP_ONLY.live.body}`}
-                    </p>
+                    {/* Live phase: the bid entry point stays the panel; this slot promotes the
+                        price-update email instead (decision 2026-07-05). */}
+                    {newsletterEnabled() ? (
+                      <NewsletterForm variant="tile" inputId="newsletter-email-live" />
+                    ) : null}
                     <Cta
                       href="#how-it-works"
                       label="How it works"

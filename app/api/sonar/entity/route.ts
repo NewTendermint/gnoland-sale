@@ -1,3 +1,4 @@
+import { errorMessage } from "@/lib/log"
 import { getSession } from "@/lib/security/session"
 import { getEntity } from "@/lib/sonar/entity"
 import { SonarAuthError } from "@/lib/sonar/permit"
@@ -19,12 +20,13 @@ export async function GET() {
     if (!entity) {
       return NextResponse.json({ error: "no_entity" }, { status: 404 })
     }
-    return NextResponse.json(entity)
+    return NextResponse.json(entity, { headers: { "Cache-Control": "private, no-store" } })
   } catch (err) {
     // Revoked/expired Sonar token -> 401 so the client reconnects.
     if (err instanceof SonarAuthError) {
       return NextResponse.json({ error: "unauthenticated" }, { status: 401 })
     }
+    console.error("sonar-entity:", errorMessage(err))
     return NextResponse.json({ error: "entity_unavailable" }, { status: 502 })
   }
 }

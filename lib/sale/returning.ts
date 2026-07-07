@@ -32,6 +32,28 @@ export function clearSonarSeen(): void {
   }
 }
 
+// Non-PII "has a bid" flag: bids are irrevocable while the sale runs, so a my-position null on a
+// browser that has seen one is suspect and gets re-read before being trusted (lib/sale/my-bid-read.ts).
+const BID_KEY = "gnot:bid-seen"
+
+/** Record that this browser has read a live bid. Safe no-op if storage is blocked. */
+export function markBidSeen(): void {
+  try {
+    window.localStorage.setItem(BID_KEY, "1")
+  } catch {
+    // private mode / storage disabled -> degrade to "unknown bidder"
+  }
+}
+
+/** Whether this browser has ever read a live bid. */
+export function hasBidSeen(): boolean {
+  try {
+    return window.localStorage.getItem(BID_KEY) === "1"
+  } catch {
+    return false
+  }
+}
+
 function subscribe(onStoreChange: () => void): () => void {
   window.addEventListener(CHANGE_EVENT, onStoreChange)
   window.addEventListener("storage", onStoreChange)
@@ -52,4 +74,9 @@ function getSnapshot(): boolean {
 /** SSR-safe + reactive: re-reads on mark/clear (and cross-tab) so sign-out updates the UI live. */
 export function useSonarSeen(): boolean {
   return useSyncExternalStore(subscribe, getSnapshot, () => false)
+}
+
+/** Non-hook read of the sonar-seen flag, for non-React callers (confirmed reads). */
+export function hasSonarSeen(): boolean {
+  return getSnapshot()
 }

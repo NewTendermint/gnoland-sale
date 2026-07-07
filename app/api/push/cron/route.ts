@@ -1,9 +1,11 @@
 import { db } from "@/lib/db/client"
+import { CRON_LEASE_TTL_S, acquireCronLease, releaseCronLease } from "@/lib/db/lease"
 import { pushSubscriptions } from "@/lib/db/schema"
 import { env } from "@/lib/env"
 import { detectTransitions } from "@/lib/push/detect"
 import { sendOutbidNotifications } from "@/lib/push/send"
-import { SALE_ECONOMICS } from "@/lib/sale/economics"
+import { saleIsLive } from "@/lib/sale/live-window"
+import { timingSafeEqualStr } from "@/lib/security/secret-compare"
 import { readCommitments } from "@/lib/sonar/commitments"
 import { inArray } from "drizzle-orm"
 import { NextResponse } from "next/server"
@@ -12,42 +14,51 @@ export const runtime = "nodejs"
 
 // POST /api/push/cron - Netlify scheduled function; bearer CRON_SECRET required.
 export async function POST(req: Request) {
-  if (!env.CRON_SECRET || req.headers.get("authorization") !== `Bearer ${env.CRON_SECRET}`) {
+  const expected = env.CRON_SECRET ? `Bearer ${env.CRON_SECRET}` : null
+  if (!expected || !timingSafeEqualStr(req.headers.get("authorization"), expected)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 })
   }
 
-  const now = Date.now()
-  const opens = new Date(SALE_ECONOMICS.saleOpensIso).getTime()
-  const closes = new Date(SALE_ECONOMICS.saleClosesIso).getTime()
-  if (now < opens || now > closes) return NextResponse.json({ skipped: "not-live" })
+  if (!(await saleIsLive(Date.now()))) return NextResponse.json({ skipped: "not-live" })
 
-  const { clearingPriceUsd } = await readCommitments()
-  if (clearingPriceUsd == null) return NextResponse.json({ skipped: "no-clearing" })
+  // Overlap guard: schedule + manual invocation (or a slow run outliving the next tick) must not
+  // double-send; released in the finally, TTL covers a process death.
+  if (!(await acquireCronLease("push-cron", CRON_LEASE_TTL_S))) {
+    return NextResponse.json({ skipped: "locked" })
+  }
+  try {
+    const { clearingPriceUsd } = await readCommitments()
+    if (clearingPriceUsd == null) return NextResponse.json({ skipped: "no-clearing" })
 
-  const subs = await db.select().from(pushSubscriptions)
-  if (subs.length === 0) return NextResponse.json({ notified: 0 })
+    const subs = await db.select().from(pushSubscriptions)
+    if (subs.length === 0) return NextResponse.json({ notified: 0 })
 
-  const { toNotify, statusUpdates } = detectTransitions(subs, clearingPriceUsd)
-  const notify = new Set(toNotify)
-  const targets = subs.filter((s) => notify.has(s.endpoint))
-  const { sent, expiredEndpoints } = await sendOutbidNotifications(targets)
+    const { toNotify, statusUpdates } = detectTransitions(subs, clearingPriceUsd)
 
-  const expired = new Set(expiredEndpoints)
-  // Record status changes (skip endpoints we just pruned), grouped into at most two updates.
-  for (const status of ["winning", "outbid"] as const) {
-    const endpoints = statusUpdates
-      .filter((u) => u.status === status && !expired.has(u.endpoint))
-      .map((u) => u.endpoint)
-    if (endpoints.length > 0) {
-      await db
-        .update(pushSubscriptions)
-        .set({ lastStatus: status, updatedAt: new Date() })
-        .where(inArray(pushSubscriptions.endpoint, endpoints))
+    // Footgun: persist BEFORE sending - send-first re-detects the same transition after a crash
+    // and spams "You've been outbid" every tick until an update lands. Grouped into two updates.
+    for (const status of ["winning", "outbid"] as const) {
+      const endpoints = statusUpdates.filter((u) => u.status === status).map((u) => u.endpoint)
+      if (endpoints.length > 0) {
+        await db
+          .update(pushSubscriptions)
+          .set({ lastStatus: status, updatedAt: new Date() })
+          .where(inArray(pushSubscriptions.endpoint, endpoints))
+      }
     }
-  }
-  if (expiredEndpoints.length > 0) {
-    await db.delete(pushSubscriptions).where(inArray(pushSubscriptions.endpoint, expiredEndpoints))
-  }
 
-  return NextResponse.json({ notified: sent, expired: expiredEndpoints.length })
+    const notify = new Set(toNotify)
+    const targets = subs.filter((s) => notify.has(s.endpoint))
+    const { sent, expiredEndpoints } = await sendOutbidNotifications(targets)
+
+    if (expiredEndpoints.length > 0) {
+      await db
+        .delete(pushSubscriptions)
+        .where(inArray(pushSubscriptions.endpoint, expiredEndpoints))
+    }
+
+    return NextResponse.json({ notified: sent, expired: expiredEndpoints.length })
+  } finally {
+    await releaseCronLease("push-cron")
+  }
 }

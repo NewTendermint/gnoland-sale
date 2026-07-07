@@ -27,7 +27,7 @@ import { derivePositionState } from "../../../lib/sale/journey"
 const TABLE_REVEAL_PCT = 10
 
 export function TokenDetails() {
-  const { phase, preSaleStage, journey, myBid, commitment } = useSale()
+  const { phase, preSaleStage, journey, myBid, commitment, pendingIndexing } = useSale()
   const positionState = derivePositionState(journey, myBid !== null)
   const preSale = phase === "pre-sale"
   const registrationOpen = preSaleStage === "registration-open"
@@ -38,8 +38,13 @@ export function TokenDetails() {
     }
     // TODO(real-data): refine Active/Outbid with the real settlement outcome once
     // settlement data is available.
-    const status =
-      bidStatus(myBid.priceUsd, commitment.clearingPriceUsd) === "winning" ? "Active" : "Outbid"
+    // Footgun: gate on pendingIndexing, not the journey - this card renders the overlay's numbers
+    // even when an earlier journey gate (e.g. expired Sonar session) hides the has-bid states.
+    const status = pendingIndexing
+      ? "Pending"
+      : bidStatus(myBid.priceUsd, commitment.clearingPriceUsd) === "winning"
+        ? "Active"
+        : "Outbid"
     const values = [
       fmtUsd(myBid.committedUsd),
       fmtPrice(myBid.priceUsd),
@@ -82,6 +87,7 @@ export function TokenDetails() {
                       ? SALE_ECONOMICS.saleOpensIso
                       : SALE_ECONOMICS.registrationOpensIso
                   }
+                  label={registrationOpen ? "Sale opens in" : "Registration opens in"}
                 />
               </p>
             </FadeIn>

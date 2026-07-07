@@ -41,8 +41,10 @@ afterEach(() => {
 })
 
 describe("FUNNEL_MEDIA_QUERY", () => {
-  it("requires hover + fine pointer + Tailwind's lg width", () => {
-    expect(FUNNEL_MEDIA_QUERY).toBe("(hover: hover) and (pointer: fine) and (min-width: 64rem)")
+  it("requires a hover-capable fine pointer on any input + Tailwind's lg width", () => {
+    expect(FUNNEL_MEDIA_QUERY).toBe(
+      "(any-hover: hover) and (any-pointer: fine) and (min-width: 64rem)",
+    )
   })
 
   it("stays in sync with the `funnel` @custom-variant in globals.css", () => {

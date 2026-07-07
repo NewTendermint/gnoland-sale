@@ -2,7 +2,7 @@ import type { Config } from "@netlify/edge-functions"
 
 /**
  * Edge rate-limit for OAuth init (/api/auth/sonar/init), which mints PKCE state
- * into Netlify Blobs. A tighter cap than the permit routes: a legitimate user
+ * into Postgres (pkce_states). A tighter cap than the permit routes: a legitimate user
  * starts login rarely, whereas spam would fill the PKCE store.
  *
  * Limit: 3 req/min/IP. Enforced at the edge (HTTP 429 "block" past the

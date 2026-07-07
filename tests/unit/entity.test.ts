@@ -4,13 +4,19 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 // Mock the I/O deps so getEntity's normalization + 401 re-auth wrapping can be
 // exercised without a DB or a real Sonar call. The token store's deleteTokens is
 // spied so the "clear dead token on 401" behaviour is assertable.
-const { loadTokensMock, deleteTokensMock, createSonarClientMock, listAvailableEntitiesMock } =
-  vi.hoisted(() => ({
-    loadTokensMock: vi.fn(),
-    deleteTokensMock: vi.fn(),
-    createSonarClientMock: vi.fn(),
-    listAvailableEntitiesMock: vi.fn(),
-  }))
+const {
+  loadTokensMock,
+  deleteTokensMock,
+  createSonarClientMock,
+  listAvailableEntitiesMock,
+  refreshTokenMock,
+} = vi.hoisted(() => ({
+  loadTokensMock: vi.fn(),
+  deleteTokensMock: vi.fn(),
+  createSonarClientMock: vi.fn(),
+  listAvailableEntitiesMock: vi.fn(),
+  refreshTokenMock: vi.fn(),
+}))
 
 vi.mock("../../lib/sonar/tokens", () => ({
   loadTokens: loadTokensMock,
@@ -30,7 +36,11 @@ describe("getEntity", () => {
     deleteTokensMock.mockReset()
     createSonarClientMock.mockReset()
     listAvailableEntitiesMock.mockReset()
-    createSonarClientMock.mockReturnValue({ listAvailableEntities: listAvailableEntitiesMock })
+    refreshTokenMock.mockReset()
+    createSonarClientMock.mockReturnValue({
+      listAvailableEntities: listAvailableEntitiesMock,
+      refreshToken: refreshTokenMock,
+    })
     // A valid, non-expiring token so ensureFreshTokens returns it without a refresh.
     loadTokensMock.mockResolvedValue({
       accessToken: "tok",
@@ -76,14 +86,38 @@ describe("getEntity", () => {
     })
     expect(await getEntity("sess-unknown")).toEqual({
       entityId: "22222222-2222-2222-2222-222222222222",
-      setupState: "not-started",
+      setupState: "unknown",
       eligibility: "unknown-setup-incomplete",
       investingRegion: "unknown",
     })
   })
 
-  it("on a Sonar 401, clears the dead token and throws SonarAuthError (re-auth path)", async () => {
+  it("recovers from a stale-token 401: refreshes and retries, the session survives", async () => {
+    listAvailableEntitiesMock
+      .mockRejectedValueOnce(new APIError(401, "unauthorized"))
+      .mockResolvedValueOnce({
+        Entities: [
+          {
+            EntityID: "11111111-1111-1111-1111-111111111111",
+            EntitySetupState: "complete",
+            SaleEligibility: "eligible",
+            InvestingRegion: "eu",
+          },
+        ],
+      })
+    refreshTokenMock.mockResolvedValue({
+      access_token: "tok-2",
+      refresh_token: "refresh-2",
+      token_type: "bearer",
+      expires_in: 3600,
+    })
+    expect(await getEntity("sess-refresh")).toMatchObject({ setupState: "complete" })
+    expect(deleteTokensMock).not.toHaveBeenCalled()
+  })
+
+  it("on a 401 with a dead refresh token, clears the session and throws SonarAuthError", async () => {
     listAvailableEntitiesMock.mockRejectedValue(new APIError(401, "unauthorized"))
+    refreshTokenMock.mockRejectedValue(new APIError(400, "invalid_grant"))
     await expect(getEntity("sess-401")).rejects.toBeInstanceOf(SonarAuthError)
     expect(deleteTokensMock).toHaveBeenCalledWith("sess-401")
   })

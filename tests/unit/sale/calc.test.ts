@@ -10,6 +10,23 @@ import {
   validateBidAmount,
   validateBidPrice,
 } from "../../../lib/sale/calc"
+import { SALE_ECONOMICS } from "../../../lib/sale/economics"
+
+// The UI grid steps from the floor, the contract grid from zero (issue #72): they only agree
+// while the floor divides exactly by the step. economics.ts asserts this at boot; pin it here
+// so a provisional-value edit fails a test, not just the build.
+describe("price grid anchoring invariant", () => {
+  it("startingPriceUsd is an integer multiple of bidIncrementUsd (micro-USD)", () => {
+    const micro = (n: number) => Math.round(n * 1e6)
+    expect(micro(SALE_ECONOMICS.startingPriceUsd) % micro(SALE_ECONOMICS.bidIncrementUsd)).toBe(0)
+  })
+
+  it("the floor lands on the on-chain grid step the deployed sale expects", () => {
+    expect(
+      priceUsdToOnchainPrice(SALE_ECONOMICS.startingPriceUsd, SALE_ECONOMICS.bidIncrementUsd),
+    ).toBe(3n)
+  })
+})
 
 describe("forceLockupForRegion", () => {
   it("forces the lockup flag for US entities (Sonar A.17.8: the contract rejects a US bid without it)", () => {
@@ -140,13 +157,17 @@ describe("validateBidPrice - floor-anchored increment grid", () => {
 // The float-to-integer traps these exist for: 0.12255 * 1e6 floats to
 // 122550.00000000001, and naive truncation would ship a wrong on-chain price.
 describe("on-chain unit conversions", () => {
-  it("usdToTokenUnits scales exactly at 6 decimals (USDC/USDT on Base)", () => {
+  it("usdToTokenUnits scales exactly at 6 decimals (USDC/USDT on the sale chain)", () => {
     expect(usdToTokenUnits(5000, 6)).toBe(5_000_000_000n)
     expect(usdToTokenUnits(200, 6)).toBe(200_000_000n)
     expect(usdToTokenUnits(100_000, 6)).toBe(100_000_000_000n)
   })
   it("usdToTokenUnits rounds sub-unit dust instead of truncating", () => {
     expect(usdToTokenUnits(0.1 + 0.2, 6)).toBe(300_000n)
+  })
+  it("usdToTokenUnits keeps fractional USD amounts exact (EU cents input)", () => {
+    expect(usdToTokenUnits(1500.5, 6)).toBe(1_500_500_000n)
+    expect(usdToTokenUnits(150.05, 6)).toBe(150_050_000n)
   })
   it("usdToTokenUnits rejects garbage", () => {
     expect(() => usdToTokenUnits(Number.NaN, 6)).toThrow()

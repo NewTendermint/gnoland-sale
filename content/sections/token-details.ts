@@ -15,14 +15,14 @@ export type PositionMetric = {
 }
 
 export const positionMetricsEmpty: PositionMetric[] = [
-  { icon: "database", value: "-", label: "USDC committed" },
+  { icon: "database", value: "-", label: "USD committed" },
   { icon: "line-chart", value: "-", label: "Bid price" },
   { icon: "cube", value: "-", label: "GNOT allocation" },
   { icon: "progress-ring", value: "-", label: "Status", badge: true },
 ]
 
 export const positionMetricsActive: PositionMetric[] = [
-  { icon: "database", value: "$3,200", label: "USDC committed" },
+  { icon: "database", value: "$3,200", label: "USD committed" },
   { icon: "line-chart", value: "$0.18", label: "Bid price" },
   { icon: "cube", value: "20,000", label: "GNOT allocation" },
   { icon: "progress-ring", value: "Active", label: "Status", badge: true },
@@ -38,7 +38,7 @@ export const termGroups: Array<{
       { label: "Token", value: "GNOT" },
       { label: "Sale allocation", value: "38,760,000 GNOT (~2.9% of supply)" },
       { label: "Sale format", value: "Uniform Price Auction (English Auction)" },
-      { label: "Accepted currency", value: "USDC (Ethereum Mainnet)" },
+      { label: "Accepted currency", value: "USDC & USDT (Ethereum Mainnet)" },
       {
         label: "Contribution window",
         value: `${formatSaleDate(SALE_ECONOMICS.saleOpensIso, false)} - ${formatSaleDate(SALE_ECONOMICS.saleClosesIso)}`,
@@ -52,7 +52,7 @@ export const termGroups: Array<{
       { label: "Starting price", value: "$0.0645 per GNOT" },
       { label: "Bid increment", value: "$0.0215" },
       { label: "Minimum commitment", value: "$100" },
-      { label: "Soft cap", value: "$2,500,000" },
+      { label: "Soft cap", value: `$${SALE_ECONOMICS.softCapUsd.toLocaleString("en-US")}` },
     ],
   },
 ]

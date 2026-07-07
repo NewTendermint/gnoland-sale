@@ -13,7 +13,15 @@ function withCreds() {
 }
 
 describe("subscribePending - mock gate", () => {
-  it("mocks ok in dev/test when no API key is configured, without calling fetch", async () => {
+  it("a missing API key without the explicit flag fails closed, without calling fetch", async () => {
+    vi.stubEnv("MAILCHIMP_MOCK", "")
+    const fetchSpy = vi.fn()
+    await expect(subscribePending("user@example.com", fetchSpy)).resolves.toBe("upstream-error")
+    expect(fetchSpy).not.toHaveBeenCalled()
+  })
+
+  it("MAILCHIMP_MOCK=1 mocks ok in dev/test when no API key is configured", async () => {
+    vi.stubEnv("MAILCHIMP_MOCK", "1")
     const fetchSpy = vi.fn()
     await expect(subscribePending("user@example.com", fetchSpy)).resolves.toBe("ok")
     expect(fetchSpy).not.toHaveBeenCalled()

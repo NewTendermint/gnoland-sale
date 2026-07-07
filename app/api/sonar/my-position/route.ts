@@ -1,3 +1,4 @@
+import { errorMessage } from "@/lib/log"
 import { getSession } from "@/lib/security/session"
 import { readMyBid } from "@/lib/sonar/commitments"
 import { SonarAuthError } from "@/lib/sonar/permit"
@@ -15,11 +16,14 @@ export async function GET() {
   // Rolling: re-stamp the 2h cookie window.
   await session.save()
   try {
-    return NextResponse.json(await readMyBid(session.sessionId))
+    return NextResponse.json(await readMyBid(session.sessionId), {
+      headers: { "Cache-Control": "private, no-store" },
+    })
   } catch (err) {
     if (err instanceof SonarAuthError) {
       return NextResponse.json({ error: "unauthenticated" }, { status: 401 })
     }
+    console.error("sonar-my-position:", errorMessage(err))
     return NextResponse.json({ error: "my_position_unavailable" }, { status: 502 })
   }
 }

@@ -25,6 +25,10 @@ const envSchema = z.object({
   VAPID_SUBJECT: z.preprocess((v) => (v === "" ? undefined : v), z.string().optional()),
   // Bearer secret protecting the scheduled outbid-cron route. Optional: absent = cron disabled.
   CRON_SECRET: z.preprocess((v) => (v === "" ? undefined : v), z.string().optional()),
+  // Price email cron: real Mailchimp sends only when "1" (production context). Anything else dry-runs.
+  EMAIL_ALERTS_ENABLED: z.preprocess((v) => (v === "" ? undefined : v), z.string().optional()),
+  MAILCHIMP_FROM_NAME: z.preprocess((v) => (v === "" ? undefined : v), z.string().optional()),
+  MAILCHIMP_REPLY_TO: z.preprocess((v) => (v === "" ? undefined : v), z.string().optional()),
 })
 
 export type Env = z.infer<typeof envSchema>

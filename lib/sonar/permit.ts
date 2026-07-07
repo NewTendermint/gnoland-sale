@@ -8,6 +8,7 @@ import { mainnet, sepolia } from "viem/chains"
 import { db } from "../db/client"
 import { type AuditMetadata, auditLog, auditMetadataSchema } from "../db/schema"
 import { env } from "../env"
+import { errorMessage } from "../log"
 import type { PrePurchaseFailureReason, PrePurchaseResult } from "../sale/types"
 import { createSonarClient } from "./client"
 import { sonarMockEnabled } from "./mock-config"
@@ -26,7 +27,6 @@ export class PermitDedupError extends Error {}
 
 // Server-side replay guard, keyed by wallet. Per-instance only:
 // a best-effort fast-path, not cluster-wide; on-chain controls are authoritative.
-// TODO: add a durable cross-instance limiter and Edge rate-limit before launch.
 const lastPermitAt = new Map<string, number>()
 export function checkPermitDedup(wallet: string, now: number = Date.now()): void {
   // Opportunistic eviction so the Map cannot grow unbounded over a long sale.
@@ -44,45 +44,55 @@ export function checkPermitDedup(wallet: string, now: number = Date.now()): void
   lastPermitAt.set(wallet, now)
 }
 
-// Coalesce load-and-maybe-refresh per session: two parallel refreshes would rotate
-// and invalidate each other's refresh token (token-refresh race).
-const ensureInFlight = new Map<string, Promise<StoredTokens>>()
-
-/** Thrown when Sonar rejects the token (401); the session must re-authenticate. */
+/** Thrown when the Sonar session is absent or rejected; the client must re-authenticate. */
 export class SonarAuthError extends Error {}
 
-/** Run a Sonar SDK call; convert a 401 to SonarAuthError after clearing the dead token. */
-export async function withSonarAuth<T>(sessionId: string, fn: () => Promise<T>): Promise<T> {
+// Coalesce refreshes per session: two parallel refreshes would rotate and invalidate each other's
+// refresh token (token-refresh race). Per-instance only; a cross-instance race is still possible
+// and then surfaces as invalid_grant -> a clean reconnect, never a hang.
+const refreshInFlight = new Map<string, Promise<StoredTokens>>()
+
+function refreshOnce(sessionId: string): Promise<StoredTokens> {
+  let inflight = refreshInFlight.get(sessionId)
+  if (!inflight) {
+    inflight = rotateTokens(sessionId).finally(() => refreshInFlight.delete(sessionId))
+    refreshInFlight.set(sessionId, inflight)
+  }
+  return inflight
+}
+
+// Rotate via the stored refresh token (reloaded inside the coalesced op so a concurrent rotation
+// is picked up, not replayed). Only a rejected refresh (invalid_grant: 400 per RFC 6749 5.2, or
+// 401) kills the session; a transient failure (network, 5xx) keeps it.
+async function rotateTokens(sessionId: string): Promise<StoredTokens> {
+  const current = await loadTokens(sessionId)
+  if (!current) {
+    throw new SonarAuthError("No Sonar session; reconnect required")
+  }
   try {
-    return await fn()
+    const res = await createSonarClient().refreshToken({ refreshToken: current.refreshToken })
+    const fresh: StoredTokens = {
+      accessToken: res.access_token,
+      // Refresh-token rotation is optional (RFC 6749 6); keep the existing one if none returned.
+      refreshToken: res.refresh_token ?? current.refreshToken,
+      expiresAt: new Date(Date.now() + res.expires_in * 1000),
+    }
+    await storeTokens(sessionId, fresh)
+    return fresh
   } catch (err) {
-    if (err instanceof APIError && err.status === 401) {
+    if (err instanceof APIError && (err.status === 400 || err.status === 401)) {
+      // invalid_grant can mean a concurrent instance already rotated this (single-use) refresh
+      // token - the in-flight guard is per-instance only. If the stored pair changed since our
+      // read, adopt the winner's tokens instead of ending a healthy session.
+      const latest = await loadTokens(sessionId)
+      if (latest && latest.refreshToken !== current.refreshToken) {
+        return latest
+      }
       await deleteTokens(sessionId)
       throw new SonarAuthError("Sonar session expired; reconnect required")
     }
     throw err
   }
-}
-
-async function resolveTokens(sessionId: string): Promise<StoredTokens> {
-  const current = await loadTokens(sessionId)
-  if (!current) {
-    throw new Error("No tokens for session")
-  }
-  if (!needsRefresh(current.expiresAt)) {
-    return current
-  }
-  const res = await withSonarAuth(sessionId, () =>
-    createSonarClient().refreshToken({ refreshToken: current.refreshToken }),
-  )
-  const fresh: StoredTokens = {
-    accessToken: res.access_token,
-    // Refresh-token rotation is optional (RFC 6749 6); keep the existing one if none returned.
-    refreshToken: res.refresh_token ?? current.refreshToken,
-    expiresAt: new Date(Date.now() + res.expires_in * 1000),
-  }
-  await storeTokens(sessionId, fresh)
-  return fresh
 }
 
 export async function ensureFreshTokens(sessionId: string): Promise<StoredTokens> {
@@ -93,12 +103,42 @@ export async function ensureFreshTokens(sessionId: string): Promise<StoredTokens
       expiresAt: new Date(Date.now() + 60 * 60_000),
     }
   }
-  let inflight = ensureInFlight.get(sessionId)
-  if (!inflight) {
-    inflight = resolveTokens(sessionId).finally(() => ensureInFlight.delete(sessionId))
-    ensureInFlight.set(sessionId, inflight)
+  const current = await loadTokens(sessionId)
+  if (!current) {
+    // No tokens = not authenticated: SonarAuthError so routes answer 401, not a 502.
+    throw new SonarAuthError("No Sonar session; reconnect required")
   }
-  return inflight
+  if (!needsRefresh(current.expiresAt)) {
+    return current
+  }
+  return refreshOnce(sessionId)
+}
+
+/** Run an authenticated Sonar call. On a 401, refresh the token once and retry once; only a
+ *  rejected refresh or a second 401 ends the session (SonarAuthError -> reconnect). A 401 means
+ *  the call was rejected before doing any work, so the single retry is side-effect safe. */
+export async function withSonarAuth<T>(
+  sessionId: string,
+  fn: (accessToken: string) => Promise<T>,
+): Promise<T> {
+  const tokens = await ensureFreshTokens(sessionId)
+  try {
+    return await fn(tokens.accessToken)
+  } catch (err) {
+    if (!(err instanceof APIError) || err.status !== 401) {
+      throw err
+    }
+    const fresh = await refreshOnce(sessionId)
+    try {
+      return await fn(fresh.accessToken)
+    } catch (retryErr) {
+      if (retryErr instanceof APIError && retryErr.status === 401) {
+        await deleteTokens(sessionId)
+        throw new SonarAuthError("Sonar session expired; reconnect required")
+      }
+      throw retryErr
+    }
+  }
 }
 
 function auditChainId(): number {
@@ -165,9 +205,8 @@ export async function prePurchaseCheck(args: {
   entityId: string
   wallet: string
 }): Promise<PrePurchaseResult> {
-  const tokens = await ensureFreshTokens(args.sessionId)
-  const res = await withSonarAuth(args.sessionId, () =>
-    createSonarClient(tokens.accessToken).prePurchaseCheck({
+  const res = await withSonarAuth(args.sessionId, (accessToken) =>
+    createSonarClient(accessToken).prePurchaseCheck({
       saleUUID: env.SONAR_SALE_UUID,
       entityID: args.entityId,
       walletAddress: args.wallet,
@@ -184,21 +223,35 @@ export async function generatePurchasePermit(args: {
   userAgentClass?: string | null
 }): Promise<GeneratePurchasePermitResponse> {
   checkPermitDedup(args.wallet)
-  const tokens = await ensureFreshTokens(args.sessionId)
-  const response = await withSonarAuth(args.sessionId, () =>
-    createSonarClient(tokens.accessToken).generatePurchasePermit({
+  const base = {
+    entityId: args.entityId,
+    wallet: args.wallet,
+    ipHmac: args.ipHmac ?? null,
+    userAgentClass: args.userAgentClass ?? null,
+  }
+  // Two-step audit: the request row is written BEFORE Sonar issues anything, and a failure here
+  // is FATAL - a permit must never exist without an audit trail. The issued row (below) is the
+  // opposite: the permit is already live and spendable, so losing that write must not turn into
+  // a lying 502 - log loudly and return the permit.
+  await recordAudit("permit_requested", { ...base, metadata: { chain_id: auditChainId() } })
+  const response = await withSonarAuth(args.sessionId, (accessToken) =>
+    createSonarClient(accessToken).generatePurchasePermit({
       saleUUID: env.SONAR_SALE_UUID,
       entityID: args.entityId,
       walletAddress: args.wallet,
     }),
   )
-  await recordAudit("permit_issued", {
-    entityId: args.entityId,
-    wallet: args.wallet,
-    ipHmac: args.ipHmac ?? null,
-    userAgentClass: args.userAgentClass ?? null,
-    // Short correlator (signature prefix), never the full sig.
-    metadata: { permit_id_prefix: response.Signature.slice(0, 10), chain_id: auditChainId() },
-  })
+  try {
+    await recordAudit("permit_issued", {
+      ...base,
+      // Short correlator (signature prefix), never the full sig.
+      metadata: { permit_id_prefix: response.Signature.slice(0, 10), chain_id: auditChainId() },
+    })
+  } catch (err) {
+    console.error(
+      "audit: permit_issued write FAILED (permit live, reconcile against permit_requested):",
+      errorMessage(err),
+    )
+  }
   return response
 }

@@ -2,6 +2,7 @@ import "server-only"
 import { NextResponse } from "next/server"
 import { z } from "zod"
 import { env } from "../env"
+import { errorMessage } from "../log"
 import type { EntitySnapshot } from "../sale/types"
 import { getSession } from "../security/session"
 import { evmAddress } from "../validation"
@@ -10,6 +11,17 @@ import { SonarAuthError } from "./permit"
 
 // Only the wallet comes from the client; the entity is derived server-side (IDOR defense).
 const bidBodySchema = z.object({ wallet: evmAddress })
+
+// Route handlers get no bodySizeLimit (next.config covers server actions only); cap before parsing.
+const MAX_BODY_BYTES = 1024
+
+function jsonOrNull(raw: string): unknown {
+  try {
+    return JSON.parse(raw)
+  } catch {
+    return null
+  }
+}
 
 export type BidContext = { sessionId: string; wallet: string; entity: EntitySnapshot }
 type BidGate = { ok: true; ctx: BidContext } | { ok: false; res: NextResponse }
@@ -25,7 +37,13 @@ export async function resolveBidRequest(request: Request): Promise<BidGate> {
   }
   // Rolling: re-stamp the 2h cookie window on each authenticated action.
   await session.save()
-  const parsed = bidBodySchema.safeParse(await request.json().catch(() => null))
+  if (Number(request.headers.get("content-length")) > MAX_BODY_BYTES) {
+    return { ok: false, res: NextResponse.json({ error: "invalid_request" }, { status: 413 }) }
+  }
+  const raw = await request.text().catch(() => "")
+  const parsed = bidBodySchema.safeParse(
+    Buffer.byteLength(raw) <= MAX_BODY_BYTES ? jsonOrNull(raw) : null,
+  )
   if (!parsed.success) {
     return { ok: false, res: NextResponse.json({ error: "invalid_request" }, { status: 400 }) }
   }
@@ -34,11 +52,20 @@ export async function resolveBidRequest(request: Request): Promise<BidGate> {
     if (!entity) {
       return { ok: false, res: NextResponse.json({ error: "no_entity" }, { status: 409 }) }
     }
+    // Fail closed on the entity's own state: whether Sonar refuses ineligible entities server-side
+    // is unverified, and the "unknown" normalization sentinels must never reach permit issuance.
+    if (entity.eligibility !== "eligible" || entity.setupState !== "complete") {
+      return {
+        ok: false,
+        res: NextResponse.json({ error: "entity_not_eligible" }, { status: 403 }),
+      }
+    }
     return { ok: true, ctx: { sessionId: session.sessionId, wallet: parsed.data.wallet, entity } }
   } catch (err) {
     if (err instanceof SonarAuthError) {
       return { ok: false, res: NextResponse.json({ error: "unauthenticated" }, { status: 401 }) }
     }
+    console.error("sonar-bid-request:", errorMessage(err))
     return { ok: false, res: NextResponse.json({ error: "entity_unavailable" }, { status: 502 }) }
   }
 }

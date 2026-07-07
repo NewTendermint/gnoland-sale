@@ -16,7 +16,7 @@ const CONTRACTS: Record<number, SaleContracts | undefined> = {
     // to the new one), so it is env-overridable to avoid a code change each time - set
     // NEXT_PUBLIC_SEPOLIA_SETTLEMENT_SALE to the Contract Address on Echo's Integration page.
     settlementSale: (process.env.NEXT_PUBLIC_SEPOLIA_SETTLEMENT_SALE ||
-      "0xD3454B943496938fAdA9a33067916649712fdC92") as Hex,
+      "0x96e532431A8b0e7FCCDF7baFA3BDAc1B20de46B2") as Hex,
   },
   // mainnet (chainId 1): { settlementSale: "0x..." } - TBD at launch.
 }

@@ -1,18 +1,30 @@
 import { notFound } from "next/navigation"
 // Dev-only state harness: renders the sticky bar in every state. Gated out of production.
 import { Fragment, type ReactNode } from "react"
+import { MetricPendingChip } from "../../(layout)/BidBarShell"
 import { BidSectionHeader, PreSaleRight } from "../../(layout)/BidPanelDesktop"
-import { BidFlow, type BidPreview } from "../../(sections)/bid/BidFlow"
+import { BidFlow, type BidPreview, PostBidOptIns } from "../../(sections)/bid/BidFlow"
 import { BidStatusTag, FunnelSteps } from "../../(sections)/bid/FunnelSteps"
+import { SettlementFlow } from "../../(sections)/bid/SettlementFlow"
 import { Cta } from "../../(ui)/Cta"
 import { Icon } from "../../(ui)/Icon"
-import { fmtCompactUsd, fmtCount, fmtPrice } from "../../../lib/sale/format"
+import {
+  PENDING_BIDDER_CHIP,
+  fmtCompactUsd,
+  fmtCount,
+  fmtPrice,
+  pendingCommittedChip,
+} from "../../../lib/sale/format"
 import { bidCtaLabel } from "../../../lib/sale/labels"
 import { MOCK_COMMITMENT_LIVE, MOCK_JOURNEY_INPUTS } from "../../../lib/sale/mock"
+import type { ClaimGate } from "../../../lib/sale/onchain"
 import { stateOverridesEnabled } from "../../../lib/sale/overrides"
-import type { JourneyState, PreSaleBarState } from "../../../lib/sale/types"
+import { sonarSetupUrl } from "../../../lib/sale/setup-url"
+import type { JourneyState, MyBid, PreSaleBarState } from "../../../lib/sale/types"
 
-const METRICS = [
+type PreviewMetric = { icon: string; value: string; label: string; pending?: string }
+
+const METRICS: PreviewMetric[] = [
   {
     icon: "clearing",
     value: MOCK_COMMITMENT_LIVE.clearingPriceUsd
@@ -33,6 +45,16 @@ const METRICS = [
   },
 ]
 
+// Mirrors liveMetrics with a PendingBidDelta (first bid, $500). Chip copy comes from the same
+// format helpers as production, so the gallery cannot drift.
+const METRICS_PENDING: PreviewMetric[] = METRICS.map((m) =>
+  m.label === "Bidders"
+    ? { ...m, pending: PENDING_BIDDER_CHIP }
+    : m.label === "Committed"
+      ? { ...m, pending: pendingCommittedChip(500) }
+      : m,
+)
+
 function CtaPill({ journey }: { journey: JourneyState }) {
   return (
     <Cta variant="solid" arrow>
@@ -45,22 +67,24 @@ function CtaPill({ journey }: { journey: JourneyState }) {
 function MetricsRow({
   dense,
   right,
+  metrics = METRICS,
 }: {
   dense: boolean
   right: ReactNode
+  metrics?: PreviewMetric[]
 }) {
   return (
     <div className="border-t border-border py-4 sm:py-6">
-      <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4">
+      <div className="flex flex-wrap items-start justify-between gap-x-8 gap-y-4">
         <div
-          className={`flex flex-wrap items-center ${
-            dense ? "gap-x-5 gap-y-2 sm:gap-x-7" : "gap-8 sm:gap-10"
+          className={`flex flex-wrap items-start ${
+            dense ? "gap-x-5 gap-y-2 sm:gap-x-7" : "gap-5 xl:gap-7"
           }`}
         >
-          {METRICS.map((m, i) => (
+          {metrics.map((m, i) => (
             <div
               key={m.label}
-              className={`flex items-center ${dense ? "gap-x-5 sm:gap-x-7" : "gap-8 sm:gap-10"}`}
+              className={`flex items-start ${dense ? "gap-x-5 sm:gap-x-7" : "gap-5 xl:gap-7"}`}
             >
               {i > 0 ? (
                 <div aria-hidden="true" className="hidden h-8 w-px bg-border sm:block" />
@@ -78,12 +102,13 @@ function MetricsRow({
                 </div>
                 <p className="mt-0.5 text-[10px] uppercase tracking-[0.2em] text-muted">
                   {m.label}
+                  {m.pending ? <MetricPendingChip label={m.pending} /> : null}
                 </p>
               </div>
             </div>
           ))}
         </div>
-        {right}
+        <div className="ml-auto flex justify-end">{right}</div>
       </div>
     </div>
   )
@@ -126,6 +151,9 @@ function MockWalletChip() {
   )
 }
 
+// Stand-in for the env-derived Echo setup URL (page.tsx wires the real one into SaleProvider).
+const SETUP_URL_PREVIEW = sonarSetupUrl("00000000-0000-0000-0000-000000000000")
+
 function ExpandedBar({
   journey,
   returning = false,
@@ -152,6 +180,7 @@ function ExpandedBar({
             returning={returning}
             clearingPriceUsd={input.clearingPriceUsd}
             myBid={input.myBid}
+            setupHref={SETUP_URL_PREVIEW}
             preview={preview}
           />
         </div>
@@ -177,8 +206,12 @@ function CompactPreview({
         <div className="flex flex-wrap items-center justify-between gap-6 border-t border-border py-4 sm:py-6">
           <div>
             <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted">{lead}</p>
-            <p className="mt-1 text-2xl font-semibold tracking-tight text-foreground">{headline}</p>
-            <p className="mt-1 text-sm text-muted">{sub}</p>
+            <p className="mt-1 flex items-baseline gap-3">
+              <span className="text-2xl font-semibold tracking-tight text-foreground">
+                {headline}
+              </span>
+              <span className="text-sm text-muted">{sub}</span>
+            </p>
           </div>
           <Cta variant="solid" arrow>
             {cta}
@@ -195,28 +228,16 @@ function Caption({ children }: { children: string }) {
 
 function GallerySection({
   title,
-  href,
   children,
 }: {
   title: string
-  href?: string
   children: ReactNode
 }) {
   return (
     <section className="flex flex-col gap-3 border-t border-border pt-8">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
-        <p className="font-mono text-xs font-medium uppercase tracking-[0.2em] text-foreground">
-          {title}
-        </p>
-        {href ? (
-          <a
-            href={href}
-            className="text-xs text-muted underline underline-offset-2 hover:text-foreground"
-          >
-            see it live <code className="font-mono">{href}</code>
-          </a>
-        ) : null}
-      </div>
+      <p className="font-mono text-xs font-medium uppercase tracking-[0.2em] text-foreground">
+        {title}
+      </p>
       {children}
     </section>
   )
@@ -236,7 +257,7 @@ function PreSaleBarPreview({
             Opens July 20, 2026
           </p>
         </div>
-        <PreSaleRight state={state} returning={returning} />
+        <PreSaleRight state={state} returning={returning} setupHref={SETUP_URL_PREVIEW} />
       </div>
     </div>
   )
@@ -246,55 +267,51 @@ const PRE_SALE_BAR_STATES: ReadonlyArray<{
   label: string
   state: PreSaleBarState
   returning: boolean
-  href: string
 }> = [
   {
     label: "Notify (stage A, registration closed)",
     state: "notify",
     returning: false,
-    href: "/?phase=pre-sale&registration=closed&journey=kyc-required",
   },
   {
     label: "Register (new visitor)",
     state: "register",
     returning: false,
-    href: "/?phase=pre-sale&registration=open&journey=kyc-required",
   },
   {
     label: "Register - returning (Welcome back / Reconnect)",
     state: "register",
     returning: true,
-    href: "/?phase=pre-sale&registration=open&journey=kyc-required",
+  },
+  {
+    label: "Incomplete (setup unfinished -> Complete on Sonar)",
+    state: "incomplete",
+    returning: false,
   },
   {
     label: "Pending (in review)",
     state: "pending",
     returning: false,
-    href: "/?phase=pre-sale&registration=open&journey=kyc-pending",
   },
   {
     label: "Failed (Contact support + shield-x)",
     state: "failed",
     returning: false,
-    href: "/?phase=pre-sale&registration=open&journey=kyc-failed",
   },
   {
     label: "Not eligible (shield-x)",
     state: "not-eligible",
     returning: false,
-    href: "/?phase=pre-sale&registration=open&journey=not-eligible",
   },
   {
     label: "Registered (Identity verified)",
     state: "registered",
     returning: false,
-    href: "/?phase=pre-sale&registration=open&journey=disconnected",
   },
   {
     label: "Auth error",
     state: "auth-error",
     returning: false,
-    href: "/?phase=pre-sale&auth=error&journey=kyc-required",
   },
 ]
 
@@ -333,6 +350,50 @@ const MONEY_LOOP: ReadonlyArray<{ label: string; journey: JourneyState; preview:
   },
 ]
 
+// Settlement (ended phase) claim-gate states: the gate mirrors readClaimGate's on-chain read
+// (stage Done + claimRefundEnabled + committed - accepted), fixtures here, real reads live.
+const SETTLEMENT_STATES: ReadonlyArray<{
+  label: string
+  myBid: MyBid | null
+  gate: ClaimGate | undefined
+}> = [
+  {
+    label: "Empty Sonar answer, no pending entry (the no-commitment fallback)",
+    myBid: null,
+    gate: undefined,
+  },
+  {
+    label: "Gate unresolved (contract read pending) - claim button hidden, fail-closed",
+    myBid: MOCK_JOURNEY_INPUTS["has-bid-outbid"].myBid,
+    gate: undefined,
+  },
+  {
+    label: "Settlement still running on-chain (stage not Done) - numbers only, no claim assertion",
+    myBid: MOCK_JOURNEY_INPUTS["has-bid-outbid"].myBid,
+    gate: { done: false, claimEnabled: false, refunded: false, refundableUsd: null },
+  },
+  {
+    label: "Outbid - claim open, full commitment refundable",
+    myBid: MOCK_JOURNEY_INPUTS["has-bid-outbid"].myBid,
+    gate: { done: true, claimEnabled: true, refunded: false, refundableUsd: 3200 },
+  },
+  {
+    label: "Winner - pro-rata partial refund (on-chain amount overrides the derived $0)",
+    myBid: MOCK_JOURNEY_INPUTS["has-bid-winning"].myBid,
+    gate: { done: true, claimEnabled: true, refunded: false, refundableUsd: 480 },
+  },
+  {
+    label: "Claim disabled on-chain - refunds processed automatically (refunder role)",
+    myBid: MOCK_JOURNEY_INPUTS["has-bid-outbid"].myBid,
+    gate: { done: true, claimEnabled: false, refunded: false, refundableUsd: 3200 },
+  },
+  {
+    label: "Already refunded on-chain - Refund sent",
+    myBid: MOCK_JOURNEY_INPUTS["has-bid-outbid"].myBid,
+    gate: { done: true, claimEnabled: true, refunded: true, refundableUsd: 3200 },
+  },
+]
+
 export default function DevStatesPage() {
   if (!stateOverridesEnabled()) notFound()
 
@@ -347,22 +408,21 @@ export default function DevStatesPage() {
         </h1>
         <p className="mt-1 text-sm text-muted">
           For each state: the collapsed bar (metrics + opening CTA) then the expanded bar (metrics +
-          stepper on top, flow below). Drive the real bar with{" "}
-          <code className="font-mono">?journey=&lt;state&gt;</code> /{" "}
-          <code className="font-mono">?phase=pre-sale|ended</code>.
+          stepper on top, flow below). The live page has no URL overrides - to reproduce a state for
+          real, use the Sonar sandbox entity Overrides.
         </p>
       </header>
 
       <div className="flex flex-col gap-14">
         {PRE_SALE_BAR_STATES.map((row) => (
-          <GallerySection key={row.label} title={`Pre-sale · ${row.label}`} href={row.href}>
+          <GallerySection key={row.label} title={`Pre-sale · ${row.label}`}>
             <PreSaleBarPreview state={row.state} returning={row.returning} />
           </GallerySection>
         ))}
 
         {states.map((s) => (
           <Fragment key={s}>
-            <GallerySection title={`Live · ${s}`} href={`/?journey=${s}`}>
+            <GallerySection title={`Live · ${s}`}>
               <Caption>Collapsed</Caption>
               <CollapsedBar journey={s} />
               <Caption>Expanded</Caption>
@@ -370,20 +430,14 @@ export default function DevStatesPage() {
             </GallerySection>
 
             {s === "kyc-required" ? (
-              <GallerySection
-                title="Live · kyc-required (returning -> Welcome back)"
-                href="/?journey=kyc-required"
-              >
+              <GallerySection title="Live · kyc-required (returning -> Welcome back)">
                 <Caption>Expanded</Caption>
                 <ExpandedBar journey="kyc-required" returning />
               </GallerySection>
             ) : null}
 
             {s === "ready" ? (
-              <GallerySection
-                title="Live · money-loop (commit -> approve -> sign -> receipt)"
-                href="/?journey=ready"
-              >
+              <GallerySection title="Live · money-loop (commit -> approve -> sign -> receipt)">
                 <p className="text-sm text-muted">
                   Live, this runs on click (Place bid). Approve/sign are dev-paced previews - in
                   production the wallet drives the timing and the on-chain seam returns the real tx
@@ -400,6 +454,68 @@ export default function DevStatesPage() {
           </Fragment>
         ))}
 
+        <GallerySection title="Live · pending indexing (bid confirmed on-chain, Sonar catching up)">
+          <p className="text-sm text-muted">
+            Right after a confirmed bid, Sonar's read trails by ~1min (readCommitmentData cache):
+            the position overlays from localStorage (gnot:pending-bid) and the unreported share
+            shows as chips next to the Bidders / Committed labels. Chips purge once Sonar reports
+            the amount (10s poll), on sign-out, or after the 10min TTL. The journey holds a
+            dedicated has-bid-pending state so no surface claims Winning/Outbid early.
+          </p>
+          <Caption>Collapsed - first bid, $500 not indexed yet</Caption>
+          <div className="rounded-[var(--frame-radius)] border border-border bg-background px-6 lg:px-8">
+            <MetricsRow
+              dense={false}
+              metrics={METRICS_PENDING}
+              right={<CtaPill journey="has-bid-pending" />}
+            />
+          </div>
+          <Caption>Your bid header - neutral Pending status while unreported</Caption>
+          <div className="overflow-hidden rounded-[var(--frame-radius)] border border-border bg-background">
+            <div className="px-6 py-6 lg:px-8">
+              <div className="bid-capsule px-6 py-5">
+                <BidSectionHeader
+                  journey="has-bid-pending"
+                  myBid={MOCK_JOURNEY_INPUTS["has-bid-pending"].myBid}
+                  clearingPriceUsd={MOCK_JOURNEY_INPUTS["has-bid-pending"].clearingPriceUsd}
+                  wallet={<MockWalletChip />}
+                />
+              </div>
+            </div>
+          </div>
+        </GallerySection>
+
+        <GallerySection title="Post-bid opt-ins · one line, shared explainer, push + email side by side">
+          <p className="text-sm text-muted">
+            The bid-panel success row: confirmation left, the REAL PostBidOptIns component right (no
+            static replica, so the gallery cannot drift). Fully interactive: the email flow mocks
+            Mailchimp in dev, the push flow uses this browser's real permission state.
+          </p>
+          <Caption>
+            Submitted - single row, two compact CTAs (each opens its dedicated view in place)
+          </Caption>
+          <div className="overflow-hidden rounded-[var(--frame-radius)] border border-border bg-background">
+            <div className="px-6 py-6 lg:px-8">
+              {/* Same dark capsule as the real panel: the ghost-contrast CTAs are invisible on a
+                  light background, so the preview must replicate the production surface. */}
+              <div className="bid-capsule px-6 py-5">
+                <div className="flex flex-wrap items-center justify-between gap-x-10 gap-y-3">
+                  <div className="flex items-center gap-3">
+                    <Icon name="shield-check" draw={false} className="h-5 w-5 shrink-0 text-mint" />
+                    <p className="whitespace-nowrap text-sm text-foreground">
+                      Bid submitted - $1,000 at $0.086 per GNOT.
+                    </p>
+                    <span className="whitespace-nowrap text-xs text-muted underline underline-offset-2">
+                      Transaction
+                    </span>
+                  </div>
+                  <PostBidOptIns bidLimitUsd={0.086} />
+                </div>
+              </div>
+            </div>
+          </div>
+        </GallerySection>
+
         <GallerySection title="Ended · collapsed (metrics + View results)">
           <CompactPreview
             lead="Public sale"
@@ -407,22 +523,35 @@ export default function DevStatesPage() {
             sub="Final price $0.1161"
             cta="View results"
           />
-          <div className="flex flex-col gap-1.5">
-            <a
-              href="/?phase=ended&journey=has-bid-winning"
-              className="text-xs text-muted underline underline-offset-2 hover:text-foreground"
-            >
-              won - expand, connect, allocation{" "}
-              <code className="font-mono">{"/?phase=ended&journey=has-bid-winning"}</code>
-            </a>
-            <a
-              href="/?phase=ended&journey=has-bid-outbid"
-              className="text-xs text-muted underline underline-offset-2 hover:text-foreground"
-            >
-              outbid - expand, connect, claim{" "}
-              <code className="font-mono">{"/?phase=ended&journey=has-bid-outbid"}</code>
-            </a>
-          </div>
+          <p className="text-xs text-muted">
+            won - expand, connect, allocation · outbid - expand, connect, claim
+          </p>
+        </GallerySection>
+
+        <GallerySection title="Ended · settlement flow (on-chain claim gate)">
+          <p className="text-sm text-muted">
+            Live, the gate comes from readClaimGate (stage() == Done + claimRefundEnabled + the
+            contract's committed - accepted refundable). The claim button is fail-closed: it only
+            renders once the contract confirms the self-serve window; a claim-disabled sale shows
+            the refunder-role line instead. onClaim is dev-mocked here (instant Refund sent).
+          </p>
+          {SETTLEMENT_STATES.map((s) => (
+            <div key={s.label} className="flex flex-col gap-1.5">
+              <Caption>{s.label}</Caption>
+              <div className="overflow-hidden rounded-[var(--frame-radius)] border border-border bg-background">
+                <div className="px-6 py-6 lg:px-8">
+                  <div className="bid-capsule px-6 py-5">
+                    <SettlementFlow
+                      clearingPriceUsd={MOCK_COMMITMENT_LIVE.clearingPriceUsd}
+                      myBid={s.myBid}
+                      gate={s.gate}
+                      previewConnected
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
         </GallerySection>
       </div>
     </main>

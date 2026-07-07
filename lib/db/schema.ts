@@ -4,6 +4,7 @@ import {
   index,
   jsonb,
   pgTable,
+  smallint,
   text,
   timestamp,
 } from "drizzle-orm/pg-core"
@@ -71,16 +72,56 @@ export const pushSubscriptions = pgTable("push_subscriptions", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 })
 
+// Price email cron state: one row (id=1). Absent row = first run (baseline gets recorded);
+// lastSentAt null = baseline only, no email sent yet.
+export const priceEmailState = pgTable("price_email_state", {
+  id: smallint("id").primaryKey(),
+  lastSentPriceUsd: doublePrecision("last_sent_price_usd").notNull(),
+  lastSentAt: timestamp("last_sent_at", { withTimezone: true }),
+})
+
+// A push endpoint only ever comes from a browser's PushManager, so its host is always one of the
+// major providers. Restricting to that allowlist stops an attacker from registering an endpoint at
+// an arbitrary host that the outbid cron would then POST to every 5 min (SSRF / amplification).
+const PUSH_ENDPOINT_HOSTS = [
+  "push.services.mozilla.com", // Firefox
+  "fcm.googleapis.com", // Chrome / Chromium (FCM)
+  "notify.windows.com", // Edge / Windows (WNS)
+  "push.apple.com", // Safari
+]
+
+function isPushProviderEndpoint(endpoint: string): boolean {
+  let url: URL
+  try {
+    url = new URL(endpoint)
+  } catch {
+    return false
+  }
+  if (url.protocol !== "https:") return false
+  return PUSH_ENDPOINT_HOSTS.some((h) => url.hostname === h || url.hostname.endsWith(`.${h}`))
+}
+
 // Validates the client-sent subscription before insert. `.strict()` rejects any extra field, so no
-// wallet/session/PII can be smuggled into the row. Endpoint must be https (push services always are).
+// wallet/session/PII can be smuggled into the row; the endpoint must be https AND a known push host.
 export const pushSubscriptionInsertSchema = z
   .object({
-    endpoint: z.string().startsWith("https://").max(2048),
+    endpoint: z
+      .string()
+      .max(2048)
+      .refine(isPushProviderEndpoint, "endpoint is not a known push-service host"),
     p256dh: z.string().min(1).max(512),
     auth: z.string().min(1).max(256),
     bidLimitUsd: z.number().positive(),
   })
   .strict()
+
+// Single-row-per-cron lease: stops overlapping runs (schedule + manual invocation, or
+// a slow run outliving the next tick). Acquired via conditional upsert on DB time (no lambda clock
+// trust); an expired lease is simply re-acquired, so a crashed run self-heals at TTL.
+export const cronLeases = pgTable("cron_leases", {
+  name: text("name").primaryKey(),
+  leasedUntil: timestamp("leased_until", { withTimezone: true }).notNull(),
+})
 
 // Ephemeral OAuth PKCE state. Single-use (deleted on consume), TTL enforced on read via expires_at.
 // No PII; verifier is a throwaway nonce.

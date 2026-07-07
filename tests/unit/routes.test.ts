@@ -18,7 +18,7 @@ import {
   generatePurchasePermit,
   prePurchaseCheck,
 } from "@/lib/sonar/permit"
-import { storeTokens } from "@/lib/sonar/tokens"
+import { deleteTokens, storeTokens } from "@/lib/sonar/tokens"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
 // Mock the request-scoped + heavy server deps so each test exercises ONLY the route
@@ -29,7 +29,7 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 vi.mock("@/lib/env", () => ({
   env: {
     SALE_PAUSED: "false",
-    SALE_CHAIN: "base-sepolia",
+    SALE_CHAIN: "sepolia",
     SONAR_REDIRECT_URI: "https://app.example/callback",
     SONAR_SALE_UUID: "test-sale",
     IP_HMAC_PEPPER: "0".repeat(64),
@@ -48,7 +48,7 @@ vi.mock("@/lib/sonar/permit", async (importOriginal) => {
   return { ...actual, prePurchaseCheck: vi.fn(), generatePurchasePermit: vi.fn() }
 })
 vi.mock("@/lib/sonar/client", () => ({ createSonarClient: vi.fn() }))
-vi.mock("@/lib/sonar/tokens", () => ({ storeTokens: vi.fn() }))
+vi.mock("@/lib/sonar/tokens", () => ({ storeTokens: vi.fn(), deleteTokens: vi.fn() }))
 
 const mockedGetSession = vi.mocked(getSession)
 const mockedSonarMock = vi.mocked(sonarMockEnabled)
@@ -60,6 +60,7 @@ const mockedPrePurchase = vi.mocked(prePurchaseCheck)
 const mockedGeneratePermit = vi.mocked(generatePurchasePermit)
 const mockedCreateSonarClient = vi.mocked(createSonarClient)
 const mockedStoreTokens = vi.mocked(storeTokens)
+const mockedDeleteTokens = vi.mocked(deleteTokens)
 
 type SessionLike = Awaited<ReturnType<typeof getSession>>
 function sessionStub(sessionId?: string): SessionLike {
@@ -140,6 +141,29 @@ describe("POST /api/sonar/pre-purchase", () => {
     mockedPrePurchase.mockRejectedValue(new SonarAuthError("expired"))
     const res = await prePurchasePOST(req({ wallet }))
     expect(res.status).toBe(401)
+  })
+
+  it("rejects an oversized body before it reaches the entity lookup", async () => {
+    mockedGetSession.mockResolvedValue(sessionStub("sess-1"))
+    const res = await prePurchasePOST(req({ wallet, pad: "x".repeat(2048) }))
+    expect(res.status).toBe(400)
+    expect(mockedGetEntity).not.toHaveBeenCalled()
+  })
+
+  it("fails closed (403) on a non-eligible or incomplete entity, before any Sonar call", async () => {
+    mockedGetSession.mockResolvedValue(sessionStub("sess-1"))
+    for (const overrides of [
+      { eligibility: "not-eligible" as const },
+      { eligibility: "unknown-setup-incomplete" as const },
+      { setupState: "in-progress" as const },
+      { setupState: "unknown" as const },
+    ]) {
+      mockedPrePurchase.mockClear()
+      mockedGetEntity.mockResolvedValue({ ...entitySnap, ...overrides })
+      const res = await prePurchasePOST(req({ wallet }))
+      expect(res.status).toBe(403)
+      expect(mockedPrePurchase).not.toHaveBeenCalled()
+    }
   })
 })
 
@@ -305,8 +329,9 @@ describe("GET /api/auth/sonar/callback", () => {
     expect(mockedStoreTokens).not.toHaveBeenCalled()
   })
 
-  it("on a session-bound callback, exchanges the code and stores the tokens", async () => {
-    mockedGetSession.mockResolvedValue(sessionStub("s1"))
+  it("on a session-bound callback, exchanges the code and stores the tokens under a ROTATED id", async () => {
+    const session = sessionStub("s1")
+    mockedGetSession.mockResolvedValue(session)
     mockedConsumePkce.mockResolvedValue({ sessionId: "s1", codeVerifier: "v" })
     const exchangeAuthorizationCode = vi
       .fn()
@@ -318,10 +343,15 @@ describe("GET /api/auth/sonar/callback", () => {
     const res = await callbackGET(cbReq("code=abc&state=xyz"))
 
     expect(res.headers.get("location")).toContain("auth=ok")
+    // Session-fixation defense: the pre-auth id must never key the tokens - a fresh id does,
+    // and any row under the retired id is dropped.
+    const rotatedId = (session as unknown as { sessionId: string }).sessionId
+    expect(rotatedId).not.toBe("s1")
     expect(mockedStoreTokens).toHaveBeenCalledWith(
-      "s1",
+      rotatedId,
       expect.objectContaining({ accessToken: "at", refreshToken: "rt" }),
     )
+    expect(mockedDeleteTokens).toHaveBeenCalledWith("s1")
   })
 
   it("redirects to auth=error when code or state is missing", async () => {

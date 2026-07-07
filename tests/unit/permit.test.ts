@@ -21,6 +21,7 @@ const {
 vi.mock("../../lib/sonar/tokens", () => ({
   loadTokens: loadTokensMock,
   storeTokens: storeTokensMock,
+  deleteTokens: vi.fn(),
 }))
 vi.mock("../../lib/sonar/client", () => ({
   createSonarClient: createSonarClientMock,
@@ -188,7 +189,7 @@ describe("generatePurchasePermit audit wiring", () => {
     })
   })
 
-  it("writes an audit row with only allow-listed metadata (no PII) and a signature prefix", async () => {
+  it("writes the two-step audit trail (requested then issued) with only allow-listed metadata", async () => {
     generatePurchasePermitMock.mockResolvedValue({
       PermitJSON: {},
       Signature: "0xabcdef1234567890",
@@ -202,14 +203,55 @@ describe("generatePurchasePermit audit wiring", () => {
       userAgentClass: "chrome-desktop",
     })
 
-    expect(insertValuesMock).toHaveBeenCalledTimes(1)
-    const row = insertValuesMock.mock.calls[0][0]
-    expect(row.event).toBe("permit_issued")
-    expect(row.wallet).toBe("0xWALLETaudit")
-    expect(row.ipHmac).toBe("deadbeef")
+    // Two rows: permit_requested BEFORE the Sonar call, permit_issued after.
+    expect(insertValuesMock).toHaveBeenCalledTimes(2)
+    const requested = insertValuesMock.mock.calls[0][0]
+    expect(requested.event).toBe("permit_requested")
+    expect(requested.wallet).toBe("0xWALLETaudit")
+    expect(Object.keys(requested.metadata)).toEqual(["chain_id"])
+    const issued = insertValuesMock.mock.calls[1][0]
+    expect(issued.event).toBe("permit_issued")
+    expect(issued.wallet).toBe("0xWALLETaudit")
+    expect(issued.ipHmac).toBe("deadbeef")
     // metadata is the strict-validated object: only allow-listed keys survive,
     // and it is the signature prefix, never the full signature.
-    expect(Object.keys(row.metadata).sort()).toEqual(["chain_id", "permit_id_prefix"])
-    expect(row.metadata.permit_id_prefix).toBe("0xabcdef12")
+    expect(Object.keys(issued.metadata).sort()).toEqual(["chain_id", "permit_id_prefix"])
+    expect(issued.metadata.permit_id_prefix).toBe("0xabcdef12")
+  })
+
+  it("is FATAL when the permit_requested row cannot be written: no permit without an audit trail", async () => {
+    insertValuesMock.mockRejectedValueOnce(new Error("db down"))
+    await expect(
+      generatePurchasePermit({
+        sessionId: "s-audit",
+        entityId: "11111111-1111-1111-1111-111111111111",
+        // Distinct wallet: the module-level dedup window (5s per wallet) survives across tests.
+        wallet: "0xWALLETaudit-fatal",
+      }),
+    ).rejects.toThrow("db down")
+    // The failure happened BEFORE issuance - Sonar was never asked for a permit.
+    expect(generatePurchasePermitMock).not.toHaveBeenCalled()
+  })
+
+  it("still returns the live permit when the permit_issued row fails (logged, not fatal)", async () => {
+    generatePurchasePermitMock.mockResolvedValue({
+      PermitJSON: {},
+      Signature: "0xabcdef1234567890",
+    })
+    // First insert (permit_requested) succeeds, second (permit_issued) fails.
+    insertValuesMock.mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error("db down"))
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {})
+
+    const res = await generatePurchasePermit({
+      sessionId: "s-audit",
+      entityId: "11111111-1111-1111-1111-111111111111",
+      // Distinct wallet: the module-level dedup window (5s per wallet) survives across tests.
+      wallet: "0xWALLETaudit-nonfatal",
+    })
+
+    // The permit is already live and spendable: a 502 here would be a lie.
+    expect(res.Signature).toBe("0xabcdef1234567890")
+    expect(errorSpy).toHaveBeenCalled()
+    errorSpy.mockRestore()
   })
 })

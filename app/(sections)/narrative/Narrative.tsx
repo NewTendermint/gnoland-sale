@@ -43,7 +43,7 @@ export function Narrative() {
                 already are, dramatically lowering the barrier to entry while maintaining the
                 performance and clarity Go is known for.
               </Reveal>
-              <RevealGroup as="dl" className="mt-12 grid grid-cols-3 gap-x-4 gap-y-6 lg:max-w-md">
+              <RevealGroup as="dl" className="mt-12 grid grid-cols-3 gap-x-6 gap-y-6 lg:max-w-md">
                 <div>
                   <dd className="font-mono text-2xl font-bold tabular-nums text-foreground md:text-3xl lg:text-4xl">
                     <CountUp value="150+" index={1} />
@@ -58,7 +58,7 @@ export function Narrative() {
                 </div>
                 <div className="border-l border-border pl-4">
                   <dd className="font-mono text-2xl font-bold tabular-nums text-foreground md:text-3xl lg:text-4xl">
-                    <CountUp value="100+" index={1} />
+                    <CountUp value="1K+" index={1} />
                   </dd>
                   <FadeIn
                     as="dt"
