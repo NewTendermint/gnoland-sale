@@ -62,7 +62,8 @@
   # Sale phase is derived purely from the 3 dates in lib/sale/economics.ts (pre-sale -> live ->
   # ended), resolved server-side in app/page.tsx + re-resolved on the clock every 60s. There is no
   # phase override: to place a non-prod deploy in a given phase, override the milestone DATES
-  # (see the branch-deploy block below). /dev/states is a local-dev-only gallery.
+  # (see the branch-deploy block below). /dev/states is a mock-fixture gallery, reachable in local
+  # dev and on the staging branch-deploy (NEXT_PUBLIC_DEV_STATES_ENABLED below), 404 in production.
 [context.deploy-preview.environment]
   NEXT_PUBLIC_SITE_URL = "https://deploy-preview.netlify.app"
 
@@ -87,3 +88,6 @@
   NEXT_PUBLIC_REGISTRATION_OPENS = "2026-06-01T22:00:00Z"
   NEXT_PUBLIC_SALE_OPENS = "2026-06-15T22:00:00Z"
   NEXT_PUBLIC_SALE_CLOSES = "2026-12-31T22:00:00Z"
+  # /dev/states gallery (mock fixtures only, no live data): reachable on staging for design review.
+  # Never set this in the production context - the page must stay a 404 on sale.gno.land.
+  NEXT_PUBLIC_DEV_STATES_ENABLED = "1"
