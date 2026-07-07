@@ -162,35 +162,73 @@ describe("bidPreflightReason (pre-signature guards)", () => {
     ...over,
   })
   const NOW = 1_000_000
+  // Neutral bid for the non-bound cases (fixture bounds are all 0 = deferred to the contract).
+  const BID = { price: 5n, amount: 100_000_000n }
 
   it("rejects an expired permit before signing", () => {
-    expect(bidPreflightReason(permit({ ExpiresAt: NOW - 1 }), 100n, 1000n, NOW)).toBe(
+    expect(bidPreflightReason(permit({ ExpiresAt: NOW - 1 }), BID, 100n, 1000n, NOW)).toBe(
       "Your authorization expired - please try again",
     )
   })
 
   it("ignores expiry when ExpiresAt is 0 (unset/mock)", () => {
-    expect(bidPreflightReason(permit({ ExpiresAt: 0 }), 100n, 1000n, NOW)).toBeNull()
+    expect(bidPreflightReason(permit({ ExpiresAt: 0 }), BID, 100n, 1000n, NOW)).toBeNull()
   })
 
   it("rejects when the USDC balance is below the amount delta", () => {
-    expect(bidPreflightReason(permit({ ExpiresAt: NOW + 600 }), 100n, 99n, NOW)).toBe(
+    expect(bidPreflightReason(permit({ ExpiresAt: NOW + 600 }), BID, 100n, 99n, NOW)).toBe(
       "Insufficient USDC balance",
     )
   })
 
   it("names the selected token in the balance message (USDT approval path)", () => {
-    expect(bidPreflightReason(permit({ ExpiresAt: NOW + 600 }), 100n, 99n, NOW, "USDT")).toBe(
+    expect(bidPreflightReason(permit({ ExpiresAt: NOW + 600 }), BID, 100n, 99n, NOW, "USDT")).toBe(
       "Insufficient USDT balance",
     )
   })
 
   it("passes when balance covers the delta and the permit is live", () => {
-    expect(bidPreflightReason(permit({ ExpiresAt: NOW + 600 }), 100n, 100n, NOW)).toBeNull()
+    expect(bidPreflightReason(permit({ ExpiresAt: NOW + 600 }), BID, 100n, 100n, NOW)).toBeNull()
   })
 
   it("skips the balance check for a price-only raise (delta 0)", () => {
-    expect(bidPreflightReason(permit({ ExpiresAt: NOW + 600 }), 0n, 0n, NOW)).toBeNull()
+    expect(bidPreflightReason(permit({ ExpiresAt: NOW + 600 }), BID, 0n, 0n, NOW)).toBeNull()
+  })
+
+  // Permit bounds: enforced pre-signature only when SET (> 0), with the same values and
+  // comparators the contract applies - a zero bound stays the contract's call (issue #60).
+  it("rejects a price outside a set MinPrice/MaxPrice with the on-chain wording", () => {
+    const p = permit({ MinPrice: 3, MaxPrice: 40 })
+    expect(bidPreflightReason(p, { ...BID, price: 2n }, 0n, 0n, NOW)).toBe(
+      "Your price is outside the allowed range",
+    )
+    expect(bidPreflightReason(p, { ...BID, price: 41n }, 0n, 0n, NOW)).toBe(
+      "Your price is outside the allowed range",
+    )
+    expect(bidPreflightReason(p, { ...BID, price: 40n }, 0n, 0n, NOW)).toBeNull()
+  })
+
+  it("rejects an amount outside a set MinAmount/MaxAmount with the on-chain wording", () => {
+    const p = permit({ MinAmount: "100000000", MaxAmount: "500000000000000" })
+    expect(bidPreflightReason(p, { ...BID, amount: 99_999_999n }, 0n, 0n, NOW)).toBe(
+      "Your amount is outside the allowed range",
+    )
+    expect(bidPreflightReason(p, { ...BID, amount: 500_000_000_000_001n }, 0n, 0n, NOW)).toBe(
+      "Your amount is outside the allowed range",
+    )
+    expect(bidPreflightReason(p, { ...BID, amount: 100_000_000n }, 0n, 0n, NOW)).toBeNull()
+  })
+
+  it("skips any bound left at 0 (unset caps defer to the contract)", () => {
+    expect(
+      bidPreflightReason(
+        permit({ MaxPrice: 0, MaxAmount: "0" }),
+        { price: 999_999n, amount: 10n ** 18n },
+        0n,
+        0n,
+        NOW,
+      ),
+    ).toBeNull()
   })
 })
 

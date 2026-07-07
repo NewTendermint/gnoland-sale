@@ -279,11 +279,13 @@ async function generousGas(
 /**
  * Cheap pre-signature guards from data already in hand (the permit + one balance read): reject a
  * doomed bid BEFORE the EIP-2612 wallet popup so no unused approval is signed. Returns a user-facing
- * reason (reusing bidRevertReason's wording), or null to proceed. Amount/price BOUNDS are left to
- * simulateContract on purpose - their "0 = no limit" semantics are not pinned here.
+ * reason (reusing bidRevertReason's wording), or null to proceed. Permit bounds are enforced only
+ * when SET (> 0), with the contract's own values and comparators, so this can only refuse what
+ * simulateContract would refuse; a zero bound stays the contract's call ("0 = no limit" unpinned).
  */
 export function bidPreflightReason(
   permit: SonarPermitV3,
+  bid: { price: bigint; amount: bigint },
   amountDelta: bigint,
   usdcBalance: bigint,
   nowSec: number,
@@ -291,7 +293,17 @@ export function bidPreflightReason(
 ): string | null {
   const expiresAt = Number(permit.ExpiresAt)
   if (expiresAt > 0 && nowSec >= expiresAt) {
-    return "Your authorization expired - please try again"
+    return "Your authorization expired, please try again"
+  }
+  const minPrice = BigInt(permit.MinPrice)
+  const maxPrice = BigInt(permit.MaxPrice)
+  if ((minPrice > 0n && bid.price < minPrice) || (maxPrice > 0n && bid.price > maxPrice)) {
+    return "Your price is outside the allowed range"
+  }
+  const minAmount = BigInt(permit.MinAmount)
+  const maxAmount = BigInt(permit.MaxAmount)
+  if ((minAmount > 0n && bid.amount < minAmount) || (maxAmount > 0n && bid.amount > maxAmount)) {
+    return "Your amount is outside the allowed range"
   }
   if (amountDelta > 0n && usdcBalance < amountDelta) {
     return `Insufficient ${tokenSymbol} balance`
@@ -361,6 +373,7 @@ export async function submitBidOnChain(args: OnChainBidArgs): Promise<BidResult>
         : 0n
     const preflight = bidPreflightReason(
       permit.PermitJSON,
+      bid,
       amountDelta,
       usdcBalance,
       Math.floor(Date.now() / 1000),
