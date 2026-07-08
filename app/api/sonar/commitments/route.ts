@@ -13,7 +13,7 @@ export async function GET() {
     // Pause shows in the UI within the CDN cache window; mutating routes 503 immediately.
     const data = { ...metrics, paused: env.SALE_PAUSED === "true" }
     return NextResponse.json(data, {
-      headers: { "Cache-Control": "public, max-age=10, stale-while-revalidate=30" },
+      headers: { "Cache-Control": "public, max-age=5, stale-while-revalidate=30" },
     })
   } catch (err) {
     // Most-polled route in the app: a Sonar outage surfaces here first, so leave a trace.
