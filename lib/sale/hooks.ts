@@ -35,12 +35,12 @@ const EMPTY_COMMITMENT: CommitmentData = {
   paused: false,
 }
 
-/** Live auction metrics, polled every 10s (matches the route's cache window). */
+/** Live auction metrics; the poll cadence matches the route's CDN cache window. */
 export function useSaleData() {
   return useQuery({
     queryKey: ["sale", "commitments"],
     queryFn: getCommitments,
-    refetchInterval: 10_000,
+    refetchInterval: 5_000,
     // Footgun: without this the poll pauses on blur and the TabAlert outbid overlay (which exists
     // FOR backgrounded tabs) can never fire on data that arrives while hidden.
     refetchIntervalInBackground: true,
@@ -84,8 +84,9 @@ export function useMyBid(opts?: { enabled?: boolean }) {
     queryFn: () => readMyPosition(),
     enabled: isConnected && (opts?.enabled ?? true),
     refetchOnWindowFocus: false,
-    // Poll only while a pending bid waits for Sonar's cache (10s, the commitments cadence), so
-    // the reconcile below purges it as soon as Sonar reports the amount.
+    // Poll only while a pending bid waits for Sonar's cache, so the reconcile below purges it
+    // as soon as Sonar reports the amount. Footgun: my-position is edge rate-limited per IP
+    // and shared-NAT bidders stack on one IP - keep this cadence coarse.
     refetchInterval: pending ? 10_000 : false,
     retry: sonarQueryRetry,
     retryDelay: sonarQueryRetryDelay,

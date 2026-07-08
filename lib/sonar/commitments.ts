@@ -24,7 +24,8 @@ export async function readCommitments(): Promise<CommitmentMetrics> {
   return mapCommitmentData(res)
 }
 
-// Mirrors the public GET route's 10s CDN window; per-instance and best-effort by design.
+// Shields server-side readers only; the public GET route relies on its own CDN cache window.
+// Per-instance and best-effort by design.
 export const COMMITMENTS_CACHE_MS = 10_000
 
 let commitmentsCache: { at: number; value: CommitmentMetrics } | null = null

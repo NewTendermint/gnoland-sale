@@ -9,7 +9,8 @@ import type { Config } from "@netlify/edge-functions"
  *
  * The quota-sensitive permit routes have a tighter cap in permit-rate-limit.ts; OAuth init has
  * its own in auth-init-rate-limit.ts. /api/sonar/commitments is deliberately NOT covered: it is
- * public, cached, and polled every ~10s. Limits cannot live in netlify.toml - Netlify rate
+ * public, cached, and polled continuously by every open tab. Limits cannot live in
+ * netlify.toml - Netlify rate
  * limits are edge-function-only. Docs: docs.netlify.com/manage/security/secure-access-to-sites/rate-limiting.
  *
  * FOOTGUN: aggregateBy ip over-throttles shared NAT - size for N users behind one IP, not one.
