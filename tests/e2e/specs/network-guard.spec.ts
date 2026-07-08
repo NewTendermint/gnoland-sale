@@ -1,5 +1,7 @@
 import { expect, test } from "../fixtures"
-import { openBidPanel } from "../support/bid-panel"
+
+// Wallets install BEFORE sonar.login(): the login's navigation runs the init script and lands on
+// /?auth=ok, which auto-opens the bid panel (see wallet-picker.spec.ts for the rationale).
 
 const ICON = "data:image/svg+xml;base64,PHN2Zy8+"
 // MockWalletHandler defaults to chainId 1 (mainnet) - the sale runs on sepolia, so a fresh
@@ -16,10 +18,8 @@ test("WAL-15: connecting on the wrong network shows the wrong-network gate", asy
   wallet,
   sonar,
 }) => {
-  await sonar.login()
   await wallet.install({ info: METAMASK })
-  await page.reload()
-  await openBidPanel(page)
+  await sonar.login()
   await page.getByRole("button", { name: "Connect MetaMask" }).click()
 
   await expect(page.getByText("Wrong network.")).toBeVisible()
@@ -31,10 +31,8 @@ test("WAL-16: switching to the sale chain clears the gate and shows the bid form
   wallet,
   sonar,
 }) => {
-  await sonar.login()
   await wallet.install({ info: METAMASK })
-  await page.reload()
-  await openBidPanel(page)
+  await sonar.login()
   await page.getByRole("button", { name: "Connect MetaMask" }).click()
   await expect(page.getByText("Wrong network.")).toBeVisible()
 
@@ -49,10 +47,8 @@ test("WAL-17: a failed network switch shows an error and keeps the gate up", asy
   wallet,
   sonar,
 }) => {
-  await sonar.login()
   await wallet.install({ info: METAMASK, switchChainBehavior: "reject" })
-  await page.reload()
-  await openBidPanel(page)
+  await sonar.login()
   await page.getByRole("button", { name: "Connect MetaMask" }).click()
   await expect(page.getByText("Wrong network.")).toBeVisible()
 

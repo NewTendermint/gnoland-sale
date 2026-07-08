@@ -69,6 +69,12 @@ export class MockWalletHandler {
   private readonly typedDataLog: TypedDataRequest[] = []
   private readonly sendTransactionLog: SendTransactionRequest[] = []
   private requestAccountsCount = 0
+  // Real wallets answer eth_accounts with [] until the origin is authorized via a successful
+  // eth_requestAccounts. Answering eagerly made wagmi's mount-time reconnect probe treat the
+  // wallet as previously-connected and AUTO-CONNECT past the picker - a hydration race that
+  // intermittently removed the Connect button the specs were about to click. Node-side state,
+  // so an authorized wallet correctly survives reloads (the silent-reconnect contract, WAL-12).
+  private authorized = false
 
   constructor(opts: WalletOptions = {}) {
     // A fresh key per install: the server's per-wallet permit dedup (5s window) would otherwise
@@ -118,10 +124,11 @@ export class MockWalletHandler {
         if (this.requestAccountsBehavior === "reject") {
           return { ok: false, code: 4001, message: "User rejected the request." }
         }
+        this.authorized = true
         return { ok: true, result: this.accounts }
       }
       case "eth_accounts":
-        return { ok: true, result: this.accounts }
+        return { ok: true, result: this.authorized ? this.accounts : [] }
       case "eth_chainId":
         return { ok: true, result: `0x${this.chainId.toString(16)}` }
       case "wallet_switchEthereumChain": {

@@ -2,6 +2,10 @@ import { expect, test } from "../fixtures"
 import { openBidPanel } from "../support/bid-panel"
 import { SEPOLIA_CHAIN_ID } from "../support/constants"
 
+// Wallets install BEFORE sonar.login(): the login's navigation runs the init script and lands on
+// /?auth=ok, which auto-opens the bid panel (see wallet-picker.spec.ts for the rationale). Only
+// WAL-12 reloads mid-test - the one place openBidPanel is still needed.
+
 const ICON = "data:image/svg+xml;base64,PHN2Zy8+"
 const METAMASK = {
   uuid: "44444444-0000-0000-0000-000000000001",
@@ -10,21 +14,21 @@ const METAMASK = {
   rdns: "io.metamask",
 }
 
-test.beforeEach(async ({ sonar }) => {
+test("mock Sonar login lands on the wallet picker (journey precondition)", async ({
+  page,
+  sonar,
+}) => {
   await sonar.login()
-})
-
-test("mock Sonar login lands on the wallet picker (journey precondition)", async ({ page }) => {
   await expect(page.getByText("Connect your wallet.")).toBeVisible()
 })
 
 test("WAL-01: connecting a wallet replaces the picker with the bid form (mock analog)", async ({
   page,
   wallet,
+  sonar,
 }) => {
   await wallet.install({ info: METAMASK, chainId: SEPOLIA_CHAIN_ID })
-  await page.reload()
-  await openBidPanel(page)
+  await sonar.login()
 
   await page.getByRole("button", { name: "Connect MetaMask" }).click()
 
@@ -35,10 +39,10 @@ test("WAL-01: connecting a wallet replaces the picker with the bid form (mock an
 test("WAL-10: a rejected connection shows an error and stays on the picker", async ({
   page,
   wallet,
+  sonar,
 }) => {
   await wallet.install({ info: METAMASK, requestAccountsBehavior: "reject" })
-  await page.reload()
-  await openBidPanel(page)
+  await sonar.login()
 
   await page.getByRole("button", { name: "Connect MetaMask" }).click()
 
@@ -49,10 +53,14 @@ test("WAL-10: a rejected connection shows an error and stays on the picker", asy
 test("WAL-09: the picker shows a pending state while a connection is in flight", async ({
   page,
   wallet,
+  sonar,
 }) => {
-  await wallet.install({ info: METAMASK, chainId: SEPOLIA_CHAIN_ID, requestAccountsDelayMs: 1000 })
-  await page.reload()
-  await openBidPanel(page)
+  await wallet.install({
+    info: METAMASK,
+    chainId: SEPOLIA_CHAIN_ID,
+    requestAccountsDelayMs: 1000,
+  })
+  await sonar.login()
 
   const button = page.getByRole("button", { name: "Connect MetaMask" })
   await button.click()
@@ -64,10 +72,10 @@ test("WAL-09: the picker shows a pending state while a connection is in flight",
 test("WAL-12: a connected wallet reconnects automatically across a reload", async ({
   page,
   wallet,
+  sonar,
 }) => {
   const handler = await wallet.install({ info: METAMASK, chainId: SEPOLIA_CHAIN_ID })
-  await page.reload()
-  await openBidPanel(page)
+  await sonar.login()
   await page.getByRole("button", { name: "Connect MetaMask" }).click()
   await expect(page.getByRole("button", { name: "Place bid" })).toBeVisible()
   const promptsBeforeReload = handler.requestAccountsCalls()
@@ -84,10 +92,10 @@ test("WAL-12: a connected wallet reconnects automatically across a reload", asyn
 test("WAL-11: the connected chip disconnects on click, returning to the wallet picker", async ({
   page,
   wallet,
+  sonar,
 }) => {
   await wallet.install({ info: METAMASK, chainId: SEPOLIA_CHAIN_ID })
-  await page.reload()
-  await openBidPanel(page)
+  await sonar.login()
   await page.getByRole("button", { name: "Connect MetaMask" }).click()
   await expect(page.getByRole("button", { name: "Place bid" })).toBeVisible()
 
@@ -96,10 +104,13 @@ test("WAL-11: the connected chip disconnects on click, returning to the wallet p
   await expect(page.getByText("Connect your wallet.")).toBeVisible()
 })
 
-test("WAL-14: a wallet-initiated account switch is picked up live", async ({ page, wallet }) => {
+test("WAL-14: a wallet-initiated account switch is picked up live", async ({
+  page,
+  wallet,
+  sonar,
+}) => {
   const handler = await wallet.install({ info: METAMASK, chainId: SEPOLIA_CHAIN_ID })
-  await page.reload()
-  await openBidPanel(page)
+  await sonar.login()
   await page.getByRole("button", { name: "Connect MetaMask" }).click()
   await expect(
     page.getByRole("button", { name: `Disconnect wallet ${short(handler.address)}` }),

@@ -5,9 +5,9 @@ import { settlementSaleAbi } from "@/lib/sale/abi"
 // eth_sendTransaction (MockWalletHandler's default), so the flow always terminates in the
 // deterministic "You cancelled the transaction." UI state (lib/sale/onchain.ts's
 // sharedWalletErrorReason).
+import type { Page } from "@playwright/test"
 import { decodeFunctionData } from "viem"
 import { expect, test } from "../fixtures"
-import { openBidPanel } from "../support/bid-panel"
 import { MOCK_USDC_ADDRESS, SEPOLIA_CHAIN_ID, SETTLEMENT_SALE_ADDRESS } from "../support/constants"
 
 const ICON = "data:image/svg+xml;base64,PHN2Zy8+"
@@ -18,27 +18,20 @@ const METAMASK = {
   rdns: "io.metamask",
 }
 
-async function connectAndOpenBidForm(page: Parameters<typeof openBidPanel>[0]): Promise<void> {
-  await page.reload()
-  await openBidPanel(page)
+// Wallets install BEFORE sonar.login(): the login's navigation runs the init script and lands on
+// /?auth=ok, which auto-opens the bid panel (see wallet-picker.spec.ts for the rationale).
+async function connectAndOpenBidForm(page: Page): Promise<void> {
   await page.getByRole("button", { name: "Connect MetaMask" }).click()
   await expect(page.getByRole("button", { name: "Place bid" })).toBeVisible()
 }
 
-// The two bid flows are the suite's heaviest specs; run them one-at-a-time in a single worker
-// so they don't contend on the dev server's on-demand compiles (each passes solo but the pair
-// flakes in parallel).
-test.describe.configure({ mode: "default" })
-
-test.beforeEach(async ({ sonar }) => {
-  await sonar.login()
-})
-
 test("WAL-19: placing a bid sends a correctly-shaped EIP-2612 permit and replaceBidWithPermit calldata, then a rejected transaction shows a deterministic cancel", async ({
   page,
   wallet,
+  sonar,
 }) => {
   const handler = await wallet.install({ info: METAMASK, chainId: SEPOLIA_CHAIN_ID })
+  await sonar.login()
   await connectAndOpenBidForm(page)
 
   await page.getByRole("textbox", { name: "Amount (USD)" }).fill("150")
@@ -83,12 +76,14 @@ test("WAL-19: placing a bid sends a correctly-shaped EIP-2612 permit and replace
 test("WAL-19 reject variant: rejecting the EIP-2612 permit signature shows the signature-cancel copy", async ({
   page,
   wallet,
+  sonar,
 }) => {
   await wallet.install({
     info: METAMASK,
     chainId: SEPOLIA_CHAIN_ID,
     signTypedDataBehavior: "reject",
   })
+  await sonar.login()
   await connectAndOpenBidForm(page)
 
   await page.getByRole("textbox", { name: "Amount (USD)" }).fill("150")
