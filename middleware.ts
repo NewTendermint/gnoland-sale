@@ -17,8 +17,9 @@ import { NextResponse } from "next/server"
  * wallet journey on a preview.
  *
  * Chain RPC + WalletConnect/Coinbase endpoints are the moving parts of connect-src;
- * everything else is self. Simple Analytics: script from scripts.simpleanalyticscdn.com,
- * events posted to queue.simpleanalyticscdn.com (img-src https: covers the noscript pixel).
+ * everything else is self. Simple Analytics is same-origin by design: the script loads
+ * from /sgl.js and events post to /sgl/* (Netlify proxy, see netlify.toml), so
+ * 'self' covers it and no SA host belongs in this policy.
  */
 export function middleware(request: NextRequest) {
   const nonce = btoa(crypto.randomUUID())
@@ -38,7 +39,7 @@ export function middleware(request: NextRequest) {
   const reportOnlyCsp = [
     "default-src 'self'",
     // 'wasm-unsafe-eval' for crypto/wallet libs; strict-dynamic + nonce, never unsafe-inline.
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'wasm-unsafe-eval' https://scripts.simpleanalyticscdn.com`,
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'wasm-unsafe-eval'`,
     // Styles allow inline (Next/Tailwind); unsafe-inline is forbidden for scripts only.
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https:",
@@ -46,7 +47,7 @@ export function middleware(request: NextRequest) {
     // RPC hosts mirror the web3.ts failover chain: publicnode (explicit fallback), then
     // viem's chain defaults for mainnet (eth.merkle.io) + sepolia (*.rpc.thirdweb.com).
     // The dedicated keyed RPC (Alchemy/Infura) must be allowlisted here when provisioned.
-    "connect-src 'self' https://ethereum-rpc.publicnode.com https://ethereum-sepolia-rpc.publicnode.com https://eth.merkle.io https://*.rpc.thirdweb.com wss://relay.walletconnect.com wss://relay.walletconnect.org https://*.walletconnect.com https://*.walletconnect.org https://*.web3modal.org https://*.reown.com https://*.coinbase.com https://*.cbhq.net https://queue.simpleanalyticscdn.com",
+    "connect-src 'self' https://ethereum-rpc.publicnode.com https://ethereum-sepolia-rpc.publicnode.com https://eth.merkle.io https://*.rpc.thirdweb.com wss://relay.walletconnect.com wss://relay.walletconnect.org https://*.walletconnect.com https://*.walletconnect.org https://*.web3modal.org https://*.reown.com https://*.coinbase.com https://*.cbhq.net",
     "frame-src 'self' https://*.walletconnect.org https://*.walletconnect.com https://*.coinbase.com",
     "worker-src 'self' blob:",
     reporting,

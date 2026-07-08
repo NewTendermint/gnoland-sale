@@ -8,6 +8,12 @@
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
+# Simple Analytics is served first-party (ad-blocker bypass) by the analytics-proxy edge
+# function (netlify/edge-functions/analytics-proxy.ts), NOT a plain proxy rewrite: a rewrite
+# would forward the site's session cookie to a third party. The edge function rebuilds the
+# outgoing request from a header allowlist so no cookie / IP leaks. The /sgl names avoid SA's
+# documented defaults and tracker keywords, out of reach of generic blocklists.
+
 # Global security headers applied to every response (including static assets,
 # which the middleware matcher skips). middleware.ts mirrors these same hard
 # headers for matcher routes (defense in depth); keep the two in sync - the
