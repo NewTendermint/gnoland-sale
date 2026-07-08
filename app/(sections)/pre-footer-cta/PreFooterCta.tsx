@@ -10,6 +10,7 @@ import { FadeIn } from "../../(ui)/FadeIn"
 import { Reveal } from "../../(ui)/Reveal"
 import { RevealGroup } from "../../(ui)/RevealGroup"
 import { HEADING_TITLE } from "../../(ui)/SectionHeading"
+import { track } from "../../../lib/analytics/track"
 import { newsletterEnabled } from "../../../lib/newsletter/config"
 import { redirectToSonarLogin } from "../../../lib/sale/api"
 import { SALE_ECONOMICS, formatSaleDate } from "../../../lib/sale/economics"
@@ -86,6 +87,7 @@ export function PreFooterCta() {
                           // hosted setup page instead (same destination as the sticky-bar CTA).
                           <Cta
                             href={sonarSetupUrl}
+                            onClick={() => track("sonar_setup_opened", { placement: "pre-footer" })}
                             external
                             label={VERIFY_INCOMPLETE.cta}
                             arrow

@@ -13,6 +13,7 @@ import { DrawLine } from "../(ui)/DrawLine"
 import { Entrance } from "../(ui)/Entrance"
 import { Icon } from "../(ui)/Icon"
 import { Stagger } from "../(ui)/Stagger"
+import { track } from "../../lib/analytics/track"
 import { useCtaEntrance } from "../../lib/motion/use-motion"
 import { newsletterEnabled } from "../../lib/newsletter/config"
 import { postSonarLogout, redirectToSonarLogin } from "../../lib/sale/api"
@@ -629,7 +630,13 @@ export function PreSaleRight({
           icon={VERIFY_INCOMPLETE.icon}
           title={`${VERIFY_INCOMPLETE.title}.`}
           action={
-            <Cta variant="solid" arrow href={setupHref} external>
+            <Cta
+              variant="solid"
+              arrow
+              href={setupHref}
+              onClick={() => track("sonar_setup_opened", { placement: "pre-sale-bar" })}
+              external
+            >
               <span>{VERIFY_INCOMPLETE.cta}</span>
             </Cta>
           }

@@ -1,5 +1,6 @@
 "use client"
 
+import { track } from "@/lib/analytics/track"
 import { type PushOptInResult, enablePushAlerts, hasPushSubscription } from "@/lib/push/subscribe"
 import { useEffect, useState } from "react"
 
@@ -31,7 +32,9 @@ export function usePushAlerts(bidLimitUsd: number) {
 
   const enable = async () => {
     setStatus("working")
-    setStatus(await enablePushAlerts(bidLimitUsd))
+    const result = await enablePushAlerts(bidLimitUsd)
+    track("push_alerts_result", { result })
+    setStatus(result)
   }
 
   return { supported, status, enable }

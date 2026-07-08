@@ -9,6 +9,7 @@ import { CloseButton } from "../../(ui)/CloseButton"
 import { Cta } from "../../(ui)/Cta"
 import { Icon } from "../../(ui)/Icon"
 import { useViewFocus } from "../../../lib/a11y/focus"
+import { bidAmountBucket, track } from "../../../lib/analytics/track"
 import {
   clearEmailOptInDone,
   emailOptInDone,
@@ -540,7 +541,12 @@ function GateRow({
       </div>
       <div className="ml-auto flex flex-wrap items-center justify-end gap-x-4 gap-y-2">
         {ctaHref && cta ? (
-          <Cta variant="solid-contrast" href={ctaHref} external>
+          <Cta
+            variant="solid-contrast"
+            href={ctaHref}
+            onClick={() => track("sonar_setup_opened", { placement: "bid-panel" })}
+            external
+          >
             {cta}
           </Cta>
         ) : cta ? (
@@ -593,6 +599,7 @@ export function ConnectChoices({
           href={FIND_WALLET_URL}
           target="_blank"
           rel="noreferrer noopener"
+          onClick={() => track("wallet_install_clicked", { wallet: "find-a-wallet" })}
           aria-label="Don't have a wallet? Find one (opens in a new tab)"
           title="Don't have one? Find a wallet"
           className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-dashed border-faint bg-surface-alt opacity-70 transition-all hover:opacity-100 focus-visible:opacity-100"
@@ -605,6 +612,7 @@ export function ConnectChoices({
             href={rec.installUrl}
             target="_blank"
             rel="noreferrer noopener"
+            onClick={() => track("wallet_install_clicked", { wallet: rec.name })}
             aria-label={`Get ${rec.name} (opens in a new tab)`}
             title={`${rec.name} - not installed, click to get it`}
             className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-dashed border-faint bg-surface-alt opacity-70 transition-all hover:opacity-100 focus-visible:opacity-100"
@@ -618,7 +626,16 @@ export function ConnectChoices({
             <button
               key={connector.uid}
               type="button"
-              onClick={() => connect({ connector })}
+              onClick={() => {
+                track("wallet_connect_started", { connector: connector.id })
+                connect(
+                  { connector },
+                  {
+                    onSuccess: () => track("wallet_connected", { connector: connector.id }),
+                    onError: () => track("wallet_connect_failed", { connector: connector.id }),
+                  },
+                )
+              }}
               disabled={isPending}
               aria-label={`Connect ${connector.name}`}
               title={connector.name}
@@ -666,22 +683,29 @@ function SwitchNetworkGate() {
   )
 }
 
+const BID_FAIL_MESSAGES: Record<string, string> = {
+  "requires-liveness": "An identity check is needed before bidding.",
+  "wallet-risk": "This wallet can't be used for the sale.",
+  "max-wallets-used": "You've reached the wallet limit for this sale.",
+  "sale-not-active": "Bidding isn't available for your account right now.",
+  "wallet-not-linked": "This wallet is already linked to another account.",
+  "outside-time-window": "Bidding is closed right now.",
+  "session-expired": "Your Sonar session expired. Reconnect to continue.",
+  "entity-not-eligible": "Your account can't bid yet. Finish verification.",
+  "Connect your wallet": "Connect your wallet to bid.",
+  "wrong-chain": `Switch to ${SALE_CHAIN.name} to bid.`,
+  unknown: "Could not place your bid. Please try again.",
+}
+
 function reasonToMessage(reason: string): string {
-  const messages: Record<string, string> = {
-    "requires-liveness": "An identity check is needed before bidding.",
-    "wallet-risk": "This wallet can't be used for the sale.",
-    "max-wallets-used": "You've reached the wallet limit for this sale.",
-    "sale-not-active": "Bidding isn't available for your account right now.",
-    "wallet-not-linked": "This wallet is already linked to another account.",
-    "outside-time-window": "Bidding is closed right now.",
-    "session-expired": "Your Sonar session expired. Reconnect to continue.",
-    "entity-not-eligible": "Your account can't bid yet. Finish verification.",
-    "Connect your wallet": "Connect your wallet to bid.",
-    "wrong-chain": `Switch to ${SALE_CHAIN.name} to bid.`,
-    unknown: "Could not place your bid. Please try again.",
-  }
   // On-chain reasons (bidRevertReason) are already messages; pass through if not a known code.
-  return messages[reason] ?? reason
+  return BID_FAIL_MESSAGES[reason] ?? reason
+}
+
+// Analytics label: known codes pass as-is, free-form on-chain revert text collapses to one
+// bucket so no raw wallet/contract strings ever leave the browser.
+function failureLabel(reason: string): string {
+  return reason in BID_FAIL_MESSAGES ? reason : "onchain-or-other"
 }
 
 /** Small "+amount" pill shown on the bid CTAs when a raise adds USDC over the prior commitment. */
@@ -779,6 +803,7 @@ function BidRow({
   // and resurface a stale blocker after the user already cleared it.
   const precheckSeq = useRef(0)
   function enterConfirm() {
+    track("bid_started", { raise: !!prevBid, token: payToken?.symbol ?? "unknown" })
     setSubmitState("confirming")
     if (!onPrecheck) return
     setPrecheckNotice(null)
@@ -955,6 +980,7 @@ function BidRow({
     }
     if (onBid) {
       setSubmitState("submitting")
+      track("bid_submitted", { raise: !!prevBid, token: payToken?.symbol ?? "unknown" })
       const result = await onBid(params, {
         onStage: (s) => {
           if (aliveRef.current) setSubmitState(s)
@@ -962,9 +988,17 @@ function BidRow({
       })
       if (!aliveRef.current) return
       if (result.status === "submitted") {
+        track("bid_confirmed", {
+          raise: !!prevBid,
+          token: payToken?.symbol ?? "unknown",
+          amount_bucket: bidAmountBucket(amountNum),
+          // Friction gauge: whole seconds from page load to on-chain confirmation.
+          seconds_to_bid: Math.round(performance.now() / 1000),
+        })
         setTxHash(result.txHash)
         setSubmitState("submitted")
       } else {
+        track("bid_failed", { reason: failureLabel(result.reason) })
         setSubmitState("idle")
         setSubmitFailure({
           message: reasonToMessage(result.reason),
@@ -1227,7 +1261,11 @@ function BidRow({
                   <TokenSelect
                     tokens={orderedTokens}
                     value={payToken?.address}
-                    onChange={setPayTokenAddress}
+                    onChange={(address) => {
+                      setPayTokenAddress(address)
+                      const symbol = orderedTokens.find((t) => t.address === address)?.symbol
+                      if (symbol) track("token_selected", { token: symbol })
+                    }}
                   />
                 ) : null}
                 {balanceSlot ? (

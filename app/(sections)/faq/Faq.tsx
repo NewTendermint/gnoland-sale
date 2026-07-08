@@ -7,6 +7,7 @@ import { RevealGroup } from "../../(ui)/RevealGroup"
 import { Section } from "../../(ui)/Section"
 import { SectionHeading } from "../../(ui)/SectionHeading"
 import { faq } from "../../../content/sections/faq"
+import { track } from "../../../lib/analytics/track"
 
 export function Faq() {
   const [open, setOpen] = useState<number | null>(null)
@@ -32,7 +33,10 @@ export function Faq() {
                     type="button"
                     aria-expanded={isOpen}
                     aria-controls={`faq-panel-${i}`}
-                    onClick={() => setOpen(isOpen ? null : i)}
+                    onClick={() => {
+                      setOpen(isOpen ? null : i)
+                      if (!isOpen) track("faq_opened", { question: item.q })
+                    }}
                     className="group flex w-full cursor-pointer items-center justify-between gap-6 py-6 text-left lg:py-8"
                   >
                     <span className="text-xl font-semibold tracking-tight text-foreground md:text-2xl">

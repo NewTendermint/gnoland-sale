@@ -1,4 +1,5 @@
 // Typed fetchers to our own /api/sonar/* routes.
+import { track } from "../analytics/track"
 import type { CommitmentData, EntitySnapshot, MyBid, PrePurchaseResult, SalePermit } from "./types"
 
 /** Thrown by the JSON fetchers on a non-2xx response; carries the HTTP status. */
@@ -81,6 +82,7 @@ async function startSonarLogin(): Promise<string> {
 }
 
 export function redirectToSonarLogin(): void {
+  track("sonar_auth_started")
   startSonarLogin().then(
     (url) => {
       window.location.href = url

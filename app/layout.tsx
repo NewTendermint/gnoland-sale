@@ -2,6 +2,7 @@ import "./globals.css"
 import { SALE_ECONOMICS, formatSaleDate } from "@/lib/sale/economics"
 import localFont from "next/font/local"
 import type { ReactNode } from "react"
+import { Analytics } from "./(layout)/Analytics"
 import { Footer } from "./(layout)/Footer"
 import { Header } from "./(layout)/Header"
 import { Loader } from "./(layout)/Loader"
@@ -126,6 +127,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             </div>
           </Web3Provider>
         </ThemeProvider>
+        <Analytics />
       </body>
     </html>
   )
