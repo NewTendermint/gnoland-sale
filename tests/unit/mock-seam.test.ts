@@ -44,9 +44,25 @@ describe("Sonar mock-fetch seam (real SDK + fixtures)", () => {
     const res = await generatePurchasePermit({
       sessionId: "mock-session",
       entityId: "11111111-1111-1111-1111-111111111111",
-      wallet: "0xmockpermitwallet",
+      wallet: "0x0000000000000000000000000000000000000042",
     })
     expect(res.Signature).toMatch(/^0x[0-9a-f]+$/i)
     expect(res.PermitJSON).toBeTruthy()
+  })
+
+  it("binds the mock permit to the requesting wallet, like real Sonar", async () => {
+    // The on-chain preflight refuses a permit bound to another wallet (InvalidSender guard), so a
+    // fixture-frozen Wallet would make every mock-mode bid unplayable.
+    const wallet = "0xabcd000000000000000000000000000000000123"
+    const res = await generatePurchasePermit({
+      sessionId: "mock-session",
+      entityId: "11111111-1111-1111-1111-111111111111",
+      wallet,
+    })
+    // PermitJSON is a union of permit shapes; the sale issues BasicPermitV3, which carries Wallet.
+    if (!("Wallet" in res.PermitJSON)) {
+      throw new Error("expected a wallet-bound permit shape")
+    }
+    expect(res.PermitJSON.Wallet).toBe(wallet)
   })
 })
