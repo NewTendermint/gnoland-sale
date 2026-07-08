@@ -456,6 +456,28 @@ const SETTLEMENT_STATES: ReadonlyArray<{
     myBid: MOCK_JOURNEY_INPUTS["has-bid-outbid"].myBid,
     gate: { done: true, claimEnabled: true, refunded: true, refundableUsd: 3200 },
   },
+  // Sonar position missing (indexer lag / outage) while the contract holds the truth: the gate
+  // alone must keep the refund actionable, never the "no commitment" denial.
+  {
+    label: "No Sonar position + claimable on-chain refund - gate-only panel, claim open",
+    myBid: null,
+    gate: { done: true, claimEnabled: true, refunded: false, refundableUsd: 3200 },
+  },
+  {
+    label: "No Sonar position + automatic refunds (self-serve off) - gate-only panel",
+    myBid: null,
+    gate: { done: true, claimEnabled: false, refunded: false, refundableUsd: 3200 },
+  },
+  {
+    label: "No Sonar position + already refunded - gate-only panel, Refund sent",
+    myBid: null,
+    gate: { done: true, claimEnabled: true, refunded: true, refundableUsd: 3200 },
+  },
+  {
+    label: "No Sonar position + fully-accepted winner (refundable $0) - finalizing, not denial",
+    myBid: null,
+    gate: { done: true, claimEnabled: true, refunded: false, refundableUsd: 0 },
+  },
 ]
 
 export default function DevStatesPage() {

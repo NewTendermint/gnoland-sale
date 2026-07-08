@@ -61,9 +61,12 @@ export type ClaimView = {
  * that committed on-chain). The "refunds are processed automatically" line requires done stage:
  * before Done nothing is claimable by anyone, so asserting "automatic" would be false for a
  * self-serve sale still in Settlement.
+ * A null settlement (Sonar position missing: indexer lag, outage) keeps the gate's assertions
+ * available - the contract's refund must stay claimable without Sonar - but never a win or an
+ * allocation, which only Sonar's numbers can support.
  */
 export function deriveClaimView(
-  settlement: SettlementOutcome,
+  settlement: SettlementOutcome | null,
   gate: ClaimGate | undefined,
   claimedLocally: boolean,
 ): ClaimView {
@@ -71,26 +74,30 @@ export function deriveClaimView(
   const onchainRefundable = gate?.refundableUsd ?? null
   // The contract does not zero committedAmountByToken on refund, so this stays the historical
   // refundable amount after "Refund sent" - which is what the cell should keep showing.
-  const refundableUsd = onchainRefundable ?? settlement.refundableUsd
+  const refundableUsd = onchainRefundable ?? settlement?.refundableUsd ?? 0
   // Keep the two numbers coherent: allocation = accepted / clearing and accepted = committed -
   // refund, so a winner's estimate scales by the same fill ratio the refund reveals. Clamped:
   // Sonar's committed can lag the chain (indexer delay), which would push the ratio negative.
   const fillRatio =
-    onchainRefundable != null && settlement.committedUsd > 0
+    onchainRefundable != null && settlement != null && settlement.committedUsd > 0
       ? Math.max(0, (settlement.committedUsd - onchainRefundable) / settlement.committedUsd)
       : 1
   const gnotAllocation =
-    settlement.status === "won" ? settlement.gnotAllocation * fillRatio : settlement.gnotAllocation
+    settlement == null
+      ? 0
+      : settlement.status === "won"
+        ? settlement.gnotAllocation * fillRatio
+        : settlement.gnotAllocation
   // Only the contract's own numbers may downgrade a win to refund-only: an unreadable gate
   // keeps the derived upper bound (fillRatio defaults to 1 above, so this stays false). The
   // epsilon absorbs dust fills (pro-rata floor rounding leaves ~1 unit accepted): an exact 0
   // would render "cleared / ~0 GNOT" over a full-looking refund.
-  const zeroFill = settlement.status === "won" && onchainRefundable != null && fillRatio < 1e-6
+  const zeroFill = settlement?.status === "won" && onchainRefundable != null && fillRatio < 1e-6
   return {
     refundableUsd,
     gnotAllocation,
     zeroFill,
-    won: settlement.status === "won" && !zeroFill,
+    won: settlement?.status === "won" && !zeroFill,
     refunded,
     // Both assertions key on the CONTRACT's amount, never the estimate: a wallet that is not the
     // one that committed on-chain must get neither the button nor the automatic-refunds promise.

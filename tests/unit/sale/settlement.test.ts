@@ -186,3 +186,54 @@ describe("deriveClaimView (Sonar estimate x on-chain gate, fail-closed)", () => 
     expect(deriveClaimView(outbid, gate({}), false).won).toBe(false)
   })
 })
+
+// Sonar's position read can lag or fail while the contract already holds the truth: the gate's
+// own numbers must stay actionable with no settlement at all, and nothing beyond them may be
+// asserted (no win, no allocation - those need Sonar).
+describe("deriveClaimView without a settlement (indexer lag / Sonar outage)", () => {
+  const gate = (over: Partial<Parameters<typeof deriveClaimView>[1] & object>) => ({
+    done: true,
+    claimEnabled: true,
+    refunded: false,
+    refundableUsd: 3200 as number | null,
+    ...over,
+  })
+
+  it("keeps the claim open on the contract's own refundable amount", () => {
+    const v = deriveClaimView(null, gate({}), false)
+    expect(v.showClaimButton).toBe(true)
+    expect(v.refundableUsd).toBe(3200)
+  })
+
+  it("renders refund-only, never a win, without Sonar data", () => {
+    const v = deriveClaimView(null, gate({}), false)
+    expect(v.won).toBe(false)
+    expect(v.zeroFill).toBe(false)
+    expect(v.gnotAllocation).toBe(0)
+  })
+
+  it("shows the automatic-refunds line when self-serve is off", () => {
+    const v = deriveClaimView(null, gate({ claimEnabled: false }), false)
+    expect(v.showClaimButton).toBe(false)
+    expect(v.showAutoRefundLine).toBe(true)
+  })
+
+  it("reads refunded from the gate, keeping the historical amount", () => {
+    const v = deriveClaimView(null, gate({ refunded: true }), false)
+    expect(v.refunded).toBe(true)
+    expect(v.showClaimButton).toBe(false)
+    expect(v.refundableUsd).toBe(3200)
+  })
+
+  it("asserts nothing with neither settlement nor gate", () => {
+    expect(deriveClaimView(null, undefined, false)).toEqual({
+      refundableUsd: 0,
+      gnotAllocation: 0,
+      zeroFill: false,
+      won: false,
+      refunded: false,
+      showClaimButton: false,
+      showAutoRefundLine: false,
+    })
+  })
+})
