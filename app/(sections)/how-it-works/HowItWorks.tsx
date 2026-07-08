@@ -10,6 +10,7 @@ import { RevealGroup } from "../../(ui)/RevealGroup"
 import { Section } from "../../(ui)/Section"
 import { SectionHeading } from "../../(ui)/SectionHeading"
 import { steps } from "../../../content/sections/how-it-works"
+import { track } from "../../../lib/analytics/track"
 import { redirectToSonarLogin } from "../../../lib/sale/api"
 import { SALE_ECONOMICS, formatSaleDate } from "../../../lib/sale/economics"
 import { isSonarVerified } from "../../../lib/sale/journey"
@@ -114,6 +115,7 @@ export function HowItWorks() {
                 <div className="mt-4">
                   <Cta
                     href={sonarSetupUrl}
+                    onClick={() => track("sonar_setup_opened", { placement: "how-it-works" })}
                     external
                     label={VERIFY_INCOMPLETE.cta}
                     arrow

@@ -1,9 +1,10 @@
 "use client"
 
 import { useQueryClient } from "@tanstack/react-query"
-import { createContext, useContext, useEffect, useMemo, useState } from "react"
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react"
 import type { ReactNode } from "react"
 import { useAccount } from "wagmi"
+import { track } from "../../lib/analytics/track"
 import { useFunnelCapable } from "../../lib/device/funnel-gate"
 import { SALE_CHAIN } from "../../lib/sale/contracts"
 import { SALE_ECONOMICS } from "../../lib/sale/economics"
@@ -67,11 +68,21 @@ export function SaleProvider({
   const [bidPanelOpen, setBidPanelOpen] = useState(false)
   const queryClient = useQueryClient()
 
+  // Attrition marker ahead of bid_started: first panel open per pageload, whatever the trigger
+  // (CTA click, post-OAuth auto-open). Once is enough - reopenings would skew the funnel ratio.
+  const panelOpenTracked = useRef(false)
+  useEffect(() => {
+    if (!bidPanelOpen || panelOpenTracked.current) return
+    panelOpenTracked.current = true
+    track("bid_panel_opened")
+  }, [bidPanelOpen])
+
   useEffect(() => {
     setPreSaleStage(resolvePreSaleStage(Date.now()))
     const url = new URL(window.location.href)
     const auth = url.searchParams.get("auth")
     if (auth === "ok" || auth === "error") {
+      track("sonar_auth_completed", { result: auth })
       setSonarReturn(auth)
       url.searchParams.delete("auth")
       window.history.replaceState(window.history.state, "", url)

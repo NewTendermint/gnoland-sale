@@ -78,7 +78,8 @@ export function Cta({
       ) : null}
     </span>
   )
-  if (onClick) {
+  // href + onClick together = a real link with a side effect (e.g. analytics); button only when no href.
+  if (onClick && !href) {
     return (
       <button
         type="button"
@@ -98,6 +99,7 @@ export function Cta({
   return (
     <a
       href={href}
+      onClick={onClick}
       aria-label={ariaLabel}
       title={title}
       {...(external ? { target: "_blank", rel: "noreferrer noopener" } : {})}

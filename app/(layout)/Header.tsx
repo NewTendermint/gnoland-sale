@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
 import { Logo } from "../(ui)/Logo"
 import { Stagger } from "../(ui)/Stagger"
+import { track } from "../../lib/analytics/track"
 import { LG_MEDIA_QUERY } from "../../lib/device/breakpoints"
 import { navLinks, pageTitles } from "./nav.data"
 
@@ -106,7 +107,10 @@ export function Header() {
               <li key={l.href}>
                 <a
                   href={l.href}
-                  onClick={() => setMenuOpen(false)}
+                  onClick={() => {
+                    setMenuOpen(false)
+                    track("nav_clicked", { target: l.label })
+                  }}
                   className="link-underline text-3xl font-semibold tracking-tight text-muted transition-colors hover:text-foreground"
                 >
                   {l.label}
@@ -127,6 +131,7 @@ export function Header() {
                 <li key={l.href}>
                   <a
                     href={l.href}
+                    onClick={() => track("nav_clicked", { target: l.label })}
                     className="link-underline text-muted transition-colors hover:text-foreground"
                   >
                     {l.label}
@@ -146,6 +151,7 @@ export function Header() {
                 <li key={l.href}>
                   <a
                     href={l.href}
+                    onClick={() => track("nav_clicked", { target: l.label })}
                     className="link-underline text-muted transition-colors hover:text-foreground"
                   >
                     {l.label}

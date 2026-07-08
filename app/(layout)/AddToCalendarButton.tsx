@@ -1,6 +1,7 @@
 "use client"
 
 import { Icon } from "../(ui)/Icon"
+import { track } from "../../lib/analytics/track"
 import { type SaleMilestone, buildMilestoneIcs } from "../../lib/sale/calendar"
 
 const VARIANTS = {
@@ -16,6 +17,7 @@ export function AddToCalendarButton({
   variant: keyof typeof VARIANTS
 }) {
   function onClick() {
+    track("add_to_calendar", { milestone, placement: variant })
     const { filename, ics } = buildMilestoneIcs(milestone, Date.now())
     const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" })
     const url = URL.createObjectURL(blob)

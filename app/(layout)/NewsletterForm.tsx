@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { Icon } from "../(ui)/Icon"
+import { track } from "../../lib/analytics/track"
 import { postNewsletterSubscribe } from "../../lib/newsletter/client"
 import { markEmailOptInDone, newsletterEnabled } from "../../lib/newsletter/config"
 
@@ -66,6 +67,7 @@ export function NewsletterForm({
     setState("submitting")
     try {
       await postNewsletterSubscribe(trimmed, topic)
+      track("email_alert_subscribed", { placement: variant })
       setState("success")
       // Every surface records the shared opt-in flag; the bid panel reads it for its check state.
       markEmailOptInDone()
