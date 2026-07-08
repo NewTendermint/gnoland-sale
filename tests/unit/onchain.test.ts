@@ -66,6 +66,30 @@ describe("submitBidOnChain (on-chain seam)", () => {
   })
 })
 
+describe("bidRevertReason (gas shortfall is ETH copy, never the token balance)", () => {
+  it("maps viem's node-level gas error to ETH, not USDC", () => {
+    expect(bidRevertReason(new Error("insufficient funds for gas * price + value"))).toBe(
+      "Not enough ETH to cover network fees.",
+    )
+  })
+
+  it("maps viem's InsufficientFundsError long form to ETH, not USDC", () => {
+    expect(
+      bidRevertReason(
+        new Error(
+          "The total cost (gas * gas fee + value) of executing this transaction exceeds the balance of the account.",
+        ),
+      ),
+    ).toBe("Not enough ETH to cover network fees.")
+  })
+
+  it("still maps an ERC20 balance revert to the token copy", () => {
+    expect(bidRevertReason(new Error("ERC20: transfer amount exceeds balance"))).toBe(
+      "Insufficient USDC balance.",
+    )
+  })
+})
+
 describe("bidRevertReason (timing vs eligibility copy stay distinct)", () => {
   it("reports a timing failure for the on-chain window/pause reverts", () => {
     expect(bidRevertReason(new Error("BidOutsideAllowedWindow"))).toBe(

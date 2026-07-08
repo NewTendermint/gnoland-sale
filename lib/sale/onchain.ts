@@ -72,6 +72,12 @@ export function bidRevertReason(
   const shared = sharedWalletErrorReason(err, cancelledCopy)
   if (shared) return shared
   const msg = err instanceof Error ? err.message : String(err)
+  // Gas shortfall FIRST: viem's node error ("insufficient funds for gas...") and its long form
+  // ("...exceeds the balance of the account") both hit the token patterns below, and telling a
+  // bidder his USDC is short when it's his ETH sends him to the wrong fix.
+  if (/insufficient funds|exceeds the balance of the account/i.test(msg)) {
+    return "Not enough ETH to cover network fees."
+  }
   if (/insufficient|exceeds balance|transfer amount exceeds/i.test(msg)) {
     return `Insufficient ${tokenSymbol} balance.`
   }
