@@ -72,7 +72,9 @@ export function pickEntity(entities: readonly EntityDetails[]): EntityDetails | 
     (a, b) =>
       rank(a.EntitySetupState) - rank(b.EntitySetupState) ||
       Number(b.SaleEligibility === "eligible") - Number(a.SaleEligibility === "eligible") ||
-      a.EntityID.localeCompare(b.EntityID),
+      // String(): a missing EntityID must not throw the whole sort; "undefined" still
+      // tie-breaks deterministically.
+      String(a.EntityID).localeCompare(String(b.EntityID)),
   )[0]
 }
 

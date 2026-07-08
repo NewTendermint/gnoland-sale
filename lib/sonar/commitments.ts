@@ -60,7 +60,16 @@ export function mapMyBid(res: ReadCommitmentDataResponse, saleSpecificEntityId: 
   // listAvailableEntities and readCommitmentData are two different Sonar endpoints with no
   // guaranteed hex-casing agreement; compare case-insensitively (both are already 0x-prefixed).
   const wanted = saleSpecificEntityId.toLowerCase()
-  const mine = res.Commitments.find((c) => c.SaleSpecificEntityID.toLowerCase() === wanted)
+  // Pre-1.0 upstream, validate at the boundary: the commitment set is shared across every
+  // session, so one schema-violating row must not take down all my-position reads. Skipped
+  // rows are logged (count only, ids may be unreadable) so the anomaly stays visible.
+  const rows = res.Commitments.filter((c) => typeof c.SaleSpecificEntityID === "string")
+  if (rows.length !== res.Commitments.length) {
+    console.warn(
+      `sonar-commitments: skipped ${res.Commitments.length - rows.length} malformed commitment row(s)`,
+    )
+  }
+  const mine = rows.find((c) => c.SaleSpecificEntityID.toLowerCase() === wanted)
   if (!mine) {
     return null
   }
@@ -68,8 +77,15 @@ export function mapMyBid(res: ReadCommitmentDataResponse, saleSpecificEntityId: 
     mine.PriceMicroUSD != null
       ? Number(mine.PriceMicroUSD) / MICRO_USD
       : Number(mine.PriceNumerator) / Number(mine.PriceDenominator)
-  const committedUsd =
-    mine.Amounts.reduce((sum, a) => sum + Number(a.Amount), 0) / 10 ** res.PaymentTokenDecimals
+  const committedUsd = Array.isArray(mine.Amounts)
+    ? mine.Amounts.reduce((sum, a) => sum + Number(a.Amount), 0) / 10 ** res.PaymentTokenDecimals
+    : Number.NaN
+  // The session's OWN row malformed must fail loud (the route maps it to a 502 the UI retries),
+  // never resolve to a silent wrong position - a false "no bid" on an irrevocable bid is the
+  // exact failure confirmed-read exists to prevent.
+  if (!Number.isFinite(priceUsd) || !Number.isFinite(committedUsd)) {
+    throw new Error("sonar-commitments: malformed commitment row for session entity")
+  }
   return { priceUsd, committedUsd }
 }
 
