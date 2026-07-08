@@ -31,9 +31,9 @@ export const SALE_ECONOMICS = {
   // them) - if Sonar shifts the schedule, ALL page copy/countdowns/phases here drift. The
   // push/email crons read the contract stage first (lib/sale/live-window.ts) and only fall back
   // to these dates; the UI phase relies on them entirely.
-  registrationOpensIso: process.env.NEXT_PUBLIC_REGISTRATION_OPENS ?? "2026-07-08T22:00:00Z", // Wed Jul 8, 22:00 UTC (Sonar dashboard)
-  saleOpensIso: process.env.NEXT_PUBLIC_SALE_OPENS ?? "2026-07-20T22:00:00Z", // Mon Jul 20, 22:00 UTC (Sonar dashboard)
-  saleClosesIso: process.env.NEXT_PUBLIC_SALE_CLOSES ?? "2026-07-27T22:00:00Z", // Mon Jul 27, 22:00 UTC (Sonar dashboard)
+  registrationOpensIso: process.env.NEXT_PUBLIC_REGISTRATION_OPENS ?? "2026-07-09T12:00:00Z", // Thu Jul 9, 12:00 UTC (Sonar dashboard)
+  saleOpensIso: process.env.NEXT_PUBLIC_SALE_OPENS ?? "2026-07-20T12:00:00Z", // Mon Jul 20, 12:00 UTC (Sonar dashboard)
+  saleClosesIso: process.env.NEXT_PUBLIC_SALE_CLOSES ?? "2026-07-27T12:00:00Z", // Mon Jul 27, 12:00 UTC (Sonar dashboard)
 } as const
 
 // Boot invariant: the UI price grid steps from the floor while the contract grid is zero-anchored
