@@ -96,11 +96,16 @@ export function useMyBid(opts?: { enabled?: boolean }) {
   })
   // Footgun: reconcile must live in an effect, not the queryFn - a fetch-side effect would run on
   // every retry and capture a stale wallet address across an account switch.
+  // `pending` is a dependency on purpose: structural sharing keeps `settled` referentially
+  // stable when Sonar's answer is unchanged, so a re-bid matching the already-reported position
+  // would otherwise never reconcile and the overlay would sit out its full TTL.
   const settled = query.data
   useEffect(() => {
     if (settled === undefined) return
+    // void: pending is read fresh inside reconcilePendingBid; it sits here as the re-run trigger.
+    void pending
     reconcilePendingBid(settled, address)
-  }, [settled, address])
+  }, [settled, address, pending])
   return { ...query, pending }
 }
 

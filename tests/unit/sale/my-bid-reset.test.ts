@@ -1,8 +1,9 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { renderHook, waitFor } from "@testing-library/react"
+import { act, renderHook, waitFor } from "@testing-library/react"
 import { type ReactNode, createElement } from "react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { useMyBid } from "../../../lib/sale/hooks"
+import { readPendingBid, writePendingBid } from "../../../lib/sale/pending-bid"
 import type { MyBid } from "../../../lib/sale/types"
 
 // useAccount is the only wagmi surface useMyBid touches; drive it per test.
@@ -69,6 +70,37 @@ describe("useMyBid on wallet disconnect (G-G)", () => {
     rerender()
 
     expect(result.current.data).toEqual(BID)
+  })
+
+  it("purges a pending entry whose values Sonar already reports (re-bid at the same position)", async () => {
+    const { wrapper } = setup()
+    const { result } = renderHook(() => useMyBid(), { wrapper })
+    await waitFor(() => expect(result.current.data).toEqual(BID))
+
+    // Structural sharing keeps `data` referentially stable when Sonar's answer is unchanged,
+    // so only the pending write itself can trigger this reconcile pass.
+    act(() => {
+      writePendingBid(
+        { committedUsd: BID.committedUsd, priceUsd: BID.priceUsd },
+        accountState.address as string,
+      )
+    })
+
+    await waitFor(() => expect(result.current.pending).toBeNull())
+    expect(readPendingBid(accountState.address)).toBeNull()
+  })
+
+  it("keeps a pending raise Sonar has not reported yet", async () => {
+    const { wrapper } = setup()
+    const { result } = renderHook(() => useMyBid(), { wrapper })
+    await waitFor(() => expect(result.current.data).toEqual(BID))
+
+    act(() => {
+      writePendingBid({ committedUsd: 800, priceUsd: 0.12 }, accountState.address as string)
+    })
+
+    await waitFor(() => expect(result.current.pending).not.toBeNull())
+    expect(readPendingBid(accountState.address)).not.toBeNull()
   })
 
   it("refetches a fresh position on reconnect instead of reusing the cleared one", async () => {
