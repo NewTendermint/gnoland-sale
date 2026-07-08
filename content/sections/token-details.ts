@@ -58,15 +58,17 @@ export const termGroups: Array<{
 ]
 
 // Rendered as two large inline links below the terms table, not as a term group.
-export const documents: Array<{ label: string; value: string; href: string }> = [
-  {
-    label: "Audit",
-    value: "GnoVM · Oak Security Audit",
-    href: "https://github.com/oak-security/audit-reports/tree/main/Gno",
-  },
-  {
-    label: "Disclosure",
-    value: "Token Disclosure Document",
-    href: "#token-disclosure",
-  },
-]
+export const documents: Array<{ label: string; value: string; href: string; download?: boolean }> =
+  [
+    {
+      label: "Audit",
+      value: "GnoVM · Oak Security Audit",
+      href: "https://github.com/oak-security/audit-reports/tree/main/Gno",
+    },
+    {
+      label: "Disclosure",
+      value: "Token Disclosure Document",
+      href: "/docs/gnot-token-sale-disclosure.pdf",
+      download: true,
+    },
+  ]

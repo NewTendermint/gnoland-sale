@@ -234,7 +234,8 @@ export function TokenDetails() {
                 <FadeIn as="div" index={di} key={d.label}>
                   <Cta
                     href={d.href}
-                    external={!d.href.startsWith("#")}
+                    external={!d.href.startsWith("#") && !d.download}
+                    download={d.download}
                     arrow="diagonal"
                     label={d.value}
                     variant="ghost"
