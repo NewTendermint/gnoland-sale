@@ -3,14 +3,12 @@
 // signature round-trips genuinely verify; every request is logged so specs can assert on the
 // exact shape the app sent, independent of whether the wallet then approves or rejects it.
 import type { Hex } from "viem"
-import { type LocalAccount, privateKeyToAccount } from "viem/accounts"
+import { type LocalAccount, generatePrivateKey, privateKeyToAccount } from "viem/accounts"
 import { z } from "zod"
-import { TEST_ACCOUNT_PRIVATE_KEY } from "./constants"
 
 export type WalletBehavior = "approve" | "reject"
 
 export type WalletOptions = {
-  privateKey?: Hex
   chainId?: number
   requestAccountsBehavior?: WalletBehavior
   /** Artificial delay before eth_requestAccounts resolves, to observe the picker's pending state. */
@@ -70,9 +68,12 @@ export class MockWalletHandler {
   private readonly sendTransactionBehavior: WalletBehavior
   private readonly typedDataLog: TypedDataRequest[] = []
   private readonly sendTransactionLog: SendTransactionRequest[] = []
+  private requestAccountsCount = 0
 
   constructor(opts: WalletOptions = {}) {
-    this.account = privateKeyToAccount(opts.privateKey ?? TEST_ACCOUNT_PRIVATE_KEY)
+    // A fresh key per install: the server's per-wallet permit dedup (5s window) would otherwise
+    // refuse permits across the two bid specs AND across Playwright retries of the same test.
+    this.account = privateKeyToAccount(generatePrivateKey())
     this.address = this.account.address
     this.accounts = [this.address]
     this.chainId = opts.chainId ?? 1
@@ -85,6 +86,12 @@ export class MockWalletHandler {
 
   typedDataRequests(): readonly TypedDataRequest[] {
     return this.typedDataLog
+  }
+
+  /** How many times the app ASKED for a connection (eth_requestAccounts, the prompting call) -
+   *  distinct from eth_accounts, the silent read a reconnect is supposed to use. */
+  requestAccountsCalls(): number {
+    return this.requestAccountsCount
   }
 
   sendTransactionRequests(): readonly SendTransactionRequest[] {
@@ -104,6 +111,7 @@ export class MockWalletHandler {
   async handle(method: string, params: unknown[]): Promise<BindingResponse> {
     switch (method) {
       case "eth_requestAccounts": {
+        this.requestAccountsCount += 1
         if (this.requestAccountsDelayMs > 0) {
           await new Promise((resolve) => setTimeout(resolve, this.requestAccountsDelayMs))
         }

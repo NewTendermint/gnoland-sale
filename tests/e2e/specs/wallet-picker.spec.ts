@@ -55,6 +55,9 @@ test("WAL-06: a wallet announced without an icon falls back to the generic walle
   const button = page.getByRole("button", { name: `Connect ${NO_ICON.name}` })
   await expect(button).toBeVisible()
   await expect(button.locator("img")).toHaveCount(0)
+  // Not just "no broken <img>": the fallback glyph must actually have drawn something - an
+  // empty <svg> (e.g. a renamed key in Icon's untyped PATHS map) would otherwise pass.
+  await expect(button.locator("svg *").first()).toBeAttached()
 })
 
 test("WAL-07: an installed wallet (not one of the recommended three) still appears live with its own icon", async ({

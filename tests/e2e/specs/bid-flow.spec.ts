@@ -8,12 +8,7 @@ import { settlementSaleAbi } from "@/lib/sale/abi"
 import { decodeFunctionData } from "viem"
 import { expect, test } from "../fixtures"
 import { openBidPanel } from "../support/bid-panel"
-import {
-  MOCK_USDC_ADDRESS,
-  SECOND_ACCOUNT_PRIVATE_KEY,
-  SEPOLIA_CHAIN_ID,
-  SETTLEMENT_SALE_ADDRESS,
-} from "../support/constants"
+import { MOCK_USDC_ADDRESS, SEPOLIA_CHAIN_ID, SETTLEMENT_SALE_ADDRESS } from "../support/constants"
 
 const ICON = "data:image/svg+xml;base64,PHN2Zy8+"
 const METAMASK = {
@@ -89,12 +84,9 @@ test("WAL-19 reject variant: rejecting the EIP-2612 permit signature shows the s
   page,
   wallet,
 }) => {
-  // Its own wallet: the server's per-wallet permit dedup (5s window) would refuse a second
-  // permit for the main test's account.
   await wallet.install({
     info: METAMASK,
     chainId: SEPOLIA_CHAIN_ID,
-    privateKey: SECOND_ACCOUNT_PRIVATE_KEY,
     signTypedDataBehavior: "reject",
   })
   await connectAndOpenBidForm(page)

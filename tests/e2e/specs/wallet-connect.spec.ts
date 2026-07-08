@@ -65,16 +65,20 @@ test("WAL-12: a connected wallet reconnects automatically across a reload", asyn
   page,
   wallet,
 }) => {
-  await wallet.install({ info: METAMASK, chainId: SEPOLIA_CHAIN_ID })
+  const handler = await wallet.install({ info: METAMASK, chainId: SEPOLIA_CHAIN_ID })
   await page.reload()
   await openBidPanel(page)
   await page.getByRole("button", { name: "Connect MetaMask" }).click()
   await expect(page.getByRole("button", { name: "Place bid" })).toBeVisible()
+  const promptsBeforeReload = handler.requestAccountsCalls()
 
   await page.reload()
   await openBidPanel(page)
 
   await expect(page.getByRole("button", { name: "Place bid" })).toBeVisible()
+  // SILENT is the point: the reconnect must come from eth_accounts (a permissionless read),
+  // never a fresh eth_requestAccounts - on a real wallet that pops a new permission prompt.
+  expect(handler.requestAccountsCalls()).toBe(promptsBeforeReload)
 })
 
 test("WAL-11: the connected chip disconnects on click, returning to the wallet picker", async ({
