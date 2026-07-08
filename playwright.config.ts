@@ -4,12 +4,14 @@ import { APP_PORT, APP_URL, RPC_URL } from "./tests/e2e/support/constants"
 export default defineConfig({
   testDir: "./tests/e2e/specs",
   fullyParallel: true,
-  // next dev compiles routes on demand from a single process; too many workers hitting it at
-  // once causes compile-queue contention and flaky timeouts, not real bugs.
-  workers: 2,
-  // A retried pass is reported as "flaky", never silently green. One local retry absorbs the
-  // stone-cold first-run compile stall; CI runners are slower and shared, so they get two.
-  retries: process.env.CI ? 2 : 1,
+  // ONE worker, deliberately: next dev serves and compiles from a single process, and parallel
+  // workers starve each other's requests behind its compile queue - the journey then stalls
+  // mid-test with no bug anywhere. Serial costs ~30s of wall clock and buys determinism.
+  workers: 1,
+  // No retries: a retried stall burns the full test timeout before retrying, minutes per flake
+  // in CI. The global-setup journey warmup owns the cold-compile cost instead; a failure here
+  // must mean a real regression.
+  retries: 0,
   reporter: "list",
   globalSetup: "./tests/e2e/global-setup.ts",
   // Headroom over the default 30s: next dev still compiles route chunks on demand mid-test,
