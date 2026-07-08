@@ -5,7 +5,7 @@ import { type ReactNode, useEffect, useRef, useState } from "react"
 import { useAccount } from "wagmi"
 import { BidFlow } from "../(sections)/bid/BidFlow"
 import { BidStatusTag, FunnelSteps } from "../(sections)/bid/FunnelSteps"
-import { ManageEntityCta } from "../(sections)/bid/ManageEntity"
+import { ManageEntityCta, SonarSignOutButton } from "../(sections)/bid/ManageEntity"
 import { SettlementFlow } from "../(sections)/bid/SettlementFlow"
 import { CloseButton } from "../(ui)/CloseButton"
 import { Cta } from "../(ui)/Cta"
@@ -31,7 +31,7 @@ import {
   bidSectionTitle,
 } from "../../lib/sale/labels"
 import { clearPendingBid } from "../../lib/sale/pending-bid"
-import { clearSonarSeen, useSonarSeen } from "../../lib/sale/returning"
+import { clearBidSeen, clearSonarSeen, useSonarSeen } from "../../lib/sale/returning"
 import type { JourneyState, MyBid, PreSaleBarState } from "../../lib/sale/types"
 import { AddToCalendarButton } from "./AddToCalendarButton"
 import {
@@ -91,11 +91,14 @@ export function BidPanelDesktop() {
     postSonarLogout().then(
       () => {
         clearSonarSeen()
+        clearBidSeen()
         clearPendingBid()
         queryClient.invalidateQueries({ queryKey: ["sale", "entity"] })
         queryClient.invalidateQueries({ queryKey: ["sale", "my-bid"] })
       },
-      () => {},
+      // Fail-honest: on a failed logout the caches stay, so the UI keeps showing the still-live
+      // session instead of pretending the user signed out.
+      () => console.warn("sonar-signout: logout request failed"),
     )
   }
 
@@ -338,6 +341,7 @@ export function BidPanelDesktop() {
                             wallet={<WalletButton />}
                             manageEntitiesHref={sonarSetupUrl}
                             entityLabel={entityLabel}
+                            onSignOut={handleSignOut}
                           />
                         ) : null}
                         <BidFlow
@@ -374,32 +378,43 @@ export function BidPanelDesktop() {
 /** The active Sonar entity as a quiet underlined link out to Sonar account management
  *  (add a business entity, switch, finish setup). Not a pill: that shape belongs to the
  *  wallet. Label = user's own PII, shown only to them. */
-export function ManageEntityLink({ href, label }: { href: string; label?: string | null }) {
+export function ManageEntityLink({
+  href,
+  label,
+  onSignOut,
+}: { href: string; label?: string | null; onSignOut?: () => void }) {
   return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noreferrer noopener"
-      title="Manage your Sonar account"
-      aria-label="Manage your Sonar account"
-      className="inline-flex items-center gap-1.5 font-mono text-[11px] text-muted transition-colors hover:text-foreground"
-    >
-      <Icon name="shield-check" draw={false} className="h-3.5 w-3.5 shrink-0" />
-      <span className="max-w-[18ch] truncate underline underline-offset-2">
-        {label ?? "Sonar account"}
-      </span>
-      {/* Inline SVG, not the U+2197 glyph: some Windows fonts promote it to emoji. */}
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        className="h-3 w-3 shrink-0"
-        aria-hidden="true"
+    // Wider than the link's internal gap (two distinct controls) yet far tighter than the gap-6
+    // to the wallet chip, so label + power still read as one account cluster.
+    <span className="inline-flex items-center gap-2.5 font-mono text-[11px]">
+      <a
+        href={href}
+        target="_blank"
+        rel="noreferrer noopener"
+        title="Manage your Sonar account"
+        aria-label="Manage your Sonar account"
+        className="inline-flex items-center gap-1.5 text-muted transition-colors hover:text-foreground"
       >
-        <path d="M7 17 17 7M9 7h8v8" />
-      </svg>
-    </a>
+        <Icon name="shield-check" draw={false} className="h-3.5 w-3.5 shrink-0" />
+        <span className="max-w-[18ch] truncate underline underline-offset-2">
+          {label ?? "Sonar account"}
+        </span>
+        {onSignOut ? null : (
+          // Inline SVG, not the U+2197 glyph: some Windows fonts promote it to emoji.
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            className="h-3 w-3 shrink-0"
+            aria-hidden="true"
+          >
+            <path d="M7 17 17 7M9 7h8v8" />
+          </svg>
+        )}
+      </a>
+      {onSignOut ? <SonarSignOutButton onSignOut={onSignOut} variant="bare" /> : null}
+    </span>
   )
 }
 
@@ -410,6 +425,7 @@ export function BidSectionHeader({
   wallet,
   manageEntitiesHref,
   entityLabel,
+  onSignOut = () => {},
 }: {
   journey: JourneyState
   myBid: MyBid
@@ -418,9 +434,15 @@ export function BidSectionHeader({
   /** Sonar-hosted entity management (add a business entity, finish setup); opens in a new tab. */
   manageEntitiesHref?: string
   entityLabel?: string | null
+  onSignOut?: () => void
 }) {
   const hasBid =
     journey === "has-bid-winning" || journey === "has-bid-outbid" || journey === "has-bid-pending"
+  // The header must not offer to end a Sonar session that does not exist: kyc-required is the
+  // pre-OAuth ask, wrong-network hides everything but the switch prompt. Without a handler the
+  // manage link keeps its external arrow instead.
+  const sessionless =
+    journey === "disconnected" || journey === "kyc-required" || journey === "wrong-network"
   return (
     <div className="mb-4 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-b border-border pb-3">
       {hasBid && myBid ? (
@@ -459,7 +481,11 @@ export function BidSectionHeader({
       )}
       <div className="flex items-center gap-6">
         {manageEntitiesHref ? (
-          <ManageEntityLink href={manageEntitiesHref} label={entityLabel} />
+          <ManageEntityLink
+            href={manageEntitiesHref}
+            label={entityLabel}
+            onSignOut={sessionless ? undefined : onSignOut}
+          />
         ) : null}
         {wallet}
       </div>
@@ -545,9 +571,10 @@ function StatusRow({
   title: string
   body?: string
   action?: ReactNode
-  /** The entity manage link, shown across every KYC state that has a Sonar entity. */
+  /** The entity manage link, shown across every KYC state that has a Sonar entity. It carries
+   *  its own sign-out control; onSignOut here only backs the manage-less states (incomplete). */
   manage?: ReactNode
-  onSignOut: () => void
+  onSignOut?: () => void
   onRefresh?: () => void | Promise<void>
   withCalendar?: boolean
   contactHref?: string
@@ -572,6 +599,7 @@ function StatusRow({
         {manage}
         {action}
         {withCalendar ? <AddToCalendarButton milestone="sale" variant="bar" /> : null}
+        {manage || !onSignOut ? null : <SonarSignOutButton onSignOut={onSignOut} />}
       </div>
     </div>
   )
@@ -650,8 +678,7 @@ export function PreSaleRight({
           tone={VERIFY_STATUS.pending.tone}
           title={`${VERIFY_STATUS.pending.title}.`}
           body={VERIFY_STATUS.pending.body}
-          manage={<ManageEntityCta href={setupHref} label={entityLabel} />}
-          onSignOut={onSignOut}
+          manage={<ManageEntityCta href={setupHref} label={entityLabel} onSignOut={onSignOut} />}
           onRefresh={onRefresh}
           withCalendar
         />
@@ -663,8 +690,7 @@ export function PreSaleRight({
           tone={VERIFY_STATUS.failed.tone}
           title={`${VERIFY_STATUS.failed.title}.`}
           body={VERIFY_STATUS.failed.body}
-          manage={<ManageEntityCta href={setupHref} label={entityLabel} />}
-          onSignOut={onSignOut}
+          manage={<ManageEntityCta href={setupHref} label={entityLabel} onSignOut={onSignOut} />}
           withCalendar
           contactHref={SUPPORT_VERIFY_FAILED_HREF ?? undefined}
         />
@@ -676,8 +702,7 @@ export function PreSaleRight({
           tone={VERIFY_STATUS["not-eligible"].tone}
           title={`${VERIFY_STATUS["not-eligible"].title}.`}
           body={VERIFY_STATUS["not-eligible"].body}
-          manage={<ManageEntityCta href={setupHref} label={entityLabel} />}
-          onSignOut={onSignOut}
+          manage={<ManageEntityCta href={setupHref} label={entityLabel} onSignOut={onSignOut} />}
           withCalendar
         />
       )
@@ -688,8 +713,7 @@ export function PreSaleRight({
           tone={VERIFY_STATUS.verified.tone}
           title={`${VERIFY_STATUS.verified.title}.`}
           body="Nothing more to do until the sale opens."
-          manage={<ManageEntityCta href={setupHref} label={entityLabel} />}
-          onSignOut={onSignOut}
+          manage={<ManageEntityCta href={setupHref} label={entityLabel} onSignOut={onSignOut} />}
           withCalendar
         />
       )

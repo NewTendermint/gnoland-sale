@@ -1,7 +1,12 @@
 import path from "node:path"
+import react from "@vitejs/plugin-react"
 import { defineConfig } from "vitest/config"
 
 export default defineConfig({
+  // Next's tsconfig sets jsx: "preserve" (its own compiler owns that step), which the test
+  // runner's transform inherits and then rejects when a test imports a component. The React
+  // plugin compiles JSX regardless, opening component files to the unit suite.
+  plugins: [react()],
   test: {
     environment: "jsdom",
     globals: true,

@@ -4,10 +4,14 @@ import { Icon } from "../(ui)/Icon"
 import { track } from "../../lib/analytics/track"
 import { type SaleMilestone, buildMilestoneIcs } from "../../lib/sale/calendar"
 
-const VARIANTS = {
+/** The round icon-button language shared by the bar's secondary actions (calendar, Sonar
+ *  sign-out): ring + fill-on-hover, "bar" on the light bar, "tile" on contrast surfaces. */
+export const ROUND_ICON_BUTTON_VARIANTS = {
   bar: "inline-flex items-center justify-center rounded-full border border-border p-3 text-muted transition-colors duration-300 hover:border-surface-contrast hover:bg-surface-contrast hover:text-on-contrast",
   tile: "inline-flex items-center justify-center rounded-full border border-on-contrast/25 p-3 text-on-contrast transition-colors duration-300 hover:border-on-contrast hover:bg-on-contrast hover:text-surface-contrast",
 } as const
+
+const VARIANTS = ROUND_ICON_BUTTON_VARIANTS
 
 export function AddToCalendarButton({
   milestone,

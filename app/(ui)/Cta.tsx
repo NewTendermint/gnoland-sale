@@ -25,6 +25,7 @@ type CtaProps = {
   label?: string
   children?: ReactNode
   external?: boolean
+  download?: boolean
   arrow?: boolean | "diagonal"
   ariaLabel?: string
   ariaExpanded?: boolean
@@ -43,6 +44,7 @@ export function Cta({
   label,
   children,
   external = false,
+  download = false,
   arrow = false,
   ariaLabel,
   ariaExpanded,
@@ -102,7 +104,8 @@ export function Cta({
       onClick={onClick}
       aria-label={ariaLabel}
       title={title}
-      {...(external ? { target: "_blank", rel: "noreferrer noopener" } : {})}
+      {...(download ? { download: true } : {})}
+      {...(external && !download ? { target: "_blank", rel: "noreferrer noopener" } : {})}
       className={cls}
     >
       {inner}

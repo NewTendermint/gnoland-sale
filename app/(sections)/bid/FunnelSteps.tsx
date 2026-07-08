@@ -64,9 +64,11 @@ export function BidStatusTag({ journey }: { journey: JourneyState }) {
     )
   }
   if (journey === "has-bid-pending") {
-    // Neutral outline; on-contrast tokens because this tag only renders inside the solid CTA.
+    // Neutral outline; on-contrast tokens because this tag only renders inside the solid CTA,
+    // whose btn-pan hover slides the pill light - the tag must flip to foreground with it or it
+    // reads white-on-white mid-hover.
     return (
-      <span className="rounded-full border border-on-contrast/40 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.15em] text-on-contrast">
+      <span className="rounded-full border border-on-contrast/40 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.15em] text-on-contrast transition-colors group-hover:border-foreground/40 group-hover:text-foreground">
         Pending
       </span>
     )
