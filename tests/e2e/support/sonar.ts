@@ -8,10 +8,24 @@ const initResponseSchema = z.object({ authorizationUrl: z.string() })
  *  auto-opens the bid panel (SaleProvider consumes ?auth=ok). The mock entity is
  *  COMPLETE/ELIGIBLE, so the panel lands straight on the wallet picker. */
 export async function sonarLogin(page: Page): Promise<void> {
-  const response = await page.request.post("/api/auth/sonar/init")
-  if (!response.ok()) {
-    throw new Error(`sonarLogin: /api/auth/sonar/init responded ${response.status()}`)
+  // Bounded retry: next dev sheds keep-alive connections mid-compile (ECONNRESET) - a transport
+  // hiccup, not an app failure. A non-2xx response still fails immediately.
+  let lastError: unknown
+  for (let attempt = 0; attempt < 3; attempt++) {
+    let response: Awaited<ReturnType<typeof page.request.post>>
+    try {
+      response = await page.request.post("/api/auth/sonar/init")
+    } catch (err) {
+      lastError = err
+      await page.waitForTimeout(500)
+      continue
+    }
+    if (!response.ok()) {
+      throw new Error(`sonarLogin: /api/auth/sonar/init responded ${response.status()}`)
+    }
+    const { authorizationUrl } = initResponseSchema.parse(await response.json())
+    await page.goto(authorizationUrl)
+    return
   }
-  const { authorizationUrl } = initResponseSchema.parse(await response.json())
-  await page.goto(authorizationUrl)
+  throw new Error(`sonarLogin: /api/auth/sonar/init unreachable after 3 attempts: ${lastError}`)
 }

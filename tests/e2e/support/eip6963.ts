@@ -64,10 +64,14 @@ function injectMockWallet(args: InjectArgs): void {
       new CustomEvent("eip6963:announceProvider", { detail: Object.freeze({ info, provider }) }),
     )
   }
-  // Immediately (a wallet already "installed" when the page loads) and on every future request
-  // (wagmi re-requests post-hydration).
+  // Immediately (a wallet already "installed" when the page loads), on every future request
+  // (wagmi re-requests post-hydration), and a few delayed re-announces to cover a hydration
+  // window where wagmi's store mounted between events - duplicates are deduped by uuid.
   window.addEventListener("eip6963:requestProvider", announce)
   announce()
+  for (const delayMs of [100, 500, 1500]) {
+    setTimeout(announce, delayMs)
+  }
 }
 
 /** Installs an EIP-6963 mock wallet identity on `page`. Must run before `page.goto` so the first

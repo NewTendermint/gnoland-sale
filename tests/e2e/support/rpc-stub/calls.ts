@@ -3,7 +3,7 @@ import { SALE_STAGE, erc20Abi, settlementSaleAbi } from "@/lib/sale/abi"
 // (lib/sale/abi.ts) so a contract-interface drift fails the suite loudly instead of the stub
 // quietly answering the wrong shape.
 import type { Hex } from "viem"
-import { decodeFunctionData, encodeFunctionResult } from "viem"
+import { decodeFunctionData, encodeFunctionResult, multicall3Abi } from "viem"
 import {
   MOCK_USDC_ADDRESS,
   MOCK_USDC_DECIMALS,
@@ -82,10 +82,36 @@ function callMockUsdc(data: Hex): Hex {
   }
 }
 
-/** Answers a JSON-RPC eth_call for the settlement sale or the mock USDC token. */
+// Canonical Multicall3 deployment address: viem/wagmi batch eth_calls through it by default,
+// so the stub must unwrap aggregate3 and answer each sub-call - otherwise every batched read
+// errors and the app's fallback transport silently retries it against the REAL public RPC.
+const MULTICALL3_ADDRESS = "0xca11bde05977b3631167028862be2a173976ca11"
+
+function callMulticall3(data: Hex): Hex {
+  const decoded = decodeFunctionData({ abi: multicall3Abi, data })
+  if (decoded.functionName !== "aggregate3") {
+    throw new Error(`rpc-stub: unhandled multicall3 call "${decoded.functionName}"`)
+  }
+  const [calls] = decoded.args
+  const result: { success: boolean; returnData: Hex }[] = calls.map(
+    ({ target, callData, allowFailure }) => {
+      try {
+        return { success: true, returnData: computeEthCall(target, callData) }
+      } catch (err) {
+        if (!allowFailure) throw err
+        return { success: false, returnData: "0x" }
+      }
+    },
+  )
+  return encodeFunctionResult({ abi: multicall3Abi, functionName: "aggregate3", result })
+}
+
+/** Answers a JSON-RPC eth_call for the settlement sale, the mock USDC token, or a multicall3
+ *  batch wrapping them. */
 export function computeEthCall(to: Hex, data: Hex): Hex {
   const addr = to.toLowerCase()
   if (addr === SETTLEMENT_SALE_ADDRESS.toLowerCase()) return callSettlementSale(data)
   if (addr === MOCK_USDC_ADDRESS.toLowerCase()) return callMockUsdc(data)
+  if (addr === MULTICALL3_ADDRESS) return callMulticall3(data)
   throw new Error(`rpc-stub: eth_call to unknown address ${to}`)
 }

@@ -10,7 +10,7 @@ import { expect, test } from "../fixtures"
 import { openBidPanel } from "../support/bid-panel"
 import {
   MOCK_USDC_ADDRESS,
-  PERMIT_FIXTURE_WALLET,
+  SECOND_ACCOUNT_PRIVATE_KEY,
   SEPOLIA_CHAIN_ID,
   SETTLEMENT_SALE_ADDRESS,
 } from "../support/constants"
@@ -29,6 +29,11 @@ async function connectAndOpenBidForm(page: Parameters<typeof openBidPanel>[0]): 
   await page.getByRole("button", { name: "Connect MetaMask" }).click()
   await expect(page.getByRole("button", { name: "Place bid" })).toBeVisible()
 }
+
+// The two bid flows are the suite's heaviest specs; run them one-at-a-time in a single worker
+// so they don't contend on the dev server's on-demand compiles (each passes solo but the pair
+// flakes in parallel).
+test.describe.configure({ mode: "default" })
 
 test.beforeEach(async ({ sonar }) => {
   await sonar.login()
@@ -55,8 +60,10 @@ test("WAL-19: placing a bid sends a correctly-shaped EIP-2612 permit and replace
   expect(permit?.primaryType).toBe("Permit")
   expect(permit?.domain.verifyingContract).toBe(MOCK_USDC_ADDRESS)
   expect(permit?.domain.chainId).toBe(SEPOLIA_CHAIN_ID)
-  expect(permit?.message.owner).toBe(handler.address)
-  expect(permit?.message.spender).toBe(SETTLEMENT_SALE_ADDRESS)
+  // Address fields compare case-insensitively: the app lowercases wallets on parse while viem
+  // checksums decoded values, and EIP-55 casing carries no semantic difference.
+  expect(String(permit?.message.owner).toLowerCase()).toBe(handler.address.toLowerCase())
+  expect(String(permit?.message.spender).toLowerCase()).toBe(SETTLEMENT_SALE_ADDRESS.toLowerCase())
 
   // --- replaceBidWithPermit calldata assertion (decoded with the app's own ABI) ---
   const sendTransactionRequests = handler.sendTransactionRequests()
@@ -67,21 +74,27 @@ test("WAL-19: placing a bid sends a correctly-shaped EIP-2612 permit and replace
   const decoded = decodeFunctionData({ abi: settlementSaleAbi, data: tx?.data ?? "0x" })
   expect(decoded.functionName).toBe("replaceBidWithPermit")
   if (decoded.functionName !== "replaceBidWithPermit") throw new Error("unreachable")
-  const [token, , purchasePermit, signature] = decoded.args
-  expect(token).toBe(MOCK_USDC_ADDRESS)
-  // The mock permit fixture's wallet, NOT the connected account (lib/sonar/mock-fixtures.ts).
-  expect(purchasePermit.wallet).toBe(PERMIT_FIXTURE_WALLET)
-  // Signature round-trip: the calldata forwards exactly the signature the wallet produced.
-  expect(signature).toBe(permit?.signature)
+  const [token, , purchasePermit, purchasePermitSignature, , erc20PermitSignature] = decoded.args
+  expect(token.toLowerCase()).toBe(MOCK_USDC_ADDRESS.toLowerCase())
+  // The permit binds the connected account (mock-fetch stamps the requested wallet in, like real
+  // Sonar; the preflight refuses a foreign-wallet permit).
+  expect(purchasePermit.wallet.toLowerCase()).toBe(handler.address.toLowerCase())
+  // Signature round-trips: the Sonar permit signature is forwarded verbatim from the mock
+  // fixture, and the ERC-2612 signature is exactly what the wallet produced.
+  expect(purchasePermitSignature).toBe(`0x${"ab".repeat(32)}`)
+  expect(erc20PermitSignature).toBe(permit?.signature)
 })
 
 test("WAL-19 reject variant: rejecting the EIP-2612 permit signature shows the signature-cancel copy", async ({
   page,
   wallet,
 }) => {
+  // Its own wallet: the server's per-wallet permit dedup (5s window) would refuse a second
+  // permit for the main test's account.
   await wallet.install({
     info: METAMASK,
     chainId: SEPOLIA_CHAIN_ID,
+    privateKey: SECOND_ACCOUNT_PRIVATE_KEY,
     signTypedDataBehavior: "reject",
   })
   await connectAndOpenBidForm(page)

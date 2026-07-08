@@ -26,6 +26,16 @@ type Fixtures = {
 }
 
 export const test = base.extend<Fixtures>({
+  // Hermeticity guard: the app's RPC transport falls back to a public chain RPC when a call
+  // errors (app/(layout)/web3.ts), so a stub gap would silently run reads against the REAL
+  // chain instead of failing the test. Abort anything that isn't the local app or the stub.
+  page: async ({ page }, use) => {
+    await page.route(
+      (url) => url.hostname !== "127.0.0.1" && url.hostname !== "localhost",
+      (route) => route.abort(),
+    )
+    await use(page)
+  },
   wallet: async ({ page }, use) => {
     const handlers = new Map<string, MockWalletHandler>()
     await page.exposeFunction(
