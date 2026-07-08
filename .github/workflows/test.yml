@@ -1,4 +1,4 @@
-# Test suite: Vitest unit tests.
+# Test suite: Vitest unit tests and the Playwright wallet-matrix e2e.
 # Runs on every pull request and on pushes to main, in parallel with the Checks workflow.
 name: Tests
 on:
@@ -25,3 +25,37 @@ jobs:
       # Unit tests under Vitest.
       - name: Unit tests
         run: npm run test
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      # Pull the repo at the commit under test.
+      - uses: actions/checkout@v4
+
+      # Pin Node to the project's runtime and cache npm downloads.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # Reproducible install from the lockfile.
+      - run: npm ci
+
+      # Headless chromium (with its system dependencies) for the wallet-matrix suite.
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      # Wallet-matrix e2e: injected mock EIP-6963 wallets + a local RPC stub against `next dev`
+      # in Sonar mock mode. Fully self-contained - playwright.config.ts starts the app and
+      # carries the whole environment; no secrets, no preview URL, nothing leaves the runner.
+      - name: Wallet e2e
+        run: npm run test:e2e
+
+      # Traces exist for failed tests only (playwright.config.ts: trace retain-on-failure).
+      - name: Upload playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
