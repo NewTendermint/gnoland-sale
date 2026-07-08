@@ -26,20 +26,23 @@ export async function Stats() {
         staggerMs={0}
         className="col-span-12 mt-12 grid grid-cols-2 gap-x-8 gap-y-10 md:grid-cols-3 lg:col-span-7 lg:col-start-5 lg:mt-16 lg:grid-cols-4"
       >
+        {/* flex-col-reverse: a dt must precede its dd in the DOM (screen readers pair them by
+            source order) while the value stays visually above the label. The dd carries the
+            decorative line itself - dl group divs admit only dt/dd children. */}
         {items.map((s) => (
-          <div key={s.label}>
-            <DrawLine colorClass="bg-on-contrast/15" index={0} />
-            <dd className="pt-6">
+          <div key={s.label} className="flex flex-col-reverse">
+            <FadeIn as="dt" index={0} className="section-label mt-3 text-on-contrast-muted">
+              {s.label}
+            </FadeIn>
+            <dd>
+              <DrawLine colorClass="bg-on-contrast/15" index={0} />
               <CountUp
                 as="p"
                 value={s.value}
                 index={0}
-                className="font-mono text-2xl font-bold tabular-nums md:text-3xl lg:text-4xl"
+                className="pt-6 font-mono text-2xl font-bold tabular-nums md:text-3xl lg:text-4xl"
               />
             </dd>
-            <FadeIn as="dt" index={0} className="section-label mt-3 text-on-contrast-muted">
-              {s.label}
-            </FadeIn>
           </div>
         ))}
       </RevealGroup>

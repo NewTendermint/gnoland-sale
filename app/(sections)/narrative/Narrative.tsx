@@ -43,11 +43,10 @@ export function Narrative() {
                 already are, dramatically lowering the barrier to entry while maintaining the
                 performance and clarity Go is known for.
               </Reveal>
+              {/* flex-col-reverse: a dt must precede its dd in the DOM (screen readers pair them
+                  by source order) while the value stays visually above the label. */}
               <RevealGroup as="dl" className="mt-12 grid grid-cols-3 gap-x-6 gap-y-6 lg:max-w-md">
-                <div>
-                  <dd className="font-mono text-2xl font-bold tabular-nums text-foreground md:text-3xl lg:text-4xl">
-                    <CountUp value="150+" index={1} />
-                  </dd>
+                <div className="flex flex-col-reverse">
                   <FadeIn
                     as="dt"
                     index={1}
@@ -55,11 +54,11 @@ export function Narrative() {
                   >
                     Contributors
                   </FadeIn>
-                </div>
-                <div className="border-l border-border pl-4">
                   <dd className="font-mono text-2xl font-bold tabular-nums text-foreground md:text-3xl lg:text-4xl">
-                    <CountUp value="1K+" index={1} />
+                    <CountUp value="150+" index={1} />
                   </dd>
+                </div>
+                <div className="flex flex-col-reverse border-l border-border pl-4">
                   <FadeIn
                     as="dt"
                     index={1}
@@ -67,11 +66,11 @@ export function Narrative() {
                   >
                     Packages
                   </FadeIn>
-                </div>
-                <div className="border-l border-border pl-4">
                   <dd className="font-mono text-2xl font-bold tabular-nums text-foreground md:text-3xl lg:text-4xl">
-                    <CountUp value="5+" index={1} />
+                    <CountUp value="1K+" index={1} />
                   </dd>
+                </div>
+                <div className="flex flex-col-reverse border-l border-border pl-4">
                   <FadeIn
                     as="dt"
                     index={1}
@@ -79,6 +78,9 @@ export function Narrative() {
                   >
                     Years building
                   </FadeIn>
+                  <dd className="font-mono text-2xl font-bold tabular-nums text-foreground md:text-3xl lg:text-4xl">
+                    <CountUp value="5+" index={1} />
+                  </dd>
                 </div>
               </RevealGroup>
             </RevealGroup>

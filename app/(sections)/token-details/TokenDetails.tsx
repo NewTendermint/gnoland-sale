@@ -125,8 +125,18 @@ export function TokenDetails() {
                     {i > 0 ? (
                       <div aria-hidden="true" className="hidden h-8 w-px bg-border sm:block" />
                     ) : null}
-                    <div>
-                      <div className="flex items-center gap-2">
+                    {/* flex-col-reverse: a dt must precede its dd in the DOM (screen readers pair
+                        them by source order) while the value stays visually above the label. The
+                        dd carries the icon row itself - dl group divs admit only dt/dd children. */}
+                    <div className="flex flex-col-reverse">
+                      <dt className="mt-0.5 text-[10px] uppercase tracking-[0.2em] text-muted">
+                        {m.label}
+                      </dt>
+                      <dd
+                        className={`flex items-center gap-2 font-mono text-2xl font-medium tracking-tight sm:text-3xl ${
+                          m.badge ? "" : "tabular-nums"
+                        }`}
+                      >
                         {m.badge ? (
                           <span
                             aria-hidden="true"
@@ -141,17 +151,8 @@ export function TokenDetails() {
                         ) : (
                           <Icon name={m.icon} className="h-[18px] w-[18px]" />
                         )}
-                        <dd
-                          className={`font-mono text-2xl font-medium tracking-tight sm:text-3xl ${
-                            m.badge ? "" : "tabular-nums"
-                          }`}
-                        >
-                          {m.value}
-                        </dd>
-                      </div>
-                      <dt className="mt-0.5 text-[10px] uppercase tracking-[0.2em] text-muted">
-                        {m.label}
-                      </dt>
+                        {m.value}
+                      </dd>
                     </div>
                   </Fragment>
                 ))}
