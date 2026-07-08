@@ -40,6 +40,9 @@ export function useSaleData() {
   return useQuery({
     queryKey: ["sale", "commitments"],
     queryFn: getCommitments,
+    // No sonarQueryRetry here: the default policy (3 tries, same exponential delay) already
+    // matches it for everything except 429, and this route cannot produce a 429 - it sits
+    // outside the edge rate limit (sonar-rate-limit.ts) and maps upstream failures to 502.
     refetchInterval: 5_000,
     // Footgun: without this the poll pauses on blur and the TabAlert outbid overlay (which exists
     // FOR backgrounded tabs) can never fire on data that arrives while hidden.
