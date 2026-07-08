@@ -44,10 +44,13 @@ export default async (request: Request): Promise<Response> => {
 
   // Pass the body/status/content-type through; strip any upstream Set-Cookie so a third party
   // can never plant a cookie on our origin, and nosniff so a mistyped upstream response can
-  // never be sniffed into same-origin HTML/JS.
+  // never be sniffed into same-origin HTML/JS. The sandboxing CSP closes the case nosniff
+  // can't: an upstream that declares text/html outright would otherwise render on OUR origin
+  // (reflected XSS). Inert for the loader - a resource CSP only applies to navigations.
   const resHeaders = new Headers(upstreamRes.headers)
   resHeaders.delete("set-cookie")
   resHeaders.set("x-content-type-options", "nosniff")
+  resHeaders.set("content-security-policy", "default-src 'none'; sandbox")
   return new Response(upstreamRes.body, { status: upstreamRes.status, headers: resHeaders })
 }
 

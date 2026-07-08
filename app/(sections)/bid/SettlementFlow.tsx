@@ -60,34 +60,6 @@ export function SettlementFlow({
   }
 
   const settlement = deriveSettlement(myBid, clearingPriceUsd)
-  if (!settlement) {
-    // A bid confirmed in the last pre-close minute outruns Sonar's indexer: until it reports (the
-    // pending poll self-resolves this) or the pending TTL lapses, an empty answer is not "no bid".
-    // One shared live region for both messages, so the finalizing -> no-commitment transition
-    // mutates an existing region and gets announced.
-    return (
-      <output className="flex flex-wrap items-center justify-between gap-4">
-        {pendingBid ? (
-          <p className="text-sm">
-            <span className="font-medium text-foreground">Finalizing your results.</span>{" "}
-            <span className="text-muted">
-              Your bid is confirmed on-chain. The indexer is catching up.
-            </span>
-          </p>
-        ) : (
-          <>
-            <p className="text-sm">
-              <span className="font-medium text-foreground">No commitment for this wallet.</span>{" "}
-              <span className="text-muted">Switch to the wallet you bid with.</span>
-            </p>
-            <WalletButton />
-          </>
-        )}
-      </output>
-    )
-  }
-
-  const { committedUsd } = settlement
   // All display assertions come from the pure merge in lib/sale/settlement.ts (fail-closed: only
   // the contract's own numbers open the button, and `won` already carries the zero-fill
   // downgrade to the refund-only rendering).
@@ -112,6 +84,83 @@ export function SettlementFlow({
       setClaimError(result.reason)
     }
   }
+
+  const claimActions = (
+    <div className="ml-auto flex items-center gap-4">
+      {refunded ? (
+        <output className="inline-flex items-center gap-2 text-sm font-medium text-foreground">
+          <Icon name="shield-check" draw={false} className="h-5 w-5 shrink-0 text-mint" />
+          Refund sent
+        </output>
+      ) : showClaimButton ? (
+        <Cta variant="solid-contrast" onClick={onClaimClick} disabled={claimState === "claiming"}>
+          {claimState === "claiming" ? "Claiming..." : `Claim ${fmtUsd(refundableUsd)}`}
+        </Cta>
+      ) : showAutoRefundLine ? (
+        <span className="text-sm text-muted">Refunds are processed automatically.</span>
+      ) : null}
+      <WalletButton />
+    </div>
+  )
+
+  const claimErrorLine = claimError ? (
+    <p role="alert" className="text-xs font-medium text-danger">
+      {claimError === "wrong-chain"
+        ? `Switch to ${SALE_CHAIN.name} in your wallet to claim your refund.`
+        : claimError}
+    </p>
+  ) : null
+
+  if (!settlement) {
+    // The contract's truth outranks Sonar's absence: a gate that asserts a refund (claimable,
+    // automatic, or already sent) must render actionable even with no position data at all -
+    // hiding a claimable refund behind "no commitment" strands the bidder.
+    if (refunded || showClaimButton || showAutoRefundLine) {
+      return (
+        <div ref={viewRef} tabIndex={-1} className="flex flex-col gap-5 focus:outline-none">
+          <div className="flex items-center gap-3">
+            <Icon name="shield-check" draw={false} className="h-5 w-5 shrink-0 text-foreground" />
+            <p className="text-sm text-foreground">
+              Your results are syncing. Your on-chain refund is shown below.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-5">
+            <Cell label="Refundable">{fmtUsd(refundableUsd)}</Cell>
+            {claimActions}
+          </div>
+          {claimErrorLine}
+        </div>
+      )
+    }
+    // A bid confirmed in the last pre-close minute outruns Sonar's indexer: until it reports (the
+    // pending poll self-resolves this) or the pending TTL lapses, an empty answer is not "no bid".
+    // Same for a wallet the gate KNOWS on-chain (refundableUsd non-null covers a fully-accepted
+    // winner awaiting Sonar): denying its commitment would be false. One shared live region for
+    // both messages, so the finalizing -> no-commitment transition mutates an existing region and
+    // gets announced.
+    return (
+      <output className="flex flex-wrap items-center justify-between gap-4">
+        {pendingBid || gate?.refundableUsd != null ? (
+          <p className="text-sm">
+            <span className="font-medium text-foreground">Finalizing your results.</span>{" "}
+            <span className="text-muted">
+              Your bid is confirmed on-chain. The indexer is catching up.
+            </span>
+          </p>
+        ) : (
+          <>
+            <p className="text-sm">
+              <span className="font-medium text-foreground">No commitment for this wallet.</span>{" "}
+              <span className="text-muted">Switch to the wallet you bid with.</span>
+            </p>
+            <WalletButton />
+          </>
+        )}
+      </output>
+    )
+  }
+
+  const { committedUsd } = settlement
 
   return (
     <div ref={viewRef} tabIndex={-1} className="flex flex-col gap-5 focus:outline-none">
@@ -145,34 +194,10 @@ export function SettlementFlow({
           <Cell label="Refundable">{fmtUsd(refundableUsd)}</Cell>
         </div>
 
-        <div className="ml-auto flex items-center gap-4">
-          {refunded ? (
-            <output className="inline-flex items-center gap-2 text-sm font-medium text-foreground">
-              <Icon name="shield-check" draw={false} className="h-5 w-5 shrink-0 text-mint" />
-              Refund sent
-            </output>
-          ) : showClaimButton ? (
-            <Cta
-              variant="solid-contrast"
-              onClick={onClaimClick}
-              disabled={claimState === "claiming"}
-            >
-              {claimState === "claiming" ? "Claiming..." : `Claim ${fmtUsd(refundableUsd)}`}
-            </Cta>
-          ) : showAutoRefundLine ? (
-            <span className="text-sm text-muted">Refunds are processed automatically.</span>
-          ) : null}
-          <WalletButton />
-        </div>
+        {claimActions}
       </div>
 
-      {claimError ? (
-        <p role="alert" className="text-xs font-medium text-danger">
-          {claimError === "wrong-chain"
-            ? `Switch to ${SALE_CHAIN.name} in your wallet to claim your refund.`
-            : claimError}
-        </p>
-      ) : null}
+      {claimErrorLine}
       {won ? (
         <p className="text-xs text-muted">
           GNOT is sent to your wallet at mainnet ({formatSaleDate(SALE_ECONOMICS.mainnetIso)}), with
