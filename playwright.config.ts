@@ -18,10 +18,10 @@ export default defineConfig({
   // and a compile can stall an otherwise-instant click past 30s on a loaded machine.
   timeout: 60_000,
   expect: {
-    // next dev pacing (BidFlow's devStepPause) is slower than a production build; on a shared
-    // CI runner the dev server has been OBSERVED sitting on a request for 14s+ (trace-verified),
-    // so with retries off the assertion budget must outlast that tail.
-    timeout: process.env.CI ? 30_000 : 15_000,
+    // next dev has been observed (trace-verified) sitting on a request for 14s+ under load -
+    // on shared CI runners AND on a busy dev machine. With retries off, the assertion budget
+    // must outlast that tail. Costless for passing tests: expects resolve as soon as met.
+    timeout: 30_000,
   },
   use: {
     baseURL: APP_URL,
