@@ -1,26 +1,32 @@
 import { describe, expect, it } from "vitest"
 import { buildMilestoneIcs } from "../../../lib/sale/calendar"
 
-// Pins the exact ICS shape: all-day events (the opening TIME is TBD),
-// exclusive DTEND, CRLF endings, stable UIDs.
+// Pins the exact ICS shape: timed UTC events (milestones sit at 22:00 UTC; an all-day event
+// pinned to the UTC date is the wrong local day east of UTC+2), exclusive DTEND one hour later,
+// CRLF endings, stable UIDs.
 describe("buildMilestoneIcs", () => {
   const stampMs = Date.UTC(2026, 5, 13, 10, 15, 30) // 2026-06-13T10:15:30Z
 
-  it("builds the registration-opening all-day event", () => {
+  it("builds the registration-opening timed event", () => {
     const { filename, ics } = buildMilestoneIcs("registration", stampMs)
     expect(filename).toBe("gnot-registration-opens.ics")
-    expect(ics).toContain("DTSTART;VALUE=DATE:20260708")
-    expect(ics).toContain("DTEND;VALUE=DATE:20260709")
+    expect(ics).toContain("DTSTART:20260708T220000Z")
+    expect(ics).toContain("DTEND:20260708T230000Z")
     expect(ics).toContain("SUMMARY:GNOT sale registration opens")
     expect(ics).toContain("UID:gnot-registration@sale.gno.land")
   })
 
-  it("builds the sale-opening all-day event", () => {
+  it("builds the sale-opening timed event", () => {
     const { filename, ics } = buildMilestoneIcs("sale", stampMs)
     expect(filename).toBe("gnot-sale-opens.ics")
-    expect(ics).toContain("DTSTART;VALUE=DATE:20260720")
-    expect(ics).toContain("DTEND;VALUE=DATE:20260721")
+    expect(ics).toContain("DTSTART:20260720T220000Z")
+    expect(ics).toContain("DTEND:20260720T230000Z")
     expect(ics).toContain("SUMMARY:GNOT public sale opens")
+  })
+
+  it("never emits the all-day form (wrong local day for most of the audience)", () => {
+    const { ics } = buildMilestoneIcs("sale", stampMs)
+    expect(ics).not.toContain("VALUE=DATE")
   })
 
   it("stamps DTSTAMP from the injected clock", () => {

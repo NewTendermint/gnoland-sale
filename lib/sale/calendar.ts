@@ -1,6 +1,8 @@
 import { SALE_ECONOMICS } from "./economics"
 
-// Client-side ICS generation for the "add to calendar" buttons. Events are all-day.
+// Client-side ICS generation for the "add to calendar" buttons. Events are timed (UTC): the
+// milestones sit at 22:00 UTC, so an all-day event pinned to the UTC date lands on the wrong
+// local day for everyone east of UTC+2 - clients localize a timed DTSTART themselves.
 
 export type SaleMilestone = "registration" | "sale"
 
@@ -17,19 +19,9 @@ const EVENTS: Record<SaleMilestone, { iso: string; summary: string; filename: st
   },
 }
 
-/** "2026-07-15T00:00:00Z" -> "20260715" (the ISO's UTC calendar date). */
-function icsDate(iso: string): string {
-  return iso.slice(0, 10).replace(/-/g, "")
-}
+const EVENT_DURATION_MS = 3_600_000
 
-/** The day AFTER the ISO's UTC date, for the all-day DTEND (exclusive per RFC 5545). */
-function icsDateNext(iso: string): string {
-  const d = new Date(iso)
-  d.setUTCDate(d.getUTCDate() + 1)
-  return d.toISOString().slice(0, 10).replace(/-/g, "")
-}
-
-/** Epoch ms -> "20260613T101530Z" (DTSTAMP shape). */
+/** Epoch ms -> "20260613T101530Z" (UTC date-time per RFC 5545). */
 function icsStamp(ms: number): string {
   return new Date(ms)
     .toISOString()
@@ -52,8 +44,8 @@ export function buildMilestoneIcs(
     "BEGIN:VEVENT",
     `UID:gnot-${milestone}@sale.gno.land`,
     `DTSTAMP:${icsStamp(nowMs)}`,
-    `DTSTART;VALUE=DATE:${icsDate(event.iso)}`,
-    `DTEND;VALUE=DATE:${icsDateNext(event.iso)}`,
+    `DTSTART:${icsStamp(Date.parse(event.iso))}`,
+    `DTEND:${icsStamp(Date.parse(event.iso) + EVENT_DURATION_MS)}`,
     `SUMMARY:${event.summary}`,
     "URL:https://sale.gno.land",
     "END:VEVENT",
