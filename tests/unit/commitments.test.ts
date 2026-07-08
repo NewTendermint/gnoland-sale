@@ -93,6 +93,86 @@ describe("mapMyBid", () => {
     expect(mapMyBid(res, MINE)).toMatchObject({ priceUsd: 0.2, committedUsd: 1 })
   })
 
+  it("skips a malformed row (null id) instead of throwing for every bidder", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
+    const malformed = {
+      CommitmentID: hex("dd".repeat(16)),
+      SaleSpecificEntityID: null,
+      PriceNumerator: "1",
+      PriceDenominator: "5",
+      Amounts: [{ Wallet: hex("66".repeat(20)), Token: hex("44".repeat(20)), Amount: "1000000" }],
+      CreatedAt: "2026-06-01T00:00:00Z",
+      ExtraRaw: hex(""),
+      ExtraDataParsed: null,
+    } as unknown as ReadCommitmentDataResponse["Commitments"][number]
+    const res = withCommitments([
+      malformed,
+      {
+        CommitmentID: hex("c0".repeat(16)),
+        SaleSpecificEntityID: MINE,
+        PriceNumerator: "150000",
+        PriceDenominator: "1000000",
+        PriceMicroUSD: "150000",
+        Amounts: [{ Wallet: hex("33".repeat(20)), Token: hex("44".repeat(20)), Amount: "2000000" }],
+        CreatedAt: "2026-06-01T00:00:00Z",
+        ExtraRaw: hex(""),
+        ExtraDataParsed: null,
+      },
+    ])
+    expect(mapMyBid(res, MINE)).toEqual({ priceUsd: 0.15, committedUsd: 2 })
+    expect(warn).toHaveBeenCalledTimes(1)
+    warn.mockRestore()
+  })
+
+  it("returns null without throwing when only malformed rows exist", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
+    const malformed = {
+      CommitmentID: hex("dd".repeat(16)),
+      SaleSpecificEntityID: undefined,
+      PriceNumerator: "1",
+      PriceDenominator: "5",
+      Amounts: [],
+      CreatedAt: "2026-06-01T00:00:00Z",
+      ExtraRaw: hex(""),
+      ExtraDataParsed: null,
+    } as unknown as ReadCommitmentDataResponse["Commitments"][number]
+    expect(mapMyBid(withCommitments([malformed]), MINE)).toBeNull()
+    warn.mockRestore()
+  })
+
+  it("fails loud when the session's own row has malformed Amounts - never a silent wrong position", () => {
+    const res = withCommitments([
+      {
+        CommitmentID: hex("c0".repeat(16)),
+        SaleSpecificEntityID: MINE,
+        PriceNumerator: "150000",
+        PriceDenominator: "1000000",
+        PriceMicroUSD: "150000",
+        Amounts: null as unknown as ReadCommitmentDataResponse["Commitments"][number]["Amounts"],
+        CreatedAt: "2026-06-01T00:00:00Z",
+        ExtraRaw: hex(""),
+        ExtraDataParsed: null,
+      },
+    ])
+    expect(() => mapMyBid(res, MINE)).toThrow(/malformed/)
+  })
+
+  it("fails loud on a non-finite price (zero denominator, no micro-USD)", () => {
+    const res = withCommitments([
+      {
+        CommitmentID: hex("c0".repeat(16)),
+        SaleSpecificEntityID: MINE,
+        PriceNumerator: "1",
+        PriceDenominator: "0",
+        Amounts: [{ Wallet: hex("33".repeat(20)), Token: hex("44".repeat(20)), Amount: "1000000" }],
+        CreatedAt: "2026-06-01T00:00:00Z",
+        ExtraRaw: hex(""),
+        ExtraDataParsed: null,
+      },
+    ])
+    expect(() => mapMyBid(res, MINE)).toThrow(/malformed/)
+  })
+
   it("matches the entity regardless of hex casing between the two Sonar endpoints", () => {
     const entityId = hex("ab".repeat(32))
     const res = withCommitments([

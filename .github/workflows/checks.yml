@@ -1,6 +1,6 @@
 # Static checks: lint, typecheck, build, secret scanning, and dependency audit.
-# Runs on every pull request and on pushes to main, in parallel with the Tests workflow.
-# An e2e job will be added later once a preview URL is available.
+# Runs on every pull request and on pushes to main, in parallel with the Tests workflow
+# (which carries the unit and wallet-e2e jobs).
 name: Checks
 on:
   pull_request:

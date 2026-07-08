@@ -64,6 +64,14 @@ describe("pickEntity (multi-entity accounts: the journey must not flap on list o
     expect(pickEntity([])).toBeUndefined()
   })
 
+  it("survives a tie where an entity is missing its EntityID", () => {
+    const broken = entity({ EntityID: undefined as unknown as string })
+    const ok = entity({ EntityID: "AUX-ok" })
+    expect(() => pickEntity([broken, ok])).not.toThrow()
+    expect(pickEntity([broken, ok])?.EntityID).toBe("AUX-ok")
+    expect(pickEntity([ok, broken])?.EntityID).toBe("AUX-ok")
+  })
+
   it("is immune to setup states colliding with Object.prototype keys", () => {
     const hostile = entity({
       EntityID: "AUX-hostile",
