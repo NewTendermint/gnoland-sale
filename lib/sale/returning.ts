@@ -54,6 +54,16 @@ export function hasBidSeen(): boolean {
   }
 }
 
+/** Forget the flag (sign-out): the next session may be another account, and a stale flag makes
+ *  every legitimate null position sit through the confirm re-reads before rendering. */
+export function clearBidSeen(): void {
+  try {
+    window.localStorage.removeItem(BID_KEY)
+  } catch {
+    // storage disabled -> nothing to clear
+  }
+}
+
 function subscribe(onStoreChange: () => void): () => void {
   window.addEventListener(CHANGE_EVENT, onStoreChange)
   window.addEventListener("storage", onStoreChange)

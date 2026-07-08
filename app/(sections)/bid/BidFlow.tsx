@@ -43,7 +43,7 @@ import {
   MockBidSubmitter,
 } from "../../../lib/sale/submitter"
 import type { JourneyState, MyBid } from "../../../lib/sale/types"
-import { ManageEntityCta } from "./ManageEntity"
+import { ManageEntityCta, SonarSignOutButton } from "./ManageEntity"
 import { usePushAlerts } from "./PushOptIn"
 
 const submitter = new MockBidSubmitter()
@@ -310,7 +310,9 @@ export function BidFlow({
   clearingPriceUsd,
   myBid,
   onConnectSonar,
-  onSignOut,
+  // Noop default so server-rendered galleries (which cannot pass functions) still show the
+  // control; the live panel always provides the real handler.
+  onSignOut = () => {},
   setupHref,
   onBid,
   onRaise,
@@ -374,7 +376,7 @@ function StateContent({
   clearingPriceUsd: number | null
   myBid: MyBid
   onConnectSonar?: () => void
-  onSignOut?: () => void
+  onSignOut: () => void
   setupHref: string
   onBid?: (p: BidParams, opts?: { onStage?: (s: BidStage) => void }) => Promise<BidResult>
   onRaise?: () => void
@@ -433,13 +435,18 @@ function GateContent({
   journey: JourneyState
   returning?: boolean
   onConnectSonar?: () => void
-  onSignOut?: () => void
+  onSignOut: () => void
   setupHref: string
   entityLabel?: string | null
 }) {
   // Dark-capsule variant of the pre-sale bar's manage CTA (same states, same destination).
   const manageCta = (
-    <ManageEntityCta href={setupHref} label={entityLabel} variant="ghost-contrast" />
+    <ManageEntityCta
+      href={setupHref}
+      label={entityLabel}
+      variant="ghost-contrast"
+      onSignOut={onSignOut}
+    />
   )
   switch (journey) {
     case "wrong-network":
@@ -451,6 +458,7 @@ function GateContent({
           title={VERIFY_INCOMPLETE.title}
           cta={VERIFY_INCOMPLETE.cta}
           ctaHref={setupHref}
+          secondary={<SonarSignOutButton onSignOut={onSignOut} variant="tile" />}
         />
       )
     case "kyc-required":

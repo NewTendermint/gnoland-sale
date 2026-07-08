@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useAccount, useDisconnect } from "wagmi"
+import { PowerGlyph } from "../(sections)/bid/ManageEntity"
 import { Icon } from "../(ui)/Icon"
 
 function truncate(address: string): string {
@@ -26,17 +27,7 @@ export function WalletButton() {
     >
       <Icon name="wallet" draw={false} className="h-3.5 w-3.5 shrink-0" />
       {truncate(address)}
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        className="h-3.5 w-3.5 text-muted transition-colors group-hover:text-foreground"
-        aria-hidden="true"
-      >
-        <path d="M18.36 6.64a9 9 0 1 1-12.73 0" />
-        <line x1="12" y1="2" x2="12" y2="12" />
-      </svg>
+      <PowerGlyph className="h-3.5 w-3.5 text-muted transition-colors group-hover:text-foreground" />
     </button>
   )
 }

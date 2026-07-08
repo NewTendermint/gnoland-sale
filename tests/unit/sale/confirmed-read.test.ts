@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import type { EntityRead } from "../../../lib/sale/api"
 import { readEntity, readMyPosition } from "../../../lib/sale/confirmed-read"
-import { hasBidSeen, markBidSeen, markSonarSeen } from "../../../lib/sale/returning"
+import { clearBidSeen, hasBidSeen, markBidSeen, markSonarSeen } from "../../../lib/sale/returning"
 import type { EntitySnapshot, MyBid } from "../../../lib/sale/types"
 
 const BID: MyBid = { priceUsd: 0.0645, committedUsd: 5 }
@@ -48,6 +48,14 @@ describe("readMyPosition (null-confirming my-position read)", () => {
     const fetcher = vi.fn().mockResolvedValue(null)
     expect(await readMyPosition(fetcher, DELAY)).toBeNull()
     expect(fetcher).toHaveBeenCalledTimes(3) // initial + 2 confirms
+  })
+
+  it("resolves a null in one read once the bid-seen flag is cleared (sign-out fresh state)", async () => {
+    markBidSeen()
+    clearBidSeen()
+    const fetcher = vi.fn().mockResolvedValue(null)
+    expect(await readMyPosition(fetcher, DELAY)).toBeNull()
+    expect(fetcher).toHaveBeenCalledTimes(1)
   })
 })
 
