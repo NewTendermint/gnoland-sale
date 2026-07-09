@@ -121,3 +121,24 @@ export const faq: Array<{ q: string; a: string | FaqBlock[] }> = [
     ],
   },
 ]
+
+/**
+ * Flatten an answer (string | FaqBlock[]) to a single plain-text string.
+ *
+ * FaqBlock variants collapse to their visible text: strings stay as-is, `{ strong }`
+ * uses its label, and `{ parts }` joins each part (link parts contribute their `label`,
+ * not the href). Blocks are joined with a space so paragraphs read as continuous prose.
+ * Used to source schema.org FAQPage `acceptedAnswer.text`, which requires plain text.
+ */
+export function faqAnswerText(a: string | FaqBlock[]): string {
+  if (typeof a === "string") return a
+  return a
+    .map((block) => {
+      if (typeof block === "string") return block
+      if ("strong" in block) return block.strong
+      return block.parts.map((part) => (typeof part === "string" ? part : part.label)).join("")
+    })
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .trim()
+}
