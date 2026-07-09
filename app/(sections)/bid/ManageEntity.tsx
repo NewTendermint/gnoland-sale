@@ -45,12 +45,12 @@ export function ManageEntityCta({
       arrow={!onSignOut}
       ariaLabel="Manage your Sonar account"
     >
-      <span className="max-w-[20ch] truncate">{label ?? "Manage account"}</span>
+      <span className="max-w-[20ch] truncate">{label ?? "My Sonar account"}</span>
     </Cta>
   )
   if (!onSignOut) return cta
   return (
-    <span className="inline-flex items-center gap-2">
+    <span className="inline-flex items-center gap-1.5">
       {cta}
       <SonarSignOutButton onSignOut={onSignOut} variant={variant === "ghost" ? "bar" : "tile"} />
     </span>

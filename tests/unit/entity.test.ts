@@ -70,6 +70,38 @@ describe("getEntity", () => {
     })
   })
 
+  it("blanks the label for an individual entity (a type descriptor, not a name)", async () => {
+    listAvailableEntitiesMock.mockResolvedValue({
+      Entities: [
+        {
+          EntityID: "33333333-3333-3333-3333-333333333333",
+          EntityType: "user",
+          EntitySetupState: "complete",
+          SaleEligibility: "eligible",
+          InvestingRegion: "jp",
+          Label: "Yourself",
+        },
+      ],
+    })
+    expect(await getEntity("sess-individual")).toMatchObject({ label: null })
+  })
+
+  it("keeps the organization label (the company name is real information)", async () => {
+    listAvailableEntitiesMock.mockResolvedValue({
+      Entities: [
+        {
+          EntityID: "44444444-4444-4444-4444-444444444444",
+          EntityType: "organization",
+          EntitySetupState: "complete",
+          SaleEligibility: "eligible",
+          InvestingRegion: "eu",
+          Label: "Acme Capital",
+        },
+      ],
+    })
+    expect(await getEntity("sess-org")).toMatchObject({ label: "Acme Capital" })
+  })
+
   it("returns null when the session has no entity yet", async () => {
     listAvailableEntitiesMock.mockResolvedValue({ Entities: [] })
     expect(await getEntity("sess-empty")).toBeNull()

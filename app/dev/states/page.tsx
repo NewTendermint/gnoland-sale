@@ -266,11 +266,13 @@ function PreSaleBarPreview({
             Opens July 20, 2026
           </p>
         </div>
+        {/* Individual entity: no upstream label, the chip falls back to its own wording. The
+            capsule views below keep an organization label to show both renderings. */}
         <PreSaleRight
           state={state}
           returning={returning}
           setupHref={SETUP_URL_PREVIEW}
-          entityLabel="Jane Cooper Ltd"
+          entityLabel={null}
         />
       </div>
     </div>
