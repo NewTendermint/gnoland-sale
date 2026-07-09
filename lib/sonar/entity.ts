@@ -100,7 +100,9 @@ export async function getEntity(sessionId: string): Promise<EntitySnapshot | nul
     setupState: normalizeSetup(entity.EntitySetupState),
     eligibility: normalizeEligibility(entity.SaleEligibility),
     investingRegion: normalizeRegion(entity.InvestingRegion),
-    label: normalizeLabel(entity.Label),
+    // An individual entity's Label is a type descriptor, not a name; only an organization
+    // Label carries display-worthy information.
+    label: entity.EntityType === "user" ? null : normalizeLabel(entity.Label),
   }
 }
 

@@ -397,7 +397,7 @@ export function ManageEntityLink({
       >
         <Icon name="shield-check" draw={false} className="h-3.5 w-3.5 shrink-0" />
         <span className="max-w-[18ch] truncate underline underline-offset-2">
-          {label ?? "Sonar account"}
+          {label ?? "My Sonar account"}
         </span>
         {onSignOut ? null : (
           // Inline SVG, not the U+2197 glyph: some Windows fonts promote it to emoji.
@@ -595,7 +595,7 @@ function StatusRow({
         ) : null}
         {onRefresh ? <RefreshButton onRefresh={onRefresh} /> : null}
       </div>
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-4">
         {manage}
         {action}
         {withCalendar ? <AddToCalendarButton milestone="sale" variant="bar" /> : null}
