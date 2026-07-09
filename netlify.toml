@@ -53,11 +53,17 @@
   # otherwise fail the deploy on a scanner false-positive.
   SECRETS_SCAN_OMIT_KEYS = "VAPID_PUBLIC_KEY,NEXT_PUBLIC_VAPID_PUBLIC_KEY,SONAR_SALE_UUID,SALE_CHAIN,NEXT_PUBLIC_SALE_CHAIN"
 
-# Deploy-context-scoped environment variables.
-# Production targets sale.gno.land and Sonar prod + Ethereum mainnet.
-# Preview deploys hit Sonar sandbox + Sepolia (set per Netlify dashboard).
+# Deploy-context-scoped environment variables. The SALE_CHAIN pair for EVERY context is versioned
+# in this file (production = mainnet, everything else = sepolia); the dashboard only carries
+# secrets and the Sonar per-context identifiers.
 [context.production.environment]
   NEXT_PUBLIC_SITE_URL = "https://sale.gno.land"
+
+  # Sale chain, client + server pair - ALWAYS identical, versioned here as the single source of
+  # truth (netlify.toml wins over the dashboard). Production is the ONLY context on mainnet; the
+  # mainnet SettlementSale address lives in code (lib/sale/contracts.ts CONTRACTS map).
+  SALE_CHAIN = "mainnet"
+  NEXT_PUBLIC_SALE_CHAIN = "mainnet"
 
   # Fan-out target for the scheduled cron functions (outbid-cron, db-cleanup). Netlify only schedules
   # the PRODUCTION deploy, so the single prod run needs the staging URL to also poke staging's own
@@ -72,6 +78,10 @@
   # dev and on the staging branch-deploy (NEXT_PUBLIC_DEV_STATES_ENABLED below), 404 in production.
 [context.deploy-preview.environment]
   NEXT_PUBLIC_SITE_URL = "https://deploy-preview.netlify.app"
+  # Previews stay on Sepolia + sandbox contract, same pair rule as staging below: a non-prod
+  # context must never resolve mainnet.
+  SALE_CHAIN = "sepolia"
+  NEXT_PUBLIC_SALE_CHAIN = "sepolia"
 
 # Branch deploys: the permanent `staging` branch -> a stable test env on Sonar sandbox + Sepolia.
 # Same code/bundle as production; ONLY the env differs by context, so promoting staging -> main is
@@ -83,7 +93,8 @@
   # differs, or point it at a custom subdomain (e.g. https://staging.sale.gno.land).
   NEXT_PUBLIC_SITE_URL = "https://staging--gnoland-sonar.netlify.app"
   # Force Sepolia on staging regardless of any dashboard default; the client + server pair MUST
-  # match, else the bid blocks (the client would pick mainnet, which has no configured contract).
+  # match. The prod mainnet contract IS configured in code (lib/sale/contracts.ts), so a non-prod
+  # context must never resolve mainnet.
   SALE_CHAIN = "sepolia"
   NEXT_PUBLIC_SALE_CHAIN = "sepolia"
   # Sandbox sale's lower minimum commitment (prod keeps the economics.ts default of 100).

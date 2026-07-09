@@ -1,13 +1,19 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import { bidAmountBucket, track } from "../../../lib/analytics/track"
+import { bidAmountBucket } from "../../../lib/analytics/track"
 
 type SaEventStub = { (...args: unknown[]): void; q?: unknown[][] }
 const win = window as Window & { sa_event?: SaEventStub }
 
+// The gate requires a production build on mainnet; SALE_CHAIN binds at module scope (fail-safe
+// sepolia default), so each case re-imports track with the mainnet env stubbed.
+let track: typeof import("../../../lib/analytics/track").track
+
 describe("track", () => {
-  beforeEach(() => {
-    // The gate requires a production build on mainnet; tests default to sepolia-less mainnet.
+  beforeEach(async () => {
+    vi.resetModules()
     vi.stubEnv("NODE_ENV", "production")
+    vi.stubEnv("NEXT_PUBLIC_SALE_CHAIN", "mainnet")
+    ;({ track } = await import("../../../lib/analytics/track"))
     win.sa_event = undefined
   })
 

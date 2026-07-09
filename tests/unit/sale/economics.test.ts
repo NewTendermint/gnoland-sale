@@ -23,8 +23,8 @@ describe("SALE_ECONOMICS.minCommitmentUsd (mainnet floor guard)", () => {
     expect(await loadMinCommitment("sepolia", "2")).toBe(2)
   })
 
-  it("treats an unset chain as mainnet", async () => {
-    expect(await loadMinCommitment("", "2")).toBe(100)
+  it("treats an unset chain as sepolia (fail-safe default): override honored", async () => {
+    expect(await loadMinCommitment("", "2")).toBe(2)
   })
 
   it("refuses an unknown chain at import instead of assuming mainnet", async () => {
