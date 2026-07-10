@@ -1,5 +1,6 @@
 import { resolveSalePhase } from "@/lib/sale/phase"
 import { sonarSetupUrl } from "@/lib/sale/setup-url"
+import { faq, faqAnswerText } from "../content/sections/faq"
 import { BidPanel } from "./(layout)/BidPanel"
 import { PushLimitSync } from "./(layout)/PushLimitSync"
 import { SaleProvider } from "./(layout)/SaleProvider"
@@ -22,6 +23,23 @@ import { Tokenomics } from "./(sections)/tokenomics/Tokenomics"
 
 // Server-resolved phase from the sale clock; ISR revalidate flips it within ~30s of a boundary.
 export const revalidate = 30
+
+// FAQPage structured data, sourced from content/sections/faq.ts so it stays in sync with the
+// rendered FAQ. Answers are flattened to plain text (Google requires plain text/limited HTML in
+// acceptedAnswer.text). Rendered as a <script> text child, matching the Organization/WebSite block
+// in app/layout.tsx (never dangerouslySetInnerHTML).
+const faqJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: faq.map((item) => ({
+    "@type": "Question",
+    name: item.q,
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: faqAnswerText(item.a),
+    },
+  })),
+}
 
 export default function Home() {
   const initialPhase = resolveSalePhase(Date.now())
@@ -53,6 +71,7 @@ export default function Home() {
         <Partners />
         <Backers />
         <Faq />
+        <script type="application/ld+json">{JSON.stringify(faqJsonLd)}</script>
         <PreFooterCta />
       </main>
       <BidPanel />
