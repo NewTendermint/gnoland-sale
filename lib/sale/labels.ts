@@ -121,12 +121,9 @@ export const SUPPORT_VERIFY_FAILED_HREF = supportMailtoHref(
   [`My verification status shows: "${punctuate(VERIFY_STATUS.failed.title)}"`],
 )
 
-/** Awareness-mode "continue on desktop" copy. */
+/** Awareness-mode "continue on desktop" copy. Registration has no entry here: mobile serves the
+ *  real funnel during pre-sale. */
 export const DESKTOP_ONLY = {
-  register: {
-    title: "Registration is open",
-    body: "Register from a desktop browser at sale.gno.land.",
-  },
   live: {
     title: "Bidding happens on desktop",
     body: "For your security, bids are placed from a desktop browser with your wallet. Open sale.gno.land on your computer.",
