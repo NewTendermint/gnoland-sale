@@ -610,6 +610,7 @@ export function PreSaleRight({
   returning,
   setupHref,
   entityLabel,
+  compact = false,
   onRegister = () => {},
   onSignOut = () => {},
   onRefresh = () => {},
@@ -618,6 +619,8 @@ export function PreSaleRight({
   returning: boolean
   setupHref: string
   entityLabel?: string | null
+  /** Narrow-width rendering (mobile bar): drops the add-to-calendar control. */
+  compact?: boolean
   onRegister?: () => void
   onSignOut?: () => void
   onRefresh?: () => void | Promise<void>
@@ -627,7 +630,7 @@ export function PreSaleRight({
       return newsletterEnabled() ? (
         <div className="flex flex-wrap items-center gap-5">
           <NewsletterForm variant="bar" inputId="newsletter-email-bar" />
-          <AddToCalendarButton milestone="registration" variant="bar" />
+          {compact ? null : <AddToCalendarButton milestone="registration" variant="bar" />}
         </div>
       ) : (
         <p className="text-sm text-muted">{`Sale opens ${formatSaleDate(SALE_ECONOMICS.saleOpensIso)}`}</p>
@@ -680,7 +683,7 @@ export function PreSaleRight({
           body={VERIFY_STATUS.pending.body}
           manage={<ManageEntityCta href={setupHref} label={entityLabel} onSignOut={onSignOut} />}
           onRefresh={onRefresh}
-          withCalendar
+          withCalendar={!compact}
         />
       )
     case "failed":
@@ -691,7 +694,7 @@ export function PreSaleRight({
           title={`${VERIFY_STATUS.failed.title}.`}
           body={VERIFY_STATUS.failed.body}
           manage={<ManageEntityCta href={setupHref} label={entityLabel} onSignOut={onSignOut} />}
-          withCalendar
+          withCalendar={!compact}
           contactHref={SUPPORT_VERIFY_FAILED_HREF ?? undefined}
         />
       )
@@ -703,7 +706,7 @@ export function PreSaleRight({
           title={`${VERIFY_STATUS["not-eligible"].title}.`}
           body={VERIFY_STATUS["not-eligible"].body}
           manage={<ManageEntityCta href={setupHref} label={entityLabel} onSignOut={onSignOut} />}
-          withCalendar
+          withCalendar={!compact}
         />
       )
     case "registered":
@@ -714,7 +717,7 @@ export function PreSaleRight({
           title={`${VERIFY_STATUS.verified.title}.`}
           body="Nothing more to do until the sale opens."
           manage={<ManageEntityCta href={setupHref} label={entityLabel} onSignOut={onSignOut} />}
-          withCalendar
+          withCalendar={!compact}
         />
       )
     case "auth-error":

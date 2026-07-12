@@ -252,13 +252,19 @@ function GallerySection({
   )
 }
 
-// The REAL pre-sale bar (PreSaleRight) inside a bar-like shell, for the gallery.
+// The REAL pre-sale bar (PreSaleRight) inside a bar-like shell, for the gallery. `compact`
+// mirrors the narrow-width bar: tighter inline padding, no add-to-calendar control.
 function PreSaleBarPreview({
   state,
   returning = false,
-}: { state: PreSaleBarState; returning?: boolean }) {
+  compact = false,
+}: { state: PreSaleBarState; returning?: boolean; compact?: boolean }) {
   return (
-    <div className="rounded-[var(--frame-radius)] border border-border bg-background px-6 lg:px-8">
+    <div
+      className={`rounded-[var(--frame-radius)] border border-border bg-background ${
+        compact ? "px-4" : "px-6 lg:px-8"
+      }`}
+    >
       <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4 border-t border-border py-4 sm:py-6">
         <div>
           <p className="font-mono text-2xl font-medium tabular-nums tracking-tight">28d 14:00:00</p>
@@ -273,6 +279,7 @@ function PreSaleBarPreview({
           returning={returning}
           setupHref={SETUP_URL_PREVIEW}
           entityLabel={null}
+          compact={compact}
         />
       </div>
     </div>
@@ -507,6 +514,25 @@ export default function DevStatesPage() {
             <PreSaleBarPreview state={row.state} returning={row.returning} />
           </GallerySection>
         ))}
+
+        {/* The SAME pre-sale bar (KYC actions included) framed at phone widths. The live page
+            still gates touch/< lg to the awareness bar (lib/device/funnel-gate.ts); this section
+            previews what unlocking KYC on mobile would render, before any gate change. */}
+        <GallerySection title="Pre-sale · mobile preview (KYC unlocked · 390px / 320px)">
+          {PRE_SALE_BAR_STATES.map((row) => (
+            <Fragment key={row.label}>
+              <Caption>{row.label}</Caption>
+              <div className="flex flex-wrap items-start gap-6">
+                <div className="w-[390px] max-w-full shrink-0">
+                  <PreSaleBarPreview state={row.state} returning={row.returning} compact />
+                </div>
+                <div className="w-[320px] max-w-full shrink-0">
+                  <PreSaleBarPreview state={row.state} returning={row.returning} compact />
+                </div>
+              </div>
+            </Fragment>
+          ))}
+        </GallerySection>
 
         {states.map((s) => (
           <Fragment key={s}>
