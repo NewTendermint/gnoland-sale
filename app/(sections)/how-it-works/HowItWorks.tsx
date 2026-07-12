@@ -127,20 +127,15 @@ export function HowItWorks() {
             </div>
           ) : phase === "pre-sale" ? (
             registrationOpen ? (
-              <>
-                <div className="hidden funnel:block">
-                  <Cta
-                    onClick={redirectToSonarLogin}
-                    label="Register now"
-                    arrow
-                    variant="ghost-contrast"
-                    size="sm"
-                  />
-                </div>
-                <p className="text-base text-on-contrast-muted funnel:hidden">
-                  {`${DESKTOP_ONLY.register.title}. ${DESKTOP_ONLY.register.body}`}
-                </p>
-              </>
+              <div>
+                <Cta
+                  onClick={redirectToSonarLogin}
+                  label="Register now"
+                  arrow
+                  variant="ghost-contrast"
+                  size="sm"
+                />
+              </div>
             ) : (
               <div>
                 <p className="mb-4 text-base text-on-contrast-muted">

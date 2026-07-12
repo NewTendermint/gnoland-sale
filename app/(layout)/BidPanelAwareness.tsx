@@ -17,60 +17,25 @@ import {
 import { NewsletterForm } from "./NewsletterForm"
 import { useSale } from "./SaleProvider"
 
+// Pre-sale is NOT handled here anymore: mobile serves the real registration funnel during
+// pre-sale (PreSaleBarMobile); this bar only covers the live and ended phases.
 export function BidPanelAwareness() {
-  const { phase, preSaleStage, commitment } = useSale()
+  const { phase, commitment } = useSale()
   return (
     <BarShell>
       <DrawLine immediate />
-      <AwarenessBarBody phase={phase} preSaleStage={preSaleStage} commitment={commitment} />
+      <AwarenessBarBody phase={phase} commitment={commitment} />
     </BarShell>
   )
 }
 
 export function AwarenessBarBody({
   phase,
-  preSaleStage,
   commitment,
 }: {
   phase: SalePhase
-  preSaleStage: PreSaleStage
   commitment: CommitmentData
 }) {
-  if (phase === "pre-sale") {
-    const registrationOpen = preSaleStage === "registration-open"
-    return (
-      <div className="flex flex-col gap-4 py-4 sm:py-5">
-        <BarCountdown
-          targetIso={
-            registrationOpen ? SALE_ECONOMICS.saleOpensIso : SALE_ECONOMICS.registrationOpensIso
-          }
-          caption={
-            registrationOpen
-              ? `Opens ${formatSaleDate(SALE_ECONOMICS.saleOpensIso)}`
-              : `Registration opens ${formatSaleDate(SALE_ECONOMICS.registrationOpensIso, false)}`
-          }
-        />
-        {registrationOpen ? (
-          <div className="flex w-full flex-wrap items-center justify-between gap-3">
-            <BarStatus
-              icon="shield-check"
-              title={`${DESKTOP_ONLY.register.title}.`}
-              body={DESKTOP_ONLY.register.body}
-            />
-            <AddToCalendarButton milestone="sale" variant="bar" />
-          </div>
-        ) : newsletterEnabled() ? (
-          <div className="flex w-full flex-wrap items-start gap-3">
-            <NewsletterForm variant="bar" inputId="newsletter-email-bar" />
-            <AddToCalendarButton milestone="registration" variant="bar" />
-          </div>
-        ) : (
-          <p className="text-sm text-muted">{`Sale opens ${formatSaleDate(SALE_ECONOMICS.saleOpensIso)}`}</p>
-        )}
-      </div>
-    )
-  }
-
   if (phase === "ended") {
     return (
       <div className="flex flex-col gap-3 py-4 sm:py-5">
