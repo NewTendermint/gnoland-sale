@@ -4,82 +4,46 @@
  * Section copy for the build (dev-facing).
  */
 
+// category / body text lives in the i18n catalogs (namespace "Ecosystem"), keyed by id.
+// hasBody marks items that render a body line.
 export type Project = {
+  id: string
   name: string
-  category: string
-  body?: string
+  hasBody?: boolean
   href?: string
   icon: string
 }
 
 export const featured: Project[] = [
+  { id: "gnoscan", name: "Gnoscan", hasBody: true, href: "https://gnoscan.io", icon: "search" },
+  { id: "adena", name: "Adena", hasBody: true, href: "https://adena.app", icon: "shield-arrow" },
+  { id: "gnoswap", name: "Gnoswap", hasBody: true, href: "https://beta.gnoswap.io", icon: "swap" },
   {
-    name: "Gnoscan",
-    category: "Explorer",
-    body: "Gnoscan is the official blockchain explorer for Gno.land. Use it to search wallet addresses, transaction hashes, blocks, and contracts.",
-    href: "https://gnoscan.io",
-    icon: "search",
-  },
-  {
-    name: "Adena",
-    category: "Wallet",
-    body: "Adena is an open-source, non-custodial wallet for Gno.land built with an emphasis on user experience.",
-    href: "https://adena.app",
-    icon: "shield-arrow",
-  },
-  {
-    name: "Gnoswap",
-    category: "DEX",
-    body: "GnoSwap is the first decentralized exchange on Gno.land built on the principles of security, community-ownership, and efficiency.",
-    href: "https://beta.gnoswap.io",
-    icon: "swap",
-  },
-  {
+    id: "boards",
     name: "Boards",
-    category: "Forum",
-    body: "Boards is an on-chain forum built natively on Gno.land. It enables structured, open dialogue and community-driven discussion, free from centralized moderation and external control.",
+    hasBody: true,
     href: "https://gno.land/r/gnoland/boards2/v1:OpenDiscussions",
     icon: "forum",
   },
   {
+    id: "akkadia",
     name: "Akkadia",
-    category: "Game",
-    body: "Akkadia is an on-chain sandbox game where players create their own worlds, expand them together, and leave their activities as persistent on-chain records.",
+    hasBody: true,
     href: "https://abp.akkadia.land",
     icon: "globe",
   },
   {
+    id: "gno-playground",
     name: "Gno Playground",
-    category: "Development",
-    body: "Gno Playground is a browser-based environment for writing, testing, and experimenting with Gno code. Share your code, run unit tests, deploy realms and packages, and execute functions directly from the interface with no local setup required.",
+    hasBody: true,
     href: "https://play.gno.land/",
     icon: "play",
   },
 ]
 
 export const others: Project[] = [
-  {
-    name: "Gno Studio Connect",
-    category: "Connection",
-    body: "Direct access to Gno.land's smart contracts through function calls. Explore and interact with any realm's exposed functions.",
-    icon: "plug",
-  },
-  {
-    name: "Tendermint2",
-    category: "Consensus",
-    body: "The evolved consensus engine, redesigned from the ground up for simplicity, security, and performance.",
-    icon: "cube",
-  },
-  {
-    name: "Gnokey",
-    category: "Key management",
-    body: "Secure key management and transaction signing for interacting with Gno.land and related networks.",
-    icon: "key",
-  },
-  {
-    name: "Gnoweb",
-    category: "Web interface",
-    body: "The official web interface for browsing and interacting with Gno.land realms and packages.",
-    icon: "browser",
-  },
+  { id: "gno-studio-connect", name: "Gno Studio Connect", hasBody: true, icon: "plug" },
+  { id: "tendermint2", name: "Tendermint2", hasBody: true, icon: "cube" },
+  { id: "gnokey", name: "Gnokey", hasBody: true, icon: "key" },
+  { id: "gnoweb", name: "Gnoweb", hasBody: true, icon: "browser" },
 ]
