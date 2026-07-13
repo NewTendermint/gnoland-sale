@@ -1,4 +1,4 @@
-import type { SceneVideoProps } from "../app/(ui)/SceneVideo"
+import type { SceneVideoProps } from "../app/[locale]/(ui)/SceneVideo"
 
 export const sceneVideos = {
   hero: {

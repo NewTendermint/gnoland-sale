@@ -4,44 +4,17 @@
  * Section copy for the build (dev-facing).
  */
 
-export type RoadmapItem = { year: string; title?: string; body: string; highlight?: boolean }
+// year / title / body text lives in the i18n catalogs (namespace "Roadmap"), keyed by id.
+// hasTitle marks items that render a title line.
+export type RoadmapItem = { id: string; hasTitle?: boolean; highlight?: boolean }
 
 export const items: RoadmapItem[] = [
-  {
-    year: "2021",
-    body: "Jae Kwon bootstrapped the Gno Virtual Machine (GnoVM) and Tendermint node. A functional blockchain was established with a foundational virtual machine, automatic state persistence, and the first Boards realm.",
-  },
-  {
-    year: "2023",
-    body: "Gno.land introduced key developer tools including gnodev, the Playground, and GnoChess. The team also released official documentation and the Gno Network Public License, formalizing how the network would be developed and shared.",
-  },
-  {
-    year: "2024",
-    body: "The first permanent multi-node testnet Test4 launched with GovDAO governance, followed by Test5 with an expanded validator set. The cycle delivered major VM fixes, performance upgrades, and broad stability improvements.",
-  },
-  {
-    year: "2025",
-    body: "Network stabilization came with Test6 to Test8, GovDAO V3, token mechanics, and major GnoVM upgrades. Additional progress included governance testing, regular developer updates, community events, and improved validator tooling.",
-  },
-  {
-    year: "Q1 2026",
-    title: "Gno.land Beta Mainnet Launch",
-    body: "Gno.land Beta Mainnet is launched with the first distribution of the GNOT token, a fully operational GnoVM-powered smart contract network, and the inaugural release of GovDAO, Gno.land's on-chain governance system.",
-  },
-  {
-    year: "Q2 2026",
-    title: "Expanding the network",
-    body: "Gno.land is successfully connected to AtomOne on testnet via IBC, enhancing security and interoperability. GnoVM is optimized and strengthened to ensure network stability and deliver better platform features in preparation for mainnet.",
-  },
-  {
-    year: "Q3 2026",
-    title: "Mainnet Launch",
-    body: "The GNOT public sale is scheduled for July, followed by the Gno.land mainnet launch featuring a fully interoperable and security-hardened network with protocol-level GNOT transfers enabled.",
-    highlight: true,
-  },
-  {
-    year: "Q4 2026 - Beyond",
-    title: "Ecosystem Growth",
-    body: "With the network live, focus shifts to ecosystem growth. The team supports builders shipping the first meaningful applications on Gno.land and expands the developer toolkit.",
-  },
+  { id: "2021" },
+  { id: "2023" },
+  { id: "2024" },
+  { id: "2025" },
+  { id: "q1-2026", hasTitle: true },
+  { id: "q2-2026", hasTitle: true },
+  { id: "q3-2026", hasTitle: true, highlight: true },
+  { id: "q4-2026", hasTitle: true },
 ]

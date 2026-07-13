@@ -1,4 +1,8 @@
 import type { NextConfig } from "next"
+import createNextIntlPlugin from "next-intl/plugin"
+
+// Wires next-intl's request config (./i18n/request.ts) into the build.
+const withNextIntl = createNextIntlPlugin()
 
 const config: NextConfig = {
   reactStrictMode: true,
@@ -32,4 +36,4 @@ const config: NextConfig = {
   },
 }
 
-export default config
+export default withNextIntl(config)

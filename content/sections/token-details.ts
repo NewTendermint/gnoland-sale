@@ -4,71 +4,77 @@
  * Section copy for the build (dev-facing).
  */
 
-import { SALE_ECONOMICS, formatSaleDate } from "../../lib/sale/economics"
+import { SALE_ECONOMICS } from "../../lib/sale/economics"
 
 export type PositionMetric = {
+  /** Stable id, keys into the "TokenDetails" message namespace (metric.<id>). */
+  id: string
   icon: string
   value: string
-  label: string
   /** Render the value as a status dot + word (Active / Outbid) instead of a figure. */
   badge?: boolean
 }
 
 export const positionMetricsEmpty: PositionMetric[] = [
-  { icon: "database", value: "-", label: "USD committed" },
-  { icon: "line-chart", value: "-", label: "Bid price" },
-  { icon: "cube", value: "-", label: "GNOT allocation" },
-  { icon: "progress-ring", value: "-", label: "Status", badge: true },
+  { id: "committed", icon: "database", value: "-" },
+  { id: "bidPrice", icon: "line-chart", value: "-" },
+  { id: "allocation", icon: "cube", value: "-" },
+  { id: "status", icon: "progress-ring", value: "-", badge: true },
 ]
 
 export const positionMetricsActive: PositionMetric[] = [
-  { icon: "database", value: "$3,200", label: "USD committed" },
-  { icon: "line-chart", value: "$0.18", label: "Bid price" },
-  { icon: "cube", value: "20,000", label: "GNOT allocation" },
-  { icon: "progress-ring", value: "Active", label: "Status", badge: true },
+  { id: "committed", icon: "database", value: "$3,200" },
+  { id: "bidPrice", icon: "line-chart", value: "$0.18" },
+  { id: "allocation", icon: "cube", value: "20,000" },
+  { id: "status", icon: "progress-ring", value: "Active", badge: true },
 ]
 
-export const termGroups: Array<{
-  eyebrow: string
-  rows: Array<{ label: string; value: string; tbd?: boolean; href?: string }>
-}> = [
+/**
+ * Terms table groups.
+ *
+ * `id` keys into the "TokenDetails" message namespace: the group eyebrow is
+ * `<groupId>.eyebrow`, each row label is `<groupId>.<rowId>.label`, and prose
+ * row values are `<groupId>.<rowId>.value`. Rows that carry a `value` here hold
+ * a computed or numeric-only figure (dates/amounts) that stays in code; those
+ * without a `value` read their prose text from the message catalog.
+ */
+export type TermRow = { id: string; value?: string; tbd?: boolean; href?: string }
+
+export const termGroups: Array<{ id: string; rows: TermRow[] }> = [
   {
-    eyebrow: "Sale Overview",
+    id: "saleOverview",
     rows: [
-      { label: "Token", value: "GNOT" },
-      { label: "Sale allocation", value: "38,760,000 GNOT (~2.9% of supply)" },
-      { label: "Sale format", value: "Uniform Price Auction (English Auction)" },
-      { label: "Accepted currency", value: "USDC & USDT (Ethereum Mainnet)" },
-      {
-        label: "Contribution window",
-        value: `${formatSaleDate(SALE_ECONOMICS.saleOpensIso, false)} - ${formatSaleDate(SALE_ECONOMICS.saleClosesIso)}`,
-      },
-      { label: "Expected mainnet launch", value: "Q3 2026" },
+      { id: "token", value: "GNOT" },
+      { id: "saleAllocation" },
+      { id: "saleFormat" },
+      { id: "acceptedCurrency" },
+      // value is the sale-open..close date range, computed locale-aware in TokenDetails.tsx and
+      // injected into the "{range}" placeholder of the message.
+      { id: "contributionWindow" },
+      { id: "mainnetLaunch" },
     ],
   },
   {
-    eyebrow: "Pricing and Caps",
+    id: "pricingCaps",
     rows: [
-      { label: "Starting price", value: "$0.0645 per GNOT" },
-      { label: "Bid increment", value: "$0.0215" },
-      { label: "Minimum commitment", value: "$100" },
-      { label: "Soft cap", value: `$${SALE_ECONOMICS.softCapUsd.toLocaleString("en-US")}` },
+      { id: "startingPrice" },
+      { id: "bidIncrement", value: "$0.0215" },
+      { id: "minCommitment", value: "$100" },
+      { id: "softCap", value: `$${SALE_ECONOMICS.softCapUsd.toLocaleString("en-US")}` },
     ],
   },
 ]
 
 // Rendered as two large inline links below the terms table, not as a term group.
-export const documents: Array<{ label: string; value: string; href: string; download?: boolean }> =
-  [
-    {
-      label: "Audit",
-      value: "GnoVM · Oak Security Audit",
-      href: "https://github.com/oak-security/audit-reports/tree/main/Gno",
-    },
-    {
-      label: "Disclosure",
-      value: "Token Disclosure Document",
-      href: "/docs/gnot-token-sale-disclosure.pdf",
-      download: true,
-    },
-  ]
+// `id` keys into the "TokenDetails" message namespace (documents.<id>.value).
+export const documents: Array<{ id: string; href: string; download?: boolean }> = [
+  {
+    id: "audit",
+    href: "https://github.com/oak-security/audit-reports/tree/main/Gno",
+  },
+  {
+    id: "disclosure",
+    href: "/docs/gnot-token-sale-disclosure.pdf",
+    download: true,
+  },
+]
