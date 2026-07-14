@@ -1,0 +1,743 @@
+{
+  "Metadata": {
+    "title": "GNOT Token Sale | Gno.land",
+    "description": "GNOT is the native token of Gno.land, a transparent, composable smart contract platform by the makers of Cosmos and Tendermint. Join the public token sale starting {date}.",
+    "siteName": "GNOT Public Token Sale",
+    "ogImageAlt": "GNOT Public Token Sale",
+    "manifestName": "GNOT Public Token Sale",
+    "manifestShortName": "GNOT Sale",
+    "manifestDescription": "The native token for Gno.land - Layer 1 smart contract platform.",
+    "privacyTitle": "Privacy Policy | Gno.land",
+    "privacyDescription": "How NewTendermint collects, uses, and discloses personal information for the GNOT public token sale.",
+    "termsTitle": "Terms of Service | Gno.land",
+    "termsDescription": "The terms governing access to and use of Gno.land services, including risk disclosures, for the GNOT public token sale.",
+    "disclaimerTitle": "U.S. Investor Disclaimer | Gno.land",
+    "disclaimerDescription": "Regulation S notice and U.S. person restrictions for the GNOT public token sale."
+  },
+  "Nav": {
+    "sale": "Sale",
+    "tokenomics": "Tokenomics",
+    "howItWorks": "How it works",
+    "faq": "FAQ",
+    "project": "Project",
+    "team": "Team",
+    "roadmap": "Roadmap",
+    "ecosystem": "Ecosystem",
+    "pageTitleLegal": "Legal"
+  },
+  "Hero": {
+    "title": "GNOT Public Sale",
+    "subtitle": "The native token of Gno.land, the next-generation smart contract platform powered by Gno."
+  },
+  "Faq": {
+    "eyebrow": "FAQ",
+    "title": "Frequently Asked Questions (FAQ)",
+    "auction": {
+      "q": "How does the auction work?",
+      "a1": "The GNOT token sale takes place as a uniform-price auction (English auction) with a minimum price (starting price) of {startPrice}. Participants submit bids in increments of ${inc} at or above the clearing price. The price moves up when demand at or above a higher step is itself enough to buy the entire {supply} at that price. The clearing price is determined by demand at the end of the auction. All bids at or above the clearing price are successful.",
+      "example1Title": "Example 1: Clearing price stays at current level",
+      "example1": "Bids received: 30,000,000 GNOT at $0.0645, 20,000,000 GNOT at $0.086. Since total demand at $0.086 (20M) falls short of the 38,760,000 GNOT being sold, the clearing price remains $0.0645. Winning bidders receive tokens pro rata, and excess bid amounts are refunded.",
+      "example2Title": "Example 2: Clearing price increases",
+      "example2": "Bids received: 40,000,000 GNOT at $0.0645, 40,000,000 GNOT at $0.086. Since demand at $0.086 (40M) exceeds the 38,760,000 GNOT available, the clearing price rises to $0.086. Bidders at $0.0645 are not allocated tokens - only bids at or above the clearing price qualify. Winning bidders receive tokens pro rata, and excess bid amounts are refunded."
+    },
+    "date": {
+      "q": "When is the token sale date?",
+      "a1": "Registration with Sonar opens {regDateTime}.",
+      "a2": "The token sale starts {startDateTime}. The sale ends {endDateTime}."
+    },
+    "outbid": {
+      "q": "What happens if I get outbid?",
+      "a1": "If you are outbid during the sale, you can do one of three things.",
+      "a2": "1. You can wait until the sale ends and receive a full refund of your committed USDC.",
+      "a3": "2. You can raise your bid with your current USDC commitment. You won't need to add more USDC - all you need to do is sign with your wallet.",
+      "a4": "3. You can increase your commitment by depositing more USDC and placing a higher bid."
+    },
+    "refund": {
+      "q": "If the clearing price is lower than my bid price, do I get a refund on the difference?",
+      "a1": "No. If the clearing price is lower than your bid, your committed USDC will buy tokens at the clearing price.",
+      "a2": "Example: A participant bids 1,000 USDC at $0.172 per token. The clearing price is $0.129. The participant receives tokens at $0.129, spending $1,000 USDC."
+    },
+    "oversubscribed": {
+      "q": "What happens if the sale is oversubscribed?",
+      "a1": "If total commitments exceed the available token supply, allocations are settled on a pro rata basis. Every participant's commitment is scaled down by the same percentage so that the total matches the sale supply.",
+      "a2": "Example: If $20M is committed but only $10M worth of tokens are available, everyone receives 50% of their commitment. The rest is refunded after the sale is over."
+    },
+    "sonar": {
+      "q": "What is Sonar and why do I need to verify my identity?",
+      "a": "This is a regulated public sale, so every participant completes a one-time identity verification (about 3 minutes) with Sonar, the compliance platform by Echo. Reviews are asynchronous and can take time, so please register early. Registration opens {regDate}, two weeks before the sale."
+    },
+    "eligibility": {
+      "q": "Who can participate?",
+      "a1": "Eligibility is determined by your jurisdiction and verified through Sonar during registration. The sale is unavailable in certain regions - if yours is restricted, Sonar will let you know.",
+      "a2": "Participation is available to US residents who qualify as accredited investors."
+    },
+    "requirements": {
+      "q": "What do I need to place a bid?",
+      "a": "To participate in the sale, you will need to complete Sonar verification, set up a self-custody Ethereum wallet, and hold USDC. We recommend completing your identity verification and funding your wallet well ahead of the sale date of {saleDate}."
+    },
+    "wallets": {
+      "q": "Which wallets can I use?",
+      "a1": "You can participate with any self-custody Ethereum wallet that holds USDC and can sign on Ethereum. We recommend MetaMask, Coinbase Wallet, and Rabby. You can also connect through WalletConnect and use Rainbow, Trust Wallet, or Ledger.",
+      "a2": "Install your wallet on your browser before connecting, as only installed wallets will appear. New to wallets? Check ethereum.org to compare and pick one."
+    },
+    "commitment": {
+      "q": "How much can I commit?",
+      "a": "The minimum commitment requirement is {min} USDC, and there is no maximum commitment limit. You can bid at or above the starting price of {startPrice} in ${inc} increments."
+    },
+    "distribution": {
+      "q": "When do I receive my tokens?",
+      "a1": "Token distribution is set to happen in {mainnetMonth}. There is no lockup for the public sale - 100% of your tokens will be transferable after distribution.",
+      "a2": "US accredited investors are subject to a 12-month lock-up following TGE, during which tokens may not be transferred or sold."
+    },
+    "withdraw": {
+      "q": "Can I withdraw my bid?",
+      "a": "No. You cannot lower or cancel a bid while the sale is running. If your bid ends below the final clearing price, your committed funds are refunded after settlement."
+    },
+    "help": {
+      "q": "How do I get help?",
+      "emailPrefix": "For issues with your bid, verification, or payment, email ",
+      "emailSuffix": ". ",
+      "discordPrefix": "For general questions, join the ",
+      "discordLabel": "Gno.land Discord",
+      "discordSuffix": ". We will never DM you first or ask for your seed phrase."
+    }
+  },
+  "Features": {
+    "eyebrow": "Why Gno.land",
+    "title": "Built for Developers, Designed for Eternity",
+    "general-purpose-os": {
+      "title": "The World's First General-Purpose, Language-Based, Multi-User OS",
+      "body": "More than just a typical smart contract platform, Gno.land is designed to be a general-purpose operating system where developer communities can collaboratively build and contribute to a single, shared, ever-evolving program."
+    },
+    "built-for-go-developers": {
+      "title": "Built for Go Developers",
+      "body": "Gno.land is powered by Gno, a programming language that is 99% identical to Go. With millions of Go developers worldwide, anyone familiar with Go can start building on Gno.land immediately. No new language to learn, no unfamiliar tooling."
+    },
+    "human-readable-contracts": {
+      "title": "Human-Readable Smart Contracts",
+      "body": "By running smart contracts as plain, readable source code rather than opaque bytecode, Gno.land lets anyone read, audit, fork, and improve any application on the network with complete transparency."
+    },
+    "composability-type-safety": {
+      "title": "Native Composability and Type Safety",
+      "body": "Gno.land uses Go-style packages with full type checking, so bugs are caught before deployment rather than on a live network. Developers can safely build on top of existing contracts, making complex applications easier to compose and maintain."
+    },
+    "deterministic-execution": {
+      "title": "Fully Deterministic Execution",
+      "body": "Every smart contract on Gno.land behaves identically across the entire network, guaranteeing predictable, trustless consensus while keeping code simple, transparent, and straightforward to audit."
+    },
+    "data-persistence": {
+      "title": "Automatic Data Persistence",
+      "body": "Gno.land automatically saves and manages data for developers, eliminating some of the most repetitive and error-prone work in smart contract development. On Gno.land, developers can focus on the important stuff - building and shipping."
+    }
+  },
+  "GnotUtility": {
+    "eyebrow": "GNOT utility",
+    "title": "GNOT, the Native Token Powering Gno.land",
+    "storage-deposits": {
+      "title": "Storage Deposits",
+      "body": "GNOT is locked as a storage deposit whenever data is persisted in a realm. Holding GNOT means reserving ownership of storage on Gno.land."
+    },
+    "transaction-fees": {
+      "title": "Transaction Fees",
+      "body": "GNOT is the fuel that enables every transaction on Gno.land. Each transaction is paid for in GNOT, so demand for the token rises as network activity increases."
+    },
+    "ibc-ics": {
+      "title": "IBC/ICS",
+      "body": "GNOT is used for all IBC and ICS cross-chain interactions. The transfer of value between Gno.land and other chains requires GNOT, extending the token's utility beyond Gno.land itself."
+    },
+    "contract-execution": {
+      "title": "Contract Execution",
+      "body": "GNOT functions as the gas token that powers smart contract execution. Every computation a contract runs is metered and settled in GNOT, keeping resources fairly priced and the network resistant to spam."
+    }
+  },
+  "Narrative": {
+    "eyebrow": "Project",
+    "title": "The Open Knowledge Base for the New Millennium",
+    "para1": "Gno.land, developed by NewTendermint, is a next-generation smart contract platform built on Gno, a Go-based interpreted language that lets developers build secure, expressive on-chain applications using one of the world's most popular programming languages. Founded by Jae Kwon, co-founder of Cosmos and Tendermint, Gno.land represents a paradigm shift in multi-user programming. Unlike traditional blockchain environments that require a learning curve, Gno.land meets developers where they already are, dramatically lowering the barrier to entry while maintaining the performance and clarity Go is known for.",
+    "contributors": "Contributors",
+    "packages": "Packages",
+    "yearsBuilding": "Years building",
+    "para2": "At its core, Gno.land is designed for transparency, security, and long-term composability. All smart contracts are fully on-chain, human-readable, and permanently verifiable, meaning anyone can audit, fork, or build on top of existing code without trust assumptions. Combined with a fair, community-driven governance model and a tokenomics structure designed for sustainable growth, Gno.land is building the foundation for a more open and accountable decentralized internet.",
+    "cta": "Discover Gno.land"
+  },
+  "Stats": {
+    "eyebrow": "Gno.land in Numbers",
+    "title": "The Ecosystem in Numbers",
+    "lead": "Five years of compounding open-source development. Built transparently in public by a growing developer community.",
+    "years-building": { "label": "Years building" },
+    "contributors": { "label": "Contributors" },
+    "prs-merged": { "label": "PRs merged" },
+    "issues-closed": { "label": "Issues closed" },
+    "total-wallets": { "label": "Total wallets" },
+    "active-wallets": { "label": "Active wallets" },
+    "on-chain-packages": { "label": "On-chain packages" },
+    "test13": { "label": "Test13 transactions" }
+  },
+  "Team": {
+    "eyebrow": "Core team",
+    "title": "The Team Behind Gno.land",
+    "lead": "The engineers, researchers, and operators building Gno.land in the open, from the makers of Cosmos and Tendermint.",
+    "jae-kwon": { "bio": "Creator of Tendermint and Cosmos" },
+    "manfred-touron": { "bio": "VP of Engineering, co-founded Scaleway and Berty" },
+    "morgan-bazalgette": { "bio": "Golang Developer" },
+    "alexis-colin": { "bio": "Senior Front End Developer" },
+    "guilhem-fanton": { "bio": "Golang Developer" },
+    "antoine-eddi": { "bio": "Research & Development Engineer" },
+    "liu-tianzhao": { "bio": "Principal Software Engineer" },
+    "lali-brown": { "bio": "Senior Manager, IT and Business Operations" },
+    "dongwon-shin": { "bio": "Chief Operating Officer" },
+    "ryan-lee": { "bio": "Marketing Lead" },
+    "nandika-hettiarachchi": { "bio": "Director of Finance" },
+    "carolyn-pehrson": { "bio": "Principal Paralegal and Executive Assistant" }
+  },
+  "Roadmap": {
+    "eyebrow": "Roadmap",
+    "title": "From Bootstrap to Mainnet",
+    "2021": {
+      "year": "2021",
+      "body": "Jae Kwon bootstrapped the Gno Virtual Machine (GnoVM) and Tendermint node. A functional blockchain was established with a foundational virtual machine, automatic state persistence, and the first Boards realm."
+    },
+    "2023": {
+      "year": "2023",
+      "body": "Gno.land introduced key developer tools including gnodev, the Playground, and GnoChess. The team also released official documentation and the Gno Network Public License, formalizing how the network would be developed and shared."
+    },
+    "2024": {
+      "year": "2024",
+      "body": "The first permanent multi-node testnet Test4 launched with GovDAO governance, followed by Test5 with an expanded validator set. The cycle delivered major VM fixes, performance upgrades, and broad stability improvements."
+    },
+    "2025": {
+      "year": "2025",
+      "body": "Network stabilization came with Test6 to Test8, GovDAO V3, token mechanics, and major GnoVM upgrades. Additional progress included governance testing, regular developer updates, community events, and improved validator tooling."
+    },
+    "q1-2026": {
+      "year": "Q1 2026",
+      "title": "Gno.land Beta Mainnet Launch",
+      "body": "Gno.land Beta Mainnet is launched with the first distribution of the GNOT token, a fully operational GnoVM-powered smart contract network, and the inaugural release of GovDAO, Gno.land's on-chain governance system."
+    },
+    "q2-2026": {
+      "year": "Q2 2026",
+      "title": "Expanding the network",
+      "body": "Gno.land is successfully connected to AtomOne on testnet via IBC, enhancing security and interoperability. GnoVM is optimized and strengthened to ensure network stability and deliver better platform features in preparation for mainnet."
+    },
+    "q3-2026": {
+      "year": "Q3 2026",
+      "title": "Mainnet Launch",
+      "body": "The GNOT public sale is scheduled for July, followed by the Gno.land mainnet launch featuring a fully interoperable and security-hardened network with protocol-level GNOT transfers enabled."
+    },
+    "q4-2026": {
+      "year": "Q4 2026 - Beyond",
+      "title": "Ecosystem Growth",
+      "body": "With the network live, focus shifts to ecosystem growth. The team supports builders shipping the first meaningful applications on Gno.land and expands the developer toolkit."
+    }
+  },
+  "Ecosystem": {
+    "eyebrow": "Ecosystem",
+    "title": "Discover What's Being Built",
+    "explore": "Explore",
+    "exploreAria": "Explore {name}",
+    "findOthers": "Find other ecosystem projects",
+    "gnoscan": {
+      "category": "Explorer",
+      "body": "Gnoscan is the official blockchain explorer for Gno.land. Use it to search wallet addresses, transaction hashes, blocks, and contracts."
+    },
+    "adena": {
+      "category": "Wallet",
+      "body": "Adena is an open-source, non-custodial wallet for Gno.land built with an emphasis on user experience."
+    },
+    "gnoswap": {
+      "category": "DEX",
+      "body": "GnoSwap is the first decentralized exchange on Gno.land built on the principles of security, community-ownership, and efficiency."
+    },
+    "boards": {
+      "category": "Forum",
+      "body": "Boards is an on-chain forum built natively on Gno.land. It enables structured, open dialogue and community-driven discussion, free from centralized moderation and external control."
+    },
+    "akkadia": {
+      "category": "Game",
+      "body": "Akkadia is an on-chain sandbox game where players create their own worlds, expand them together, and leave their activities as persistent on-chain records."
+    },
+    "gno-playground": {
+      "category": "Development",
+      "body": "Gno Playground is a browser-based environment for writing, testing, and experimenting with Gno code. Share your code, run unit tests, deploy realms and packages, and execute functions directly from the interface with no local setup required."
+    },
+    "gno-studio-connect": {
+      "category": "Connection",
+      "body": "Direct access to Gno.land's smart contracts through function calls. Explore and interact with any realm's exposed functions."
+    },
+    "tendermint2": {
+      "category": "Consensus",
+      "body": "The evolved consensus engine, redesigned from the ground up for simplicity, security, and performance."
+    },
+    "gnokey": {
+      "category": "Key management",
+      "body": "Secure key management and transaction signing for interacting with Gno.land and related networks."
+    },
+    "gnoweb": {
+      "category": "Web interface",
+      "body": "The official web interface for browsing and interacting with Gno.land realms and packages."
+    }
+  },
+  "Backers": {
+    "eyebrow": "Backers",
+    "title": "Our Backers"
+  },
+  "Partners": {
+    "eyebrow": "Partners",
+    "title": "Our Collaborators",
+    "meetTeam": "Meet the team ({count})",
+    "samourai-coop": {
+      "body": "Samourai Coop is a development team focused on DAOs and sustainable, community-powered applications, building the governance and coordination tools that decentralized communities need to thrive.",
+      "team": {
+        "louis-b": { "role": "Senior Reliability Engineer & DevOps" },
+        "miguel-v": { "role": "Senior Backend Engineer" },
+        "omar-s": { "role": "Senior Blockchain & Gno VM Engineer" },
+        "antoine-b": { "role": "Task Force Lead & Coordinator" },
+        "david-g": { "role": "Developer Relations & Technical Engineer" }
+      }
+    },
+    "berty": {
+      "body": "Berty is a non-profit NGO specializing in secure, peer-to-peer mobile communication. Berty's work on privacy-first infrastructure aligns closely with Gno.land's mission to build a censorship-resistant internet.",
+      "team": {
+        "remi-barbero": { "role": "Full Stack Developer" },
+        "jeff-thompson": { "role": "Software Developer" }
+      }
+    },
+    "all-in-bits": {
+      "body": "All in Bits is the team behind Tendermint BFT and Cosmos, the foundational infrastructure of the Internet of Blockchains ecosystem and the organization building AtomOne, the next chapter of that vision.",
+      "team": {
+        "alexandros-megalokonomos": { "role": "Lead Software Engineer" },
+        "giuseppe-natale": { "role": "Lead Blockchain Engineer" },
+        "julien-robert": { "role": "Senior Blockchain Engineer" },
+        "thomas-bruyelle": { "role": "Senior Blockchain Engineer" }
+      }
+    },
+    "onbloc": {
+      "body": "Onbloc is an engineering team building consumer-facing applications on Gno.land, including Adena Wallet, GnoSwap, and GnoScan, some of the ecosystem's most used tools today.",
+      "team": {}
+    },
+    "oak-security": {
+      "body": "Oak Security is a leading Web3 security firm specializing in smart contract audits, operational security reviews, penetration testing, and vCISO services.",
+      "team": {}
+    }
+  },
+  "Tokenomics": {
+    "srHeading": "How GNOT is distributed",
+    "distributionTitle": "Token Distribution",
+    "circulatingTitle": "Circulating Supply",
+    "circulatingAtTge": "~{pct}% at TGE",
+    "totalCirculatingAtTge": "Total circulating at TGE",
+    "allocationAria": "{category}: {percent} percent of total supply",
+    "waffleAria": "Of the {total} GNOT total supply, about {circulating} percent is circulating at mainnet launch and {locked} percent is still locked",
+    "cellTokenSale": "Token Sale - {pct}%",
+    "cellOtherCirculating": "Other circulating - {pct}%",
+    "cellLocked": "Locked - {pct}%",
+    "legendTokenSale": "Token Sale",
+    "legendOtherCirculating": "Other circulating",
+    "legendLocked": "Locked {pct}%",
+    "lockupLabel": "Lockup",
+    "lockupValue": "1-Year Lockup for US Investors Only",
+    "fdvLabel": "FDV (at $0.0645)",
+    "alloc": {
+      "airdrop1-cosmos": {
+        "category": "Airdrop1 - Cosmos",
+        "note": "From partial Cosmos governance snapshot 3 years ago"
+      },
+      "newtendermint": {
+        "category": "NEWTENDERMINT, LLC",
+        "note": "For use at NT,LLC discretion"
+      },
+      "investors": {
+        "category": "Investors",
+        "note": "For past and future investors",
+        "footnote": "Including $20M investment from AIB"
+      },
+      "airdrop2-atomone": {
+        "category": "Airdrop2 - AtomOne",
+        "note": "From recent AtomOne snapshot prior to launch"
+      },
+      "ecosystem-treasury": {
+        "category": "Ecosystem Treasury",
+        "note": "For prior and future Gno.land ecosystem development"
+      },
+      "core-treasury": {
+        "category": "Core Treasury",
+        "note": "For paying for core development"
+      },
+      "validator-treasury": {
+        "category": "Validator Treasury",
+        "note": "For paying validators"
+      }
+    },
+    "circ": {
+      "investors-pool": { "category": "Investors Pool" },
+      "investors": { "category": "Investors" },
+      "token-sale": { "category": "Token Sale" },
+      "airdrop1-cosmos": { "category": "Airdrop1 - Cosmos" },
+      "newtendermint": { "category": "NEWTENDERMINT, LLC" },
+      "airdrop2-atomone": { "category": "Airdrop2 - AtomOne" },
+      "ecosystem-treasury": { "category": "Ecosystem Treasury" },
+      "core-treasury": { "category": "Core Treasury" },
+      "validator-treasury": { "category": "Validator Treasury" }
+    }
+  },
+  "TokenDetails": {
+    "publicSale": "Public sale",
+    "auctionClosed": "Auction closed",
+    "liveAuction": "Live auction",
+    "title": "GNOT Token Sale",
+    "saleOpensIn": "Sale opens in",
+    "registrationOpensIn": "Registration opens in",
+    "positionNotReady": "Connect your wallet to see your position in the auction.",
+    "positionNoBids": "You have no bids yet. Place your first one using the panel below.",
+    "positionSnapshot": "Snapshot of your commitments at the current clearing price.",
+    "yourPosition": "Your position",
+    "metric": {
+      "committed": "USD committed",
+      "bidPrice": "Bid price",
+      "allocation": "GNOT allocation",
+      "status": "Status"
+    },
+    "status": {
+      "Active": "Active",
+      "Outbid": "Outbid",
+      "Pending": "Pending"
+    },
+    "saleOverview": {
+      "eyebrow": "Sale Overview",
+      "token": { "label": "Token" },
+      "saleAllocation": {
+        "label": "Sale allocation",
+        "value": "38,760,000 GNOT (~2.9% of supply)"
+      },
+      "saleFormat": {
+        "label": "Sale format",
+        "value": "Uniform Price Auction (English Auction)"
+      },
+      "acceptedCurrency": {
+        "label": "Accepted currency",
+        "value": "USDC & USDT (Ethereum Mainnet)"
+      },
+      "contributionWindow": { "label": "Contribution window", "value": "{range}" },
+      "mainnetLaunch": {
+        "label": "Expected mainnet launch",
+        "value": "Q3 2026"
+      }
+    },
+    "pricingCaps": {
+      "eyebrow": "Pricing and Caps",
+      "startingPrice": {
+        "label": "Starting price",
+        "value": "$0.0645 per GNOT"
+      },
+      "bidIncrement": { "label": "Bid increment" },
+      "minCommitment": { "label": "Minimum commitment" },
+      "softCap": { "label": "Soft cap" }
+    },
+    "documents": {
+      "audit": { "value": "GnoVM · Oak Security Audit" },
+      "disclosure": { "value": "Token Disclosure Document" }
+    }
+  },
+  "Sale": {
+    "ctaManageBid": "Manage bid",
+    "ctaRaiseBid": "Raise bid",
+    "ctaVerificationFailed": "Verification failed",
+    "ctaNotEligible": "Not eligible",
+    "ctaEnterSale": "Enter the Sale",
+    "titleVerifyIdentity": "Verify your identity",
+    "titleSwitchNetwork": "Switch network",
+    "titleBidWinning": "Your bid is winning",
+    "titleBidOutbid": "Your bid was outbid",
+    "titlePlaceBid": "Place your bid",
+    "verifyPendingTitle": "Verification in progress",
+    "verifyPendingBody": "Sonar is reviewing it.",
+    "verifyFailedTitle": "Verification didn't pass",
+    "notEligibleTitle": "Not eligible",
+    "notEligibleBody": "This sale isn't available to you.",
+    "verifiedTitle": "Identity verified",
+    "verifyIncompleteTitle": "Finish your verification",
+    "verifyIncompleteCta": "Complete on Sonar",
+    "welcomeBackTitle": "Welcome back",
+    "welcomeBackBody": "Reconnect to see your verification status.",
+    "welcomeBackCta": "Reconnect",
+    "desktopLiveTitle": "Bidding happens on desktop",
+    "desktopLiveBody": "For your security, bids are placed from a desktop browser with your wallet. Open sale.gno.land on your computer.",
+    "desktopEndedTitle": "Results and claims are on desktop",
+    "desktopEndedBody": "Connect on your computer to view your settlement and claim any refund.",
+    "supportBodyDescribe": "Please describe what happened, any detail helps (steps, what you clicked, screenshots):",
+    "supportBodyPrivacy": "Privacy: no personal info needed - leave out your wallet address, transaction hashes, amounts and identity documents. Support will ask if anything more is required.",
+    "supportSubjectVerifyFailed": "sale.gno.land - {status}",
+    "supportVerifyStatusLine": "My verification status shows: \"{status}\"",
+    "pendingSuffix": "pending",
+    "pendingChipHint": "Confirmed on-chain, not yet indexed",
+    "countdownDay": "d",
+    "tabOutbid": "Outbid | GNOT Sale",
+    "tabClosingSoon": "Closing soon | GNOT Sale",
+    "calRegistrationSummary": "GNOT sale registration opens",
+    "calSaleSummary": "GNOT public sale opens",
+    "addToCalendar": "Add the date to your calendar"
+  },
+  "HowItWorks": {
+    "eyebrow": "How it works",
+    "title": "How to Participate",
+    "registeredNote": "You're registered - the sale opens {date}.",
+    "registerNow": "Register now",
+    "registrationNotOpen": "Registration is not open yet - it opens {date}.",
+    "ctaConnect": "Connect your wallet",
+    "ctaPlaceBid": "Place your bid",
+    "ctaUpdateBid": "Update your bid",
+    "ctaViewResults": "View your results",
+    "ctaVerify": "Verify with Sonar",
+    "steps": {
+      "verify": {
+        "title": "Verify",
+        "body": "Complete identity verification with Sonar, Echo's compliance platform."
+      },
+      "connect": {
+        "title": "Connect",
+        "body": "Connect your wallet to join the sale."
+      },
+      "bid": {
+        "title": "Bid",
+        "body": "Set your max price and commit USDC or USDT."
+      },
+      "receive": {
+        "title": "Receive",
+        "body": "Tokens are sent to your address."
+      }
+    }
+  },
+  "PreFooterCta": {
+    "eyebrow": "Public sale",
+    "title": "Ready to Join the Sale?",
+    "leadRegOpenFunnel": "Registration is open - verify once with Sonar now, then bid when the sale opens {date}.",
+    "leadRegOpenDesktop": "Registration is open - register from a desktop browser, then bid when the sale opens {date}.",
+    "leadRegClosed": "Registration opens {regDate} - the sale opens {saleDate}.",
+    "leadEnded": "The auction has closed. Final results and your position are above.",
+    "leadLive": "Verify once with Sonar, connect your wallet, and place your bid.",
+    "countdownSaleCaption": "Sale opens in",
+    "countdownRegCaption": "Registration opens in",
+    "registerNow": "Register now",
+    "saleOpens": "Sale opens {date}",
+    "viewResults": "View results",
+    "howItWorks": "How it works"
+  },
+  "Bid": {
+    "manageSonarAria": "Manage your Sonar account",
+    "mySonarAccount": "My Sonar account",
+    "signOutSonar": "Sign out of Sonar",
+    "funnelVerify": "Verify",
+    "funnelConnect": "Connect",
+    "funnelBid": "Bid",
+    "tagWinning": "Winning",
+    "tagOutbid": "Outbid",
+    "tagPending": "Pending",
+    "settlementConnectPrompt": "Connect the wallet you bid with to see your results and claim any refund.",
+    "refundSent": "Refund sent",
+    "claiming": "Claiming...",
+    "claimAmount": "Claim {amount}",
+    "refundsAutomatic": "Refunds are processed automatically.",
+    "claimWrongChain": "Switch to {chain} in your wallet to claim your refund.",
+    "resultsSyncing": "Your results are syncing. Your on-chain refund is shown below.",
+    "cellRefundable": "Refundable",
+    "finalizingTitle": "Finalizing your results.",
+    "finalizingBody": "Your bid is confirmed on-chain. The indexer is catching up.",
+    "noCommitmentTitle": "No commitment for this wallet.",
+    "noCommitmentBody": "Switch to the wallet you bid with.",
+    "outcomeWon": "Your bid cleared. Here's your allocation.",
+    "outcomeZeroFill": "Your bid didn't receive an allocation. Your full commitment is refundable.",
+    "outcomeOutbid": "You were outbid. Your full commitment is refundable.",
+    "cellFinalClearingPrice": "Final clearing price",
+    "cellCommitment": "Your commitment",
+    "cellAllocation": "Your allocation",
+    "allocationNote": "GNOT is sent to your wallet at mainnet ({date}), with the unlock schedule applied.",
+    "confirmationSent": "Confirmation email sent - check your inbox.",
+    "useAnotherEmail": "Use another email",
+    "emailPitch": "Never linked to your wallet or bids.",
+    "backToNotifications": "Back to notification options",
+    "pushPitch": "Outbid alerts in your browser - never linked to your wallet or bids.",
+    "pushError": "Could not enable alerts. Check that notifications are allowed for your browser in your system settings, then retry.",
+    "enabling": "Enabling",
+    "pushHint": "Not receiving them? Turn on notifications for your browser in your system settings.",
+    "pushGranted": "Browser alerts on. We'll notify you if you're outbid.",
+    "pushDenied": "Notifications are blocked. Enable them for your browser in your system settings to get outbid alerts.",
+    "pushUnsupported": "Notifications are not available in this browser. Use email updates instead.",
+    "retry": "Retry",
+    "priceUpdatesOn": "Price updates on",
+    "priceUpdates": "Price updates",
+    "outbidAlertsOn": "Outbid alerts on",
+    "outbidAlerts": "Outbid alerts",
+    "verifyIdentityTitle": "Verify your identity",
+    "verifyIdentityBody": "One-time verification with Sonar, about 3 minutes.",
+    "verifyWithSonar": "Verify with Sonar",
+    "contactSupport": "Contact support",
+    "connectPrompt": "Connect the wallet you'll bid with.",
+    "connectWallet": "Connect your wallet.",
+    "connectionFailed": "Connection failed. Try again.",
+    "findWalletAria": "Don't have a wallet? Find one (opens in a new tab)",
+    "findWalletTitle": "Don't have one? Find a wallet",
+    "getWalletAria": "Get {name} (opens in a new tab)",
+    "getWalletTitle": "{name} - not installed, click to get it",
+    "connectNamed": "Connect {name}",
+    "wrongNetwork": "Wrong network.",
+    "switchFailed": "Could not switch. Try again.",
+    "switchNetworkPrompt": "This sale runs on {chain}. Change your network to continue.",
+    "switching": "Switching...",
+    "switchToChain": "Switch to {chain}",
+    "failRequiresLiveness": "An identity check is needed before bidding.",
+    "failWalletRisk": "This wallet can't be used for the sale.",
+    "failMaxWallets": "You've reached the wallet limit for this sale.",
+    "failSaleNotActive": "Bidding isn't available for your account right now.",
+    "failWalletNotLinked": "This wallet is already linked to another account.",
+    "failOutsideWindow": "Bidding is closed right now.",
+    "failSessionExpired": "Your Sonar session expired. Reconnect to continue.",
+    "failEntityNotEligible": "Your account can't bid yet. Finish verification.",
+    "failConnectWallet": "Connect your wallet to bid.",
+    "failWrongChain": "Switch to {chain} to bid.",
+    "failUnknown": "Could not place your bid. Please try again.",
+    "errMinPrice": "Min price {price}.",
+    "errIncrement": "Bids move in ${increment} steps.",
+    "errRaiseAbove": "Raise above your current {price}.",
+    "errBelowCommitted": "Can't go below your committed {amount}.",
+    "errMinAmount": "Min {amount}.",
+    "errBalanceDelta": "Balance can't cover the +{amount}.",
+    "errInsufficient": "Insufficient {symbol} balance.",
+    "noteBelowClearing": "Below the clearing price - would lose.",
+    "noteHeadroom": "Clearing can rise {pct}% before you're outbid.",
+    "noteAtClearing": "At clearing - raise for headroom.",
+    "noteStillGet": "You'd still get ~{amount} GNOT.",
+    "noteUnchanged": "Your bid is unchanged - raise the price or add funds.",
+    "supportSubjectBidError": "sale.gno.land bid error - {message}",
+    "supportBidShowed": "The bid panel showed: \"{message}\"",
+    "supportWallet": "Wallet: {wallet}",
+    "supportPaymentToken": "Payment token: {token}",
+    "supportNetwork": "Network: {network}",
+    "supportWhen": "When: {when}",
+    "supportBrowser": "Browser: {browser}",
+    "support": "Support",
+    "confirmQuestion": "Commit {amount} at {price} per GNOT?",
+    "confirmDetail": "You pay the final clearing price. Est. {est}. Bids can be raised but not cancelled.",
+    "confirmDeltaCharged": "Only the {amount} difference is charged.",
+    "confirmNoExtra": "No additional funds - just sign.",
+    "startIdentityCheck": "Start identity check",
+    "confirmBid": "Confirm bid",
+    "back": "Back",
+    "stageSubmittingTitle": "Placing your bid...",
+    "stageSubmittingDetail": "Preparing your bid - check your wallet in a moment.",
+    "stageApprovingTitle": "Approving {symbol}...",
+    "stageApprovingDetail": "Approve {symbol} spending in your wallet.",
+    "stageSigningTitle": "Signing...",
+    "stageSigningDetail": "Confirm and sign the bid in your wallet.",
+    "stagePendingTitle": "Confirming...",
+    "stagePendingDetail": "Bid signed. Waiting for on-chain confirmation.",
+    "bidSubmitted": "Bid submitted - {amount} at {price} per GNOT.",
+    "viewTx": "View tx",
+    "txRaw": "tx {hash}",
+    "raiseBid": "Raise bid",
+    "outbidAlert": "You've been outbid. Increase your bid to stay in the sale.",
+    "bidPriceLabel": "Bid price",
+    "stepUpLabel": "Raise the price one step",
+    "stepDownLabel": "Lower the price one step",
+    "bidPriceHint": "If your bid meets or exceeds the final clearing price, it wins. You pay the clearing price, not your original bid. Bids are placed in ${increment} increments, starting from the ${minPrice} starting price.",
+    "amountLabel": "Amount (USD)",
+    "amountHint": "The total USD you commit is the amount you pay if your bid wins. If you're outbid, you're fully refunded after the sale. Your GNOT allocation is calculated as: Amount (USD) / Clearing Price. Minimum commitment is {min}, with no maximum.",
+    "balanceLabel": "Bal {amount}",
+    "youReceive": "You receive",
+    "youReceiveHint": "Estimated GNOT based on the current clearing price. If the final clearing price is higher, your GNOT allocation will be lower.",
+    "atCurrentClearing": "at the current clearing price",
+    "placeBid": "Place bid",
+    "paymentToken": "Payment token"
+  },
+  "BidPanel": {
+    "bidPanelAria": "Bid panel",
+    "tbd": "TBD",
+    "labelClearing": "Clearing",
+    "labelTimeLeft": "Time left",
+    "labelBidders": "Bidders",
+    "labelCommitted": "Committed",
+    "labelRaised": "Raised",
+    "labelFinalPrice": "Final price",
+    "pausedTitle": "Bidding is paused.",
+    "pausedBody": "Please check back shortly.",
+    "statusEnded": "Ended",
+    "captionOpens": "Opens {date}",
+    "captionRegistrationOpens": "Registration opens {date}",
+    "viewResults": "View results",
+    "yourBid": "Your bid",
+    "headerMaxPrice": "Your max price",
+    "headerAllocation": "Est. allocation",
+    "headerStatus": "Current status",
+    "statusPending": "Pending",
+    "statusWinning": "Winning",
+    "statusOutbid": "Outbid",
+    "manageSonarAria": "Manage your Sonar account",
+    "mySonarAccount": "My Sonar account",
+    "refreshing": "Refreshing…",
+    "refresh": "Refresh",
+    "contactSupport": "Contact support",
+    "saleOpens": "Sale opens {date}",
+    "registrationIsOpen": "Registration is open",
+    "registerNow": "Register now",
+    "registeredBody": "Nothing more to do until the sale opens.",
+    "authErrorTitle": "Could not connect to Sonar.",
+    "authErrorBody": "Please try again.",
+    "tryAgain": "Try again"
+  },
+  "Newsletter": {
+    "confirmationSent": "Confirmation email sent - check your inbox.",
+    "emailLabel": "Email address",
+    "emailPlaceholder": "you@example.com",
+    "submitting": "Subscribing...",
+    "submit": "Get notified",
+    "topicLabel": "Topic",
+    "invalid": "Please enter a valid email address.",
+    "error": "Could not subscribe. Please try again."
+  },
+  "Wallet": {
+    "disconnect": "Disconnect",
+    "disconnectWalletAria": "Disconnect wallet {address}"
+  },
+  "Email": {
+    "subject": "GNOT sale: the clearing price is now {price}",
+    "heading": "GNOT public sale",
+    "bodyRisen": "The auction clearing price has risen to {price} per GNOT.",
+    "bodyOutbid": "If you placed a bid below this price, it is currently outbid.",
+    "link": "Check your position on sale.gno.land"
+  },
+  "A11y": {
+    "brand": "Gno.land",
+    "menu": "Menu",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "skipToContent": "Skip to content",
+    "toggleTheme": "Toggle theme",
+    "switchToLight": "Switch to light theme",
+    "switchToDark": "Switch to dark theme",
+    "switchLanguage": "Change language",
+    "languageEnglish": "English",
+    "languageKorean": "한국어"
+  },
+  "Footer": {
+    "columnCommunity": "Community",
+    "columnLinks": "Links",
+    "linkSale": "Sale",
+    "linkHowItWorks": "How it works",
+    "linkToken": "Token",
+    "linkRoadmap": "Roadmap",
+    "linkTerms": "Terms of Service",
+    "linkPrivacy": "Privacy Policy",
+    "linkRiskDisclosure": "Risk Disclosure",
+    "linkUsDisclaimer": "U.S. Disclaimer",
+    "disclaimer": "Not available in restricted jurisdictions. High-risk investment. You may lose your entire commitment. Token transferability begins at mainnet launch (Q3 2026).",
+    "copyright": "(c) 2026 Gno.land. All rights reserved."
+  },
+  "Legal": {
+    "backToSale": "Back to the sale",
+    "privacyHeading": "Privacy Policy",
+    "termsHeading": "Terms of Service",
+    "disclaimerHeading": "U.S. Investor Disclaimer",
+    "privacyDates": "Effective June 29, 2024 · Last updated June 29, 2026",
+    "termsDates": "Last updated June 29, 2026",
+    "authoritativeNotice": "The official version of this document is in English. This translation is provided for convenience only."
+  }
+}

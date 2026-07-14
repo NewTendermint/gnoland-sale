@@ -4,51 +4,53 @@
  * Section copy for the build (dev-facing).
  */
 
-export type PartnerTeamMember = { name: string; role: string }
+// body / role text lives in the i18n catalogs (namespace "Partners"), keyed by id
+// (partner: `${id}.body`, member: `${id}.team.${id}.role`).
+export type PartnerTeamMember = { id: string; name: string }
 
 export const partners = [
   {
+    id: "samourai-coop",
     name: "Samourai Coop",
-    body: "Samourai Coop is a development team focused on DAOs and sustainable, community-powered applications, building the governance and coordination tools that decentralized communities need to thrive.",
     href: "https://www.samourai.world",
     team: [
-      { name: "Louis B.", role: "Senior Reliability Engineer & DevOps" },
-      { name: "Miguel V.", role: "Senior Backend Engineer" },
-      { name: "Omar S.", role: "Senior Blockchain & Gno VM Engineer" },
-      { name: "Antoine B.", role: "Task Force Lead & Coordinator" },
-      { name: "David G.", role: "Developer Relations & Technical Engineer" },
+      { id: "louis-b", name: "Louis B." },
+      { id: "miguel-v", name: "Miguel V." },
+      { id: "omar-s", name: "Omar S." },
+      { id: "antoine-b", name: "Antoine B." },
+      { id: "david-g", name: "David G." },
     ] as PartnerTeamMember[],
   },
   {
+    id: "berty",
     name: "Berty",
-    body: "Berty is a non-profit NGO specializing in secure, peer-to-peer mobile communication. Berty's work on privacy-first infrastructure aligns closely with Gno.land's mission to build a censorship-resistant internet.",
     href: "https://berty.tech",
     team: [
-      { name: "Rémi Barbero", role: "Full Stack Developer" },
-      { name: "Jeff Thompson", role: "Software Developer" },
+      { id: "remi-barbero", name: "Rémi Barbero" },
+      { id: "jeff-thompson", name: "Jeff Thompson" },
     ] as PartnerTeamMember[],
   },
   {
+    id: "all-in-bits",
     name: "All in Bits",
-    body: "All in Bits is the team behind Tendermint BFT and Cosmos, the foundational infrastructure of the Internet of Blockchains ecosystem and the organization building AtomOne, the next chapter of that vision.",
     href: "https://atom.one/",
     team: [
-      { name: "Alexandros Megalokonomos", role: "Lead Software Engineer" },
-      { name: "Giuseppe Natale", role: "Lead Blockchain Engineer" },
-      { name: "Julien Robert", role: "Senior Blockchain Engineer" },
-      { name: "Thomas Bruyelle", role: "Senior Blockchain Engineer" },
+      { id: "alexandros-megalokonomos", name: "Alexandros Megalokonomos" },
+      { id: "giuseppe-natale", name: "Giuseppe Natale" },
+      { id: "julien-robert", name: "Julien Robert" },
+      { id: "thomas-bruyelle", name: "Thomas Bruyelle" },
     ] as PartnerTeamMember[],
   },
   {
+    id: "onbloc",
     name: "Onbloc",
-    body: "Onbloc is an engineering team building consumer-facing applications on Gno.land, including Adena Wallet, GnoSwap, and GnoScan, some of the ecosystem's most used tools today.",
     href: "https://www.onbloc.xyz",
     // TODO: team members pending
     team: [] as PartnerTeamMember[],
   },
   {
+    id: "oak-security",
     name: "Oak Security",
-    body: "Oak Security is a leading Web3 security firm specializing in smart contract audits, operational security reviews, penetration testing, and vCISO services.",
     href: "https://oaksecurity.io/",
     // TODO: team members pending
     team: [] as PartnerTeamMember[],

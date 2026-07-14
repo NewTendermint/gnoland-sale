@@ -1,28 +1,12 @@
 /**
- * Content data for the How it works section.
- *
- * Section copy for the build (dev-facing).
+ * Structural data for the How it works steps: stable `id` (keys the "HowItWorks.steps" message
+ * namespace, translated per locale) + presentational `icon`. Step title/body copy lives in the
+ * message catalogs.
  */
 
-export const steps: Array<{ title: string; body: string; icon: string }> = [
-  {
-    title: "Verify",
-    body: "Complete identity verification with Sonar, Echo's compliance platform.",
-    icon: "shield-check",
-  },
-  {
-    title: "Connect",
-    body: "Connect your wallet to join the sale.",
-    icon: "wallet",
-  },
-  {
-    title: "Bid",
-    body: "Set your max price and commit USDC or USDT.",
-    icon: "scale",
-  },
-  {
-    title: "Receive",
-    body: "Tokens are sent to your address.",
-    icon: "send",
-  },
+export const steps: Array<{ id: string; icon: string }> = [
+  { id: "verify", icon: "shield-check" },
+  { id: "connect", icon: "wallet" },
+  { id: "bid", icon: "scale" },
+  { id: "receive", icon: "send" },
 ]

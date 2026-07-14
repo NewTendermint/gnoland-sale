@@ -1,3 +1,4 @@
+import type { SaleTranslator } from "./labels"
 import type { JourneyState, SalePhase } from "./types"
 
 // Background tab re-engagement state. Drives document.title + favicon badge (app/(layout)/TabAlert.tsx).
@@ -6,9 +7,11 @@ export type TabAlertState = "outbid" | "closing-soon" | null
 export const CLOSING_SOON_WINDOW_MS = 2 * 60 * 60 * 1000
 
 // User-facing tab titles. "|" matches the base title convention (app/layout.tsx).
-export const TAB_ALERT_TITLE: Record<NonNullable<TabAlertState>, string> = {
-  outbid: "Outbid | GNOT Sale",
-  "closing-soon": "Closing soon | GNOT Sale",
+export function tabAlertTitle(t: SaleTranslator): Record<NonNullable<TabAlertState>, string> {
+  return {
+    outbid: t("tabOutbid"),
+    "closing-soon": t("tabClosingSoon"),
+  }
 }
 
 // Pre-baked badged favicons (gno.land mark + a status dot), in public/. The colours baked into
