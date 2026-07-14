@@ -5,11 +5,18 @@ import { setRequestLocale } from "next-intl/server"
 import { notFound } from "next/navigation"
 import type { ReactNode } from "react"
 
-// Dev-only ad-creative gallery: reviews every exported banner (static PNG) across both
-// campaign versions. Same gate as /dev/states -> local dev + staging only, 404 in prod.
+// Dev-only ad-creative gallery: reviews every exported static banner (JPG; icon PNG) across
+// both campaign versions. Same gate as /dev/states -> local dev + staging only, 404 in prod.
 export const metadata = { title: "Ad creatives - dev", robots: { index: false, follow: false } }
 
-type Format = { file: string; w: number; h: number; publisher: string; name: string }
+type Format = {
+  file: string
+  w: number
+  h: number
+  ext: "jpg" | "png"
+  publisher: string
+  name: string
+}
 type Version = { dir: string; title: string; note: string }
 
 const VERSIONS: Version[] = [
@@ -30,6 +37,7 @@ const FORMATS: Format[] = [
     file: "01_coinbase_2400x436",
     w: 2400,
     h: 436,
+    ext: "jpg",
     publisher: "Coinbase Wallet",
     name: "2400x436 Display Banner",
   },
@@ -37,6 +45,7 @@ const FORMATS: Format[] = [
     file: "02_bitget_750x500",
     w: 750,
     h: 500,
+    ext: "jpg",
     publisher: "Bitget Wallet",
     name: "Spotlight Overlay",
   },
@@ -44,15 +53,31 @@ const FORMATS: Format[] = [
     file: "03_base_390x420",
     w: 390,
     h: 420,
+    ext: "jpg",
     publisher: "The Base App (TBA)",
     name: "TBA Wallet Announcement V2",
   },
-  { file: "04_leaderboard_728x90", w: 728, h: 90, publisher: "KuCoin", name: "Banner 728x90" },
-  { file: "05_small_300x100", w: 300, h: 100, publisher: "KuCoin", name: "Banner 900x300" },
+  {
+    file: "04_leaderboard_728x90",
+    w: 728,
+    h: 90,
+    ext: "jpg",
+    publisher: "KuCoin",
+    name: "Banner 728x90",
+  },
+  {
+    file: "05_small_300x100",
+    w: 300,
+    h: 100,
+    ext: "jpg",
+    publisher: "KuCoin",
+    name: "Banner 900x300",
+  },
   {
     file: "06_icon_48x48",
     w: 48,
     h: 48,
+    ext: "png",
     publisher: "The Base App (TBA)",
     name: "TBA Wallet Announcement",
   },
@@ -88,7 +113,7 @@ function GallerySection({ title, children }: { title: string; children: ReactNod
 }
 
 function Banner({ dir, f }: { dir: string; f: Format }) {
-  const rel = `ads/${dir}/${f.file}.png`
+  const rel = `ads/${dir}/${f.file}.${f.ext}`
   const href = assetHref(rel)
   const size = fileSize(rel)
   return (
@@ -105,7 +130,7 @@ function Banner({ dir, f }: { dir: string; f: Format }) {
         <span className="text-muted">
           {f.w} &times; {f.h}
         </span>
-        <span>PNG</span>
+        <span>{f.ext.toUpperCase()}</span>
         {size && <span>{size}</span>}
         <a
           className="underline decoration-dotted underline-offset-2 hover:text-foreground"
