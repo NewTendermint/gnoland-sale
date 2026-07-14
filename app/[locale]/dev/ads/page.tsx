@@ -91,6 +91,16 @@ function fileSize(rel: string): string {
   }
 }
 
+// Append the file mtime as a version so the browser always fetches the current asset
+// (these creatives are regenerated often; a plain URL would serve a stale cached copy).
+function assetHref(rel: string): string {
+  try {
+    return `/${rel}?v=${Math.round(statSync(join(process.cwd(), "public", rel)).mtimeMs)}`
+  } catch {
+    return `/${rel}`
+  }
+}
+
 function GallerySection({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="flex flex-col gap-5 border-t border-border pt-8">
@@ -104,17 +114,19 @@ function GallerySection({ title, children }: { title: string; children: ReactNod
 
 function Media({ dir, f, kind }: { dir: string; f: Format; kind: Kind }) {
   const isVideo = kind === "mp4"
-  const openHref = `/ads/${dir}/${f.file}.${kind}`
   // Every slot is a plain <img> so it renders identically in every browser (no fragile <video>).
   // The MP4 slot shows its PNG poster with a play badge; "open" plays the real .mp4.
-  const imgSrc = isVideo ? `/ads/${dir}/${f.file}.png` : openHref
+  const openHref = assetHref(`ads/${dir}/${f.file}.${kind}`)
+  const imgSrc = assetHref(`ads/${dir}/${f.file}.${isVideo ? "png" : kind}`)
   const size = fileSize(`ads/${dir}/${f.file}.${kind}`)
   return (
     <figure className="flex w-full flex-col gap-2" style={{ maxWidth: f.w }}>
-      <div className="relative overflow-hidden rounded-md border border-border bg-surface-alt">
+      <div
+        className="relative w-full overflow-hidden rounded-md border border-border bg-surface-alt"
+        style={{ paddingTop: `${((f.h / f.w) * 100).toFixed(4)}%` }}
+      >
         <img
-          className="block w-full"
-          style={{ height: "auto", aspectRatio: `${f.w} / ${f.h}` }}
+          className="absolute inset-0 block h-full w-full object-cover"
           width={f.w}
           height={f.h}
           src={imgSrc}
