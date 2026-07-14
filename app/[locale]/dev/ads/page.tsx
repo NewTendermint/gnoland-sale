@@ -1,35 +1,39 @@
+import { statSync } from "node:fs"
+import { join } from "node:path"
 import { stateOverridesEnabled } from "@/lib/sale/overrides"
 import { setRequestLocale } from "next-intl/server"
 import { notFound } from "next/navigation"
 import type { ReactNode } from "react"
 
-// Dev-only ad-creative gallery: reviews every exported banner (static PNG / animated GIF / MP4).
-// Same gate as /dev/states -> local dev + staging branch-deploy only, 404 in production.
+// Dev-only ad-creative gallery: reviews every exported banner (static PNG / animated GIF / MP4)
+// across both campaign versions. Same gate as /dev/states -> local dev + staging only, 404 in prod.
 export const metadata = { title: "Ad creatives - dev", robots: { index: false, follow: false } }
 
 type Kind = "png" | "gif" | "mp4"
-type Variant = { kind: Kind; label: string; size: string }
-type Banner = {
-  file: string
-  w: number
-  h: number
-  publisher: string
-  name: string
-  variants: Variant[]
-}
+type Format = { file: string; w: number; h: number; publisher: string; name: string; kinds: Kind[] }
+type Version = { dir: string; title: string; note: string }
 
-const BANNERS: Banner[] = [
+const VERSIONS: Version[] = [
+  {
+    dir: "sale",
+    title: "Sale version (live)",
+    note: 'CTA "Place your bid" - use once the sale is open',
+  },
+  {
+    dir: "presale",
+    title: "Pre-sale version",
+    note: 'CTA "Registration Open" - use before the sale',
+  },
+]
+
+const FORMATS: Format[] = [
   {
     file: "01_coinbase_2400x436",
     w: 2400,
     h: 436,
     publisher: "Coinbase Wallet",
     name: "2400x436 Display Banner",
-    variants: [
-      { kind: "png", label: "PNG (static)", size: "735 KB" },
-      { kind: "mp4", label: "MP4 (animated)", size: "376 KB" },
-      { kind: "gif", label: "GIF (plays once)", size: "3.6 MB" },
-    ],
+    kinds: ["png", "mp4", "gif"],
   },
   {
     file: "02_bitget_750x500",
@@ -37,11 +41,7 @@ const BANNERS: Banner[] = [
     h: 500,
     publisher: "Bitget Wallet",
     name: "Spotlight Overlay",
-    variants: [
-      { kind: "png", label: "PNG (static)", size: "387 KB" },
-      { kind: "mp4", label: "MP4 (animated)", size: "222 KB" },
-      { kind: "gif", label: "GIF (plays once)", size: "1.7 MB" },
-    ],
+    kinds: ["png", "mp4", "gif"],
   },
   {
     file: "03_base_390x420",
@@ -49,11 +49,7 @@ const BANNERS: Banner[] = [
     h: 420,
     publisher: "The Base App (TBA)",
     name: "TBA Wallet Announcement V2",
-    variants: [
-      { kind: "png", label: "PNG (static)", size: "160 KB" },
-      { kind: "mp4", label: "MP4 (animated)", size: "95 KB" },
-      { kind: "gif", label: "GIF (plays once)", size: "671 KB" },
-    ],
+    kinds: ["png", "mp4", "gif"],
   },
   {
     file: "04_leaderboard_728x90",
@@ -61,11 +57,7 @@ const BANNERS: Banner[] = [
     h: 90,
     publisher: "KuCoin",
     name: "Banner 728x90",
-    variants: [
-      { kind: "png", label: "PNG (static)", size: "62 KB" },
-      { kind: "mp4", label: "MP4 (animated)", size: "38 KB" },
-      { kind: "gif", label: "GIF (plays once)", size: "217 KB" },
-    ],
+    kinds: ["png", "mp4", "gif"],
   },
   {
     file: "05_small_300x100",
@@ -73,11 +65,7 @@ const BANNERS: Banner[] = [
     h: 100,
     publisher: "KuCoin",
     name: "Banner 900x300",
-    variants: [
-      { kind: "png", label: "PNG (static)", size: "33 KB" },
-      { kind: "mp4", label: "MP4 (animated)", size: "31 KB" },
-      { kind: "gif", label: "GIF (plays once)", size: "114 KB" },
-    ],
+    kinds: ["png", "mp4", "gif"],
   },
   {
     file: "06_icon_48x48",
@@ -85,9 +73,23 @@ const BANNERS: Banner[] = [
     h: 48,
     publisher: "The Base App (TBA)",
     name: "TBA Wallet Announcement",
-    variants: [{ kind: "png", label: "PNG (static)", size: "2 KB" }],
+    kinds: ["png"],
   },
 ]
+
+const LABEL: Record<Kind, string> = {
+  png: "PNG (static)",
+  mp4: "MP4 (animated)",
+  gif: "GIF (plays once)",
+}
+
+function fileSize(rel: string): string {
+  try {
+    return `${Math.round(statSync(join(process.cwd(), "public", rel)).size / 1024)} KB`
+  } catch {
+    return ""
+  }
+}
 
 function GallerySection({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -100,22 +102,23 @@ function GallerySection({ title, children }: { title: string; children: ReactNod
   )
 }
 
-function Media({ b, v }: { b: Banner; v: Variant }) {
-  const isVideo = v.kind === "mp4"
-  const openHref = `/ads/${b.file}.${v.kind}`
+function Media({ dir, f, kind }: { dir: string; f: Format; kind: Kind }) {
+  const isVideo = kind === "mp4"
+  const openHref = `/ads/${dir}/${f.file}.${kind}`
   // Every slot is a plain <img> so it renders identically in every browser (no fragile <video>).
   // The MP4 slot shows its PNG poster with a play badge; "open" plays the real .mp4.
-  const imgSrc = isVideo ? `/ads/${b.file}.png` : openHref
+  const imgSrc = isVideo ? `/ads/${dir}/${f.file}.png` : openHref
+  const size = fileSize(`ads/${dir}/${f.file}.${kind}`)
   return (
-    <figure className="flex w-full flex-col gap-2" style={{ maxWidth: b.w }}>
+    <figure className="flex w-full flex-col gap-2" style={{ maxWidth: f.w }}>
       <div className="relative overflow-hidden rounded-md border border-border bg-surface-alt">
         <img
           className="block w-full"
-          style={{ height: "auto", aspectRatio: `${b.w} / ${b.h}` }}
-          width={b.w}
-          height={b.h}
+          style={{ height: "auto", aspectRatio: `${f.w} / ${f.h}` }}
+          width={f.w}
+          height={f.h}
           src={imgSrc}
-          alt={`${b.publisher} ${b.name}, ${v.label}`}
+          alt={`${f.publisher} ${f.name}, ${LABEL[kind]}`}
         />
         {isVideo && (
           <a
@@ -138,10 +141,10 @@ function Media({ b, v }: { b: Banner; v: Variant }) {
           </span>
         )}
         <span className="text-muted">
-          {b.w} &times; {b.h}
+          {f.w} &times; {f.h}
         </span>
-        <span>{v.label}</span>
-        <span>{v.size}</span>
+        <span>{LABEL[kind]}</span>
+        {size && <span>{size}</span>}
         <a
           className="underline decoration-dotted underline-offset-2 hover:text-foreground"
           href={openHref}
@@ -168,22 +171,32 @@ export default async function DevAdsPage({ params }: { params: Promise<{ locale:
           Ad creatives - all formats
         </h1>
         <p className="mt-1 max-w-2xl text-sm text-muted">
-          Paid-placement banners in the OG voxel-vault style. Each format has a static PNG, an
-          animated MP4, and an animated GIF. Animation plays once and rests on the open vault; the
-          MP4 is set to loop here for review only. GIFs are non-looping in-file - macOS
-          Finder/Preview force a loop, browsers play once.
+          Paid-placement banners in the OG voxel-vault style. Two campaign versions (sale /
+          pre-sale). Each format has a static PNG, an animated MP4 (poster shown, press play to
+          view), and an animated GIF that plays once and rests on the open vault. GIFs are
+          non-looping in-file; macOS Finder/Preview force a loop, browsers play once.
         </p>
       </header>
 
-      <div className="flex flex-col gap-14">
-        {BANNERS.map((b) => (
-          <GallerySection key={b.file} title={`${b.publisher} - ${b.name}`}>
-            <div className="flex flex-col gap-8">
-              {b.variants.map((v) => (
-                <Media key={v.kind} b={b} v={v} />
+      <div className="flex flex-col gap-20">
+        {VERSIONS.map((v) => (
+          <div key={v.dir} className="flex flex-col gap-8">
+            <div className="rounded-md bg-surface-alt px-5 py-4">
+              <h2 className="text-lg font-semibold tracking-tight text-foreground">{v.title}</h2>
+              <p className="mt-0.5 text-sm text-muted">{v.note}</p>
+            </div>
+            <div className="flex flex-col gap-14">
+              {FORMATS.map((f) => (
+                <GallerySection key={f.file} title={`${f.publisher} - ${f.name}`}>
+                  <div className="flex flex-col gap-8">
+                    {f.kinds.map((kind) => (
+                      <Media key={kind} dir={v.dir} f={f} kind={kind} />
+                    ))}
+                  </div>
+                </GallerySection>
               ))}
             </div>
-          </GallerySection>
+          </div>
         ))}
       </div>
     </main>
