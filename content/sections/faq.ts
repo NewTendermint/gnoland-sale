@@ -48,7 +48,7 @@ export function buildFaq(t: FaqTranslator, locale: string): FaqItem[] {
         ]
       : []),
     t("help.discordPrefix"),
-    { label: "Gno.land Discord", href: "https://discord.gg/gnoland" },
+    { label: t("help.discordLabel"), href: "https://discord.gg/gnoland" },
     t("help.discordSuffix"),
   ]
 

@@ -98,6 +98,7 @@
       "emailPrefix": "For issues with your bid, verification, or payment, email ",
       "emailSuffix": ". ",
       "discordPrefix": "For general questions, join the ",
+      "discordLabel": "Gno.land Discord",
       "discordSuffix": ". We will never DM you first or ask for your seed phrase."
     }
   },
