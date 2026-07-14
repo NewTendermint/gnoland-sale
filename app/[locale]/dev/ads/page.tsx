@@ -34,7 +34,7 @@ const VERSIONS: Version[] = [
 
 const FORMATS: Format[] = [
   {
-    file: "01_coinbase_2400x436",
+    file: "coinbase",
     w: 2400,
     h: 436,
     ext: "jpg",
@@ -42,7 +42,7 @@ const FORMATS: Format[] = [
     name: "2400x436 Display Banner",
   },
   {
-    file: "02_bitget_750x500",
+    file: "bitget",
     w: 750,
     h: 500,
     ext: "jpg",
@@ -50,7 +50,7 @@ const FORMATS: Format[] = [
     name: "Spotlight Overlay",
   },
   {
-    file: "03_base_390x420",
+    file: "base-v2",
     w: 390,
     h: 420,
     ext: "jpg",
@@ -58,7 +58,7 @@ const FORMATS: Format[] = [
     name: "TBA Wallet Announcement V2",
   },
   {
-    file: "04_leaderboard_728x90",
+    file: "kucoin-a",
     w: 728,
     h: 90,
     ext: "jpg",
@@ -66,7 +66,7 @@ const FORMATS: Format[] = [
     name: "Banner 728x90",
   },
   {
-    file: "05_small_300x100",
+    file: "kucoin-b",
     w: 300,
     h: 100,
     ext: "jpg",
@@ -74,7 +74,7 @@ const FORMATS: Format[] = [
     name: "Banner 900x300",
   },
   {
-    file: "06_icon_48x48",
+    file: "base-icon",
     w: 48,
     h: 48,
     ext: "png",
@@ -113,19 +113,21 @@ function GallerySection({ title, children }: { title: string; children: ReactNod
 }
 
 function Banner({ dir, f }: { dir: string; f: Format }) {
-  const rel = `ads/${dir}/${f.file}.${f.ext}`
+  const rel = `brand/gnot/${dir}/${f.file}.${f.ext}`
   const href = assetHref(rel)
   const size = fileSize(rel)
   return (
     <figure className="flex w-full flex-col gap-2" style={{ maxWidth: f.w }}>
-      <img
-        className="block rounded-md border border-border bg-surface-alt"
-        style={{ maxWidth: "100%", height: "auto" }}
-        width={f.w}
-        height={f.h}
-        src={href}
-        alt={`${f.publisher} ${f.name}`}
-      />
+      <div
+        className="relative w-full overflow-hidden rounded-md border border-border bg-surface-alt"
+        style={{ paddingTop: `${((f.h / f.w) * 100).toFixed(4)}%` }}
+      >
+        <img
+          className="absolute inset-0 block h-full w-full object-cover"
+          src={href}
+          alt={`${f.publisher} ${f.name}`}
+        />
+      </div>
       <figcaption className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-medium uppercase tracking-[0.2em] text-faint">
         <span className="text-muted">
           {f.w} &times; {f.h}
