@@ -93,18 +93,14 @@ function Banner({ dir, f }: { dir: string; f: Format }) {
   const size = fileSize(rel)
   return (
     <figure className="flex w-full flex-col gap-2" style={{ maxWidth: f.w }}>
-      <div
-        className="relative w-full overflow-hidden rounded-md border border-border bg-surface-alt"
-        style={{ paddingTop: `${((f.h / f.w) * 100).toFixed(4)}%` }}
-      >
-        <img
-          className="absolute inset-0 block h-full w-full object-cover"
-          width={f.w}
-          height={f.h}
-          src={href}
-          alt={`${f.publisher} ${f.name}`}
-        />
-      </div>
+      <img
+        className="block rounded-md border border-border bg-surface-alt"
+        style={{ maxWidth: "100%", height: "auto" }}
+        width={f.w}
+        height={f.h}
+        src={href}
+        alt={`${f.publisher} ${f.name}`}
+      />
       <figcaption className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-medium uppercase tracking-[0.2em] text-faint">
         <span className="text-muted">
           {f.w} &times; {f.h}
