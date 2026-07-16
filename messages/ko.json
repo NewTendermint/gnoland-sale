@@ -676,6 +676,7 @@
     "bonusBannerTitle": "첫날 보너스",
     "bonusBannerBody": "첫 24시간에 입찰하고 낙찰되면 {pct}% GNOT 보너스를 받습니다.",
     "bonusEndsIn": "보너스 종료까지",
+    "bonusStartsIn": "보너스 시작까지",
     "bonusPill": "첫 24시간 +{pct}%",
     "viewResults": "결과 보기",
     "yourBid": "내 입찰",

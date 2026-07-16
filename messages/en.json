@@ -676,6 +676,7 @@
     "bonusBannerTitle": "First-day bonus",
     "bonusBannerBody": "Bid in the first 24 hours and win to earn a {pct}% GNOT bonus.",
     "bonusEndsIn": "Bonus window ends in",
+    "bonusStartsIn": "Bonus starts in",
     "bonusPill": "First 24h +{pct}%",
     "viewResults": "View results",
     "yourBid": "Your bid",
