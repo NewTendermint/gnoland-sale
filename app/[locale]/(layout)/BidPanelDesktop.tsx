@@ -102,32 +102,36 @@ export function BidPanelDesktop() {
     return (
       <BarShell>
         <DrawLine immediate />
-        <FirstDayBonusBanner />
-        <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4 py-4 sm:py-6">
-          <BarCountdown
-            targetIso={
-              countToSale ? SALE_ECONOMICS.saleOpensIso : SALE_ECONOMICS.registrationOpensIso
-            }
-            caption={
-              countToSale
-                ? t("captionOpens", {
-                    date: formatSaleDate(SALE_ECONOMICS.saleOpensIso, true, locale),
-                  })
-                : t("captionRegistrationOpens", {
-                    date: formatSaleDate(SALE_ECONOMICS.registrationOpensIso, false, locale),
-                  })
-            }
-          />
-          <div className="ml-auto flex justify-end">
-            <PreSaleRight
-              state={barState}
-              returning={sonarSeen}
-              setupHref={sonarSetupUrl}
-              entityLabel={entityLabel}
-              onRegister={redirectToSonarLogin}
-              onSignOut={handleSignOut}
-              onRefresh={handleRefresh}
+        {/* Banner sits inside the same padded block as the row (mirrors the live bar), so the
+            vertical rhythm matches; its own mb-3 spaces it from the row below. */}
+        <div className="py-4 sm:py-6">
+          <FirstDayBonusBanner />
+          <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4">
+            <BarCountdown
+              targetIso={
+                countToSale ? SALE_ECONOMICS.saleOpensIso : SALE_ECONOMICS.registrationOpensIso
+              }
+              caption={
+                countToSale
+                  ? t("captionOpens", {
+                      date: formatSaleDate(SALE_ECONOMICS.saleOpensIso, true, locale),
+                    })
+                  : t("captionRegistrationOpens", {
+                      date: formatSaleDate(SALE_ECONOMICS.registrationOpensIso, false, locale),
+                    })
+              }
             />
+            <div className="ml-auto flex justify-end">
+              <PreSaleRight
+                state={barState}
+                returning={sonarSeen}
+                setupHref={sonarSetupUrl}
+                entityLabel={entityLabel}
+                onRegister={redirectToSonarLogin}
+                onSignOut={handleSignOut}
+                onRefresh={handleRefresh}
+              />
+            </div>
           </div>
         </div>
       </BarShell>
