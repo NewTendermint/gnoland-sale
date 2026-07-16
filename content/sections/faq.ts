@@ -39,7 +39,6 @@ export function buildFaq(t: FaqTranslator, locale: string): FaqItem[] {
   const regDate = formatSaleDate(SALE_ECONOMICS.registrationOpensIso, true, locale)
   const saleDate = formatSaleDate(SALE_ECONOMICS.saleOpensIso, true, locale)
   const mainnetMonth = formatSaleMonth(SALE_ECONOMICS.mainnetIso, locale)
-  const pct = SALE_ECONOMICS.firstDayBonusPct
 
   const helpParts: Array<string | FaqLink> = [
     ...(SUPPORT_CONTACT_HREF
@@ -72,7 +71,7 @@ export function buildFaq(t: FaqTranslator, locale: string): FaqItem[] {
           {
             id: "bonus",
             q: t("bonus.q"),
-            a: [t("bonus.a1", { pct }), t("bonus.a2", { pct })],
+            a: [t("bonus.a1"), t("bonus.a2"), t("bonus.a3")],
           },
         ]
       : []),
