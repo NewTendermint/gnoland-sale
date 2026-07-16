@@ -41,6 +41,7 @@ import { NewsletterForm } from "../../(layout)/NewsletterForm"
 import { CloseButton } from "../../(ui)/CloseButton"
 import { Cta } from "../../(ui)/Cta"
 import { Icon } from "../../(ui)/Icon"
+import { FirstDayBonusNote } from "./BonusNote"
 import { ManageEntityCta, SonarSignOutButton } from "./ManageEntity"
 import { usePushAlerts } from "./PushOptIn"
 
@@ -1062,6 +1063,7 @@ function BidRow({
               })}
             </span>
           </p>
+          <FirstDayBonusNote context="confirm" />
           {prevBid ? (
             <p className="mt-1 text-xs text-muted">
               {amountNum > prevBid.committedUsd

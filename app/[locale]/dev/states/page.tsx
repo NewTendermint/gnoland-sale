@@ -13,6 +13,7 @@ import { MetricPendingChip } from "../../(layout)/BidBarShell"
 import { BidSectionHeader } from "../../(layout)/BidPanelDesktop"
 import { PreSaleRight } from "../../(layout)/PreSaleBar"
 import { BidFlow, type BidPreview, PostBidOptIns } from "../../(sections)/bid/BidFlow"
+import { FirstDayBonusBanner, FirstDayBonusNote } from "../../(sections)/bid/BonusNote"
 import { BidStatusTag, FunnelSteps } from "../../(sections)/bid/FunnelSteps"
 import { SettlementFlow } from "../../(sections)/bid/SettlementFlow"
 import { Cta } from "../../(ui)/Cta"
@@ -688,6 +689,38 @@ export default async function DevStatesPage({ params }: { params: Promise<{ loca
               </div>
             </div>
           ))}
+        </GallerySection>
+
+        <GallerySection title="First-day bonus · promo surfaces (gated, forced on for the gallery)">
+          <p className="text-sm text-muted">
+            Display-only promo. Live, these render only when the bonus is enabled and, for the
+            banner and confirm note, the clock is inside the first 24h of the sale opening. Forced
+            on here so the surfaces are always reviewable. The bonus itself is granted off-app at
+            the post-mainnet distribution - nothing in the sale flow, contract or settlement
+            changes.
+          </p>
+          <Caption>Live bar banner (countdown to the window close)</Caption>
+          <div className="rounded-[var(--frame-radius)] border border-border bg-background px-6 py-5 lg:px-8">
+            <FirstDayBonusBanner force />
+          </div>
+          <Caption>Bid confirm step note (within the 24h window)</Caption>
+          <div className="overflow-hidden rounded-[var(--frame-radius)] border border-border bg-background">
+            <div className="px-6 py-6 lg:px-8">
+              <div className="bid-capsule px-6 py-5">
+                <FirstDayBonusNote context="confirm" force />
+              </div>
+            </div>
+          </div>
+          <Caption>
+            Winner settlement note (conditional wording, eligibility settled off-app)
+          </Caption>
+          <div className="overflow-hidden rounded-[var(--frame-radius)] border border-border bg-background">
+            <div className="px-6 py-6 lg:px-8">
+              <div className="bid-capsule px-6 py-5">
+                <FirstDayBonusNote context="settlement" force />
+              </div>
+            </div>
+          </div>
         </GallerySection>
       </div>
     </main>

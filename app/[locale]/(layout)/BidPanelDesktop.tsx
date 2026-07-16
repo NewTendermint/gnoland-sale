@@ -15,6 +15,7 @@ import { useLocale, useTranslations } from "next-intl"
 import { type ReactNode, useEffect, useRef, useState } from "react"
 import { useAccount } from "wagmi"
 import { BidFlow } from "../(sections)/bid/BidFlow"
+import { FirstDayBonusBanner } from "../(sections)/bid/BonusNote"
 import { BidStatusTag, FunnelSteps } from "../(sections)/bid/FunnelSteps"
 import { SonarSignOutButton } from "../(sections)/bid/ManageEntity"
 import { SettlementFlow } from "../(sections)/bid/SettlementFlow"
@@ -214,6 +215,7 @@ export function BidPanelDesktop() {
           <Entrance className="band-10">
             <DrawLine immediate delayMs={200} />
             <div className="py-4 sm:py-6">
+              <FirstDayBonusBanner />
               <div className="flex flex-wrap items-start justify-between gap-x-8 gap-y-4">
                 <Stagger
                   as="div"

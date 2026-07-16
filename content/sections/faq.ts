@@ -11,6 +11,7 @@
  * example; the $20M / $10M / 50% oversubscription example) are illustrative literals living in the
  * message catalog. Re-write them by hand (in every locale) if the band or supply moves.
  */
+import { firstDayBonusEnabled } from "../../lib/sale/bonus"
 import {
   SALE_ECONOMICS,
   formatSaleDate,
@@ -38,6 +39,7 @@ export function buildFaq(t: FaqTranslator, locale: string): FaqItem[] {
   const regDate = formatSaleDate(SALE_ECONOMICS.registrationOpensIso, true, locale)
   const saleDate = formatSaleDate(SALE_ECONOMICS.saleOpensIso, true, locale)
   const mainnetMonth = formatSaleMonth(SALE_ECONOMICS.mainnetIso, locale)
+  const pct = SALE_ECONOMICS.firstDayBonusPct
 
   const helpParts: Array<string | FaqLink> = [
     ...(SUPPORT_CONTACT_HREF
@@ -64,6 +66,16 @@ export function buildFaq(t: FaqTranslator, locale: string): FaqItem[] {
         t("auction.example2"),
       ],
     },
+    // Promo, gated: only listed while the first-day bonus is surfaced (firstDayBonusEnabled).
+    ...(firstDayBonusEnabled()
+      ? [
+          {
+            id: "bonus",
+            q: t("bonus.q"),
+            a: [t("bonus.a1", { pct }), t("bonus.a2", { pct })],
+          },
+        ]
+      : []),
     {
       id: "date",
       q: t("date.q"),

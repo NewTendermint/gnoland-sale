@@ -40,6 +40,11 @@
       "example2Title": "Example 2: Clearing price increases",
       "example2": "Bids received: 40,000,000 GNOT at $0.0645, 40,000,000 GNOT at $0.086. Since demand at $0.086 (40M) exceeds the 38,760,000 GNOT available, the clearing price rises to $0.086. Bidders at $0.0645 are not allocated tokens - only bids at or above the clearing price qualify. Winning bidders receive tokens pro rata, and excess bid amounts are refunded."
     },
+    "bonus": {
+      "q": "Is there a bonus for bidding early?",
+      "a1": "Yes. Bids placed within the first 24 hours of the sale opening qualify for a {pct}% bonus in GNOT, provided the bid wins at settlement. Bidders who are outbid do not receive it.",
+      "a2": "The bonus is {pct}% of the GNOT you receive from your winning allocation. It is granted as additional GNOT at the mainnet token distribution, from a separate reserve, so it does not change the auction, the price you pay, or anyone else's allocation."
+    },
     "date": {
       "q": "When is the token sale date?",
       "a1": "Registration with Sonar opens {regDateTime}.",
@@ -421,6 +426,10 @@
       "mainnetLaunch": {
         "label": "Expected mainnet launch",
         "value": "Q3 2026"
+      },
+      "firstDayBonus": {
+        "label": "First-day bonus",
+        "value": "{pct}% bonus GNOT on winning first-24h bids, paid at mainnet distribution"
       }
     },
     "pricingCaps": {
@@ -551,6 +560,7 @@
     "cellCommitment": "Your commitment",
     "cellAllocation": "Your allocation",
     "allocationNote": "GNOT is sent to your wallet at mainnet ({date}), with the unlock schedule applied.",
+    "bonusSettlementNote": "If your first bid was within the first 24 hours, a {pct}% bonus in GNOT is added at mainnet distribution.",
     "confirmationSent": "Confirmation email sent - check your inbox.",
     "useAnotherEmail": "Use another email",
     "emailPitch": "Never linked to your wallet or bids.",
@@ -617,6 +627,7 @@
     "support": "Support",
     "confirmQuestion": "Commit {amount} at {price} per GNOT?",
     "confirmDetail": "You pay the final clearing price. Est. {est}. Bids can be raised but not cancelled.",
+    "bonusConfirmNote": "Within the first-24h window: if this bid wins, you earn a {pct}% bonus in GNOT, added at mainnet distribution.",
     "confirmDeltaCharged": "Only the {amount} difference is charged.",
     "confirmNoExtra": "No additional funds - just sign.",
     "startIdentityCheck": "Start identity check",
@@ -662,6 +673,9 @@
     "statusEnded": "Ended",
     "captionOpens": "Opens {date}",
     "captionRegistrationOpens": "Registration opens {date}",
+    "bonusBannerTitle": "First-day bonus",
+    "bonusBannerBody": "Bid in the first 24 hours and win to earn a {pct}% GNOT bonus.",
+    "bonusEndsIn": "Bonus window ends in",
     "viewResults": "View results",
     "yourBid": "Your bid",
     "headerMaxPrice": "Your max price",

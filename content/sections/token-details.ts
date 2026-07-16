@@ -52,6 +52,9 @@ export const termGroups: Array<{ id: string; rows: TermRow[] }> = [
       // injected into the "{range}" placeholder of the message.
       { id: "contributionWindow" },
       { id: "mainnetLaunch" },
+      // Promo row, filtered out at render unless the first-day bonus is surfaced
+      // (firstDayBonusEnabled, applied in TokenDetails.tsx).
+      { id: "firstDayBonus" },
     ],
   },
   {
