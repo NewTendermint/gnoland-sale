@@ -108,3 +108,6 @@
   # /dev/states gallery (mock fixtures only, no live data): reachable on staging for design review.
   # Never set this in the production context - the page must stay a 404 on sale.gno.land.
   NEXT_PUBLIC_DEV_STATES_ENABLED = "1"
+  # First-24h bonus promo, ON for staging review. Production stays OFF (deliberately absent from
+  # [context.production.environment]) until the promo is signed off - flip it there on purpose.
+  NEXT_PUBLIC_FIRST_DAY_BONUS = "1"
