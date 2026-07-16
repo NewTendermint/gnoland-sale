@@ -430,7 +430,7 @@
       },
       "firstDayBonus": {
         "label": "First-day bonus",
-        "value": "{pct}% bonus GNOT on winning first-24h bids, paid at mainnet distribution"
+        "value": "{pct}% bonus GNOT on winning first 24h bids, paid at mainnet distribution"
       }
     },
     "pricingCaps": {
@@ -676,7 +676,7 @@
     "bonusBannerTitle": "First-day bonus",
     "bonusBannerBody": "Bid in the first 24 hours and win to earn a {pct}% GNOT bonus.",
     "bonusEndsIn": "Bonus window ends in",
-    "bonusPill": "First-24h +{pct}%",
+    "bonusPill": "First 24h +{pct}%",
     "viewResults": "View results",
     "yourBid": "Your bid",
     "headerMaxPrice": "Your max price",
