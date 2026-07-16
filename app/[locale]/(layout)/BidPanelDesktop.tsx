@@ -102,6 +102,7 @@ export function BidPanelDesktop() {
     return (
       <BarShell>
         <DrawLine immediate />
+        <FirstDayBonusBanner />
         <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4 py-4 sm:py-6">
           <BarCountdown
             targetIso={

@@ -1,6 +1,6 @@
 "use client"
 
-import { firstDayBonusClosesIso, firstDayBonusEnabled, isWithinBonusWindow } from "@/lib/sale/bonus"
+import { firstDayBonusClosesIso, firstDayBonusEnabled } from "@/lib/sale/bonus"
 import { SALE_ECONOMICS } from "@/lib/sale/economics"
 import { useTranslations } from "next-intl"
 import { useEffect, useState } from "react"
@@ -20,59 +20,75 @@ const PCT = SALE_ECONOMICS.firstDayBonusPct
 const BONUS_TAG =
   "shrink-0 rounded-full bg-mint px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.15em] text-on-mint"
 
-// True only inside the first-24h window (never before the sale opens, never after). Client-only:
-// false on the first render (renders nothing on SSR, so no hydration mismatch), resolved after
-// mount. A single timeout flips it at the next boundary (wait-for-open, then hide-at-close) - the
-// visible Countdown does its own per-second ticking, so no interval is needed. `force` pins it true.
-function useBonusWindowActive(force?: boolean): boolean {
-  const [active, setActive] = useState(false)
+type BonusPhase = "before" | "during" | "after"
+
+// before = sale not open yet (pre-sale teaser); during = inside the first 24h; after = window closed.
+function bonusPhaseAt(nowMs: number): BonusPhase {
+  const openMs = new Date(SALE_ECONOMICS.saleOpensIso).getTime()
+  const closeMs = new Date(firstDayBonusClosesIso).getTime()
+  if (nowMs < openMs) return "before"
+  if (nowMs < closeMs) return "during"
+  return "after"
+}
+
+// Client-only: "after" on the first render (renders nothing on SSR, so no hydration mismatch), then
+// resolved after mount. A single timeout flips the phase at the next boundary - the visible
+// Countdown does its own per-second ticking, so no interval is needed here. `force` pins "during".
+function useBonusPhase(force?: boolean): BonusPhase {
+  const [phase, setPhase] = useState<BonusPhase>("after")
   useEffect(() => {
     if (force) {
-      setActive(true)
+      setPhase("during")
       return
     }
+    let timer: ReturnType<typeof setTimeout> | undefined
     const openMs = new Date(SALE_ECONOMICS.saleOpensIso).getTime()
     const closeMs = new Date(firstDayBonusClosesIso).getTime()
-    let timer: ReturnType<typeof setTimeout> | undefined
     const tick = () => {
       const now = Date.now()
-      setActive(isWithinBonusWindow(now))
-      if (now < openMs) timer = setTimeout(tick, openMs - now)
-      else if (now < closeMs) timer = setTimeout(tick, closeMs - now)
+      const p = bonusPhaseAt(now)
+      setPhase(p)
+      if (p === "before") timer = setTimeout(tick, openMs - now)
+      else if (p === "during") timer = setTimeout(tick, closeMs - now)
     }
     tick()
     return () => {
       if (timer) clearTimeout(timer)
     }
   }, [force])
-  return active
+  return phase
 }
 
 /** Compact promo pill (solid-mint "winning" badge idiom). Renders only while the bonus is enabled
- *  AND the clock is inside the first-24h window (or forced). `className` lets a caller place it
- *  inline (e.g. after the confirm-step delta line). */
+ *  AND the clock is inside the active first-24h window (or forced) - NOT during the pre-sale teaser.
+ *  `className` lets a caller place it inline (e.g. after the confirm-step delta line). */
 export function FirstDayBonusPill({
   force,
   className = "",
 }: { force?: boolean; className?: string }) {
   const t = useTranslations("BidPanel")
-  const active = useBonusWindowActive(force)
+  const phase = useBonusPhase(force)
   if (!firstDayBonusEnabled() && !force) return null
-  if (!active) return null
+  if (phase !== "during") return null
   return <span className={`${BONUS_TAG} ${className}`}>{t("bonusPill", { pct: PCT })}</span>
 }
 
-/** Live-bar promo banner: a continuously scrolling ticker of the promo, with the window countdown
- *  pinned on the right. Renders only while the bonus is enabled AND the clock is inside the
- *  first-24h window (or forced); nothing before or after. The ticker is decorative (aria-hidden)
- *  with an sr-only text equivalent, and holds still under reduced motion. */
+/** Live-bar promo banner: a continuously scrolling ticker of the promo, with a countdown pinned on
+ *  the right. Shows a pre-sale teaser (counting down to the sale open) before the sale, then the
+ *  active window (counting down to the window close) during the first 24h; nothing after. Renders
+ *  only while the bonus is enabled (or forced). The ticker is decorative (aria-hidden) with an
+ *  sr-only text equivalent, and holds still under reduced motion. */
 export function FirstDayBonusBanner({ force }: { force?: boolean }) {
   const t = useTranslations("BidPanel")
-  const active = useBonusWindowActive(force)
+  const phase = useBonusPhase(force)
   if (!firstDayBonusEnabled() && !force) return null
-  if (!active) return null
+  if (phase === "after") return null
   const title = t("bonusBannerTitle")
   const body = t("bonusBannerBody", { pct: PCT })
+  // Pre-sale: count down to the sale open ("starts in"). Live window: count down to the close.
+  const preSale = phase === "before"
+  const countdownIso = preSale ? SALE_ECONOMICS.saleOpensIso : firstDayBonusClosesIso
+  const countdownLabel = preSale ? t("bonusStartsIn") : t("bonusEndsIn")
   return (
     // Fades in at the tail of the bar's load entrance (after the metrics + CTA), matching the
     // site's FadeIn idiom. `immediate` reveals on mount without waiting for scroll; opacity-only so
@@ -106,11 +122,9 @@ export function FirstDayBonusBanner({ force }: { force?: boolean }) {
         {title}. {body}
       </span>
       <span className="inline-flex shrink-0 items-center gap-2 font-mono font-semibold tabular-nums">
-        <span className="text-[10px] uppercase tracking-[0.2em] text-muted">
-          {t("bonusEndsIn")}
-        </span>
+        <span className="text-[10px] uppercase tracking-[0.2em] text-muted">{countdownLabel}</span>
         <span className="text-foreground">
-          <Countdown targetIso={firstDayBonusClosesIso} label={t("bonusEndsIn")} />
+          <Countdown targetIso={countdownIso} label={countdownLabel} />
         </span>
       </span>
     </FadeIn>
