@@ -85,10 +85,10 @@ export function FirstDayBonusBanner({ force }: { force?: boolean }) {
   if (phase === "after") return null
   const title = t("bonusBannerTitle")
   const body = t("bonusBannerBody", { pct: PCT })
-  // Pre-sale: count down to the sale open ("starts in"). Live window: count down to the close.
-  const preSale = phase === "before"
-  const countdownIso = preSale ? SALE_ECONOMICS.saleOpensIso : firstDayBonusClosesIso
-  const countdownLabel = preSale ? t("bonusStartsIn") : t("bonusEndsIn")
+  // Only show a countdown during the active window (to the window close). In pre-sale the bar
+  // already has a big countdown to the sale open, so a second one here would just duplicate it -
+  // the pre-sale banner is a plain teaser (badge + ticker), no countdown.
+  const showCountdown = phase === "during"
   return (
     // Fades in at the tail of the bar's load entrance (after the metrics + CTA), matching the
     // site's FadeIn idiom. `immediate` reveals on mount without waiting for scroll; opacity-only so
@@ -121,12 +121,16 @@ export function FirstDayBonusBanner({ force }: { force?: boolean }) {
       <span className="sr-only">
         {title}. {body}
       </span>
-      <span className="inline-flex shrink-0 items-center gap-2 font-mono font-semibold tabular-nums">
-        <span className="text-[10px] uppercase tracking-[0.2em] text-muted">{countdownLabel}</span>
-        <span className="text-foreground">
-          <Countdown targetIso={countdownIso} label={countdownLabel} />
+      {showCountdown ? (
+        <span className="inline-flex shrink-0 items-center gap-2 font-mono font-semibold tabular-nums">
+          <span className="text-[10px] uppercase tracking-[0.2em] text-muted">
+            {t("bonusEndsIn")}
+          </span>
+          <span className="text-foreground">
+            <Countdown targetIso={firstDayBonusClosesIso} label={t("bonusEndsIn")} />
+          </span>
         </span>
-      </span>
+      ) : null}
     </FadeIn>
   )
 }
