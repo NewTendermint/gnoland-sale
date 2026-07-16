@@ -16,6 +16,7 @@ import { Cta } from "../../(ui)/Cta"
 import { GnotCoin } from "../../(ui)/GnotCoin"
 import { Icon } from "../../(ui)/Icon"
 import { ConnectChoices } from "./BidFlow"
+import { FirstDayBonusNote } from "./BonusNote"
 
 function Cell({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -196,6 +197,7 @@ export function SettlementFlow({
           {t("allocationNote", { date: formatSaleDate(SALE_ECONOMICS.mainnetIso, true, locale) })}
         </p>
       ) : null}
+      {won ? <FirstDayBonusNote /> : null}
     </div>
   )
 }

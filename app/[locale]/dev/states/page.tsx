@@ -13,6 +13,7 @@ import { MetricPendingChip } from "../../(layout)/BidBarShell"
 import { BidSectionHeader } from "../../(layout)/BidPanelDesktop"
 import { PreSaleRight } from "../../(layout)/PreSaleBar"
 import { BidFlow, type BidPreview, PostBidOptIns } from "../../(sections)/bid/BidFlow"
+import { FirstDayBonusBanner } from "../../(sections)/bid/BonusNote"
 import { BidStatusTag, FunnelSteps } from "../../(sections)/bid/FunnelSteps"
 import { SettlementFlow } from "../../(sections)/bid/SettlementFlow"
 import { Cta } from "../../(ui)/Cta"
@@ -155,11 +156,13 @@ function ExpandedBar({
   returning = false,
   preview,
   labelFor,
+  bonusForce,
 }: {
   journey: JourneyState
   returning?: boolean
   preview?: BidPreview
   labelFor: LabelFor
+  bonusForce?: boolean
 }) {
   const input = MOCK_JOURNEY_INPUTS[journey]
   return (
@@ -177,6 +180,7 @@ function ExpandedBar({
               wallet={<MockWalletChip />}
               manageEntitiesHref={SETUP_URL_PREVIEW}
               entityLabel="Jane Cooper Ltd"
+              bonusForce={bonusForce}
             />
           ) : null}
           <BidFlow
@@ -688,6 +692,50 @@ export default async function DevStatesPage({ params }: { params: Promise<{ loca
               </div>
             </div>
           ))}
+        </GallerySection>
+
+        <GallerySection title="First-day bonus · promo surfaces (gated, forced on for the gallery)">
+          <p className="text-sm text-muted">
+            Display-only promo. Live, these render only when the bonus is enabled and, for the
+            banner and header pill, the clock is inside the first 24h of the sale opening. Forced on
+            here so the surfaces are always reviewable. The bonus itself is granted off-app at the
+            post-mainnet distribution - nothing in the sale flow, contract or settlement changes.
+          </p>
+          <Caption>
+            Live bar with the banner on top (as it sits in the sticky bar, above metrics)
+          </Caption>
+          <div className="rounded-[var(--frame-radius)] border border-border bg-background px-6 lg:px-8">
+            <div className="pt-4 sm:pt-6">
+              <FirstDayBonusBanner force />
+            </div>
+            <MetricsRow
+              dense={false}
+              labelFor={labelFor}
+              right={<CtaPill journey="ready" t={t} />}
+            />
+          </div>
+          <Caption>
+            Bid confirm step, in full context - bonus pill next to the "Place your bid" title
+          </Caption>
+          <ExpandedBar
+            journey="ready"
+            preview={{ state: "confirming", amountUsd: 1000 }}
+            labelFor={labelFor}
+            bonusForce
+          />
+          <Caption>Winner settlement, in full context - note below the allocation cells</Caption>
+          <div className="overflow-hidden rounded-[var(--frame-radius)] border border-border bg-background">
+            <div className="px-6 py-6 lg:px-8">
+              <div className="bid-capsule px-6 py-5">
+                <SettlementFlow
+                  clearingPriceUsd={MOCK_COMMITMENT_LIVE.clearingPriceUsd}
+                  myBid={MOCK_JOURNEY_INPUTS["has-bid-winning"].myBid}
+                  gate={{ done: true, claimEnabled: true, refunded: false, refundableUsd: 480 }}
+                  previewConnected
+                />
+              </div>
+            </div>
+          </div>
         </GallerySection>
       </div>
     </main>

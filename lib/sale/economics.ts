@@ -20,6 +20,12 @@ export const SALE_ECONOMICS = {
   minCommitmentUsd:
     SALE_CHAIN.id === mainnet.id ? 100 : Number(process.env.NEXT_PUBLIC_MIN_COMMITMENT_USD) || 100,
   maxCommitmentUsd: null, // no maximum commitment (team, 2026-06-21; prior $100k provisional cap dropped)
+  // First-24h bonus: % of the GNOT a first-day winner receives, granted as EXTRA GNOT at the
+  // post-mainnet distribution from a separate reserve. It does NOT touch the sale contract, the
+  // permit or the settlement math - the auction is unchanged. Display-only here; the authoritative
+  // bonus is computed off-app from on-chain data. Surfaced only when firstDayBonusEnabled()
+  // (lib/sale/bonus.ts) is on.
+  firstDayBonusPct: 5,
   // On-chain price = round(priceUsd / increment), zero-anchored (calc.priceUsdToOnchainPrice; verified
   // vs the deployed permit). 0.0215 prod + sandbox (Dongwon 2026-06-30; divides the 0.0645 floor -> 3).
   bidIncrementUsd: 0.0215,

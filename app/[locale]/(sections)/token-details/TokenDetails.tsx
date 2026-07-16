@@ -7,6 +7,7 @@ import {
   positionMetricsEmpty,
   termGroups,
 } from "@/content/sections/token-details"
+import { firstDayBonusEnabled } from "@/lib/sale/bonus"
 import { bidStatus, gnotEstimate } from "@/lib/sale/calc"
 import { SALE_ECONOMICS, formatSaleDate } from "@/lib/sale/economics"
 import { fmtGnot, fmtPrice, fmtUsd } from "@/lib/sale/format"
@@ -196,50 +197,56 @@ export function TokenDetails() {
                     </div>
                   </div>
                   <dl className="col-span-12 lg:col-span-7">
-                    {g.rows.map((row, ri) => (
-                      <Rise
-                        key={row.id}
-                        index={ri + 1}
-                        className={`flex items-baseline justify-between gap-6 py-1 ${
-                          ri > 0 ? "border-t border-foreground/5" : ""
-                        }`}
-                      >
-                        <dt className="font-mono text-xs uppercase tracking-widest text-muted">
-                          {t(`${g.id}.${row.id}.label`)}
-                        </dt>
-                        <dd
-                          className={`text-right font-medium ${
-                            row.tbd
-                              ? "font-mono text-xs uppercase tracking-widest text-faint"
-                              : "text-base text-foreground"
+                    {g.rows
+                      .filter((row) => row.id !== "firstDayBonus" || firstDayBonusEnabled())
+                      .map((row, ri) => (
+                        <Rise
+                          key={row.id}
+                          index={ri + 1}
+                          className={`flex items-baseline justify-between gap-6 py-1 ${
+                            ri > 0 ? "border-t border-foreground/5" : ""
                           }`}
                         >
-                          {row.href ? (
-                            <a
-                              href={row.href}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-baseline gap-1 underline-offset-4 hover:underline"
-                            >
-                              {row.value ??
-                                t(
-                                  `${g.id}.${row.id}.value`,
-                                  row.id === "contributionWindow"
-                                    ? { range: contributionRange }
+                          <dt className="font-mono text-xs uppercase tracking-widest text-muted">
+                            {t(`${g.id}.${row.id}.label`)}
+                          </dt>
+                          <dd
+                            className={`text-right font-medium ${
+                              row.tbd
+                                ? "font-mono text-xs uppercase tracking-widest text-faint"
+                                : "text-base text-foreground"
+                            }`}
+                          >
+                            {row.href ? (
+                              <a
+                                href={row.href}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-baseline gap-1 underline-offset-4 hover:underline"
+                              >
+                                {row.value ??
+                                  t(
+                                    `${g.id}.${row.id}.value`,
+                                    row.id === "contributionWindow"
+                                      ? { range: contributionRange }
+                                      : {},
+                                  )}
+                                <span aria-hidden="true">↗</span>
+                              </a>
+                            ) : (
+                              (row.value ??
+                              t(
+                                `${g.id}.${row.id}.value`,
+                                row.id === "contributionWindow"
+                                  ? { range: contributionRange }
+                                  : row.id === "firstDayBonus"
+                                    ? { pct: SALE_ECONOMICS.firstDayBonusPct }
                                     : {},
-                                )}
-                              <span aria-hidden="true">↗</span>
-                            </a>
-                          ) : (
-                            (row.value ??
-                            t(
-                              `${g.id}.${row.id}.value`,
-                              row.id === "contributionWindow" ? { range: contributionRange } : {},
-                            ))
-                          )}
-                        </dd>
-                      </Rise>
-                    ))}
+                              ))
+                            )}
+                          </dd>
+                        </Rise>
+                      ))}
                   </dl>
                 </div>
                 <DrawLine index={g.rows.length + 1} />
