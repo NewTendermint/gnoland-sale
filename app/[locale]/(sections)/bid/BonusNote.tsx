@@ -1,10 +1,11 @@
 "use client"
 
-import { firstDayBonusClosesIso, firstDayBonusEnabled, isWithinBonusWindow } from "@/lib/sale/bonus"
+import { firstDayBonusClosesIso, firstDayBonusEnabled } from "@/lib/sale/bonus"
 import { SALE_ECONOMICS } from "@/lib/sale/economics"
 import { useTranslations } from "next-intl"
 import { useEffect, useState } from "react"
 import { Countdown } from "../../(layout)/Countdown"
+import { FadeIn } from "../../(ui)/FadeIn"
 import { Icon } from "../../(ui)/Icon"
 
 // Promo surfaces for the first-24h bonus. Display-only: nothing here reads or writes sale state, it
@@ -14,80 +15,129 @@ import { Icon } from "../../(ui)/Icon"
 
 const PCT = SALE_ECONOMICS.firstDayBonusPct
 
-// Client-only window check: false on the first render (matching SSR) and resolved after mount, so a
-// boundary crossing can never trigger a hydration mismatch. `force` pins it true. The tick stops
-// itself once the window has closed for good (it can never reopen), so it never lingers for the rest
-// of the sale.
-function useBonusWindowActive(enabled: boolean, force?: boolean): boolean {
-  const [active, setActive] = useState(false)
-  useEffect(() => {
-    if (force) {
-      setActive(true)
-      return
-    }
-    if (!enabled) return
-    setActive(isWithinBonusWindow(Date.now()))
-    const closeMs = new Date(firstDayBonusClosesIso).getTime()
-    // Already closed: settle to false and never start a ticker (the window cannot reopen).
-    if (Date.now() >= closeMs) return
-    const interval = setInterval(() => setActive(isWithinBonusWindow(Date.now())), 1000)
-    // Stop ticking exactly at close, so the timer never lingers for the rest of the sale.
-    const stopAt = setTimeout(() => {
-      clearInterval(interval)
-      setActive(false)
-    }, closeMs - Date.now())
-    return () => {
-      clearInterval(interval)
-      clearTimeout(stopAt)
-    }
-  }, [enabled, force])
-  return active
+// Editorial highlight tag, same idiom as the "winning" badge in FunnelSteps: solid mint, bold
+// uppercase, mono tracking. The only accent surface the design uses for a positive highlight.
+const BONUS_TAG =
+  "shrink-0 rounded-full bg-mint px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.15em] text-on-mint"
+
+type BonusPhase = "before" | "during" | "after"
+
+// before = sale not open yet (pre-sale teaser); during = inside the first 24h; after = window
+// closed (nothing renders).
+function bonusPhaseAt(nowMs: number): BonusPhase {
+  const openMs = new Date(SALE_ECONOMICS.saleOpensIso).getTime()
+  const closeMs = new Date(firstDayBonusClosesIso).getTime()
+  if (nowMs < openMs) return "before"
+  if (nowMs < closeMs) return "during"
+  return "after"
 }
 
-/** Live-bar promo banner with a countdown to the window close. Renders only while the bonus is
- *  enabled AND the current time is inside the first-24h window (or when forced); otherwise nothing. */
+// Client-only: "after" on the first render (renders nothing on SSR, so no hydration mismatch), then
+// resolved after mount. A single timeout flips the phase at the next boundary - the visible
+// Countdown does its own per-second ticking, so no interval is needed here. `force` pins "during".
+function useBonusPhase(force?: boolean): BonusPhase {
+  const [phase, setPhase] = useState<BonusPhase>("after")
+  useEffect(() => {
+    if (force) {
+      setPhase("during")
+      return
+    }
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const openMs = new Date(SALE_ECONOMICS.saleOpensIso).getTime()
+    const closeMs = new Date(firstDayBonusClosesIso).getTime()
+    const tick = () => {
+      const now = Date.now()
+      const p = bonusPhaseAt(now)
+      setPhase(p)
+      if (p === "before") timer = setTimeout(tick, openMs - now)
+      else if (p === "during") timer = setTimeout(tick, closeMs - now)
+    }
+    tick()
+    return () => {
+      if (timer) clearTimeout(timer)
+    }
+  }, [force])
+  return phase
+}
+
+/** Compact promo pill for the bid-panel header (next to the "Place your bid" / "Your bid" title).
+ *  Renders only while the bonus is enabled AND the clock is inside the first-24h window (or forced). */
+export function FirstDayBonusPill({ force }: { force?: boolean }) {
+  const t = useTranslations("BidPanel")
+  const phase = useBonusPhase(force)
+  if (!firstDayBonusEnabled() && !force) return null
+  if (phase !== "during") return null
+  return <span className={BONUS_TAG}>{t("bonusPill", { pct: PCT })}</span>
+}
+
+/** Live-bar promo banner: a continuously scrolling ticker of the promo, with a countdown pinned on
+ *  the right. Shows a pre-sale teaser (counting down to the sale open) before the sale, then the
+ *  active window (counting down to the window close) during the first 24h; nothing after. Renders
+ *  only while the bonus is enabled (or forced). The ticker is decorative (aria-hidden) with an
+ *  sr-only text equivalent, and holds still under reduced motion. */
 export function FirstDayBonusBanner({ force }: { force?: boolean }) {
   const t = useTranslations("BidPanel")
-  const enabled = firstDayBonusEnabled()
-  const active = useBonusWindowActive(enabled, force)
-  if (!enabled && !force) return null
-  if (!active) return null
+  const phase = useBonusPhase(force)
+  if (!firstDayBonusEnabled() && !force) return null
+  if (phase === "after") return null
+  const title = t("bonusBannerTitle")
+  const body = t("bonusBannerBody", { pct: PCT })
+  // Pre-sale: count down to the sale open ("starts in"). Live window: count down to the close.
+  const preSale = phase === "before"
+  const countdownIso = preSale ? SALE_ECONOMICS.saleOpensIso : firstDayBonusClosesIso
+  const countdownLabel = preSale ? t("bonusStartsIn") : t("bonusEndsIn")
   return (
-    <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-full border border-mint/40 bg-mint/10 px-3 py-1.5 text-xs">
-      <span className="inline-flex items-center gap-1.5 font-medium text-foreground">
-        <Icon name="cube" draw={false} className="h-4 w-4 shrink-0 text-mint" />
-        {t("bonusBannerTitle")}
+    // Fades in at the tail of the bar's load entrance (after the metrics + CTA), matching the
+    // site's FadeIn idiom. `immediate` reveals on mount without waiting for scroll; opacity-only so
+    // the reserved space never shifts the metrics below.
+    <FadeIn
+      as="div"
+      immediate
+      delayMs={1500}
+      className="mb-3 flex items-center gap-10 overflow-hidden py-1 text-xs"
+    >
+      <span className={BONUS_TAG}>{t("bonusPill", { pct: PCT })}</span>
+      {/* Decorative scroller: two identical copies so the -50% translate loops seamlessly. */}
+      <div aria-hidden="true" className="min-w-0 flex-1 overflow-hidden">
+        <div className="bonus-marquee flex w-max">
+          {[0, 1].map((copy) => (
+            <div key={copy} className="flex shrink-0 items-center gap-x-2 pr-2">
+              {[0, 1, 2].map((i) => (
+                <span
+                  key={i}
+                  className="inline-flex items-center gap-2 whitespace-nowrap text-muted"
+                >
+                  {body}
+                  <span className="px-2 text-faint">·</span>
+                </span>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+      <span className="sr-only">
+        {title}. {body}
       </span>
-      <span className="text-muted">{t("bonusBannerBody", { pct: PCT })}</span>
-      <span className="ml-auto inline-flex items-center gap-2 font-mono tabular-nums text-foreground">
-        <span className="text-[10px] uppercase tracking-[0.2em] text-muted">
-          {t("bonusEndsIn")}
+      <span className="inline-flex shrink-0 items-center gap-2 font-mono font-semibold tabular-nums">
+        <span className="text-[10px] uppercase tracking-[0.2em] text-muted">{countdownLabel}</span>
+        <span className="text-foreground">
+          <Countdown targetIso={countdownIso} label={countdownLabel} />
         </span>
-        <Countdown targetIso={firstDayBonusClosesIso} label={t("bonusEndsIn")} />
       </span>
-    </div>
+    </FadeIn>
   )
 }
 
-/** Inline promo note.
- *  - "confirm": shown in the bid confirm step, gated to the live 24h window.
- *  - "settlement": shown to winners after the sale (window is over), so it is flag-gated only and
- *    worded conditionally since eligibility is settled off-app. */
-export function FirstDayBonusNote({
-  context,
-  force,
-}: { context: "confirm" | "settlement"; force?: boolean }) {
+/** Winner settlement note (shown after the sale, so it is flag-gated only and worded conditionally
+ *  since eligibility is settled off-app). */
+export function FirstDayBonusNote({ force }: { force?: boolean }) {
   const t = useTranslations("Bid")
   const enabled = firstDayBonusEnabled()
-  const windowActive = useBonusWindowActive(enabled, force)
   if (!enabled && !force) return null
-  if (context === "confirm" && !windowActive) return null
   return (
     <p className="mt-1 inline-flex items-center gap-1.5 text-xs font-medium text-foreground">
-      <Icon name="cube" draw={false} className="h-3.5 w-3.5 shrink-0 text-mint" />
-      {context === "confirm"
-        ? t("bonusConfirmNote", { pct: PCT })
-        : t("bonusSettlementNote", { pct: PCT })}
+      <Icon name="gift" draw={false} className="h-3.5 w-3.5 shrink-0 text-mint" />
+      {t("bonusSettlementNote", { pct: PCT })}
     </p>
   )
 }

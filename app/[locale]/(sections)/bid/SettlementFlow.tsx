@@ -197,7 +197,7 @@ export function SettlementFlow({
           {t("allocationNote", { date: formatSaleDate(SALE_ECONOMICS.mainnetIso, true, locale) })}
         </p>
       ) : null}
-      {won ? <FirstDayBonusNote context="settlement" /> : null}
+      {won ? <FirstDayBonusNote /> : null}
     </div>
   )
 }
