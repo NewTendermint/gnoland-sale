@@ -156,13 +156,11 @@ function ExpandedBar({
   returning = false,
   preview,
   labelFor,
-  bonusForce,
 }: {
   journey: JourneyState
   returning?: boolean
   preview?: BidPreview
   labelFor: LabelFor
-  bonusForce?: boolean
 }) {
   const input = MOCK_JOURNEY_INPUTS[journey]
   return (
@@ -180,7 +178,6 @@ function ExpandedBar({
               wallet={<MockWalletChip />}
               manageEntitiesHref={SETUP_URL_PREVIEW}
               entityLabel="Jane Cooper Ltd"
-              bonusForce={bonusForce}
             />
           ) : null}
           <BidFlow
@@ -715,13 +712,12 @@ export default async function DevStatesPage({ params }: { params: Promise<{ loca
             />
           </div>
           <Caption>
-            Bid confirm step, in full context - bonus pill next to the "Place your bid" title
+            Bid confirm step (raise), in full context - bonus pill inline after the delta line
           </Caption>
           <ExpandedBar
-            journey="ready"
-            preview={{ state: "confirming", amountUsd: 1000 }}
+            journey="has-bid-winning"
+            preview={{ state: "confirming", amountUsd: 5000, bonus: true }}
             labelFor={labelFor}
-            bonusForce
           />
           <Caption>Winner settlement, in full context - note below the allocation cells</Caption>
           <div className="overflow-hidden rounded-[var(--frame-radius)] border border-border bg-background">

@@ -15,7 +15,7 @@ import { useLocale, useTranslations } from "next-intl"
 import { type ReactNode, useEffect, useRef, useState } from "react"
 import { useAccount } from "wagmi"
 import { BidFlow } from "../(sections)/bid/BidFlow"
-import { FirstDayBonusBanner, FirstDayBonusPill } from "../(sections)/bid/BonusNote"
+import { FirstDayBonusBanner } from "../(sections)/bid/BonusNote"
 import { BidStatusTag, FunnelSteps } from "../(sections)/bid/FunnelSteps"
 import { SonarSignOutButton } from "../(sections)/bid/ManageEntity"
 import { SettlementFlow } from "../(sections)/bid/SettlementFlow"
@@ -102,7 +102,6 @@ export function BidPanelDesktop() {
     return (
       <BarShell>
         <DrawLine immediate />
-        <FirstDayBonusBanner />
         <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4 py-4 sm:py-6">
           <BarCountdown
             targetIso={
@@ -413,7 +412,6 @@ export function BidSectionHeader({
   manageEntitiesHref,
   entityLabel,
   onSignOut = () => {},
-  bonusForce,
 }: {
   journey: JourneyState
   myBid: MyBid
@@ -423,8 +421,6 @@ export function BidSectionHeader({
   manageEntitiesHref?: string
   entityLabel?: string | null
   onSignOut?: () => void
-  /** Dev-gallery only: force the first-day bonus pill on (the real clock is outside the window). */
-  bonusForce?: boolean
 }) {
   const t = useTranslations("BidPanel")
   const tSale = useTranslations("Sale")
@@ -439,9 +435,8 @@ export function BidSectionHeader({
     <div className="mb-4 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-b border-border pb-3">
       {hasBid && myBid ? (
         <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-          <span className="mr-3 inline-flex items-center gap-2.5 text-sm font-semibold tracking-tight text-foreground">
+          <span className="mr-3 text-sm font-semibold tracking-tight text-foreground">
             {t("yourBid")}
-            <FirstDayBonusPill force={bonusForce} />
           </span>
           <HeaderCell label={t("labelCommitted")} value={fmtUsd(myBid.committedUsd)} />
           <HeaderCell label={t("headerMaxPrice")} value={`${fmtPrice(myBid.priceUsd)} / GNOT`} />
@@ -468,9 +463,8 @@ export function BidSectionHeader({
           />
         </div>
       ) : (
-        <span className="inline-flex items-center gap-2.5 text-sm font-semibold tracking-tight text-foreground">
+        <span className="text-sm font-semibold tracking-tight text-foreground">
           {bidSectionTitle(tSale as unknown as SaleTranslator, journey)}
-          <FirstDayBonusPill force={bonusForce} />
         </span>
       )}
       <div className="flex items-center gap-6">

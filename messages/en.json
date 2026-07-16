@@ -41,9 +41,10 @@
       "example2": "Bids received: 40,000,000 GNOT at $0.0645, 40,000,000 GNOT at $0.086. Since demand at $0.086 (40M) exceeds the 38,760,000 GNOT available, the clearing price rises to $0.086. Bidders at $0.0645 are not allocated tokens - only bids at or above the clearing price qualify. Winning bidders receive tokens pro rata, and excess bid amounts are refunded."
     },
     "bonus": {
-      "q": "Is there a bonus for bidding early?",
-      "a1": "Yes. Bids placed within the first 24 hours of the sale opening qualify for a {pct}% bonus in GNOT, provided the bid wins at settlement. Bidders who are outbid do not receive it.",
-      "a2": "The bonus is {pct}% of the GNOT you receive from your winning allocation. It is granted as additional GNOT at the mainnet token distribution, from a separate reserve, so it does not change the auction, the price you pay, or anyone else's allocation."
+      "q": "Do early participants receive any additional allocation?",
+      "a1": "Bidders who submit bids during the first 24 hours of the sale window and who ultimately receive an allocation are eligible for a 5% bonus on their final GNOT allocation.",
+      "a2": "Participants who bid on the first day but do not receive any allocation are not eligible for the bonus.",
+      "a3": "The 5% bonus is calculated after the auction closes and distributed together with the final allocation."
     },
     "date": {
       "q": "When is the token sale date?",
@@ -675,7 +676,6 @@
     "bonusBannerTitle": "First-day bonus",
     "bonusBannerBody": "Bid in the first 24 hours and win to earn a {pct}% GNOT bonus.",
     "bonusEndsIn": "Bonus window ends in",
-    "bonusStartsIn": "Bonus starts in",
     "bonusPill": "First-24h +{pct}%",
     "viewResults": "View results",
     "yourBid": "Your bid",
