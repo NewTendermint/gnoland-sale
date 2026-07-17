@@ -20,8 +20,7 @@ export const firstDayBonusClosesIso = new Date(
   new Date(SALE_ECONOMICS.saleOpensIso).getTime() + DAY_MS,
 ).toISOString()
 
-/** Whether the promo is surfaced at all. Prod requires the explicit flag; dev shows it by default so
- *  it is reviewable. Flipping this on in production is gated on legal (MiCA + US) sign-off. */
+/** Whether the bonus surfaces render at all. Production requires the explicit flag; dev defaults on. */
 export function firstDayBonusEnabled(): boolean {
   if (process.env.NEXT_PUBLIC_FIRST_DAY_BONUS === "1") return true
   return process.env.NODE_ENV === "development"
