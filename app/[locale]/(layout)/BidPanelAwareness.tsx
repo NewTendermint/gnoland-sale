@@ -3,6 +3,7 @@
 import { type SaleTranslator, desktopOnly } from "@/lib/sale/labels"
 import type { CommitmentData, SalePhase } from "@/lib/sale/types"
 import { useTranslations } from "next-intl"
+import { FirstDayBonusBanner } from "../(sections)/bid/BonusNote"
 import { DrawLine } from "../(ui)/DrawLine"
 import { BarShell, BarStatus, MetricCell, finalMetrics, liveKeyMetrics } from "./BidBarShell"
 import { useSale } from "./SaleProvider"
@@ -52,6 +53,7 @@ export function AwarenessBarBody({
 
   return (
     <div className="flex flex-col gap-3 py-4 sm:py-5">
+      <FirstDayBonusBanner />
       <div className="flex items-stretch">
         {liveKeyMetrics(t as unknown as SaleTranslator, commitment).map((m, i) => (
           <MetricCell
