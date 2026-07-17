@@ -97,7 +97,7 @@ export function FirstDayBonusBanner({ force }: { force?: boolean }) {
       as="div"
       immediate
       delayMs={1500}
-      className="mb-3 flex items-center gap-10 overflow-hidden py-1 text-xs"
+      className="mb-3 flex items-center gap-4 overflow-hidden py-1 text-xs lg:gap-10"
     >
       <span className={BONUS_TAG}>{t("bonusPill", { pct: PCT })}</span>
       {/* Decorative scroller: two identical copies so the -50% translate loops seamlessly. */}
@@ -122,7 +122,7 @@ export function FirstDayBonusBanner({ force }: { force?: boolean }) {
         {title}. {body}
       </span>
       {showCountdown ? (
-        <span className="inline-flex shrink-0 items-center gap-2 font-mono font-semibold tabular-nums">
+        <span className="hidden shrink-0 items-center gap-2 font-mono font-semibold tabular-nums lg:inline-flex">
           <span className="text-[10px] uppercase tracking-[0.2em] text-muted">
             {t("bonusEndsIn")}
           </span>
