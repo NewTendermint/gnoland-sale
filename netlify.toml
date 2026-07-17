@@ -77,10 +77,8 @@
   # (see the branch-deploy block below). /dev/states is a mock-fixture gallery, reachable in local
   # dev and on the staging branch-deploy (NEXT_PUBLIC_DEV_STATES_ENABLED below), 404 in production.
 
-  # First-24h bonus promo, LIVE on production. ⚠️ This turns the promo ON on sale.gno.land the moment
-  # this lands on `main` and deploys - the banner/pill surface per the real economics.ts dates
-  # (pre-sale teaser -> active window -> hidden). DO NOT merge this to main until the promo has legal
-  # sign-off (MiCA + US). No dates are overridden here: production keeps the real economics.ts schedule.
+  # First-24h bonus surfaces gate. Absent = surfaces stay hidden. Set here so they render on the
+  # production deploy; no dates are overridden, so they follow the economics.ts schedule.
   NEXT_PUBLIC_FIRST_DAY_BONUS = "1"
 [context.deploy-preview.environment]
   NEXT_PUBLIC_SITE_URL = "https://deploy-preview.netlify.app"
@@ -109,14 +107,12 @@
   # Milestone dates shifted so "now" sits in the commitment (live) window -> staging shows the bid
   # via the sale clock, no phase override. Widen/shift to test other phases; prod uses economics.ts.
   NEXT_PUBLIC_REGISTRATION_OPENS = "2026-06-01T22:00:00Z"
-  # Opened "today" (UTC) so staging is live AND inside the first-24h bonus window, to review the
-  # bonus banner/pill on the home. Bump this date to keep the window active on a later day; the
-  # bonus surfaces auto-hide once now is past open + 24h (prod uses the real economics.ts date).
+  # Opened "today" (UTC) so "now" sits inside the first 24h of the sale. Bump it to keep that window
+  # current on a later day. Prod uses the economics.ts dates.
   NEXT_PUBLIC_SALE_OPENS = "2026-07-17T00:00:00Z"
   NEXT_PUBLIC_SALE_CLOSES = "2026-12-31T22:00:00Z"
   # /dev/states gallery (mock fixtures only, no live data): reachable on staging for design review.
   # Never set this in the production context - the page must stay a 404 on sale.gno.land.
   NEXT_PUBLIC_DEV_STATES_ENABLED = "1"
-  # First-24h bonus promo, ON for staging review. Production stays OFF (deliberately absent from
-  # [context.production.environment]) until the promo is signed off - flip it there on purpose.
+  # First-24h bonus surfaces gate for the branch-deploy context. The production context sets its own.
   NEXT_PUBLIC_FIRST_DAY_BONUS = "1"
