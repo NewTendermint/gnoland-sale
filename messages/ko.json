@@ -430,7 +430,7 @@
       },
       "firstDayBonus": {
         "label": "첫날 보너스",
-        "value": "첫 24시간 낙찰 입찰에 대해 {pct}% GNOT 보너스, 메인넷 분배 시 지급"
+        "value": "세일 시작 후 첫 24시간 이내에 입찰하고 세일 종료 시 최종 배정을 받으면 5%의 보너스 GNOT를 받습니다. 보너스는 배정 물량과 함께 지급됩니다."
       }
     },
     "pricingCaps": {
@@ -674,9 +674,9 @@
     "captionOpens": "{date} 시작",
     "captionRegistrationOpens": "등록 시작 {date}",
     "bonusBannerTitle": "첫날 보너스",
-    "bonusBannerBody": "첫 24시간에 입찰하고 낙찰되면 {pct}% GNOT 보너스를 받습니다.",
-    "bonusEndsIn": "보너스 종료까지",
-    "bonusPill": "첫 24시간 +{pct}%",
+    "bonusBannerBody": "첫 24시간 이내에 입찰하고 최종 배정을 받을 시 5% 보너스를 받습니다.",
+    "bonusEndsIn": "보너스 기간 종료까지",
+    "bonusPill": "첫 24시간 +5%",
     "viewResults": "결과 보기",
     "yourBid": "내 입찰",
     "headerMaxPrice": "내 입찰가",

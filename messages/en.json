@@ -429,8 +429,8 @@
         "value": "Q3 2026"
       },
       "firstDayBonus": {
-        "label": "First-day bonus",
-        "value": "{pct}% bonus GNOT on winning first 24h bids, paid at mainnet distribution"
+        "label": "First-Day Bonus",
+        "value": "5% bonus GNOT when you bid during the first 24 hours and receive a final allocation when the sale ends. Bonus to be distributed with the winning allocation."
       }
     },
     "pricingCaps": {
@@ -673,10 +673,10 @@
     "statusEnded": "Ended",
     "captionOpens": "Opens {date}",
     "captionRegistrationOpens": "Registration opens {date}",
-    "bonusBannerTitle": "First-day bonus",
-    "bonusBannerBody": "Bid in the first 24 hours and win to earn a {pct}% GNOT bonus.",
+    "bonusBannerTitle": "First-Day Bonus",
+    "bonusBannerBody": "Bid in the first 24 hours and win to earn a 5% bonus.",
     "bonusEndsIn": "Bonus window ends in",
-    "bonusPill": "First 24h +{pct}%",
+    "bonusPill": "First 24H +5%",
     "viewResults": "View results",
     "yourBid": "Your bid",
     "headerMaxPrice": "Your max price",
