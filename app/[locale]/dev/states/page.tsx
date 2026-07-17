@@ -699,11 +699,25 @@ export default async function DevStatesPage({ params }: { params: Promise<{ loca
             post-mainnet distribution - nothing in the sale flow, contract or settlement changes.
           </p>
           <Caption>
-            Live bar with the banner on top (as it sits in the sticky bar, above metrics)
+            Pre-sale bar teaser (banner only, no countdown - the bar already counts down to open)
           </Caption>
           <div className="rounded-[var(--frame-radius)] border border-border bg-background px-6 lg:px-8">
             <div className="pt-4 sm:pt-6">
-              <FirstDayBonusBanner force />
+              <FirstDayBonusBanner force="before" />
+            </div>
+            <MetricsRow
+              dense={false}
+              labelFor={labelFor}
+              metrics={[{ icon: "clock", value: "5d 12:30:00", labelKey: "labelTimeLeft" }]}
+              right={<CtaPill journey="disconnected" t={t} />}
+            />
+          </div>
+          <Caption>
+            Live bar with the banner on top (during the 24h window - countdown to the window close)
+          </Caption>
+          <div className="rounded-[var(--frame-radius)] border border-border bg-background px-6 lg:px-8">
+            <div className="pt-4 sm:pt-6">
+              <FirstDayBonusBanner force="during" />
             </div>
             <MetricsRow
               dense={false}

@@ -20,7 +20,7 @@ const PCT = SALE_ECONOMICS.firstDayBonusPct
 const BONUS_TAG =
   "shrink-0 rounded-full bg-mint px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.15em] text-on-mint"
 
-type BonusPhase = "before" | "during" | "after"
+export type BonusPhase = "before" | "during" | "after"
 
 // before = sale not open yet (pre-sale teaser); during = inside the first 24h; after = window closed.
 function bonusPhaseAt(nowMs: number): BonusPhase {
@@ -33,12 +33,13 @@ function bonusPhaseAt(nowMs: number): BonusPhase {
 
 // Client-only: "after" on the first render (renders nothing on SSR, so no hydration mismatch), then
 // resolved after mount. A single timeout flips the phase at the next boundary - the visible
-// Countdown does its own per-second ticking, so no interval is needed here. `force` pins "during".
-function useBonusPhase(force?: boolean): BonusPhase {
+// Countdown does its own per-second ticking, so no interval is needed here. `force` pins a phase for
+// the dev-states gallery: `true` -> "during", or an explicit phase (e.g. "before" for the teaser).
+function useBonusPhase(force?: boolean | BonusPhase): BonusPhase {
   const [phase, setPhase] = useState<BonusPhase>("after")
   useEffect(() => {
     if (force) {
-      setPhase("during")
+      setPhase(force === true ? "during" : force)
       return
     }
     let timer: ReturnType<typeof setTimeout> | undefined
@@ -65,7 +66,7 @@ function useBonusPhase(force?: boolean): BonusPhase {
 export function FirstDayBonusPill({
   force,
   className = "",
-}: { force?: boolean; className?: string }) {
+}: { force?: boolean | BonusPhase; className?: string }) {
   const t = useTranslations("BidPanel")
   const phase = useBonusPhase(force)
   if (!firstDayBonusEnabled() && !force) return null
@@ -78,7 +79,7 @@ export function FirstDayBonusPill({
  *  active window (counting down to the window close) during the first 24h; nothing after. Renders
  *  only while the bonus is enabled (or forced). The ticker is decorative (aria-hidden) with an
  *  sr-only text equivalent, and holds still under reduced motion. */
-export function FirstDayBonusBanner({ force }: { force?: boolean }) {
+export function FirstDayBonusBanner({ force }: { force?: boolean | BonusPhase }) {
   const t = useTranslations("BidPanel")
   const phase = useBonusPhase(force)
   if (!firstDayBonusEnabled() && !force) return null
@@ -137,7 +138,7 @@ export function FirstDayBonusBanner({ force }: { force?: boolean }) {
 
 /** Winner settlement note (shown after the sale, so it is flag-gated only and worded conditionally
  *  since eligibility is settled off-app). */
-export function FirstDayBonusNote({ force }: { force?: boolean }) {
+export function FirstDayBonusNote({ force }: { force?: boolean | BonusPhase }) {
   const t = useTranslations("Bid")
   const enabled = firstDayBonusEnabled()
   if (!enabled && !force) return null

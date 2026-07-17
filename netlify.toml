@@ -106,7 +106,7 @@
   # Opened "today" (UTC) so staging is live AND inside the first-24h bonus window, to review the
   # bonus banner/pill on the home. Bump this date to keep the window active on a later day; the
   # bonus surfaces auto-hide once now is past open + 24h (prod uses the real economics.ts date).
-  NEXT_PUBLIC_SALE_OPENS = "2026-07-16T00:00:00Z"
+  NEXT_PUBLIC_SALE_OPENS = "2026-07-17T00:00:00Z"
   NEXT_PUBLIC_SALE_CLOSES = "2026-12-31T22:00:00Z"
   # /dev/states gallery (mock fixtures only, no live data): reachable on staging for design review.
   # Never set this in the production context - the page must stay a 404 on sale.gno.land.
