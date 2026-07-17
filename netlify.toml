@@ -76,6 +76,12 @@
   # phase override: to place a non-prod deploy in a given phase, override the milestone DATES
   # (see the branch-deploy block below). /dev/states is a mock-fixture gallery, reachable in local
   # dev and on the staging branch-deploy (NEXT_PUBLIC_DEV_STATES_ENABLED below), 404 in production.
+
+  # First-24h bonus promo, LIVE on production. ⚠️ This turns the promo ON on sale.gno.land the moment
+  # this lands on `main` and deploys - the banner/pill surface per the real economics.ts dates
+  # (pre-sale teaser -> active window -> hidden). DO NOT merge this to main until the promo has legal
+  # sign-off (MiCA + US). No dates are overridden here: production keeps the real economics.ts schedule.
+  NEXT_PUBLIC_FIRST_DAY_BONUS = "1"
 [context.deploy-preview.environment]
   NEXT_PUBLIC_SITE_URL = "https://deploy-preview.netlify.app"
   # Previews stay on Sepolia + sandbox contract, same pair rule as staging below: a non-prod
