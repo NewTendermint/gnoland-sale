@@ -198,7 +198,12 @@ export function TokenDetails() {
                   </div>
                   <dl className="col-span-12 lg:col-span-7">
                     {g.rows
-                      .filter((row) => row.id !== "firstDayBonus" || firstDayBonusEnabled())
+                      .filter(
+                        (row) =>
+                          row.id !== "firstDayBonus" ||
+                          // The bonus term row stays through the whole sale, then drops once it ends.
+                          (firstDayBonusEnabled() && phase !== "ended"),
+                      )
                       .map((row, ri) => (
                         <Rise
                           key={row.id}
