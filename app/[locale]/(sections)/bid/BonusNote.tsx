@@ -145,11 +145,11 @@ export function FirstDayBonusBanner({ force }: { force?: boolean | BonusPhase })
   )
 }
 
-/** Footer compliance disclaimer for the bonus. Same timing as the other surfaces (pre-sale + the
- *  first-24h window, hidden after) via useBonusVisible. Rendered as a client island in the Footer. */
+/** Footer compliance disclaimer for the bonus. Stays whenever the bonus is enabled (like the FAQ,
+ *  the persistent info/legal layer), NOT time-boxed to the window. Rendered as a Footer client island. */
 export function FirstDayBonusDisclaimer() {
   const t = useTranslations("Footer")
-  if (!useBonusVisible()) return null
+  if (!firstDayBonusEnabled()) return null
   return <p className="mb-2 max-w-3xl text-xs text-muted">{t("bonusDisclaimer")}</p>
 }
 

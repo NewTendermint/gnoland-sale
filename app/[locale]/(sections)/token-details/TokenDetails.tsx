@@ -210,7 +210,11 @@ export function TokenDetails() {
                             ri > 0 ? "border-t border-foreground/5" : ""
                           }`}
                         >
-                          <dt className="font-mono text-xs uppercase tracking-widest text-muted">
+                          <dt
+                            className={`font-mono text-xs uppercase tracking-widest text-muted ${
+                              row.id === "firstDayBonus" ? "shrink-0 whitespace-nowrap" : ""
+                            }`}
+                          >
                             {t(`${g.id}.${row.id}.label`)}
                           </dt>
                           <dd
