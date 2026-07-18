@@ -11,6 +11,7 @@
  * example; the $20M / $10M / 50% oversubscription example) are illustrative literals living in the
  * message catalog. Re-write them by hand (in every locale) if the band or supply moves.
  */
+import { firstDayBonusEnabled } from "../../lib/sale/bonus"
 import {
   SALE_ECONOMICS,
   formatSaleDate,
@@ -64,6 +65,16 @@ export function buildFaq(t: FaqTranslator, locale: string): FaqItem[] {
         t("auction.example2"),
       ],
     },
+    // Promo, gated: only listed while the first-day bonus is surfaced (firstDayBonusEnabled).
+    ...(firstDayBonusEnabled()
+      ? [
+          {
+            id: "bonus",
+            q: t("bonus.q"),
+            a: [t("bonus.a1")],
+          },
+        ]
+      : []),
     {
       id: "date",
       q: t("date.q"),

@@ -40,6 +40,10 @@
       "example2Title": "Example 2: Clearing price increases",
       "example2": "Bids received: 40,000,000 GNOT at $0.0645, 40,000,000 GNOT at $0.086. Since demand at $0.086 (40M) exceeds the 38,760,000 GNOT available, the clearing price rises to $0.086. Bidders at $0.0645 are not allocated tokens - only bids at or above the clearing price qualify. Winning bidders receive tokens pro rata, and excess bid amounts are refunded."
     },
+    "bonus": {
+      "q": "Is there a bonus token allocation for participants?",
+      "a1": "Subject to the final auction terms, an eligible participant that submits a qualifying bid during the first 24 hours and is allocated tokens will receive an additional token allocation equal to 5% of that participant's final auction allocation. The feature is formulaic, subject to eligibility and compliance conditions, and is not a prize, contest, lottery, sweepstakes, game, yield, or promise of value."
+    },
     "date": {
       "q": "When is the token sale date?",
       "a1": "Registration with Sonar opens {regDateTime}.",
@@ -421,6 +425,10 @@
       "mainnetLaunch": {
         "label": "Expected mainnet launch",
         "value": "Q3 2026"
+      },
+      "firstDayBonus": {
+        "label": "First-Day Bonus",
+        "value": "5% bonus GNOT when you bid during the first 24 hours and receive a final allocation when the sale ends. Bonus to be distributed with the winning allocation."
       }
     },
     "pricingCaps": {
@@ -551,6 +559,7 @@
     "cellCommitment": "Your commitment",
     "cellAllocation": "Your allocation",
     "allocationNote": "GNOT is sent to your wallet at mainnet ({date}), with the unlock schedule applied.",
+    "bonusSettlementNote": "Plus a +{pct}% GNOT bonus at mainnet distribution if your first bid was in the first 24h.",
     "confirmationSent": "Confirmation email sent - check your inbox.",
     "useAnotherEmail": "Use another email",
     "emailPitch": "Never linked to your wallet or bids.",
@@ -662,6 +671,10 @@
     "statusEnded": "Ended",
     "captionOpens": "Opens {date}",
     "captionRegistrationOpens": "Registration opens {date}",
+    "bonusBannerTitle": "First-Day Bonus",
+    "bonusBannerBody": "Bid in the first 24 hours and qualify to receive an additional 5% allocation",
+    "bonusEndsIn": "Bonus window ends in",
+    "bonusPill": "First 24H +5%",
     "viewResults": "View results",
     "yourBid": "Your bid",
     "headerMaxPrice": "Your max price",
@@ -729,6 +742,7 @@
     "linkRiskDisclosure": "Risk Disclosure",
     "linkUsDisclaimer": "U.S. Disclaimer",
     "disclaimer": "Not available in restricted jurisdictions. High-risk investment. You may lose your entire commitment. Token transferability begins at mainnet launch (Q3 2026).",
+    "bonusDisclaimer": "Disclaimer: Subject to the final auction terms, an eligible participant that submits a qualifying bid during the first 24 hours and is allocated tokens will receive an additional token allocation equal to 5% of that participant's final auction allocation. The feature is formulaic, subject to eligibility and compliance conditions, and is not a prize, contest, lottery, sweepstakes, game, yield, or promise of value.",
     "copyright": "(c) 2026 Gno.land. All rights reserved."
   },
   "Legal": {

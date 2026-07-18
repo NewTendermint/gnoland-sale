@@ -389,4 +389,26 @@ main > section {
   .bid-capsule::-webkit-scrollbar {
     display: none;
   }
+
+  /* First-day bonus ticker: the promo scrolls continuously. The loop is seamless because the
+     content is rendered twice and translated by -50% (one full copy). Transform-only (GPU), and
+     static (no scroll) under reduced motion. */
+  .bonus-marquee {
+    animation: bonus-marquee 26s linear infinite;
+  }
+
+  @keyframes bonus-marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bonus-marquee {
+      animation: none;
+    }
+  }
 }

@@ -24,6 +24,7 @@ import { RevealBoundary, RevealGroup } from "../../(ui)/RevealGroup"
 import { Rise } from "../../(ui)/Rise"
 import { Section } from "../../(ui)/Section"
 import { HEADING_TITLE } from "../../(ui)/SectionHeading"
+import { useBonusVisible } from "../bid/BonusNote"
 
 const TABLE_REVEAL_PCT = 10
 
@@ -33,6 +34,9 @@ export function TokenDetails() {
   // Locale-aware sale-open..close date range for the contribution-window row.
   const contributionRange = `${formatSaleDate(SALE_ECONOMICS.saleOpensIso, false, locale)} - ${formatSaleDate(SALE_ECONOMICS.saleClosesIso, true, locale)}`
   const { phase, preSaleStage, journey, myBid, commitment, pendingIndexing } = useSale()
+  // Gates the First-Day Bonus term row: shown from pre-sale through the first 24h, hidden after
+  // the window (same timing as the banner/pill).
+  const bonusVisible = useBonusVisible()
   const positionState = derivePositionState(journey, myBid !== null)
   const preSale = phase === "pre-sale"
   const registrationOpen = preSaleStage === "registration-open"
@@ -196,50 +200,60 @@ export function TokenDetails() {
                     </div>
                   </div>
                   <dl className="col-span-12 lg:col-span-7">
-                    {g.rows.map((row, ri) => (
-                      <Rise
-                        key={row.id}
-                        index={ri + 1}
-                        className={`flex items-baseline justify-between gap-6 py-1 ${
-                          ri > 0 ? "border-t border-foreground/5" : ""
-                        }`}
-                      >
-                        <dt className="font-mono text-xs uppercase tracking-widest text-muted">
-                          {t(`${g.id}.${row.id}.label`)}
-                        </dt>
-                        <dd
-                          className={`text-right font-medium ${
-                            row.tbd
-                              ? "font-mono text-xs uppercase tracking-widest text-faint"
-                              : "text-base text-foreground"
+                    {g.rows
+                      .filter((row) => row.id !== "firstDayBonus" || bonusVisible)
+                      .map((row, ri) => (
+                        <Rise
+                          key={row.id}
+                          index={ri + 1}
+                          className={`flex items-baseline justify-between gap-6 py-1 ${
+                            ri > 0 ? "border-t border-foreground/5" : ""
                           }`}
                         >
-                          {row.href ? (
-                            <a
-                              href={row.href}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-baseline gap-1 underline-offset-4 hover:underline"
-                            >
-                              {row.value ??
-                                t(
-                                  `${g.id}.${row.id}.value`,
-                                  row.id === "contributionWindow"
-                                    ? { range: contributionRange }
+                          <dt
+                            className={`font-mono text-xs uppercase tracking-widest text-muted ${
+                              row.id === "firstDayBonus" ? "shrink-0 whitespace-nowrap" : ""
+                            }`}
+                          >
+                            {t(`${g.id}.${row.id}.label`)}
+                          </dt>
+                          <dd
+                            className={`text-right font-medium ${
+                              row.tbd
+                                ? "font-mono text-xs uppercase tracking-widest text-faint"
+                                : "text-base text-foreground"
+                            }`}
+                          >
+                            {row.href ? (
+                              <a
+                                href={row.href}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-baseline gap-1 underline-offset-4 hover:underline"
+                              >
+                                {row.value ??
+                                  t(
+                                    `${g.id}.${row.id}.value`,
+                                    row.id === "contributionWindow"
+                                      ? { range: contributionRange }
+                                      : {},
+                                  )}
+                                <span aria-hidden="true">↗</span>
+                              </a>
+                            ) : (
+                              (row.value ??
+                              t(
+                                `${g.id}.${row.id}.value`,
+                                row.id === "contributionWindow"
+                                  ? { range: contributionRange }
+                                  : row.id === "firstDayBonus"
+                                    ? { pct: SALE_ECONOMICS.firstDayBonusPct }
                                     : {},
-                                )}
-                              <span aria-hidden="true">↗</span>
-                            </a>
-                          ) : (
-                            (row.value ??
-                            t(
-                              `${g.id}.${row.id}.value`,
-                              row.id === "contributionWindow" ? { range: contributionRange } : {},
-                            ))
-                          )}
-                        </dd>
-                      </Rise>
-                    ))}
+                              ))
+                            )}
+                          </dd>
+                        </Rise>
+                      ))}
                   </dl>
                 </div>
                 <DrawLine index={g.rows.length + 1} />

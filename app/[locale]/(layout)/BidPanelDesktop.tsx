@@ -15,6 +15,7 @@ import { useLocale, useTranslations } from "next-intl"
 import { type ReactNode, useEffect, useRef, useState } from "react"
 import { useAccount } from "wagmi"
 import { BidFlow } from "../(sections)/bid/BidFlow"
+import { FirstDayBonusBanner } from "../(sections)/bid/BonusNote"
 import { BidStatusTag, FunnelSteps } from "../(sections)/bid/FunnelSteps"
 import { SonarSignOutButton } from "../(sections)/bid/ManageEntity"
 import { SettlementFlow } from "../(sections)/bid/SettlementFlow"
@@ -101,31 +102,36 @@ export function BidPanelDesktop() {
     return (
       <BarShell>
         <DrawLine immediate />
-        <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4 py-4 sm:py-6">
-          <BarCountdown
-            targetIso={
-              countToSale ? SALE_ECONOMICS.saleOpensIso : SALE_ECONOMICS.registrationOpensIso
-            }
-            caption={
-              countToSale
-                ? t("captionOpens", {
-                    date: formatSaleDate(SALE_ECONOMICS.saleOpensIso, true, locale),
-                  })
-                : t("captionRegistrationOpens", {
-                    date: formatSaleDate(SALE_ECONOMICS.registrationOpensIso, false, locale),
-                  })
-            }
-          />
-          <div className="ml-auto flex justify-end">
-            <PreSaleRight
-              state={barState}
-              returning={sonarSeen}
-              setupHref={sonarSetupUrl}
-              entityLabel={entityLabel}
-              onRegister={redirectToSonarLogin}
-              onSignOut={handleSignOut}
-              onRefresh={handleRefresh}
+        {/* Banner sits inside the same padded block as the row (mirrors the live bar), so the
+            vertical rhythm matches; its own mb-3 spaces it from the row below. */}
+        <div className="py-4 sm:py-6">
+          <FirstDayBonusBanner />
+          <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4">
+            <BarCountdown
+              targetIso={
+                countToSale ? SALE_ECONOMICS.saleOpensIso : SALE_ECONOMICS.registrationOpensIso
+              }
+              caption={
+                countToSale
+                  ? t("captionOpens", {
+                      date: formatSaleDate(SALE_ECONOMICS.saleOpensIso, true, locale),
+                    })
+                  : t("captionRegistrationOpens", {
+                      date: formatSaleDate(SALE_ECONOMICS.registrationOpensIso, false, locale),
+                    })
+              }
             />
+            <div className="ml-auto flex justify-end">
+              <PreSaleRight
+                state={barState}
+                returning={sonarSeen}
+                setupHref={sonarSetupUrl}
+                entityLabel={entityLabel}
+                onRegister={redirectToSonarLogin}
+                onSignOut={handleSignOut}
+                onRefresh={handleRefresh}
+              />
+            </div>
           </div>
         </div>
       </BarShell>
@@ -214,6 +220,7 @@ export function BidPanelDesktop() {
           <Entrance className="band-10">
             <DrawLine immediate delayMs={200} />
             <div className="py-4 sm:py-6">
+              <FirstDayBonusBanner />
               <div className="flex flex-wrap items-start justify-between gap-x-8 gap-y-4">
                 <Stagger
                   as="div"
