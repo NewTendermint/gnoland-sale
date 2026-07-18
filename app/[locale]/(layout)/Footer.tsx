@@ -1,5 +1,6 @@
 import { Link } from "@/i18n/navigation"
 import { getTranslations } from "next-intl/server"
+import { FirstDayBonusDisclaimer } from "../(sections)/bid/BonusNote"
 import { DrawLine } from "../(ui)/DrawLine"
 import { Stagger } from "../(ui)/Stagger"
 import { ThemeToggle } from "./ThemeToggle"
@@ -126,6 +127,7 @@ export async function Footer() {
 
           <div className="col-span-12 mt-16 flex flex-wrap items-center justify-between gap-4 lg:col-span-10 lg:col-start-2">
             <div className="flex flex-col leading-tight">
+              <FirstDayBonusDisclaimer />
               <p className="text-xs text-muted">{t("disclaimer")}</p>
               <p className="text-xs text-muted">{t("copyright")}</p>
             </div>

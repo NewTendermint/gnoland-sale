@@ -145,6 +145,14 @@ export function FirstDayBonusBanner({ force }: { force?: boolean | BonusPhase })
   )
 }
 
+/** Footer compliance disclaimer for the bonus. Same timing as the other surfaces (pre-sale + the
+ *  first-24h window, hidden after) via useBonusVisible. Rendered as a client island in the Footer. */
+export function FirstDayBonusDisclaimer() {
+  const t = useTranslations("Footer")
+  if (!useBonusVisible()) return null
+  return <p className="mb-2 max-w-3xl text-xs text-muted">{t("bonusDisclaimer")}</p>
+}
+
 /** Winner settlement note (shown after the sale, so it is flag-gated only and worded conditionally
  *  since eligibility is settled off-app). */
 export function FirstDayBonusNote({ force }: { force?: boolean | BonusPhase }) {

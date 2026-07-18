@@ -71,7 +71,7 @@ export function buildFaq(t: FaqTranslator, locale: string): FaqItem[] {
           {
             id: "bonus",
             q: t("bonus.q"),
-            a: [t("bonus.a1"), t("bonus.a2"), t("bonus.a3")],
+            a: [t("bonus.a1")],
           },
         ]
       : []),
