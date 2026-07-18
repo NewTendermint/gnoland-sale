@@ -60,6 +60,15 @@ function useBonusPhase(force?: boolean | BonusPhase): BonusPhase {
   return phase
 }
 
+/** Whether the bonus should be surfaced right now: enabled AND not past the first-24h window
+ *  (pre-sale teaser + the active window; hidden after). Gates the always-on content surfaces (e.g.
+ *  the sale-terms row) so they track the banner timing. Client-only (false on SSR, resolves after
+ *  mount). */
+export function useBonusVisible(): boolean {
+  const phase = useBonusPhase()
+  return firstDayBonusEnabled() && phase !== "after"
+}
+
 /** Compact promo pill (solid-mint "winning" badge idiom). Renders only while the bonus is enabled
  *  AND the clock is inside the active first-24h window (or forced) - NOT during the pre-sale teaser.
  *  `className` lets a caller place it inline (e.g. after the confirm-step delta line). */
