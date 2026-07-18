@@ -104,13 +104,11 @@
   # Sandbox sale's lower minimum commitment (prod keeps the economics.ts default of 100).
   # Match this to your Sonar sandbox sale's actual min.
   NEXT_PUBLIC_MIN_COMMITMENT_USD = "2"
-  # Milestone dates shifted so "now" sits in the commitment (live) window -> staging shows the bid
-  # via the sale clock, no phase override. Widen/shift to test other phases; prod uses economics.ts.
-  NEXT_PUBLIC_REGISTRATION_OPENS = "2026-06-01T22:00:00Z"
-  # Opened "today" (UTC) so "now" sits inside the first 24h of the sale. Bump it to keep that window
-  # current on a later day. Prod uses the economics.ts dates.
-  NEXT_PUBLIC_SALE_OPENS = "2026-07-17T00:00:00Z"
-  NEXT_PUBLIC_SALE_CLOSES = "2026-12-31T22:00:00Z"
+  # Milestone dates mirror the real sale schedule (same as economics.ts defaults) so staging tracks
+  # production's phase. Shift these to test other phases (e.g. a recent open to test the live window).
+  NEXT_PUBLIC_REGISTRATION_OPENS = "2026-07-09T12:00:00Z"
+  NEXT_PUBLIC_SALE_OPENS = "2026-07-20T12:00:00Z"
+  NEXT_PUBLIC_SALE_CLOSES = "2026-07-27T12:00:00Z"
   # /dev/states gallery (mock fixtures only, no live data): reachable on staging for design review.
   # Never set this in the production context - the page must stay a 404 on sale.gno.land.
   NEXT_PUBLIC_DEV_STATES_ENABLED = "1"
