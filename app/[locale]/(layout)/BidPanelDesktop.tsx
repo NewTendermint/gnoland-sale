@@ -200,6 +200,7 @@ export function BidPanelDesktop() {
     pendingBidDelta
       ? pendingCommittedChip(pendingBidDelta.amountUsd, tSale as unknown as SaleTranslator)
       : undefined,
+    expanded,
   )
 
   // The journey reads missing data as "unverified"/"no bid", so rendering it before the reads
