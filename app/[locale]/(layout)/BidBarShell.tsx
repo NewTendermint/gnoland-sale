@@ -4,7 +4,7 @@ import { LG_MEDIA_QUERY } from "@/lib/device/breakpoints"
 import { useMediaQuery } from "@/lib/device/use-media-query"
 import { shouldAnimate } from "@/lib/motion/should-animate"
 import { SALE_ECONOMICS } from "@/lib/sale/economics"
-import { fmtCompactUsd, fmtCount, fmtPrice } from "@/lib/sale/format"
+import { fmtCompactUsd, fmtCount, fmtPrice, fmtUsd } from "@/lib/sale/format"
 import type { SaleTranslator } from "@/lib/sale/labels"
 import type { CommitmentData } from "@/lib/sale/types"
 import { useTranslations } from "next-intl"
@@ -142,11 +142,14 @@ export function BarCountdown({ targetIso, caption }: { targetIso: string; captio
 }
 
 /** `t` is a BidPanel-namespace translator; `pendingChip` is a pre-formatted "+$x pending" string
- *  built by the caller (its " pending" word lives in the Sale namespace). */
+ *  built by the caller (its " pending" word lives in the Sale namespace).
+ *  `expanded` renders the Committed total exact (fmtUsd) rather than compact (fmtCompactUsd), for
+ *  the open state where the extra width is available; collapsed stays compact. */
 export function liveMetrics(
   t: SaleTranslator,
   commitment: CommitmentData,
   pendingChip?: string,
+  expanded = false,
 ): BarMetric[] {
   return [
     {
@@ -168,7 +171,9 @@ export function liveMetrics(
     },
     {
       icon: "database",
-      value: fmtCompactUsd(commitment.totalCommittedUsd),
+      value: expanded
+        ? fmtUsd(commitment.totalCommittedUsd)
+        : fmtCompactUsd(commitment.totalCommittedUsd),
       label: t("labelCommitted"),
       pending: pendingChip,
     },

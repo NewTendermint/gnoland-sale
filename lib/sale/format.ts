@@ -31,8 +31,8 @@ import type { SaleTranslator } from "./labels"
 export const pendingCommittedChip = (amountUsd: number, t?: SaleTranslator) =>
   `+${fmtUsd(amountUsd)} ${t ? t("pendingSuffix") : "pending"}`
 
-/** Compact number, e.g. "721K" / "1.2M" (deterministic across JS engines, unlike Intl compact).
- * One decimal from millions up only; K amounts round to a whole number. */
+/** Compact number, e.g. "82.3K" / "1.2M" (deterministic across JS engines, unlike Intl compact).
+ * One decimal at every unit; trailing zeros drop, so round amounts stay clean ("82K", never "82.0K"). */
 export const fmtCompact = (n: number) => {
   const sign = n < 0 ? "-" : ""
   const abs = Math.abs(n)
@@ -44,7 +44,7 @@ export const fmtCompact = (n: number) => {
     v /= 1000
     i++
   }
-  let rounded = i === 0 ? Math.round(v) : Math.round(v * 10) / 10
+  let rounded = Math.round(v * 10) / 10
   if (rounded >= 1000 && i < units.length - 1) {
     rounded /= 1000
     i++
