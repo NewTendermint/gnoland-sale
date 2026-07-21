@@ -5,9 +5,10 @@
 import { LG_MEDIA_QUERY } from "./breakpoints"
 import { useMediaQuery } from "./use-media-query"
 
-// any-* (not primary-input hover/pointer): a touchscreen laptop reports its touch digitizer as
-// the primary input and would be false-negatived out of the funnel; any capable input qualifies.
-export const FUNNEL_MEDIA_QUERY = `(any-hover: hover) and (any-pointer: fine) and ${LG_MEDIA_QUERY}`
+// Desktop/tablet vs phone: qualify on width OR a fine pointer OR hover. any-* catches a laptop's
+// mouse/trackpad even alongside a touchscreen (where the browser can report the device as coarse).
+// Only a phone - narrow, no fine pointer, no hover - fails all three and gets the awareness UI.
+export const FUNNEL_MEDIA_QUERY = `${LG_MEDIA_QUERY} or (any-pointer: fine) or (any-hover: hover)`
 
 export function useFunnelCapable(): boolean | undefined {
   return useMediaQuery(FUNNEL_MEDIA_QUERY, undefined)
