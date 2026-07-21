@@ -87,7 +87,9 @@ export function redirectToSonarLogin(): void {
     (url) => {
       window.location.href = url
     },
-    () => {},
+    // Only the pre-redirect init failure is observable here; abandonment on the hosted login page
+    // happens off-app and cannot be seen client-side.
+    () => track("sonar_auth_failed", { stage: "init" }),
   )
 }
 
