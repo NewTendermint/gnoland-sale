@@ -23,6 +23,9 @@ export type AnalyticsEvent =
   | "add_to_calendar"
   | "faq_opened"
   | "section_viewed"
+  | "wallet_disconnected"
+  | "bid_precheck_blocked"
+  | "sonar_auth_failed"
 
 export type AnalyticsMetadata = Record<string, string | number | boolean>
 
@@ -83,4 +86,115 @@ export function bidAmountBucket(usd: number): BidAmountBucket {
   if (usd < 1_000) return "500_1k"
   if (usd < 10_000) return "1k_10k"
   return "10k_plus"
+}
+
+// A closed taxonomy of bid/precheck failure causes. A bid can fail for a compliance/eligibility
+// reason (decided off-app by the sale platform) or an on-chain/wallet reason (decided in the
+// browser). Keeping them as distinct slugs is what lets a dashboard tell "the platform blocked
+// this wallet" apart from "the user rejected the signature" - the whole point of this taxonomy.
+export type BidFailCode =
+  | "user-rejected"
+  | "tx-replaced"
+  | "wrong-chain"
+  | "not-connected"
+  | "insufficient-eth-gas"
+  | "insufficient-token"
+  | "price-range"
+  | "amount-range"
+  | "lockup-required"
+  | "cannot-lower"
+  | "permit-expired"
+  | "sale-window"
+  | "wallet-tied"
+  | "wallet-not-linked"
+  | "missing-permit"
+  | "approval-reverted"
+  | "tx-reverted"
+  | "already-in-progress"
+  | "session-expired"
+  | "entity-not-eligible"
+  | "wallet-risk"
+  | "max-wallets-used"
+  | "requires-liveness"
+  | "sale-not-active"
+  | "outside-time-window"
+  | "generic"
+
+// Reasons that are already stable slugs or fixed sentinels at their source: mapped by exact
+// identity so they keep their historical analytics label. Everything else is a human line and
+// is matched by pattern below.
+const EXACT_FAIL_CODES: Record<string, BidFailCode> = {
+  "wrong-chain": "wrong-chain",
+  "Connect your wallet": "not-connected",
+  "session-expired": "session-expired",
+  "entity-not-eligible": "entity-not-eligible",
+  "wallet-risk": "wallet-risk",
+  "max-wallets-used": "max-wallets-used",
+  "requires-liveness": "requires-liveness",
+  "sale-not-active": "sale-not-active",
+  "wallet-not-linked": "wallet-not-linked",
+  "outside-time-window": "outside-time-window",
+  unknown: "generic",
+}
+
+// Human failure lines -> code. Ordered, first match wins; each pattern targets a phrase specific
+// enough that no two arms overlap. The balance arm is token-templated ("Insufficient USDC/USDT
+// balance.") so it matches on shape, not a fixed symbol.
+const FAIL_PATTERNS: ReadonlyArray<readonly [RegExp, BidFailCode]> = [
+  [/cancelled the (signature|transaction)/i, "user-rejected"],
+  [/transaction was replaced/i, "tx-replaced"],
+  [/Not enough ETH/i, "insufficient-eth-gas"],
+  [/^Insufficient .+ balance\.$/i, "insufficient-token"],
+  [/price is outside/i, "price-range"],
+  [/amount is outside/i, "amount-range"],
+  [/must include the lockup/i, "lockup-required"],
+  [/only be raised/i, "cannot-lower"],
+  [/authorization expired/i, "permit-expired"],
+  [/sale isn't (accepting bids|open)/i, "sale-window"],
+  [/already linked to another/i, "wallet-tied"],
+  [/isn't linked to your verified identity/i, "wallet-not-linked"],
+  [/Missing purchase permit/i, "missing-permit"],
+  [/approval transaction failed/i, "approval-reverted"],
+  [/bid transaction failed on-chain/i, "tx-reverted"],
+  [/bid is already in progress/i, "already-in-progress"],
+]
+
+// Classify a bid/precheck failure reason (a Sonar/sentinel code or an on-chain human line) into a
+// stable slug for analytics. Unmatched input is "generic" - the guard test asserts every real
+// producer line matches, so "generic" only ever reflects a genuinely unknown error.
+export function bidFailureCode(reason: string): BidFailCode {
+  // hasOwn, not a bare lookup: a plain object inherits "toString"/"constructor" etc., which would
+  // otherwise return a truthy prototype member for those reason values.
+  if (Object.hasOwn(EXACT_FAIL_CODES, reason)) return EXACT_FAIL_CODES[reason]
+  for (const [pattern, code] of FAIL_PATTERNS) {
+    if (pattern.test(reason)) return code
+  }
+  return "generic"
+}
+
+// Bucket a wallet-connect error by its class name and EIP-1193 code. The raw message is never
+// read: it can carry an address and its wording is unstable across wallets. Injected wallets
+// often surface a raw provider error (not viem's typed class), so the numeric code is matched
+// too: 4001 = user rejected, -32002 = a request is already pending.
+export function connectFailureBucket(err: unknown): string {
+  const e = (err ?? {}) as { name?: unknown; code?: unknown }
+  const name = typeof e.name === "string" ? e.name : ""
+  const code = typeof e.code === "number" ? e.code : undefined
+  if (name === "UserRejectedRequestError" || code === 4001) return "user-rejected"
+  if (name === "ConnectorAlreadyConnectedError") return "already-connected"
+  if (name === "ResourceUnavailableRpcError" || code === -32002) return "resource-unavailable"
+  return "other"
+}
+
+// Decide whether a wagmi onConnect is a real user connection worth tracking. A silent
+// auto-reconnect on page load (isReconnected) is skipped so it does not inflate connect-success.
+// Returned so the caller stays a trivial one-liner and the gating logic is unit-testable in
+// isolation (the connect signal is dropped if fired from the unmounting connect UI, so the caller
+// lives at the provider level instead).
+export function walletConnectedEvent(data: {
+  connector?: { id?: string }
+  isReconnected: boolean
+}): { event: "wallet_connected"; metadata: { connector: string } } | null {
+  if (data.isReconnected) return null
+  return { event: "wallet_connected", metadata: { connector: data.connector?.id ?? "unknown" } }
 }
