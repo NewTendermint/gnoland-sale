@@ -1,7 +1,7 @@
 "use client"
 
 import { useViewFocus } from "@/lib/a11y/focus"
-import { bidAmountBucket, track } from "@/lib/analytics/track"
+import { bidAmountBucket, bidFailureCode, connectFailureBucket, track } from "@/lib/analytics/track"
 import { clearEmailOptInDone, emailOptInDone, newsletterEnabled } from "@/lib/newsletter/config"
 import {
   balanceCoversBid,
@@ -640,8 +640,14 @@ export function ConnectChoices({ prompt }: { prompt?: string } = {}) {
                 connect(
                   { connector },
                   {
-                    onSuccess: () => track("wallet_connected", { connector: connector.id }),
-                    onError: () => track("wallet_connect_failed", { connector: connector.id }),
+                    // Success is tracked at the provider level (WalletTelemetry): this component
+                    // unmounts on a successful connect, which would drop a callback attached here.
+                    // A failed connect leaves it mounted, so onError fires reliably.
+                    onError: (err) =>
+                      track("wallet_connect_failed", {
+                        connector: connector.id,
+                        reason: connectFailureBucket(err),
+                      }),
                   },
                 )
               }}
@@ -713,12 +719,6 @@ function reasonToMessage(t: SaleTranslator, reason: string): string {
   if (!key) return reason
   if (reason === "wrong-chain") return t(key, { chain: SALE_CHAIN.name })
   return t(key)
-}
-
-// Analytics label: known codes pass as-is, free-form on-chain revert text collapses to one
-// bucket so no raw wallet/contract strings ever leave the browser.
-function failureLabel(reason: string): string {
-  return reason in BID_FAIL_KEYS ? reason : "onchain-or-other"
 }
 
 /** Small "+amount" pill shown on the bid CTAs when a raise adds USDC over the prior commitment. */
@@ -826,7 +826,14 @@ function BidRow({
     onPrecheck()
       .then((r) => {
         if (!aliveRef.current || seq !== precheckSeq.current) return
-        setPrecheckNotice(r.ready ? null : { reason: r.reason, livenessUrl: r.livenessUrl })
+        if (r.ready) {
+          setPrecheckNotice(null)
+        } else {
+          // A blocker shown before the user ever submits (e.g. wallet-risk): count it here, or
+          // seen-but-abandoned blocks never reach the bid_failed path and go uncounted.
+          setPrecheckNotice({ reason: r.reason, livenessUrl: r.livenessUrl })
+          track("bid_precheck_blocked", { reason: bidFailureCode(r.reason) })
+        }
       })
       .catch(() => {}) // onPrecheck is fail-open today; guards future wiring
   }
@@ -1015,7 +1022,7 @@ function BidRow({
         setTxHash(result.txHash)
         setSubmitState("submitted")
       } else {
-        track("bid_failed", { reason: failureLabel(result.reason) })
+        track("bid_failed", { reason: bidFailureCode(result.reason) })
         setSubmitState("idle")
         setSubmitFailure({
           message: reasonToMessage(st, result.reason),

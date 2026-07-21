@@ -42,6 +42,17 @@ describe("track", () => {
     expect(loaded).toHaveBeenCalledWith("sonar_auth_started")
   })
 
+  it("forwards the funnel-coverage events", () => {
+    const loaded = vi.fn()
+    win.sa_event = loaded
+    track("wallet_disconnected")
+    track("bid_precheck_blocked", { reason: "wallet-risk" })
+    track("sonar_auth_failed", { stage: "init" })
+    expect(loaded).toHaveBeenNthCalledWith(1, "wallet_disconnected")
+    expect(loaded).toHaveBeenNthCalledWith(2, "bid_precheck_blocked", { reason: "wallet-risk" })
+    expect(loaded).toHaveBeenNthCalledWith(3, "sonar_auth_failed", { stage: "init" })
+  })
+
   it("no-ops outside production builds", () => {
     vi.stubEnv("NODE_ENV", "test")
     const loaded = vi.fn()
