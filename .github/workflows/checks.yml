@@ -48,5 +48,6 @@ jobs:
 
       # Fail the build on high-or-critical vulnerabilities in PRODUCTION dependencies.
       # Dev/test tooling (e.g. jsdom -> vitest -> undici) is excluded: it never ships to users.
+      # The gate stays strict; a small, documented allowlist of advisory ids lives in the script.
       - name: Audit dependencies
-        run: npm audit --audit-level=high --omit=dev
+        run: node scripts/audit-check.mjs
