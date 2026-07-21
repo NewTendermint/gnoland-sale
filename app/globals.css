@@ -5,7 +5,7 @@
 @custom-variant dark (&:is(.dark *));
 
 /* Keep in sync with FUNNEL_MEDIA_QUERY in lib/device/funnel-gate.ts. */
-@custom-variant funnel (@media (any-hover: hover) and (any-pointer: fine) and (min-width: 64rem));
+@custom-variant funnel (@media (min-width: 64rem) or (any-pointer: fine) or (any-hover: hover));
 
 @theme inline {
   --color-background: var(--background);
