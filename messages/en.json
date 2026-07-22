@@ -503,15 +503,15 @@
       },
       "connect": {
         "title": "Connect",
-        "body": "Connect your wallet to join the sale."
+        "body": "Connect your wallet to join the sale on Ethereum mainnet."
       },
       "bid": {
         "title": "Bid",
-        "body": "Set your max price and commit USDC or USDT."
+        "body": "Set your max price and commit USDC or USDT - raise it anytime before close."
       },
       "receive": {
         "title": "Receive",
-        "body": "Tokens are sent to your address."
+        "body": "Tokens are sent to your address, or your funds are refunded if you don't win."
       }
     }
   },
