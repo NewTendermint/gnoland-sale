@@ -56,22 +56,25 @@ describe("fmtCompactUsd", () => {
     expect(fmtCompactUsd(0)).toBe("$0")
   })
 
-  it("rounds thousands to a whole K (no decimal below $1M)", () => {
-    expect(fmtCompactUsd(1500)).toBe("$2K")
-    expect(fmtCompactUsd(1247)).toBe("$1K")
-    expect(fmtCompactUsd(720_900)).toBe("$721K")
+  it("keeps one decimal at the K unit, dropping trailing zeros", () => {
+    expect(fmtCompactUsd(82_340)).toBe("$82.3K")
+    expect(fmtCompactUsd(82_000)).toBe("$82K")
+    expect(fmtCompactUsd(1500)).toBe("$1.5K")
+    expect(fmtCompactUsd(1247)).toBe("$1.2K")
+    expect(fmtCompactUsd(720_900)).toBe("$720.9K")
   })
 
   it("keeps one decimal from millions up", () => {
     expect(fmtCompactUsd(1_000_000)).toBe("$1M")
     expect(fmtCompactUsd(1_200_000)).toBe("$1.2M")
+    expect(fmtCompactUsd(2_043_900)).toBe("$2M")
     expect(fmtCompactUsd(2_000_000)).toBe("$2M")
     expect(fmtCompactUsd(2_400_000_000)).toBe("$2.4B")
   })
 
-  it("carries a rounding overflow up to the next unit (999_600 -> $1M)", () => {
-    expect(fmtCompactUsd(999_600)).toBe("$1M")
-    expect(fmtCompactUsd(999_499)).toBe("$999K")
+  it("carries a rounding overflow up to the next unit (999_960 -> $1M)", () => {
+    expect(fmtCompactUsd(999_960)).toBe("$1M")
+    expect(fmtCompactUsd(999_499)).toBe("$999.5K")
   })
 
   it("rounds sub-$1 amounts down to $0", () => {

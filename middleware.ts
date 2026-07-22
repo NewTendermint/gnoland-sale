@@ -1,27 +1,49 @@
+import createMiddleware from "next-intl/middleware"
 import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
+import { routing } from "./i18n/routing"
 
 /**
- * Security headers + Content-Security-Policy, split in two (decision recorded in
- * issue #14, "CSP enforce" under Optional):
+ * Two responsibilities, composed:
  *
- * ENFORCED - the injection-hardening directives no page behavior can trip (no <base>,
- * no native form posts, no plugins, and framing is already denied by X-Frame-Options).
- * Verified empirically: zero violations across load + funnel interactions.
+ * 1) Locale routing (next-intl). Runs on HTML page paths only. It negotiates the active locale
+ *    (cookie -> Accept-Language best-fit -> defaultLocale) and, with localePrefix 'as-needed',
+ *    keeps English at "/" while redirecting a Korean-preferring browser to "/ko". API routes,
+ *    Next internals, and static files (any path with a dot) are NEVER locale-routed, so the
+ *    Sonar OAuth callback (/api/auth/sonar/callback) and every /api/* route are untouched.
  *
- * REPORT-ONLY - the strict script policy + the wallet-stack allowlist. The page is
- * statically rendered, so the nonce cannot reach the HTML's own script tags and every
- * self-hosted chunk reports under strict-dynamic: these reports are aspirational noise,
- * NOT enforce candidates. Before enforcing connect-src/frame-src, validate the wallet
- * allowlist (WalletConnect relays over wss, the Ethereum RPC, Coinbase) with a real
- * wallet journey on a preview.
+ * 2) Security headers + Content-Security-Policy (decision recorded in issue #14, "CSP enforce").
+ *    Applied to EVERY matched response, page or API, exactly as before the i18n change.
  *
- * Chain RPC + WalletConnect/Coinbase endpoints are the moving parts of connect-src;
- * everything else is self. Simple Analytics is same-origin by design: the script loads
- * from /sgl.js and events post to /sgl/* (Netlify proxy, see netlify.toml), so
- * 'self' covers it and no SA host belongs in this policy.
+ * ENFORCED - the injection-hardening directives no page behavior can trip (no <base>, no native
+ * form posts, no plugins; framing already denied by X-Frame-Options).
+ *
+ * REPORT-ONLY - the strict script policy + the wallet-stack allowlist. The page is statically
+ * rendered, so the nonce cannot reach the HTML's own script tags and every self-hosted chunk
+ * reports under strict-dynamic: these reports are aspirational noise, NOT enforce candidates.
+ * Before enforcing connect-src/frame-src, validate the wallet allowlist (WalletConnect relays
+ * over wss, the Ethereum RPC, Coinbase) with a real wallet journey on a preview.
+ *
+ * Chain RPC + WalletConnect/Coinbase endpoints are the moving parts of connect-src; everything
+ * else is self. Simple Analytics is same-origin by design (script from /sgl.js, events to
+ * /sgl/* via the Netlify proxy), so 'self' covers it and no SA host belongs in this policy.
  */
+
+const handleI18nRouting = createMiddleware(routing)
+
+// A path is a locale-routable page when it is not an API route, not a Next internal, and has no
+// file extension (mirrors next-intl's recommended `(?!api|_next|...|.*\\..*)` matcher intent).
+function isLocaleRoutable(pathname: string): boolean {
+  if (pathname.startsWith("/api")) return false
+  if (pathname.startsWith("/_next")) return false
+  return !/\.[^/]+$/.test(pathname)
+}
+
 export function middleware(request: NextRequest) {
+  const response = isLocaleRoutable(request.nextUrl.pathname)
+    ? handleI18nRouting(request)
+    : NextResponse.next()
+
   const nonce = btoa(crypto.randomUUID())
 
   // report-uri for Firefox/Safari, report-to (Reporting-Endpoints header below) for Chromium;
@@ -53,11 +75,6 @@ export function middleware(request: NextRequest) {
     reporting,
   ].join("; ")
 
-  const requestHeaders = new Headers(request.headers)
-  requestHeaders.set("x-nonce", nonce)
-
-  const response = NextResponse.next({ request: { headers: requestHeaders } })
-
   response.headers.set("Content-Security-Policy", enforcedCsp)
   response.headers.set("Content-Security-Policy-Report-Only", reportOnlyCsp)
   // Named endpoint the report-to directive points at (Reporting API v1).
@@ -77,6 +94,7 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // Run on pages/routes; skip Next static assets, image optimizer, and favicon.
+  // Run on pages/routes (incl. /api, which gets security headers but is never locale-routed);
+  // skip Next static assets, image optimizer, and favicon.
   matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 }

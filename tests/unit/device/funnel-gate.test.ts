@@ -41,10 +41,15 @@ afterEach(() => {
 })
 
 describe("FUNNEL_MEDIA_QUERY", () => {
-  it("requires a hover-capable fine pointer on any input + Tailwind's lg width", () => {
+  it("qualifies on width, a fine pointer, or hover (only a phone fails all three)", () => {
     expect(FUNNEL_MEDIA_QUERY).toBe(
-      "(any-hover: hover) and (any-pointer: fine) and (min-width: 64rem)",
+      "(min-width: 64rem) or (any-pointer: fine) or (any-hover: hover)",
     )
+  })
+
+  it("is an OR of three independent signals, so none alone can exclude a computer", () => {
+    // A narrow-window or touchscreen desktop still qualifies via one of the other signals.
+    expect(FUNNEL_MEDIA_QUERY.split(" or ")).toHaveLength(3)
   })
 
   it("stays in sync with the `funnel` @custom-variant in globals.css", () => {
@@ -66,7 +71,7 @@ describe("useFunnelCapable", () => {
     expect(result.current).toBe(false)
   })
 
-  it("re-renders when the media query flips (resize across lg)", () => {
+  it("re-renders when the media query flips (input capability change)", () => {
     const media = stubMatchMedia(true)
     const { result } = renderHook(() => useFunnelCapable())
     expect(result.current).toBe(true)

@@ -20,6 +20,12 @@ export const SALE_ECONOMICS = {
   minCommitmentUsd:
     SALE_CHAIN.id === mainnet.id ? 100 : Number(process.env.NEXT_PUBLIC_MIN_COMMITMENT_USD) || 100,
   maxCommitmentUsd: null, // no maximum commitment (team, 2026-06-21; prior $100k provisional cap dropped)
+  // First-24h bonus: % of the GNOT a first-day winner receives, granted as EXTRA GNOT at the
+  // post-mainnet distribution from a separate reserve. It does NOT touch the sale contract, the
+  // permit or the settlement math - the auction is unchanged. Display-only here; the authoritative
+  // bonus is computed off-app from on-chain data. Surfaced only when firstDayBonusEnabled()
+  // (lib/sale/bonus.ts) is on.
+  firstDayBonusPct: 5,
   // On-chain price = round(priceUsd / increment), zero-anchored (calc.priceUsdToOnchainPrice; verified
   // vs the deployed permit). 0.0215 prod + sandbox (Dongwon 2026-06-30; divides the 0.0645 floor -> 3).
   bidIncrementUsd: 0.0215,
@@ -47,9 +53,13 @@ if (
   throw new Error("SALE_ECONOMICS: startingPriceUsd must be an integer multiple of bidIncrementUsd")
 }
 
-/** Display a sale ISO date, e.g. "July 15, 2026" (UTC-fixed so SSR and client agree). */
-export function formatSaleDate(iso: string, withYear = true): string {
-  return new Date(iso).toLocaleDateString("en-US", {
+// BCP-47 tag for Intl. Our locale codes ("en"/"ko") map 1:1 to valid Intl locales, so the active
+// locale is passed straight through; defaults to English so untouched call sites are unchanged.
+type DateLocale = string
+
+/** Display a sale ISO date, e.g. "July 15, 2026" / "2026년 7월 15일" (UTC-fixed so SSR and client agree). */
+export function formatSaleDate(iso: string, withYear = true, locale: DateLocale = "en"): string {
+  return new Date(iso).toLocaleDateString(locale, {
     timeZone: "UTC",
     month: "long",
     day: "numeric",
@@ -57,29 +67,31 @@ export function formatSaleDate(iso: string, withYear = true): string {
   })
 }
 
-/** Month name of a sale ISO date, e.g. "September" (UTC-fixed). */
-export function formatSaleMonth(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-US", { timeZone: "UTC", month: "long" })
+/** Month name of a sale ISO date, e.g. "September" / "9월" (UTC-fixed). */
+export function formatSaleMonth(iso: string, locale: DateLocale = "en"): string {
+  return new Date(iso).toLocaleDateString(locale, { timeZone: "UTC", month: "long" })
 }
 
 /**
  * Full schedule line with weekday + time, e.g. "Monday, July 6, 2026 at 22:00 UTC".
  * Rendered in UTC to match the Sonar dashboard exactly (no DST ambiguity; SSR and client agree).
+ * The English " at " connector is dropped for locales (e.g. Korean) that read date + time adjacently.
  */
-export function formatSaleDateTime(iso: string): string {
+export function formatSaleDateTime(iso: string, locale: DateLocale = "en"): string {
   const d = new Date(iso)
-  const date = d.toLocaleDateString("en-US", {
+  const date = d.toLocaleDateString(locale, {
     timeZone: "UTC",
     weekday: "long",
     month: "long",
     day: "numeric",
     year: "numeric",
   })
-  const time = d.toLocaleTimeString("en-US", {
+  const time = d.toLocaleTimeString(locale, {
     timeZone: "UTC",
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
   })
-  return `${date} at ${time} UTC`
+  const connector = locale.startsWith("en") ? " at " : " "
+  return `${date}${connector}${time} UTC`
 }

@@ -22,14 +22,17 @@ export const fmtPrice = (n: number) =>
 /** Whole-dollar USD amount, e.g. "$3,200". */
 export const fmtUsd = (n: number) => `$${n.toLocaleString("en-US", { maximumFractionDigits: 0 })}`
 
+import type { SaleTranslator } from "./labels"
+
 // Pending-chip copy. Single source for the live bar AND the /dev/states gallery (this module is
 // server-importable, unlike the client metric components). Rendered as an inline capsule after
-// the Committed label only; the tooltip (PENDING_CHIP_HINT) spells out the indexing lag.
-export const pendingCommittedChip = (amountUsd: number) => `+${fmtUsd(amountUsd)} pending`
-export const PENDING_CHIP_HINT = "Confirmed on-chain, not yet indexed"
+// the Committed label only; the tooltip (Sale.pendingChipHint) spells out the indexing lag. The
+// translator is optional so any non-i18n call site still gets the English word.
+export const pendingCommittedChip = (amountUsd: number, t?: SaleTranslator) =>
+  `+${fmtUsd(amountUsd)} ${t ? t("pendingSuffix") : "pending"}`
 
-/** Compact number, e.g. "721K" / "1.2M" (deterministic across JS engines, unlike Intl compact).
- * One decimal from millions up only; K amounts round to a whole number. */
+/** Compact number, e.g. "82.3K" / "1.2M" (deterministic across JS engines, unlike Intl compact).
+ * One decimal at every unit; trailing zeros drop, so round amounts stay clean ("82K", never "82.0K"). */
 export const fmtCompact = (n: number) => {
   const sign = n < 0 ? "-" : ""
   const abs = Math.abs(n)
@@ -41,7 +44,7 @@ export const fmtCompact = (n: number) => {
     v /= 1000
     i++
   }
-  let rounded = i === 0 ? Math.round(v) : Math.round(v * 10) / 10
+  let rounded = Math.round(v * 10) / 10
   if (rounded >= 1000 && i < units.length - 1) {
     rounded /= 1000
     i++
@@ -58,12 +61,13 @@ export const fmtCount = (n: number) => n.toLocaleString("en-US")
 /** Whole GNOT token count, e.g. "26,667". */
 export const fmtGnot = (n: number) => n.toLocaleString("en-US", { maximumFractionDigits: 0 })
 
-/** Countdown remainder, e.g. "32d 14:03:27" (drops day prefix under 24h); clamps at zero. */
-export const fmtCountdown = (msLeft: number, withSeconds = true) => {
+/** Countdown remainder, e.g. "32d 14:03:27" (drops day prefix under 24h); clamps at zero.
+ * `daySuffix` is the localized day marker ("d" in English); number formatting is untouched. */
+export const fmtCountdown = (msLeft: number, withSeconds = true, daySuffix = "d") => {
   const total = Math.max(0, Math.floor(msLeft / 1000))
   const days = Math.floor(total / 86_400)
   const pad = (n: number) => String(n).padStart(2, "0")
   const hm = `${pad(Math.floor((total % 86_400) / 3_600))}:${pad(Math.floor((total % 3_600) / 60))}`
   const clock = withSeconds ? `${hm}:${pad(total % 60)}` : hm
-  return days > 0 ? `${days}d ${clock}` : clock
+  return days > 0 ? `${days}${daySuffix} ${clock}` : clock
 }

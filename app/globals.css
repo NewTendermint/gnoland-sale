@@ -5,7 +5,7 @@
 @custom-variant dark (&:is(.dark *));
 
 /* Keep in sync with FUNNEL_MEDIA_QUERY in lib/device/funnel-gate.ts. */
-@custom-variant funnel (@media (any-hover: hover) and (any-pointer: fine) and (min-width: 64rem));
+@custom-variant funnel (@media (min-width: 64rem) or (any-pointer: fine) or (any-hover: hover));
 
 @theme inline {
   --color-background: var(--background);
@@ -178,6 +178,20 @@ html[data-app-ready] .screen {
   /* Frame overlay grows in sync with the body padding (frame-pad-in) when data-app-ready lands. */
   body::after {
     transition: border-width 1000ms var(--ease-reveal);
+  }
+}
+
+/* Sticky locale pill: fades in with the page once the loader lifts (data-app-ready), matching the
+   hero entrance instead of snapping in. */
+.locale-pill {
+  opacity: 0;
+}
+html[data-app-ready] .locale-pill {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .locale-pill {
+    transition: opacity 600ms var(--ease-reveal);
   }
 }
 
@@ -374,5 +388,27 @@ main > section {
 
   .bid-capsule::-webkit-scrollbar {
     display: none;
+  }
+
+  /* First-day bonus ticker: the promo scrolls continuously. The loop is seamless because the
+     content is rendered twice and translated by -50% (one full copy). Transform-only (GPU), and
+     static (no scroll) under reduced motion. */
+  .bonus-marquee {
+    animation: bonus-marquee 26s linear infinite;
+  }
+
+  @keyframes bonus-marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bonus-marquee {
+      animation: none;
+    }
   }
 }

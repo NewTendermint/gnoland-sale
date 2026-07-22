@@ -13,15 +13,14 @@
 import { SALE_ECONOMICS } from "../../lib/sale/economics"
 
 export type AllocationRow = {
-  category: string
+  /** Stable id, keys into the "Tokenomics" message namespace (alloc.<id>.category / .note / .footnote). */
+  id: string
   /** Share of total supply, percent (e.g. 26.26). */
   percent: number
   /** Absolute allocation in GNOT. */
   amount: number
-  /** Purpose, verbatim from the source sheet. */
-  note: string
-  /** Asterisked footnote rendered at the bottom of the distribution tile. */
-  footnote?: string
+  /** Whether an asterisked footnote is rendered at the bottom of the distribution tile. */
+  hasFootnote?: boolean
   color: string
 }
 
@@ -34,53 +33,46 @@ export const TOTAL_SUPPLY = 1_333_000_000
 // tile: a black-to-grey ramp in light mode, white-to-grey in dark mode.
 export const allocation: AllocationRow[] = [
   {
-    category: "Airdrop1 - Cosmos",
+    id: "airdrop1-cosmos",
     percent: 26.26,
     amount: 350_000_000,
-    note: "From partial Cosmos governance snapshot 3 years ago",
     color: "color-mix(in srgb, var(--foreground) 100%, transparent)",
   },
   {
-    category: "NEWTENDERMINT, LLC",
+    id: "newtendermint",
     percent: 24.91,
     amount: 332_000_000,
-    note: "For use at NT,LLC discretion",
     color: "color-mix(in srgb, var(--foreground) 70%, transparent)",
   },
   {
-    category: "Investors",
+    id: "investors",
     percent: 22.51,
     amount: 300_000_000,
-    note: "For past and future investors",
-    footnote: "Including $20M investment from AIB",
+    hasFootnote: true,
     color: "color-mix(in srgb, var(--foreground) 50%, transparent)",
   },
   {
-    category: "Airdrop2 - AtomOne",
+    id: "airdrop2-atomone",
     percent: 17.33,
     amount: 231_000_000,
-    note: "From recent AtomOne snapshot prior to launch",
     color: "color-mix(in srgb, var(--foreground) 35%, transparent)",
   },
   {
-    category: "Ecosystem Treasury",
+    id: "ecosystem-treasury",
     percent: 4.5,
     amount: 60_000_000,
-    note: "For prior and future Gno.land ecosystem development",
     color: "color-mix(in srgb, var(--foreground) 24%, transparent)",
   },
   {
-    category: "Core Treasury",
+    id: "core-treasury",
     percent: 3.0,
     amount: 40_000_000,
-    note: "For paying for core development",
     color: "color-mix(in srgb, var(--foreground) 15%, transparent)",
   },
   {
-    category: "Validator Treasury",
+    id: "validator-treasury",
     percent: 1.5,
     amount: 20_000_000,
-    note: "For paying validators",
     color: "color-mix(in srgb, var(--foreground) 9%, transparent)",
   },
 ]
@@ -111,11 +103,12 @@ export const monthlyUnlocks: number[] = [
 ]
 
 export type CirculatingRow = {
-  category: string
+  /** Stable id, keys into the "Tokenomics" message namespace (circ.<id>.category). */
+  id: string
   /** GNOT liquid at mainnet launch (TGE). */
   amount: number
   /** Sub-allocations shown indented under the row (e.g. the Investor Pool). */
-  children?: Array<{ category: string; amount: number; highlight?: boolean }>
+  children?: Array<{ id: string; amount: number; highlight?: boolean }>
 }
 
 // Circulating supply at mainnet launch (TGE). Tree: the Investor
@@ -124,27 +117,25 @@ export type CirculatingRow = {
 // categories release ~4%. Top-level amounts sum to 197,320,000 (children are inside the pool).
 export const circulatingBreakdown: CirculatingRow[] = [
   {
-    category: "Investors Pool",
+    id: "investors-pool",
     amount: 156_000_000,
     children: [
-      { category: "Investors", amount: 111_240_000 },
-      { category: "Token Sale", amount: 38_760_000, highlight: true },
+      { id: "investors", amount: 111_240_000 },
+      { id: "token-sale", amount: 38_760_000, highlight: true },
     ],
   },
-  { category: "Airdrop1 - Cosmos", amount: 14_000_000 },
-  { category: "NEWTENDERMINT, LLC", amount: 13_280_000 },
-  { category: "Airdrop2 - AtomOne", amount: 9_240_000 },
-  { category: "Ecosystem Treasury", amount: 2_400_000 },
-  { category: "Core Treasury", amount: 1_600_000 },
-  { category: "Validator Treasury", amount: 800_000 },
+  { id: "airdrop1-cosmos", amount: 14_000_000 },
+  { id: "newtendermint", amount: 13_280_000 },
+  { id: "airdrop2-atomone", amount: 9_240_000 },
+  { id: "ecosystem-treasury", amount: 2_400_000 },
+  { id: "core-treasury", amount: 1_600_000 },
+  { id: "validator-treasury", amount: 800_000 },
 ]
 
 export const circulating = {
   /** Sum of the breakdown top-level amounts = 197,320,000. */
   total: circulatingBreakdown.reduce((sum, row) => sum + row.amount, 0),
   tokenSaleSupply: 38_760_000,
-  /** Verbatim from the team sheet. */
-  lockup: "1-Year Lockup for US Investors Only",
   /** = startingPrice x total supply (85,978,500). */
   fdvUsd: SALE_ECONOMICS.fdvUsd,
 }
