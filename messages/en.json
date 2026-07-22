@@ -588,6 +588,7 @@
     "getWalletAria": "Get {name} (opens in a new tab)",
     "getWalletTitle": "{name} - not installed, click to get it",
     "connectNamed": "Connect {name}",
+    "recommendedLabel": "Recommended",
     "wrongNetwork": "Wrong network.",
     "switchFailed": "Could not switch. Try again.",
     "switchNetworkPrompt": "This sale runs on {chain}. Change your network to continue.",

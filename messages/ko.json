@@ -588,6 +588,7 @@
     "getWalletAria": "{name} 받기(새 탭에서 열림)",
     "getWalletTitle": "{name} - 설치되지 않음, 클릭하여 받기",
     "connectNamed": "{name} 연결",
+    "recommendedLabel": "추천",
     "wrongNetwork": "잘못된 네트워크.",
     "switchFailed": "전환할 수 없습니다. 다시 시도하세요.",
     "switchNetworkPrompt": "이 세일은 {chain}에서 진행됩니다. 계속하려면 네트워크를 변경하세요.",
