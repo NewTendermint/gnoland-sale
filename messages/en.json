@@ -507,7 +507,7 @@
       },
       "bid": {
         "title": "Bid",
-        "body": "Set your max price and commit USDC or USDT - raise it anytime before close."
+        "body": "Set your max price and commit USDC or USDT - raise your bid anytime before the auction ends."
       },
       "receive": {
         "title": "Receive",
