@@ -569,28 +569,98 @@ function GateRow({
   )
 }
 
-export function ConnectChoices({ prompt }: { prompt?: string } = {}) {
+// Shape we read off a wagmi connector in the picker. The gallery (/dev/states) passes fixtures of
+// this shape via `previewConnectors` so the recommended/others split is reviewable without the
+// reviewer having those exact wallets installed.
+export type PickerConnector = {
+  uid: string
+  id: string
+  name: string
+  icon?: string
+  rdns?: string | readonly string[]
+}
+
+const matchesRecommended = (c: PickerConnector, rec: RecommendedWallet) => {
+  const rdnsList = typeof c.rdns === "string" ? [c.rdns] : (c.rdns ?? [])
+  return (
+    c.id === rec.id || rdnsList.includes(rec.id) || c.name.toLowerCase() === rec.name.toLowerCase()
+  )
+}
+
+export function ConnectChoices({
+  prompt,
+  previewConnectors,
+}: { prompt?: string; previewConnectors?: PickerConnector[] } = {}) {
   const t = useTranslations("Bid")
   const resolvedPrompt = prompt ?? t("connectPrompt")
   const { connectors, connect, isPending, variables, error } = useConnect()
+  // In preview the fixtures stand in for the live connectors; clicks are inert (the fake
+  // connectors are not real wagmi connectors, so we never call connect()).
+  const isPreview = previewConnectors != null
+  const source: readonly PickerConnector[] = previewConnectors ?? connectors
   const pendingUid =
     variables?.connector && "uid" in variables.connector ? variables.connector.uid : undefined
   const seen = new Set<string>()
-  const live = connectors.filter((c) => {
+  const live = source.filter((c) => {
     if (seen.has(c.name)) return false
     seen.add(c.name)
     return true
   })
-  const isLive = (rec: RecommendedWallet) =>
-    live.some((c) => {
-      const rdnsList = typeof c.rdns === "string" ? [c.rdns] : (c.rdns ?? [])
-      return (
-        c.id === rec.id ||
-        rdnsList.includes(rec.id) ||
-        c.name.toLowerCase() === rec.name.toLowerCase()
-      )
-    })
-  const missing = RECOMMENDED_WALLETS.filter((rec) => !isLive(rec))
+  // Split the installed wallets into the ones we promote and everything else. Recommended wallets
+  // (plus WalletConnect, always a configured connector) sit on the RIGHT under a "Recommended"
+  // label - the natural action zone - with the connectable buttons at full strength. Non-promoted
+  // discovered wallets (e.g. Keplr, which has a known gas bug on this permit flow, see
+  // lib/sale/onchain.ts) fall to the LEFT, dimmed, so nobody reaches for them by default.
+  const usedUids = new Set<string>()
+  const recommendedLive = live.filter((c) => {
+    const hit =
+      c.id === "walletConnect" || RECOMMENDED_WALLETS.some((rec) => matchesRecommended(c, rec))
+    if (hit) usedUids.add(c.uid)
+    return hit
+  })
+  const otherLive = live.filter((c) => !usedUids.has(c.uid))
+  const missing = RECOMMENDED_WALLETS.filter((rec) => !live.some((c) => matchesRecommended(c, rec)))
+  const hasRecommended = recommendedLive.length > 0 || missing.length > 0
+
+  const connectButton = (connector: PickerConnector, dimmed: boolean) => {
+    const pending = isPending && pendingUid === connector.uid
+    return (
+      <button
+        key={connector.uid}
+        type="button"
+        onClick={() => {
+          if (isPreview) return
+          track("wallet_connect_started", { connector: connector.id })
+          connect(
+            { connector: connector as Parameters<typeof connect>[0]["connector"] },
+            {
+              // Success is tracked at the provider level (WalletTelemetry): this component
+              // unmounts on a successful connect, which would drop a callback attached here.
+              // A failed connect leaves it mounted, so onError fires reliably.
+              onError: (err) =>
+                track("wallet_connect_failed", {
+                  connector: connector.id,
+                  reason: connectFailureBucket(err),
+                }),
+            },
+          )
+        }}
+        disabled={isPending && !isPreview}
+        aria-label={t("connectNamed", { name: connector.name })}
+        title={connector.name}
+        className={`inline-flex h-11 w-11 items-center justify-center rounded-full border border-border bg-surface-alt transition-all hover:border-faint ${
+          dimmed ? "opacity-50 hover:opacity-100 focus-visible:opacity-100" : ""
+        } ${pending ? "animate-pulse" : isPending && !isPreview ? "opacity-40" : ""}`}
+      >
+        {connector.icon ? (
+          <img src={connector.icon} alt="" className="h-6 w-6 rounded-md" />
+        ) : (
+          <WalletIcon src={WALLET_ICON_SRC[connector.id]} />
+        )}
+      </button>
+    )
+  }
+
   return (
     <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4">
       <div className="flex items-center gap-3">
@@ -602,70 +672,54 @@ export function ConnectChoices({ prompt }: { prompt?: string } = {}) {
           </span>
         </p>
       </div>
-      <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
-        {/* Same dashed DNA as the not-installed wallets, grouped with them on the left. */}
-        <a
-          href={FIND_WALLET_URL}
-          target="_blank"
-          rel="noreferrer noopener"
-          onClick={() => track("wallet_install_clicked", { wallet: "find-a-wallet" })}
-          aria-label={t("findWalletAria")}
-          title={t("findWalletTitle")}
-          className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-dashed border-faint bg-surface-alt opacity-70 transition-all hover:opacity-100 focus-visible:opacity-100"
-        >
-          <Icon name="search" draw={false} className="h-5 w-5 text-muted" />
-        </a>
-        {missing.map((rec) => (
+      <div className="ml-auto flex flex-wrap items-end justify-end gap-x-3 gap-y-2">
+        {/* Secondary zone (left): find-a-wallet + non-promoted discovered wallets, dimmed. */}
+        <div className="flex items-center gap-2 self-end">
           <a
-            key={rec.id}
-            href={rec.installUrl}
+            href={FIND_WALLET_URL}
             target="_blank"
             rel="noreferrer noopener"
-            onClick={() => track("wallet_install_clicked", { wallet: rec.name })}
-            aria-label={t("getWalletAria", { name: rec.name })}
-            title={t("getWalletTitle", { name: rec.name })}
-            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-dashed border-faint bg-surface-alt opacity-70 transition-all hover:opacity-100 focus-visible:opacity-100"
+            onClick={() => track("wallet_install_clicked", { wallet: "find-a-wallet" })}
+            aria-label={t("findWalletAria")}
+            title={t("findWalletTitle")}
+            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-dashed border-faint bg-surface-alt opacity-60 transition-all hover:opacity-100 focus-visible:opacity-100"
           >
-            <WalletIcon src={WALLET_ICON_SRC[rec.id]} className="grayscale" />
+            <Icon name="search" draw={false} className="h-5 w-5 text-muted" />
           </a>
-        ))}
-        {live.map((connector) => {
-          const pending = isPending && pendingUid === connector.uid
-          return (
-            <button
-              key={connector.uid}
-              type="button"
-              onClick={() => {
-                track("wallet_connect_started", { connector: connector.id })
-                connect(
-                  { connector },
-                  {
-                    // Success is tracked at the provider level (WalletTelemetry): this component
-                    // unmounts on a successful connect, which would drop a callback attached here.
-                    // A failed connect leaves it mounted, so onError fires reliably.
-                    onError: (err) =>
-                      track("wallet_connect_failed", {
-                        connector: connector.id,
-                        reason: connectFailureBucket(err),
-                      }),
-                  },
-                )
-              }}
-              disabled={isPending}
-              aria-label={t("connectNamed", { name: connector.name })}
-              title={connector.name}
-              className={`inline-flex h-11 w-11 items-center justify-center rounded-full border border-border bg-surface-alt transition-colors hover:border-faint ${
-                pending ? "animate-pulse" : isPending ? "opacity-40" : ""
-              }`}
-            >
-              {connector.icon ? (
-                <img src={connector.icon} alt="" className="h-6 w-6 rounded-md" />
-              ) : (
-                <WalletIcon src={WALLET_ICON_SRC[connector.id]} />
-              )}
-            </button>
-          )
-        })}
+          {otherLive.map((connector) => connectButton(connector, true))}
+        </div>
+        {/* Thin divider so the demoted wallets read as a separate group, never blending into the
+            recommended ones in the middle of the row. */}
+        {hasRecommended ? (
+          <div aria-hidden="true" className="mb-1.5 h-8 w-px self-end bg-border" />
+        ) : null}
+        {/* Promoted zone (right, action zone): recommended wallets under a small label. Not-installed
+            recommendations show first as dashed install links, then the connectable ones at full
+            strength, so a real connect button sits at the far right. */}
+        {hasRecommended ? (
+          <div className="flex flex-col items-end gap-1">
+            <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-muted">
+              {t("recommendedLabel")}
+            </span>
+            <div className="flex items-center gap-2">
+              {missing.map((rec) => (
+                <a
+                  key={rec.id}
+                  href={rec.installUrl}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  onClick={() => track("wallet_install_clicked", { wallet: rec.name })}
+                  aria-label={t("getWalletAria", { name: rec.name })}
+                  title={t("getWalletTitle", { name: rec.name })}
+                  className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-dashed border-faint bg-surface-alt opacity-70 transition-all hover:opacity-100 focus-visible:opacity-100"
+                >
+                  <WalletIcon src={WALLET_ICON_SRC[rec.id]} className="grayscale" />
+                </a>
+              ))}
+              {recommendedLive.map((connector) => connectButton(connector, false))}
+            </div>
+          </div>
+        ) : null}
       </div>
     </div>
   )

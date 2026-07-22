@@ -12,7 +12,13 @@ import { Fragment, type ReactNode } from "react"
 import { MetricPendingChip } from "../../(layout)/BidBarShell"
 import { BidSectionHeader } from "../../(layout)/BidPanelDesktop"
 import { PreSaleRight } from "../../(layout)/PreSaleBar"
-import { BidFlow, type BidPreview, PostBidOptIns } from "../../(sections)/bid/BidFlow"
+import {
+  BidFlow,
+  type BidPreview,
+  ConnectChoices,
+  type PickerConnector,
+  PostBidOptIns,
+} from "../../(sections)/bid/BidFlow"
 import { FirstDayBonusBanner } from "../../(sections)/bid/BonusNote"
 import { BidStatusTag, FunnelSteps } from "../../(sections)/bid/FunnelSteps"
 import { SettlementFlow } from "../../(sections)/bid/SettlementFlow"
@@ -503,6 +509,24 @@ const SETTLEMENT_STATES: ReadonlyArray<{
   },
 ]
 
+// Wallet-picker fixtures for the ConnectChoices preview. These stand in for the live wagmi
+// connectors so the recommended/others split is reviewable without those exact wallets installed:
+// MetaMask + Coinbase + WalletConnect are promoted (right, action zone), Keplr is a non-promoted
+// discovered wallet (left, dimmed - it has a known gas bug on this flow), Rabby is not installed
+// (dashed install link under the label).
+const PICKER_WITH_KEPLR: PickerConnector[] = [
+  { uid: "mm", id: "io.metamask", name: "MetaMask", rdns: "io.metamask" },
+  { uid: "cb", id: "coinbaseWalletSDK", name: "Coinbase Wallet" },
+  { uid: "wc", id: "walletConnect", name: "WalletConnect" },
+  { uid: "kp", id: "app.keplr", name: "Keplr", rdns: "app.keplr" },
+]
+
+// Only the two configured connectors are available - nothing to demote, no others.
+const PICKER_MINIMAL: PickerConnector[] = [
+  { uid: "cb", id: "coinbaseWalletSDK", name: "Coinbase Wallet" },
+  { uid: "wc", id: "walletConnect", name: "WalletConnect" },
+]
+
 export default async function DevStatesPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params
   // Enable static per-locale rendering, consistent with the real pages.
@@ -536,6 +560,33 @@ export default async function DevStatesPage({ params }: { params: Promise<{ loca
       </header>
 
       <div className="flex flex-col gap-14">
+        <GallerySection title="Wallet picker · recommended promoted, others demoted">
+          <p className="text-sm text-muted">
+            The connect gate (ConnectChoices). Recommended wallets sit on the right - the action
+            zone - under a small label, with connectable buttons at full strength; not-installed
+            recommendations show as dashed install links. Non-promoted discovered wallets (Keplr,
+            which has a known gas bug on this permit flow) fall to the left, dimmed. Fixtures below
+            stand in for the live connectors so the split is reviewable regardless of what this
+            browser has installed.
+          </p>
+          <Caption>MetaMask + Coinbase installed, Keplr demoted, Rabby not installed</Caption>
+          <div className="overflow-hidden rounded-[var(--frame-radius)] border border-border bg-background">
+            <div className="px-6 py-6 lg:px-8">
+              <div className="bid-capsule px-6 py-5">
+                <ConnectChoices previewConnectors={PICKER_WITH_KEPLR} />
+              </div>
+            </div>
+          </div>
+          <Caption>Only configured connectors present (no others to demote)</Caption>
+          <div className="overflow-hidden rounded-[var(--frame-radius)] border border-border bg-background">
+            <div className="px-6 py-6 lg:px-8">
+              <div className="bid-capsule px-6 py-5">
+                <ConnectChoices previewConnectors={PICKER_MINIMAL} />
+              </div>
+            </div>
+          </div>
+        </GallerySection>
+
         {PRE_SALE_BAR_STATES.map((row) => (
           <GallerySection key={row.label} title={`Pre-sale · ${row.label}`}>
             <PreSaleBarPreview state={row.state} returning={row.returning} />
