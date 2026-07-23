@@ -108,10 +108,12 @@
   NEXT_PUBLIC_MIN_COMMITMENT_USD = "2"
   # Milestone dates mirror the real sale schedule (same as economics.ts defaults) so staging tracks
   # production's phase. Shift these to test other phases (e.g. a recent open to test the live window).
-  # OPENS shifted to the past for live-phase outbid testing (revert to 2026-07-20T12:00:00Z to mirror prod).
+  # Dates shifted to keep staging in the LIVE phase for e2e testing (the sandbox contract is in
+  # commitment stage, so on-chain bids work; only these UI-phase dates had lapsed). Revert to mirror
+  # prod when done: OPENS 2026-07-20T12:00:00Z, CLOSES per economics.ts. Branch-deploy only - never prod.
   NEXT_PUBLIC_REGISTRATION_OPENS = "2026-07-09T12:00:00Z"
   NEXT_PUBLIC_SALE_OPENS = "2026-07-19T00:00:00Z"
-  NEXT_PUBLIC_SALE_CLOSES = "2026-07-22T12:00:00Z"
+  NEXT_PUBLIC_SALE_CLOSES = "2026-08-13T12:00:00Z"
   # /dev/states gallery (mock fixtures only, no live data): reachable on staging for design review.
   # Never set this in the production context - the page must stay a 404 on sale.gno.land.
   NEXT_PUBLIC_DEV_STATES_ENABLED = "1"
