@@ -2,61 +2,92 @@ import { describe, expect, it } from "vitest"
 import {
   INFLUENCER_CAMPAIGN,
   INFLUENCER_HANDLES,
+  INFLUENCER_LOCALES,
   INFLUENCER_MEDIUM,
-  influencerRedirects,
+  type InfluencerHandle,
+  influencerDestination,
+  influencerRedirectFor,
+  isInfluencerHandle,
 } from "../../../lib/analytics/influencer-links"
 
 // Route prefixes the app owns; a promoter handle colliding with one would either shadow a real
 // route or never match. Mirrors the middleware's locale + reserved-path handling.
 const RESERVED_SEGMENTS = ["api", "_next", "en", "ko", "dev"]
 
+// Where a handle should land, per the `as-needed` locale prefixing (default "en" is unprefixed).
+function expectedPath(handle: InfluencerHandle): string {
+  const locale = INFLUENCER_LOCALES[handle]
+  return locale === "en" ? "/" : `/${locale}`
+}
+
+function paramsOf(destination: string): URLSearchParams {
+  return new URL(destination, "https://example.test").searchParams
+}
+
 describe("influencer vanity links", () => {
-  const redirects = influencerRedirects()
-
-  it("emits exactly one redirect per promoter", () => {
-    expect(redirects).toHaveLength(INFLUENCER_HANDLES.length)
-  })
-
-  it("attributes each promoter individually: utm_source equals the handle", () => {
-    for (const rule of redirects) {
-      const handle = rule.source.slice(1) // drop leading "/"
-      const params = new URL(rule.destination, "https://example.test").searchParams
-      expect(params.get("utm_source")).toBe(handle)
-      expect(INFLUENCER_HANDLES).toContain(handle)
+  it("maps each promoter path to a redirect, attributing utm_source to the handle", () => {
+    for (const handle of INFLUENCER_HANDLES) {
+      const destination = influencerRedirectFor(`/${handle}`)
+      expect(destination).not.toBeNull()
+      expect(paramsOf(destination as string).get("utm_source")).toBe(handle)
     }
   })
 
   it("tags every link with the shared cohort medium and campaign", () => {
-    for (const rule of redirects) {
-      const params = new URL(rule.destination, "https://example.test").searchParams
+    for (const handle of INFLUENCER_HANDLES) {
+      const params = paramsOf(influencerDestination(handle))
       expect(params.get("utm_medium")).toBe(INFLUENCER_MEDIUM)
       expect(params.get("utm_campaign")).toBe(INFLUENCER_CAMPAIGN)
     }
   })
 
-  it("redirects each handle to the site root", () => {
-    for (const rule of redirects) {
-      expect(new URL(rule.destination, "https://example.test").pathname).toBe("/")
+  it("lands each promoter on its pinned locale path", () => {
+    for (const handle of INFLUENCER_HANDLES) {
+      const pathname = new URL(influencerDestination(handle), "https://example.test").pathname
+      expect(pathname).toBe(expectedPath(handle))
     }
   })
 
-  it("keeps redirects temporary so a handle can be reassigned (browser-uncached)", () => {
-    for (const rule of redirects) {
-      expect(rule.permanent).toBe(false)
+  it("routes the current cohort to the Korean site", () => {
+    // Every promoter we have so far is Korean-audience; each must land on /ko, not the English root.
+    for (const handle of INFLUENCER_HANDLES) {
+      expect(INFLUENCER_LOCALES[handle]).toBe("ko")
+      expect(influencerRedirectFor(`/${handle}`)).toMatch(/^\/ko\?/)
     }
   })
 
-  it("uses handles that are unique, so no two promoters share a source or attribution", () => {
-    const sources = redirects.map((r) => r.source)
-    expect(new Set(sources).size).toBe(sources.length)
+  it("ignores a leading/trailing slash on the matched path", () => {
+    const handle = INFLUENCER_HANDLES[0]
+    expect(influencerRedirectFor(`/${handle}`)).toBe(influencerDestination(handle))
+    expect(influencerRedirectFor(`/${handle}/`)).toBe(influencerDestination(handle))
+  })
+
+  // Regression guard for the real bug: locale routing resolves `/<slug>` first on the host, so a
+  // handle must be matched as a BARE segment. A locale-prefixed or nested path must NOT match,
+  // otherwise the redirect and the locale layer fight over the same paths.
+  it("does not match locale-prefixed, nested, or unknown paths", () => {
+    const handle = INFLUENCER_HANDLES[0]
+    expect(influencerRedirectFor("/")).toBeNull()
+    expect(influencerRedirectFor(`/en/${handle}`)).toBeNull()
+    expect(influencerRedirectFor(`/ko/${handle}`)).toBeNull()
+    expect(influencerRedirectFor(`/${handle}/extra`)).toBeNull()
+    expect(influencerRedirectFor("/not-a-promoter")).toBeNull()
+    expect(influencerRedirectFor(`/${handle.toUpperCase()}`)).toBeNull() // case-sensitive
+  })
+
+  it("recognises exactly the known handles", () => {
+    for (const handle of INFLUENCER_HANDLES) expect(isInfluencerHandle(handle)).toBe(true)
+    expect(isInfluencerHandle("nope")).toBe(false)
+  })
+
+  it("uses handles that are unique, so no two promoters share attribution", () => {
     expect(new Set(INFLUENCER_HANDLES).size).toBe(INFLUENCER_HANDLES.length)
   })
 
-  it("uses lowercase, URL-safe handles (path matching is case-sensitive)", () => {
+  it("uses lowercase, URL-safe handles (encoding is a no-op)", () => {
     for (const handle of INFLUENCER_HANDLES) {
       expect(handle).toBe(handle.toLowerCase())
       expect(handle).toMatch(/^[a-z0-9_-]+$/)
-      // encoding must be a no-op, otherwise the source path and the utm_source value diverge.
       expect(encodeURIComponent(handle)).toBe(handle)
     }
   })

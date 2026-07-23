@@ -1,6 +1,5 @@
 import type { NextConfig } from "next"
 import createNextIntlPlugin from "next-intl/plugin"
-import { influencerRedirects } from "./lib/analytics/influencer-links"
 
 // Wires next-intl's request config (./i18n/request.ts) into the build.
 const withNextIntl = createNextIntlPlugin()
@@ -13,13 +12,6 @@ const config: NextConfig = {
   },
   images: {
     formats: ["image/avif", "image/webp"],
-  },
-  // Promoter vanity links (see lib/analytics/influencer-links.ts). Each `/<handle>` redirects to
-  // the root tagged with campaign parameters so the landed pageview is attributed to the
-  // individual promoter. Resolved server-side ahead of the app, and the locale layer preserves
-  // the query on its own redirect, so the tags reach the analytics pipeline in every case.
-  async redirects() {
-    return influencerRedirects()
   },
   // Silence benign "module not found" warnings for OPTIONAL deps the wallet libs
   // reference but a web build never uses: MetaMask SDK's React Native storage and

@@ -2,6 +2,7 @@ import createMiddleware from "next-intl/middleware"
 import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
 import { routing } from "./i18n/routing"
+import { influencerRedirectFor } from "./lib/analytics/influencer-links"
 
 /**
  * Two responsibilities, composed:
@@ -40,6 +41,16 @@ function isLocaleRoutable(pathname: string): boolean {
 }
 
 export function middleware(request: NextRequest) {
+  // Promoter vanity links: `/<handle>` -> tagged site root, so analytics attributes the visit to
+  // the individual promoter. Done here, ahead of locale routing, because that layer runs first on
+  // the hosting platform and would otherwise resolve `/<handle>` to a localized not-found before a
+  // build-time redirect could fire. The tagged destination then flows through locale negotiation
+  // normally (the query is preserved on the locale hop). See lib/analytics/influencer-links.ts.
+  const vanityDestination = influencerRedirectFor(request.nextUrl.pathname)
+  if (vanityDestination) {
+    return NextResponse.redirect(new URL(vanityDestination, request.url))
+  }
+
   const response = isLocaleRoutable(request.nextUrl.pathname)
     ? handleI18nRouting(request)
     : NextResponse.next()
