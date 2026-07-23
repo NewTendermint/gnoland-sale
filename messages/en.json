@@ -42,7 +42,7 @@
     },
     "bonus": {
       "q": "Is there a bonus token allocation for participants?",
-      "a1": "Yes. Bidders who receive a final allocation earn bonus GNOT, sized by where their contribution falls in the cumulative sale total: 15% on the portion up to $1,000,000, 10% from $1,000,001 to $1,500,000, 5% from $1,500,001 to $2,000,000, and 3% from $2,000,001 to $2,500,000. A contribution that spans a boundary is split across bands. Only participants allocated tokens at the end of the auction are eligible, and the bonus is distributed with the final allocation."
+      "a1": "Yes. Bidders who receive a final allocation are eligible to receive bonus GNOT, sized by where their contribution falls in the cumulative auction total: 15% on the portion up to $1,000,000, 10% from $1,000,001 to $1,500,000, 5% from $1,500,001 to $2,000,000, and 3% from $2,000,001 to $2,500,000. If a contribution crosses more than one range, each part is bonused separately at the rate for that range. Only participants allocated tokens at the end of the auction are eligible, and the bonus is distributed with the final allocation."
     },
     "date": {
       "q": "When is the token sale date?",
