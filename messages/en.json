@@ -42,7 +42,7 @@
     },
     "bonus": {
       "q": "Is there a bonus token allocation for participants?",
-      "a1": "Subject to the final auction terms, an eligible participant that submits a qualifying bid during the first 24 hours and is allocated tokens will receive an additional token allocation equal to 5% of that participant's final auction allocation. The feature is formulaic, subject to eligibility and compliance conditions, and is not a prize, contest, lottery, sweepstakes, game, yield, or promise of value."
+      "a1": "Yes. Bidders who receive a final allocation earn bonus GNOT, sized by where their contribution falls in the cumulative sale total: 15% on the portion up to $1,000,000, 10% from $1,000,001 to $1,500,000, 5% from $1,500,001 to $2,000,000, and 3% from $2,000,001 to $2,500,000. A contribution that spans a boundary is split across bands. Only participants allocated tokens at the end of the auction are eligible, and the bonus is distributed with the final allocation."
     },
     "date": {
       "q": "When is the token sale date?",
@@ -426,9 +426,9 @@
         "label": "Expected mainnet launch",
         "value": "Q3 2026"
       },
-      "firstDayBonus": {
-        "label": "First-Day Bonus",
-        "value": "5% bonus GNOT when you bid during the first 24 hours and receive a final allocation when the sale ends. Bonus to be distributed with the winning allocation."
+      "tieredBonus": {
+        "label": "Contribution Bonus",
+        "value": "Bonus GNOT for bidders allocated tokens, tiered by the cumulative sale total: 15% up to $1M, 10% to $1.5M, 5% to $2M, 3% to $2.5M. Distributed with the final allocation."
       }
     },
     "pricingCaps": {
@@ -559,7 +559,7 @@
     "cellCommitment": "Your commitment",
     "cellAllocation": "Your allocation",
     "allocationNote": "GNOT is sent to your wallet at mainnet ({date}), with the unlock schedule applied.",
-    "bonusSettlementNote": "Plus a +{pct}% GNOT bonus at mainnet distribution if your first bid was in the first 24h.",
+    "bonusSettlementNote": "Plus any bonus GNOT you are eligible for, distributed with your allocation at mainnet.",
     "confirmationSent": "Confirmation email sent - check your inbox.",
     "useAnotherEmail": "Use another email",
     "emailPitch": "Never linked to your wallet or bids.",
@@ -672,10 +672,23 @@
     "statusEnded": "Ended",
     "captionOpens": "Opens {date}",
     "captionRegistrationOpens": "Registration opens {date}",
-    "bonusBannerTitle": "First-Day Bonus",
-    "bonusBannerBody": "Bid in the first 24 hours and qualify to receive an additional 5% allocation",
-    "bonusEndsIn": "Bonus window ends in",
-    "bonusPill": "First 24H +5%",
+    "bonusBannerTitle": "Tiered contribution bonus",
+    "bonusBannerBodyTier": "Currently {pct}% bonus GNOT · {amount} left before it drops",
+    "bonusBannerBodyGeneric": "Earn up to {pct}% bonus GNOT, tiered by the sale total",
+    "bonusPill": "+{pct}% bonus",
+    "bonusStripPresale": "By bidding early, you are eligible for up to {pct}% bonus on your final allocation.",
+    "bonusStripWhat": "By bidding now, you are eligible for a {pct}% bonus on your final allocation.",
+    "bonusScarcity": "<b>{amount}</b> until the bonus drops to {next}%",
+    "bonusStripLive": "Bid early to lock in a higher bonus tier - extra GNOT on your final allocation · {amount} more committed until the bonus drops to {next}%",
+    "bonusStripFinal": "Bid early to lock in a higher bonus tier - extra GNOT on your final allocation · final {pct}% tier",
+    "bonusStripClosed": "Tiered bonus fully allocated",
+    "bonusMeterHeading": "Tiered contribution bonus",
+    "bonusTierRemaining": "{pct}% tier · {amount} left",
+    "bonusMeterEstimate": "≈ {gnot} bonus GNOT",
+    "bonusMeterCaption": "Estimated at the current sale total. The final bonus is set at settlement.",
+    "bonusMeterHint": "Enter an amount to see your bonus tier.",
+    "bonusUrgency": "{amount} left in this tier before it drops",
+    "bonusSegment": "{pct}% on {amount}",
     "viewResults": "View results",
     "yourBid": "Your bid",
     "headerMaxPrice": "Your max price",
@@ -743,7 +756,7 @@
     "linkRiskDisclosure": "Risk Disclosure",
     "linkUsDisclaimer": "U.S. Disclaimer",
     "disclaimer": "Not available in restricted jurisdictions. High-risk investment. You may lose your entire commitment. Token transferability begins at mainnet launch (Q3 2026).",
-    "bonusDisclaimer": "Disclaimer: Subject to the final auction terms, an eligible participant that submits a qualifying bid during the first 24 hours and is allocated tokens will receive an additional token allocation equal to 5% of that participant's final auction allocation. The feature is formulaic, subject to eligibility and compliance conditions, and is not a prize, contest, lottery, sweepstakes, game, yield, or promise of value.",
+    "bonusDisclaimer": "Disclaimer: Subject to the final auction terms, an eligible participant whose bid contributes to the sale and who is allocated tokens at the conclusion of the auction will receive an additional token allocation. This additional allocation is calculated according to a tiered formula based on the portion of that participant's contribution falling within each contribution stage (15% for the portion between $0 and $1,000,000; 10% for the portion between $1,000,001 and $1,500,000; 5% for the portion between $1,500,001 and $2,000,000; and 3% for the portion between $2,000,001 and $2,500,000). Only participants who receive a final allocation at the conclusion of the auction are eligible; any bid that does not result in a final allocation does not qualify for any bonus. This feature is formulaic, subject to eligibility and compliance conditions, and is not a prize, contest, lottery, sweepstakes, game, yield, or promise of value.",
     "copyright": "(c) 2026 Gno.land. All rights reserved."
   },
   "Legal": {

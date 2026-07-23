@@ -41,7 +41,7 @@ import { NewsletterForm } from "../../(layout)/NewsletterForm"
 import { CloseButton } from "../../(ui)/CloseButton"
 import { Cta } from "../../(ui)/Cta"
 import { Icon } from "../../(ui)/Icon"
-import { FirstDayBonusPill } from "./BonusNote"
+import { TierBonusPill } from "./BonusNote"
 import { ManageEntityCta, SonarSignOutButton } from "./ManageEntity"
 import { usePushAlerts } from "./PushOptIn"
 
@@ -286,8 +286,8 @@ export type BidPreview = {
   balanceUsd?: number
   /** Seeds the confirm-step advisory blocker (the gallery has no Sonar to precheck). */
   precheck?: { reason: string; livenessUrl?: string }
-  /** Gallery-only: force the first-24h bonus pill on in the confirm step (the real clock is outside
-   *  the window during review). Never set in production. */
+  /** Gallery-only: force the tiered-bonus pill on in the confirm step (bypasses the flag during
+   *  review). Never set in production. */
   bonus?: boolean
 }
 
@@ -303,6 +303,7 @@ export function BidFlow({
   journey,
   returning,
   clearingPriceUsd,
+  totalCommittedUsd = 0,
   myBid,
   onConnectSonar,
   // Noop default so server-rendered galleries (which cannot pass functions) still show the
@@ -319,6 +320,8 @@ export function BidFlow({
   journey: JourneyState
   returning?: boolean
   clearingPriceUsd: number | null
+  /** Live cumulative sale total (Sonar committed USD), for the tiered-bonus meter. */
+  totalCommittedUsd?: number
   myBid: MyBid
   onConnectSonar?: () => void
   onSignOut?: () => void
@@ -337,6 +340,7 @@ export function BidFlow({
       journey={journey}
       returning={returning}
       clearingPriceUsd={clearingPriceUsd}
+      totalCommittedUsd={totalCommittedUsd}
       myBid={myBid}
       onConnectSonar={onConnectSonar}
       onSignOut={onSignOut}
@@ -355,6 +359,7 @@ function StateContent({
   journey,
   returning,
   clearingPriceUsd,
+  totalCommittedUsd,
   myBid,
   onConnectSonar,
   onSignOut,
@@ -369,6 +374,7 @@ function StateContent({
   journey: JourneyState
   returning?: boolean
   clearingPriceUsd: number | null
+  totalCommittedUsd: number
   myBid: MyBid
   onConnectSonar?: () => void
   onSignOut: () => void
@@ -392,6 +398,7 @@ function StateContent({
         <BidRow
           key="bid-row"
           clearingPriceUsd={clearingPriceUsd}
+          totalCommittedUsd={totalCommittedUsd}
           prevBid={journey === "ready" ? undefined : myBid}
           outbid={journey === "has-bid-outbid"}
           onBid={onBid}
@@ -787,6 +794,7 @@ function DeltaCapsule({ added }: { added: number }) {
 
 function BidRow({
   clearingPriceUsd,
+  totalCommittedUsd = 0,
   prevBid,
   outbid,
   onBid,
@@ -796,6 +804,7 @@ function BidRow({
   preview,
 }: {
   clearingPriceUsd: number | null
+  totalCommittedUsd?: number
   prevBid?: MyBid
   outbid?: boolean
   onBid?: (p: BidParams, opts?: { onStage?: (s: BidStage) => void }) => Promise<BidResult>
@@ -1127,7 +1136,12 @@ function BidRow({
               })}
             </span>
             {prevBid ? null : (
-              <FirstDayBonusPill force={preview?.bonus} className="ml-2 align-middle" />
+              <TierBonusPill
+                cumulativeUsd={totalCommittedUsd}
+                amountUsd={amountNum}
+                force={preview?.bonus}
+                className="ml-2 align-middle"
+              />
             )}
           </p>
           {prevBid ? (
@@ -1135,7 +1149,12 @@ function BidRow({
               {amountNum > prevBid.committedUsd
                 ? t("confirmDeltaCharged", { amount: fmtUsd(amountNum - prevBid.committedUsd) })
                 : t("confirmNoExtra")}
-              <FirstDayBonusPill force={preview?.bonus} className="ml-2 align-middle" />
+              <TierBonusPill
+                cumulativeUsd={totalCommittedUsd}
+                amountUsd={amountNum}
+                force={preview?.bonus}
+                className="ml-2 align-middle"
+              />
             </p>
           ) : null}
           {precheckNotice ? (
