@@ -113,7 +113,7 @@
   # prod when done: OPENS 2026-07-20T12:00:00Z, CLOSES per economics.ts. Branch-deploy only - never prod.
   NEXT_PUBLIC_REGISTRATION_OPENS = "2026-07-09T12:00:00Z"
   NEXT_PUBLIC_SALE_OPENS = "2026-07-19T00:00:00Z"
-  NEXT_PUBLIC_SALE_CLOSES = "2026-08-13T12:00:00Z"
+  NEXT_PUBLIC_SALE_CLOSES = "2026-07-24T23:59:00Z"
   # /dev/states gallery (mock fixtures only, no live data): reachable on staging for design review.
   # Never set this in the production context - the page must stay a 404 on sale.gno.land.
   NEXT_PUBLIC_DEV_STATES_ENABLED = "1"
