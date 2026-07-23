@@ -14,6 +14,7 @@ import { Loader } from "./(layout)/Loader"
 import { LocaleSwitch } from "./(layout)/LocaleSwitch"
 import { ThemeProvider } from "./(layout)/ThemeProvider"
 import { Web3Provider } from "./(layout)/Web3Provider"
+import { BonusToggle } from "./(sections)/bid/BonusToggle"
 
 const geist = localFont({
   src: "../../public/fonts/Geist.woff2",
@@ -162,6 +163,8 @@ export default async function RootLayout({
                 {tA11y("skipToContent")}
               </a>
               <Header />
+              {/* Dev/staging-only floating on/off control for the tiered-bonus display. */}
+              <BonusToggle />
               {/* Sticky language switch: a circular button pinned top-right that opens a menu of
                   the other locales. Desktop only; mobile gets the switch inside the burger menu. */}
               <div className="locale-pill fixed right-[var(--reveal-padding)] top-[var(--reveal-padding)] z-[var(--z-header)] mr-6 mt-2 hidden lg:block">
