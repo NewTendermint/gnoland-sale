@@ -7,6 +7,7 @@ import type { EntitySnapshot, MyBid } from "../../../lib/sale/types"
 const BID: MyBid = { priceUsd: 0.0645, committedUsd: 5 }
 const ENTITY: EntitySnapshot = {
   entityId: "11111111-1111-1111-1111-111111111111",
+  saleSpecificEntityId: "0x11111111111111111111111111111111",
   setupState: "complete",
   eligibility: "eligible",
   investingRegion: "eu",

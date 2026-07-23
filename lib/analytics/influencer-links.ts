@@ -23,6 +23,20 @@ export const INFLUENCER_MEDIUM = "influencer"
 export const INFLUENCER_CAMPAIGN = "gnot-ico"
 
 /**
+ * First-party attribution cookie. Set by the middleware on the `/<handle>` redirect (server-side, so
+ * a script/ad blocker cannot suppress it), read server-side at the authenticated entity read to bind
+ * the visitor's KYC entity to their promoter, and read client-side by track.ts to tag the Simple
+ * Analytics bid funnel. Not HttpOnly - the value is a public promoter handle, no secret. Uses the
+ * `__Host-` prefix in production (enforces Secure + path=/ + host-locked); dev is plain http, so it
+ * drops the prefix and Secure, exactly like the session cookie.
+ */
+export const ATTRIBUTION_COOKIE =
+  process.env.NODE_ENV === "production" ? "__Host-gnot_attr" : "gnot_attr"
+
+/** 30 days: long enough to bridge browse -> KYC -> bid across sessions, gone soon after the sale. */
+export const ATTRIBUTION_COOKIE_MAX_AGE = 60 * 60 * 24 * 30
+
+/**
  * Single source of truth: one entry per promoter mapping the handle to the locale its audience
  * should land on. The handle is BOTH the public path segment and the `utm_source` value (individual
  * attribution). The locale is pinned explicitly rather than left to the visitor's browser language.
@@ -62,11 +76,20 @@ export function influencerDestination(handle: InfluencerHandle): string {
 }
 
 /**
- * Maps a request pathname to its promoter redirect destination, or null when the path is not a
- * promoter link. Matches a single bare segment `/<handle>` (case-sensitive, leading/trailing
- * slashes ignored); a locale-prefixed or nested path is intentionally not a match.
+ * The promoter handle for a bare `/<handle>` path, or null. Single bare segment, case-sensitive,
+ * leading/trailing slashes ignored; a locale-prefixed or nested path is intentionally not a match.
  */
-export function influencerRedirectFor(pathname: string): string | null {
+export function influencerHandleFor(pathname: string): InfluencerHandle | null {
   const segment = pathname.replace(/^\/+/, "").replace(/\/+$/, "")
-  return isInfluencerHandle(segment) ? influencerDestination(segment) : null
+  return isInfluencerHandle(segment) ? segment : null
+}
+
+/**
+ * Validate an attribution cookie value against the known-handle set. Returns the handle only if we
+ * recognise it, so a tampered or stale cookie can never carry an arbitrary value into the store.
+ */
+export function resolveAttributionHandle(
+  cookieValue: string | undefined | null,
+): InfluencerHandle | null {
+  return cookieValue != null && isInfluencerHandle(cookieValue) ? cookieValue : null
 }

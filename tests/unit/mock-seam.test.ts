@@ -33,6 +33,7 @@ describe("Sonar mock-fetch seam (real SDK + fixtures)", () => {
     const entity = await getEntity("mock-session")
     expect(entity).toEqual({
       entityId: "11111111-1111-1111-1111-111111111111",
+      saleSpecificEntityId: "0x11111111111111111111111111111111",
       setupState: "complete",
       eligibility: "eligible",
       investingRegion: "other",

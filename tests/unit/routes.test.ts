@@ -70,6 +70,7 @@ function sessionStub(sessionId?: string): SessionLike {
 const wallet = `0x${"a".repeat(40)}`
 const entitySnap: EntitySnapshot = {
   entityId: "server-entity",
+  saleSpecificEntityId: "0x11111111111111111111111111111111",
   setupState: "complete",
   eligibility: "eligible",
   investingRegion: "other",
