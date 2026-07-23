@@ -1,4 +1,5 @@
 import { SALE_CHAIN } from "@/lib/sale/contracts"
+import { resolveAttributionHandle } from "./influencer-links"
 
 // Client-side wrapper around Simple Analytics' sa_event. Fire-and-forget: never
 // throws, no-ops outside the production mainnet build. Event names are a closed
@@ -66,10 +67,43 @@ function saEvent(): SaEvent {
   return w.sa_event
 }
 
+// Bid-funnel events carry the promoter attribution, so Simple Analytics can break the funnel down
+// by influencer. Every other event is left untagged.
+const ATTRIBUTED_EVENTS = new Set<AnalyticsEvent>(["bid_started", "bid_submitted", "bid_confirmed"])
+
+/**
+ * The influencer handle to attach to a funnel event, from the raw attribution cookie value. Returns
+ * a handle ONLY for a funnel event AND a value that is a known promoter (resolveAttributionHandle),
+ * so a tampered cookie can never inject an arbitrary SA dimension. Pure - the cookie read is split
+ * out below - and unit-tested in isolation.
+ */
+export function attributionSourceFor(
+  event: AnalyticsEvent,
+  rawCookie: string | null,
+): string | null {
+  if (!ATTRIBUTED_EVENTS.has(event)) return null
+  return resolveAttributionHandle(rawCookie)
+}
+
+// First-party attribution cookie value (a public promoter handle, no secret). The name carries the
+// `__Host-` prefix in production (set by the middleware); the pattern matches either form.
+function readAttributionCookie(): string | null {
+  if (typeof document === "undefined") return null
+  const match = document.cookie.match(/(?:^|;\s*)(?:__Host-)?gnot_attr=([^;]*)/)
+  return match ? decodeURIComponent(match[1]) : null
+}
+
 export function track(event: AnalyticsEvent, metadata?: AnalyticsMetadata): void {
   try {
     if (!analyticsEnabled() || typeof window === "undefined") return
-    const clean = metadata ? sanitize(metadata) : undefined
+    // Attach the promoter source to funnel events (no-op for others / untagged visitors). The
+    // handle passes the PII firewall (a slug), and it is always merged BEFORE sanitize runs. The
+    // cookie is read only for funnel events, so the ~21 other event types skip the DOM read.
+    const source = ATTRIBUTED_EVENTS.has(event)
+      ? attributionSourceFor(event, readAttributionCookie())
+      : null
+    const enriched: AnalyticsMetadata | undefined = source ? { ...metadata, source } : metadata
+    const clean = enriched ? sanitize(enriched) : undefined
     if (clean && Object.keys(clean).length > 0) saEvent()(event, clean)
     else saEvent()(event)
   } catch {

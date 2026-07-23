@@ -47,6 +47,9 @@ export type CommitmentData = CommitmentMetrics & {
 // The session's Sonar entity reduced to what the journey needs (KYC + eligibility).
 export type EntitySnapshot = {
   entityId: string
+  // Sonar SaleSpecificEntityID: the sale-scoped entity id the contract records on-chain (public,
+  // not sensitive PII). Used server-side as the influencer-attribution key (see attribution.ts).
+  saleSpecificEntityId: string
   setupState: EntitySetupState
   eligibility: SaleEligibility
   // Server-derived from Sonar EntityDetails.InvestingRegion; drives the forced US lockup at bid time.

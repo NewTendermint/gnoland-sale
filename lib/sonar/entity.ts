@@ -97,6 +97,7 @@ export async function getEntity(sessionId: string): Promise<EntitySnapshot | nul
   }
   return {
     entityId: entity.EntityID,
+    saleSpecificEntityId: entity.SaleSpecificEntityID,
     setupState: normalizeSetup(entity.EntitySetupState),
     eligibility: normalizeEligibility(entity.SaleEligibility),
     investingRegion: normalizeRegion(entity.InvestingRegion),
