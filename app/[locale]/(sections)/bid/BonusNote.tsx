@@ -4,6 +4,14 @@ import { BONUS_TIERS, blendedBonus, currentTier, tieredBonusEnabled } from "@/li
 import { fmtCompactUsd } from "@/lib/sale/format"
 import { useTranslations } from "next-intl"
 import { Icon } from "../../(ui)/Icon"
+import { useBonusOn } from "./BonusToggle"
+
+/** Environment gate AND the runtime on/off toggle (default on). `force` bypasses both for the
+ *  dev-states gallery. Call from a client component - useBonusOn is a hook. */
+function useBonusShown(force = false): boolean {
+  const on = useBonusOn()
+  return force || (tieredBonusEnabled() && on)
+}
 
 // Promo surfaces for the tiered contribution bonus. Display-only: nothing here reads or writes sale
 // state, it only shows marketing copy and a PROJECTED estimate at the current sale total. Gated by
@@ -19,7 +27,7 @@ const BONUS_TAG =
 /** Whether the always-on content surfaces (sale-terms row, FAQ) should render. Client-only (false on
  *  SSR, resolves after mount) so the flag read never diverges between server and client. */
 export function useBonusVisible(): boolean {
-  return tieredBonusEnabled()
+  return useBonusShown()
 }
 
 /** Tiered-bonus header strip for the panel (white area, above the metrics). A compact one-line
@@ -36,7 +44,8 @@ export function TierBonusMeter({
   force?: boolean
 }) {
   const t = useTranslations("BidPanel")
-  if (!tieredBonusEnabled() && !force) return null
+  const shown = useBonusShown(force)
+  if (!shown) return null
 
   const tier = currentTier(cumulativeUsd)
   const topPct = BONUS_TIERS[0].pct
@@ -53,7 +62,7 @@ export function TierBonusMeter({
   const title = t("bonusBannerTitle")
 
   return (
-    <div className="mb-3 flex items-center gap-4 overflow-hidden py-1 text-xs">
+    <div className="mb-3 flex items-center gap-6 overflow-hidden py-1 text-xs lg:gap-8">
       {/* Left cluster, read as one unit: the current-tier pill + the scarcity figure (how much more
           must be committed before the bonus drops). This is the actionable "reward + act now" pair;
           the marquee sits to its right. Visible on every breakpoint (the push to bid). */}
@@ -115,7 +124,8 @@ export function TierBonusPill({
   className?: string
 }) {
   const t = useTranslations("BidPanel")
-  if (!tieredBonusEnabled() && !force) return null
+  const shown = useBonusShown(force)
+  if (!shown) return null
   const blend = blendedBonus(cumulativeUsd, amountUsd, null)
   const pct = blend.segments[0]?.pct ?? currentTier(cumulativeUsd)?.pct
   if (pct == null) return null
@@ -126,7 +136,8 @@ export function TierBonusPill({
  *  the persistent info/legal layer). Rendered as a Footer client island. */
 export function TierBonusDisclaimer() {
   const t = useTranslations("Footer")
-  if (!tieredBonusEnabled()) return null
+  const shown = useBonusShown()
+  if (!shown) return null
   return <p className="mb-2 max-w-3xl text-xs text-muted">{t("bonusDisclaimer")}</p>
 }
 
@@ -136,7 +147,8 @@ export function TierBonusDisclaimer() {
  *  conditionally since eligibility and amounts are settled off-app. */
 export function TierBonusSettlementNote({ force = false }: { force?: boolean }) {
   const t = useTranslations("Bid")
-  if (!tieredBonusEnabled() && !force) return null
+  const shown = useBonusShown(force)
+  if (!shown) return null
   return (
     <p className="mt-1 inline-flex items-center gap-1.5 text-xs font-medium text-foreground">
       <Icon name="gift" draw={false} className="h-3.5 w-3.5 shrink-0 text-mint" />

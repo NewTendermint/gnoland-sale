@@ -559,7 +559,7 @@
     "cellCommitment": "내 약정 금액",
     "cellAllocation": "내 배정",
     "allocationNote": "GNOT는 메인넷 일정에 따라 회원님의 지갑으로 전송됩니다.",
-    "bonusSettlementNote": "여기에 더해, 회원님이 받을 자격이 있는 보너스 GNOT이 메인넷 분배 시 배정 물량과 함께 지급됩니다.",
+    "bonusSettlementNote": "추가로 보너스 GNOT을 받을 자격이 있으시면, 최종 배정 물량과 함께 토큰을 지급받으시게 됩니다.",
     "confirmationSent": "확인 이메일을 보냈습니다 - 받은편지함을 확인하세요.",
     "useAnotherEmail": "다른 이메일 사용",
     "emailPitch": "지갑이나 입찰과 절대 연결되지 않습니다.",
