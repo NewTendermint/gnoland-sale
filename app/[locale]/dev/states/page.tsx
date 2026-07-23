@@ -194,7 +194,6 @@ function ExpandedBar({
             journey={journey}
             returning={returning}
             clearingPriceUsd={input.clearingPriceUsd}
-            totalCommittedUsd={MOCK_COMMITMENT_LIVE.totalCommittedUsd}
             myBid={input.myBid}
             setupHref={SETUP_URL_PREVIEW}
             entityLabel="Jane Cooper Ltd"

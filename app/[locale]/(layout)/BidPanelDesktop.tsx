@@ -342,7 +342,6 @@ export function BidPanelDesktop() {
                           journey={journey}
                           returning={sonarSeen}
                           clearingPriceUsd={commitment.clearingPriceUsd}
-                          totalCommittedUsd={commitment.totalCommittedUsd}
                           myBid={myBid}
                           onConnectSonar={redirectToSonarLogin}
                           onSignOut={handleSignOut}

@@ -41,7 +41,6 @@ import { NewsletterForm } from "../../(layout)/NewsletterForm"
 import { CloseButton } from "../../(ui)/CloseButton"
 import { Cta } from "../../(ui)/Cta"
 import { Icon } from "../../(ui)/Icon"
-import { TierBonusPill } from "./BonusNote"
 import { ManageEntityCta, SonarSignOutButton } from "./ManageEntity"
 import { usePushAlerts } from "./PushOptIn"
 
@@ -303,7 +302,6 @@ export function BidFlow({
   journey,
   returning,
   clearingPriceUsd,
-  totalCommittedUsd = 0,
   myBid,
   onConnectSonar,
   // Noop default so server-rendered galleries (which cannot pass functions) still show the
@@ -320,8 +318,6 @@ export function BidFlow({
   journey: JourneyState
   returning?: boolean
   clearingPriceUsd: number | null
-  /** Live cumulative sale total (Sonar committed USD), for the tiered-bonus meter. */
-  totalCommittedUsd?: number
   myBid: MyBid
   onConnectSonar?: () => void
   onSignOut?: () => void
@@ -340,7 +336,6 @@ export function BidFlow({
       journey={journey}
       returning={returning}
       clearingPriceUsd={clearingPriceUsd}
-      totalCommittedUsd={totalCommittedUsd}
       myBid={myBid}
       onConnectSonar={onConnectSonar}
       onSignOut={onSignOut}
@@ -359,7 +354,6 @@ function StateContent({
   journey,
   returning,
   clearingPriceUsd,
-  totalCommittedUsd,
   myBid,
   onConnectSonar,
   onSignOut,
@@ -374,7 +368,6 @@ function StateContent({
   journey: JourneyState
   returning?: boolean
   clearingPriceUsd: number | null
-  totalCommittedUsd: number
   myBid: MyBid
   onConnectSonar?: () => void
   onSignOut: () => void
@@ -398,7 +391,6 @@ function StateContent({
         <BidRow
           key="bid-row"
           clearingPriceUsd={clearingPriceUsd}
-          totalCommittedUsd={totalCommittedUsd}
           prevBid={journey === "ready" ? undefined : myBid}
           outbid={journey === "has-bid-outbid"}
           onBid={onBid}
@@ -794,7 +786,6 @@ function DeltaCapsule({ added }: { added: number }) {
 
 function BidRow({
   clearingPriceUsd,
-  totalCommittedUsd = 0,
   prevBid,
   outbid,
   onBid,
@@ -804,7 +795,6 @@ function BidRow({
   preview,
 }: {
   clearingPriceUsd: number | null
-  totalCommittedUsd?: number
   prevBid?: MyBid
   outbid?: boolean
   onBid?: (p: BidParams, opts?: { onStage?: (s: BidStage) => void }) => Promise<BidResult>
@@ -1135,26 +1125,12 @@ function BidRow({
                     : `~${fmtGnot(est)} GNOT`,
               })}
             </span>
-            {prevBid ? null : (
-              <TierBonusPill
-                cumulativeUsd={totalCommittedUsd}
-                amountUsd={amountNum}
-                force={preview?.bonus}
-                className="ml-2 align-middle"
-              />
-            )}
           </p>
           {prevBid ? (
             <p className="mt-1 text-xs text-muted">
               {amountNum > prevBid.committedUsd
                 ? t("confirmDeltaCharged", { amount: fmtUsd(amountNum - prevBid.committedUsd) })
                 : t("confirmNoExtra")}
-              <TierBonusPill
-                cumulativeUsd={totalCommittedUsd}
-                amountUsd={amountNum}
-                force={preview?.bonus}
-                className="ml-2 align-middle"
-              />
             </p>
           ) : null}
           {precheckNotice ? (

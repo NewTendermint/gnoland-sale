@@ -1,16 +1,14 @@
 "use client"
 
-import { BONUS_TIERS, blendedBonus, currentTier, tieredBonusEnabled } from "@/lib/sale/bonus"
+import { BONUS_TIERS, currentTier, tieredBonusEnabled } from "@/lib/sale/bonus"
 import { fmtCompactUsd } from "@/lib/sale/format"
 import { useTranslations } from "next-intl"
 import { Icon } from "../../(ui)/Icon"
-import { useBonusOn } from "./BonusToggle"
 
-/** Environment gate AND the runtime on/off toggle (default on). `force` bypasses both for the
- *  dev-states gallery. Call from a client component - useBonusOn is a hook. */
-function useBonusShown(force = false): boolean {
-  const on = useBonusOn()
-  return force || (tieredBonusEnabled() && on)
+/** Whether a bonus surface should render: the environment gate (tieredBonusEnabled), or `force` for
+ *  the dev-states gallery. */
+function bonusShown(force = false): boolean {
+  return force || tieredBonusEnabled()
 }
 
 // Promo surfaces for the tiered contribution bonus. Display-only: nothing here reads or writes sale
@@ -24,10 +22,9 @@ function useBonusShown(force = false): boolean {
 const BONUS_TAG =
   "shrink-0 rounded-full bg-mint px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.15em] text-on-mint"
 
-/** Whether the always-on content surfaces (sale-terms row, FAQ) should render. Client-only (false on
- *  SSR, resolves after mount) so the flag read never diverges between server and client. */
+/** Whether the always-on content surfaces (sale-terms row, FAQ) should render. */
 export function useBonusVisible(): boolean {
-  return useBonusShown()
+  return bonusShown()
 }
 
 /** Tiered-bonus header strip for the panel (white area, above the metrics). A compact one-line
@@ -44,7 +41,7 @@ export function TierBonusMeter({
   force?: boolean
 }) {
   const t = useTranslations("BidPanel")
-  const shown = useBonusShown(force)
+  const shown = bonusShown(force)
   if (!shown) return null
 
   const tier = currentTier(cumulativeUsd)
@@ -110,33 +107,11 @@ export function TierBonusMeter({
   )
 }
 
-/** Compact promo pill for the bid-confirm step. Shows the tier the bidder's contribution starts in
- *  at the current sale total. `className` lets a caller place it inline. */
-export function TierBonusPill({
-  cumulativeUsd,
-  amountUsd,
-  force = false,
-  className = "",
-}: {
-  cumulativeUsd: number
-  amountUsd: number
-  force?: boolean
-  className?: string
-}) {
-  const t = useTranslations("BidPanel")
-  const shown = useBonusShown(force)
-  if (!shown) return null
-  const blend = blendedBonus(cumulativeUsd, amountUsd, null)
-  const pct = blend.segments[0]?.pct ?? currentTier(cumulativeUsd)?.pct
-  if (pct == null) return null
-  return <span className={`${BONUS_TAG} ${className}`}>{t("bonusPill", { pct })}</span>
-}
-
 /** Footer compliance disclaimer for the bonus. Stays whenever the bonus is enabled (like the FAQ,
  *  the persistent info/legal layer). Rendered as a Footer client island. */
 export function TierBonusDisclaimer() {
   const t = useTranslations("Footer")
-  const shown = useBonusShown()
+  const shown = bonusShown()
   if (!shown) return null
   return <p className="mb-2 max-w-3xl text-xs text-muted">{t("bonusDisclaimer")}</p>
 }
@@ -147,7 +122,7 @@ export function TierBonusDisclaimer() {
  *  conditionally since eligibility and amounts are settled off-app. */
 export function TierBonusSettlementNote({ force = false }: { force?: boolean }) {
   const t = useTranslations("Bid")
-  const shown = useBonusShown(force)
+  const shown = bonusShown(force)
   if (!shown) return null
   return (
     <p className="mt-1 inline-flex items-center gap-1.5 text-xs font-medium text-foreground">
