@@ -34,8 +34,8 @@ export function TokenDetails() {
   // Locale-aware sale-open..close date range for the contribution-window row.
   const contributionRange = `${formatSaleDate(SALE_ECONOMICS.saleOpensIso, false, locale)} - ${formatSaleDate(SALE_ECONOMICS.saleClosesIso, true, locale)}`
   const { phase, preSaleStage, journey, myBid, commitment, pendingIndexing } = useSale()
-  // Gates the First-Day Bonus term row: shown from pre-sale through the first 24h, hidden after
-  // the window (same timing as the banner/pill).
+  // Gates the Contribution Bonus term row: shown whenever the tiered bonus is enabled (same gate
+  // as the banner/meter).
   const bonusVisible = useBonusVisible()
   const positionState = derivePositionState(journey, myBid !== null)
   const preSale = phase === "pre-sale"
@@ -201,7 +201,7 @@ export function TokenDetails() {
                   </div>
                   <dl className="col-span-12 lg:col-span-7">
                     {g.rows
-                      .filter((row) => row.id !== "firstDayBonus" || bonusVisible)
+                      .filter((row) => row.id !== "tieredBonus" || bonusVisible)
                       .map((row, ri) => (
                         <Rise
                           key={row.id}
@@ -212,7 +212,7 @@ export function TokenDetails() {
                         >
                           <dt
                             className={`font-mono text-xs uppercase tracking-widest text-muted ${
-                              row.id === "firstDayBonus" ? "shrink-0 whitespace-nowrap" : ""
+                              row.id === "tieredBonus" ? "shrink-0 whitespace-nowrap" : ""
                             }`}
                           >
                             {t(`${g.id}.${row.id}.label`)}
@@ -244,11 +244,7 @@ export function TokenDetails() {
                               (row.value ??
                               t(
                                 `${g.id}.${row.id}.value`,
-                                row.id === "contributionWindow"
-                                  ? { range: contributionRange }
-                                  : row.id === "firstDayBonus"
-                                    ? { pct: SALE_ECONOMICS.firstDayBonusPct }
-                                    : {},
+                                row.id === "contributionWindow" ? { range: contributionRange } : {},
                               ))
                             )}
                           </dd>

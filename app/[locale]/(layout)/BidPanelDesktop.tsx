@@ -15,7 +15,7 @@ import { useLocale, useTranslations } from "next-intl"
 import { type ReactNode, useEffect, useRef, useState } from "react"
 import { useAccount } from "wagmi"
 import { BidFlow } from "../(sections)/bid/BidFlow"
-import { FirstDayBonusBanner } from "../(sections)/bid/BonusNote"
+import { TierBonusMeter } from "../(sections)/bid/BonusNote"
 import { BidStatusTag, FunnelSteps } from "../(sections)/bid/FunnelSteps"
 import { SonarSignOutButton } from "../(sections)/bid/ManageEntity"
 import { SettlementFlow } from "../(sections)/bid/SettlementFlow"
@@ -105,7 +105,7 @@ export function BidPanelDesktop() {
         {/* Banner sits inside the same padded block as the row (mirrors the live bar), so the
             vertical rhythm matches; its own mb-3 spaces it from the row below. */}
         <div className="py-4 sm:py-6">
-          <FirstDayBonusBanner />
+          <TierBonusMeter cumulativeUsd={commitment.totalCommittedUsd} />
           <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4">
             <BarCountdown
               targetIso={
@@ -221,7 +221,9 @@ export function BidPanelDesktop() {
           <Entrance className="band-10">
             <DrawLine immediate delayMs={200} />
             <div className="py-4 sm:py-6">
-              <FirstDayBonusBanner />
+              {/* Tiered-bonus tier bar in the white header area, above the metrics - the single bonus
+                  surface for the live panel (schedule + current position, no per-bid math). */}
+              <TierBonusMeter cumulativeUsd={commitment.totalCommittedUsd} />
               <div className="flex flex-wrap items-start justify-between gap-x-8 gap-y-4">
                 <Stagger
                   as="div"

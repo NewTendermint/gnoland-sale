@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import { bidAmountBucket } from "../../../lib/analytics/track"
+import { attributionSourceFor, bidAmountBucket } from "../../../lib/analytics/track"
 
 type SaEventStub = { (...args: unknown[]): void; q?: unknown[][] }
 const win = window as Window & { sa_event?: SaEventStub }
@@ -20,6 +20,8 @@ describe("track", () => {
   afterEach(() => {
     vi.unstubAllEnvs()
     win.sa_event = undefined
+    // Attribution cookie is read from document.cookie; clear it so it can't leak between tests.
+    document.cookie = "gnot_attr=; max-age=0; path=/"
   })
 
   it("queues events on window.sa_event.q before the script loads", () => {
@@ -51,6 +53,25 @@ describe("track", () => {
     expect(loaded).toHaveBeenNthCalledWith(1, "wallet_disconnected")
     expect(loaded).toHaveBeenNthCalledWith(2, "bid_precheck_blocked", { reason: "wallet-risk" })
     expect(loaded).toHaveBeenNthCalledWith(3, "sonar_auth_failed", { stage: "init" })
+  })
+
+  it("tags bid-funnel events with the influencer source from the attribution cookie", () => {
+    document.cookie = "gnot_attr=airdropcosm; path=/"
+    const loaded = vi.fn()
+    win.sa_event = loaded
+    track("bid_confirmed", { token: "USDC" })
+    expect(loaded).toHaveBeenCalledWith("bid_confirmed", { token: "USDC", source: "airdropcosm" })
+  })
+
+  it("does not tag non-funnel events, nor when the cookie is absent", () => {
+    const loaded = vi.fn()
+    win.sa_event = loaded
+    document.cookie = "gnot_attr=airdropcosm; path=/"
+    track("faq_opened") // not a funnel event
+    document.cookie = "gnot_attr=; max-age=0; path=/"
+    track("bid_confirmed", { token: "USDC" }) // funnel event, but no cookie
+    expect(loaded).toHaveBeenNthCalledWith(1, "faq_opened")
+    expect(loaded).toHaveBeenNthCalledWith(2, "bid_confirmed", { token: "USDC" })
   })
 
   it("no-ops outside production builds", () => {
@@ -95,6 +116,25 @@ describe("track", () => {
         step: 2,
       })
     })
+  })
+})
+
+describe("attributionSourceFor", () => {
+  it("returns the validated handle for a bid-funnel event", () => {
+    expect(attributionSourceFor("bid_started", "airdropcosm")).toBe("airdropcosm")
+    expect(attributionSourceFor("bid_submitted", "airdropcosm")).toBe("airdropcosm")
+    expect(attributionSourceFor("bid_confirmed", "airdropcosm")).toBe("airdropcosm")
+  })
+
+  it("returns null for non-funnel events even with a valid cookie", () => {
+    expect(attributionSourceFor("faq_opened", "airdropcosm")).toBeNull()
+    expect(attributionSourceFor("wallet_connected", "airdropcosm")).toBeNull()
+  })
+
+  it("returns null for an absent, empty, or unknown-handle cookie", () => {
+    expect(attributionSourceFor("bid_confirmed", null)).toBeNull()
+    expect(attributionSourceFor("bid_confirmed", "")).toBeNull()
+    expect(attributionSourceFor("bid_confirmed", "not-a-promoter")).toBeNull()
   })
 })
 

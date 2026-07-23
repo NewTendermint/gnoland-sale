@@ -77,9 +77,10 @@
   # (see the branch-deploy block below). /dev/states is a mock-fixture gallery, reachable in local
   # dev and on the staging branch-deploy (NEXT_PUBLIC_DEV_STATES_ENABLED below), 404 in production.
 
-  # First-24h bonus surfaces gate. Absent = surfaces stay hidden. Set here so they render on the
-  # production deploy; no dates are overridden, so they follow the economics.ts schedule.
-  NEXT_PUBLIC_FIRST_DAY_BONUS = "1"
+  # Tiered contribution bonus surfaces gate. ON in production (enabled per team decision). Goes live
+  # at the next production deploy (staging -> main). REMINDER: confirm legal sign-off on the
+  # disclaimer (MiCA/US) before that release ships.
+  NEXT_PUBLIC_TIERED_BONUS = "1"
 [context.deploy-preview.environment]
   NEXT_PUBLIC_SITE_URL = "https://deploy-preview.netlify.app"
   # Previews stay on Sepolia + sandbox contract, same pair rule as staging below: a non-prod
@@ -108,12 +109,15 @@
   NEXT_PUBLIC_MIN_COMMITMENT_USD = "2"
   # Milestone dates mirror the real sale schedule (same as economics.ts defaults) so staging tracks
   # production's phase. Shift these to test other phases (e.g. a recent open to test the live window).
-  # OPENS shifted to the past for live-phase outbid testing (revert to 2026-07-20T12:00:00Z to mirror prod).
+  # Dates shifted to keep staging in the LIVE phase for e2e testing (the sandbox contract is in
+  # commitment stage, so on-chain bids work; only these UI-phase dates had lapsed). Revert to mirror
+  # prod when done: OPENS 2026-07-20T12:00:00Z, CLOSES per economics.ts. Branch-deploy only - never prod.
   NEXT_PUBLIC_REGISTRATION_OPENS = "2026-07-09T12:00:00Z"
   NEXT_PUBLIC_SALE_OPENS = "2026-07-19T00:00:00Z"
-  NEXT_PUBLIC_SALE_CLOSES = "2026-07-22T12:00:00Z"
+  NEXT_PUBLIC_SALE_CLOSES = "2026-07-24T23:59:00Z"
   # /dev/states gallery (mock fixtures only, no live data): reachable on staging for design review.
   # Never set this in the production context - the page must stay a 404 on sale.gno.land.
   NEXT_PUBLIC_DEV_STATES_ENABLED = "1"
-  # First-24h bonus surfaces gate for the branch-deploy context. The production context sets its own.
-  NEXT_PUBLIC_FIRST_DAY_BONUS = "1"
+  # Tiered contribution bonus surfaces gate for the branch-deploy context (Sepolia sandbox review):
+  # ON here so the team can review on staging. Production stays OFF (see the production block).
+  NEXT_PUBLIC_TIERED_BONUS = "1"

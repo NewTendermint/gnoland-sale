@@ -1,116 +1,88 @@
 "use client"
 
-import { firstDayBonusClosesIso, firstDayBonusEnabled } from "@/lib/sale/bonus"
-import { SALE_ECONOMICS } from "@/lib/sale/economics"
+import { BONUS_TIERS, currentTier, tieredBonusEnabled } from "@/lib/sale/bonus"
+import { fmtCompactUsd } from "@/lib/sale/format"
 import { useTranslations } from "next-intl"
-import { useEffect, useState } from "react"
-import { Countdown } from "../../(layout)/Countdown"
-import { FadeIn } from "../../(ui)/FadeIn"
 import { Icon } from "../../(ui)/Icon"
 
-// Promo surfaces for the first-24h bonus. Display-only: nothing here reads or writes sale state, it
-// only shows marketing copy + a countdown. Gated by firstDayBonusEnabled() so it stays off unless
-// explicitly turned on. `force` pins a surface on for the dev-states gallery (bypasses both the flag
-// and the window), so it never leaks into production, only the gallery passes it.
+/** Whether a bonus surface should render: the environment gate (tieredBonusEnabled), or `force` for
+ *  the dev-states gallery. */
+function bonusShown(force = false): boolean {
+  return force || tieredBonusEnabled()
+}
 
-const PCT = SALE_ECONOMICS.firstDayBonusPct
+// Promo surfaces for the tiered contribution bonus. Display-only: nothing here reads or writes sale
+// state, it only shows marketing copy and a PROJECTED estimate at the current sale total. Gated by
+// tieredBonusEnabled() so it stays off unless explicitly turned on. `force` pins a surface on for the
+// dev-states gallery (bypasses the flag), so it never leaks into production - only the gallery passes
+// it. The authoritative bonus is computed off-app from on-chain data at the post-mainnet distribution.
 
 // Editorial highlight tag, same idiom as the "winning" badge in FunnelSteps: solid mint, bold
 // uppercase, mono tracking. The only accent surface the design uses for a positive highlight.
 const BONUS_TAG =
   "shrink-0 rounded-full bg-mint px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.15em] text-on-mint"
 
-export type BonusPhase = "before" | "during" | "after"
-
-// before = sale not open yet (pre-sale teaser); during = inside the first 24h; after = window closed.
-function bonusPhaseAt(nowMs: number): BonusPhase {
-  const openMs = new Date(SALE_ECONOMICS.saleOpensIso).getTime()
-  const closeMs = new Date(firstDayBonusClosesIso).getTime()
-  if (nowMs < openMs) return "before"
-  if (nowMs < closeMs) return "during"
-  return "after"
-}
-
-// Client-only: "after" on the first render (renders nothing on SSR, so no hydration mismatch), then
-// resolved after mount. A single timeout flips the phase at the next boundary - the visible
-// Countdown does its own per-second ticking, so no interval is needed here. `force` pins a phase for
-// the dev-states gallery: `true` -> "during", or an explicit phase (e.g. "before" for the teaser).
-function useBonusPhase(force?: boolean | BonusPhase): BonusPhase {
-  const [phase, setPhase] = useState<BonusPhase>("after")
-  useEffect(() => {
-    if (force) {
-      setPhase(force === true ? "during" : force)
-      return
-    }
-    let timer: ReturnType<typeof setTimeout> | undefined
-    const openMs = new Date(SALE_ECONOMICS.saleOpensIso).getTime()
-    const closeMs = new Date(firstDayBonusClosesIso).getTime()
-    const tick = () => {
-      const now = Date.now()
-      const p = bonusPhaseAt(now)
-      setPhase(p)
-      if (p === "before") timer = setTimeout(tick, openMs - now)
-      else if (p === "during") timer = setTimeout(tick, closeMs - now)
-    }
-    tick()
-    return () => {
-      if (timer) clearTimeout(timer)
-    }
-  }, [force])
-  return phase
-}
-
-/** Whether the bonus should be surfaced right now: enabled AND not past the first-24h window
- *  (pre-sale teaser + the active window; hidden after). Gates the always-on content surfaces (e.g.
- *  the sale-terms row) so they track the banner timing. Client-only (false on SSR, resolves after
- *  mount). */
+/** Whether the always-on content surfaces (sale-terms row, FAQ) should render. */
 export function useBonusVisible(): boolean {
-  const phase = useBonusPhase()
-  return firstDayBonusEnabled() && phase !== "after"
+  return bonusShown()
 }
 
-/** Compact promo pill (solid-mint "winning" badge idiom). Renders only while the bonus is enabled
- *  AND the clock is inside the active first-24h window (or forced) - NOT during the pre-sale teaser.
- *  `className` lets a caller place it inline (e.g. after the confirm-step delta line). */
-export function FirstDayBonusPill({
-  force,
-  className = "",
-}: { force?: boolean | BonusPhase; className?: string }) {
+/** Tiered-bonus header strip for the panel (white area, above the metrics). A compact one-line
+ *  banner: a LABELED tier bar on the left (each stage's %, the current tier filled in mint and the
+ *  rest faint - so "which tiers exist" and "where we are now" both read at a glance), a scrolling
+ *  marquee explaining the promo + how much more must be committed before the bonus drops a tier, and
+ *  the current-tier pill on the right. Marquee is decorative (aria-hidden) with an sr-only equivalent
+ *  and holds still under reduced motion. No per-bid math. Renders only while enabled (or `force`d). */
+export function TierBonusMeter({
+  cumulativeUsd,
+  force = false,
+}: {
+  cumulativeUsd: number
+  force?: boolean
+}) {
   const t = useTranslations("BidPanel")
-  const phase = useBonusPhase(force)
-  if (!firstDayBonusEnabled() && !force) return null
-  if (phase !== "during") return null
-  return <span className={`${BONUS_TAG} ${className}`}>{t("bonusPill", { pct: PCT })}</span>
-}
+  const shown = bonusShown(force)
+  if (!shown) return null
 
-/** Live-bar promo banner: a continuously scrolling ticker of the promo, with a countdown pinned on
- *  the right. Shows a pre-sale teaser (counting down to the sale open) before the sale, then the
- *  active window (counting down to the window close) during the first 24h; nothing after. Renders
- *  only while the bonus is enabled (or forced). The ticker is decorative (aria-hidden) with an
- *  sr-only text equivalent, and holds still under reduced motion. */
-export function FirstDayBonusBanner({ force }: { force?: boolean | BonusPhase }) {
-  const t = useTranslations("BidPanel")
-  const phase = useBonusPhase(force)
-  if (!firstDayBonusEnabled() && !force) return null
-  if (phase === "after") return null
+  const tier = currentTier(cumulativeUsd)
+  const topPct = BONUS_TIERS[0].pct
+  const idx = tier ? BONUS_TIERS.findIndex((b) => b.untilUsd === tier.untilUsd) : -1
+  const nextPct = idx >= 0 ? BONUS_TIERS[idx + 1]?.pct : undefined
+  // Marquee = what the promo is (context). Pre-sale gets the "up to 15%" teaser; live gets the
+  // plain "winners earn bonus GNOT" line - the urgency $ figure lives on the right, not here.
+  const marquee =
+    cumulativeUsd <= 0
+      ? t("bonusStripPresale", { pct: topPct })
+      : tier == null
+        ? t("bonusStripClosed")
+        : t("bonusStripWhat", { pct: tier.pct })
   const title = t("bonusBannerTitle")
-  const body = t("bonusBannerBody", { pct: PCT })
-  // Only show a countdown during the active window (to the window close). In pre-sale the bar
-  // already has a big countdown to the sale open, so a second one here would just duplicate it -
-  // the pre-sale banner is a plain teaser (badge + ticker), no countdown.
-  const showCountdown = phase === "during"
+
   return (
-    // Fades in at the tail of the bar's load entrance (after the metrics + CTA), matching the
-    // site's FadeIn idiom. `immediate` reveals on mount without waiting for scroll; opacity-only so
-    // the reserved space never shifts the metrics below.
-    <FadeIn
-      as="div"
-      immediate
-      delayMs={1500}
-      className="mb-3 flex items-center gap-4 overflow-hidden py-1 text-xs lg:gap-10"
-    >
-      <span className={BONUS_TAG}>{t("bonusPill", { pct: PCT })}</span>
-      {/* Decorative scroller: two identical copies so the -50% translate loops seamlessly. */}
+    <div className="mb-3 flex items-center gap-6 overflow-hidden py-1 text-xs lg:gap-8">
+      {/* Left cluster, read as one unit: the current-tier pill + the scarcity figure (how much more
+          must be committed before the bonus drops). This is the actionable "reward + act now" pair;
+          the marquee sits to its right. Visible on every breakpoint (the push to bid). */}
+      <span className="flex shrink-0 items-center gap-3">
+        {tier ? <span className={BONUS_TAG}>{t("bonusPill", { pct: tier.pct })}</span> : null}
+        {tier && nextPct != null ? (
+          // t.rich so the amount stays a prominent styled chunk while the sentence word-order is
+          // localized (EN leads with the amount; KO embeds it mid-sentence).
+          <span className="text-[11px] font-bold uppercase leading-none tracking-[0.15em] text-foreground">
+            {t.rich("bonusScarcity", {
+              amount: fmtCompactUsd(tier.remainingUsd),
+              next: nextPct,
+              b: (chunks) => (
+                <span className="mx-0.5 font-mono text-sm normal-case tracking-normal">
+                  {chunks}
+                </span>
+              ),
+            })}
+          </span>
+        ) : null}
+      </span>
+      {/* Marquee on the right, filling the remaining width. Two identical copies so the -50%
+          translate loops seamlessly. */}
       <div aria-hidden="true" className="min-w-0 flex-1 overflow-hidden">
         <div className="bonus-marquee flex w-max">
           {[0, 1].map((copy) => (
@@ -120,7 +92,7 @@ export function FirstDayBonusBanner({ force }: { force?: boolean | BonusPhase })
                   key={i}
                   className="inline-flex items-center gap-2 whitespace-nowrap text-muted"
                 >
-                  {body}
+                  {marquee}
                   <span className="px-2 text-faint">·</span>
                 </span>
               ))}
@@ -129,40 +101,33 @@ export function FirstDayBonusBanner({ force }: { force?: boolean | BonusPhase })
         </div>
       </div>
       <span className="sr-only">
-        {title}. {body}
+        {title}. {marquee}
       </span>
-      {showCountdown ? (
-        <span className="hidden shrink-0 items-center gap-2 font-mono font-semibold tabular-nums lg:inline-flex">
-          <span className="text-[10px] uppercase tracking-[0.2em] text-muted">
-            {t("bonusEndsIn")}
-          </span>
-          <span className="text-foreground">
-            <Countdown targetIso={firstDayBonusClosesIso} label={t("bonusEndsIn")} />
-          </span>
-        </span>
-      ) : null}
-    </FadeIn>
+    </div>
   )
 }
 
 /** Footer compliance disclaimer for the bonus. Stays whenever the bonus is enabled (like the FAQ,
- *  the persistent info/legal layer), NOT time-boxed to the window. Rendered as a Footer client island. */
-export function FirstDayBonusDisclaimer() {
+ *  the persistent info/legal layer). Rendered as a Footer client island. */
+export function TierBonusDisclaimer() {
   const t = useTranslations("Footer")
-  if (!firstDayBonusEnabled()) return null
+  const shown = bonusShown()
+  if (!shown) return null
   return <p className="mb-2 max-w-3xl text-xs text-muted">{t("bonusDisclaimer")}</p>
 }
 
-/** Winner settlement note (shown after the sale, so it is flag-gated only and worded conditionally
- *  since eligibility is settled off-app). */
-export function FirstDayBonusNote({ force }: { force?: boolean | BonusPhase }) {
+/** Settlement note shown to allocated bidders after the sale. Intentionally GENERIC ("any bonus GNOT
+ *  you are eligible for") so it covers every bonus offer that may apply (the tiered contribution
+ *  bonus and any earlier promo), without duplicating a per-offer message. Flag-gated + worded
+ *  conditionally since eligibility and amounts are settled off-app. */
+export function TierBonusSettlementNote({ force = false }: { force?: boolean }) {
   const t = useTranslations("Bid")
-  const enabled = firstDayBonusEnabled()
-  if (!enabled && !force) return null
+  const shown = bonusShown(force)
+  if (!shown) return null
   return (
     <p className="mt-1 inline-flex items-center gap-1.5 text-xs font-medium text-foreground">
       <Icon name="gift" draw={false} className="h-3.5 w-3.5 shrink-0 text-mint" />
-      {t("bonusSettlementNote", { pct: PCT })}
+      {t("bonusSettlementNote")}
     </p>
   )
 }

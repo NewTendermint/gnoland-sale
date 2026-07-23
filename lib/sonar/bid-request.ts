@@ -1,6 +1,7 @@
 import "server-only"
 import { NextResponse } from "next/server"
 import { z } from "zod"
+import { captureAttributionFromCookie } from "../analytics/attribution"
 import { env } from "../env"
 import { errorMessage } from "../log"
 import type { EntitySnapshot } from "../sale/types"
@@ -62,6 +63,9 @@ export async function resolveBidRequest(request: Request): Promise<BidGate> {
         res: NextResponse.json({ error: "entity_not_eligible" }, { status: 403 }),
       }
     }
+    // Capture attribution on the bid device too (best-effort, never blocks): widens coverage to a
+    // visitor who authenticates at the bid rather than at the journey's entity read.
+    await captureAttributionFromCookie(entity.saleSpecificEntityId)
     return { ok: true, ctx: { sessionId: session.sessionId, wallet: parsed.data.wallet, entity } }
   } catch (err) {
     if (err instanceof SonarAuthError) {

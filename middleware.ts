@@ -2,7 +2,12 @@ import createMiddleware from "next-intl/middleware"
 import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
 import { routing } from "./i18n/routing"
-import { influencerRedirectFor } from "./lib/analytics/influencer-links"
+import {
+  ATTRIBUTION_COOKIE,
+  ATTRIBUTION_COOKIE_MAX_AGE,
+  influencerDestination,
+  influencerHandleFor,
+} from "./lib/analytics/influencer-links"
 
 /**
  * Two responsibilities, composed:
@@ -41,14 +46,34 @@ function isLocaleRoutable(pathname: string): boolean {
 }
 
 export function middleware(request: NextRequest) {
-  // Promoter vanity links: `/<handle>` -> tagged site root, so analytics attributes the visit to
-  // the individual promoter. Done here, ahead of locale routing, because that layer runs first on
-  // the hosting platform and would otherwise resolve `/<handle>` to a localized not-found before a
+  // Promoter vanity links: `/<handle>` -> tagged site root, so analytics attributes the visit to the
+  // individual promoter. We also drop a first-party attribution cookie here so a later authenticated
+  // entity read can bind this visitor's KYC identity to the promoter, surviving the Sonar OAuth hop
+  // and a device switch (see lib/analytics/attribution.ts). Server-set on the redirect, so a
+  // script/ad blocker cannot suppress it. Done ahead of locale routing because that layer runs first
+  // on the hosting platform and would otherwise resolve `/<handle>` to a localized not-found before a
   // build-time redirect could fire. The tagged destination then flows through locale negotiation
   // normally (the query is preserved on the locale hop). See lib/analytics/influencer-links.ts.
-  const vanityDestination = influencerRedirectFor(request.nextUrl.pathname)
-  if (vanityDestination) {
-    return NextResponse.redirect(new URL(vanityDestination, request.url))
+  const vanityHandle = influencerHandleFor(request.nextUrl.pathname)
+  if (vanityHandle) {
+    const redirect = NextResponse.redirect(
+      new URL(influencerDestination(vanityHandle), request.url),
+    )
+    // Not HttpOnly: the value is a public promoter handle (no secret), read server-side for the
+    // attribution capture AND client-side for the Simple Analytics funnel tag (track.ts).
+    redirect.cookies.set(ATTRIBUTION_COOKIE, vanityHandle, {
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: ATTRIBUTION_COOKIE_MAX_AGE,
+    })
+    // Carry HSTS on this 302 too - it's the first hop of an influencer-link click and this early
+    // return skips the full security-header block below (a bodyless redirect otherwise ships none).
+    redirect.headers.set(
+      "Strict-Transport-Security",
+      "max-age=63072000; includeSubDomains; preload",
+    )
+    return redirect
   }
 
   const response = isLocaleRoutable(request.nextUrl.pathname)

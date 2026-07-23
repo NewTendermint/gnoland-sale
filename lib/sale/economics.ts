@@ -20,12 +20,19 @@ export const SALE_ECONOMICS = {
   minCommitmentUsd:
     SALE_CHAIN.id === mainnet.id ? 100 : Number(process.env.NEXT_PUBLIC_MIN_COMMITMENT_USD) || 100,
   maxCommitmentUsd: null, // no maximum commitment (team, 2026-06-21; prior $100k provisional cap dropped)
-  // First-24h bonus: % of the GNOT a first-day winner receives, granted as EXTRA GNOT at the
-  // post-mainnet distribution from a separate reserve. It does NOT touch the sale contract, the
-  // permit or the settlement math - the auction is unchanged. Display-only here; the authoritative
-  // bonus is computed off-app from on-chain data. Surfaced only when firstDayBonusEnabled()
-  // (lib/sale/bonus.ts) is on.
-  firstDayBonusPct: 5,
+  // Tiered contribution bonus: extra GNOT granted at the post-mainnet distribution to bidders who
+  // receive a final allocation, sized by where their contribution sits in the CUMULATIVE sale
+  // total. Bands are cumulative USD ceilings; the pct applies only to the slice of a contribution
+  // that falls inside each band (a contribution straddling a boundary is split across bands). The
+  // portion above the last ceiling earns nothing. Display-only here - it does NOT touch the sale
+  // contract, the permit or the settlement math; the authoritative bonus is computed off-app from
+  // on-chain data at distribution. Surfaced only when tieredBonusEnabled() (lib/sale/bonus.ts) is on.
+  bonusTiers: [
+    { untilUsd: 1_000_000, pct: 15 },
+    { untilUsd: 1_500_000, pct: 10 },
+    { untilUsd: 2_000_000, pct: 5 },
+    { untilUsd: 2_500_000, pct: 3 },
+  ],
   // On-chain price = round(priceUsd / increment), zero-anchored (calc.priceUsdToOnchainPrice; verified
   // vs the deployed permit). 0.0215 prod + sandbox (Dongwon 2026-06-30; divides the 0.0645 floor -> 3).
   bidIncrementUsd: 0.0215,

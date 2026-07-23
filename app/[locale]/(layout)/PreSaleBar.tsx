@@ -18,7 +18,7 @@ import type { PreSaleBarState } from "@/lib/sale/types"
 import { useQueryClient } from "@tanstack/react-query"
 import { useLocale, useTranslations } from "next-intl"
 import { type ReactNode, useState } from "react"
-import { FirstDayBonusBanner } from "../(sections)/bid/BonusNote"
+import { TierBonusMeter } from "../(sections)/bid/BonusNote"
 import { ManageEntityCta, SonarSignOutButton } from "../(sections)/bid/ManageEntity"
 import { Cta } from "../(ui)/Cta"
 import { DrawLine } from "../(ui)/DrawLine"
@@ -60,7 +60,7 @@ export function useSonarSessionActions() {
 export function PreSaleBarMobile() {
   const t = useTranslations("BidPanel")
   const locale = useLocale()
-  const { preSaleStage, journey, sonarReturn, sonarSetupUrl, entityLabel } = useSale()
+  const { preSaleStage, journey, sonarReturn, sonarSetupUrl, entityLabel, commitment } = useSale()
   const sonarSeen = useSonarSeen()
   const { signOut, refresh } = useSonarSessionActions()
   const barState = derivePreSaleBar(preSaleStage, journey, sonarReturn)
@@ -69,7 +69,7 @@ export function PreSaleBarMobile() {
     <BarShell>
       <DrawLine immediate />
       <div className="flex flex-col gap-4 py-4 sm:py-5">
-        <FirstDayBonusBanner />
+        <TierBonusMeter cumulativeUsd={commitment.totalCommittedUsd} />
         <BarCountdown
           targetIso={
             countToSale ? SALE_ECONOMICS.saleOpensIso : SALE_ECONOMICS.registrationOpensIso

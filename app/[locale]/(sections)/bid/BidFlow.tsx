@@ -41,7 +41,6 @@ import { NewsletterForm } from "../../(layout)/NewsletterForm"
 import { CloseButton } from "../../(ui)/CloseButton"
 import { Cta } from "../../(ui)/Cta"
 import { Icon } from "../../(ui)/Icon"
-import { FirstDayBonusPill } from "./BonusNote"
 import { ManageEntityCta, SonarSignOutButton } from "./ManageEntity"
 import { usePushAlerts } from "./PushOptIn"
 
@@ -286,8 +285,8 @@ export type BidPreview = {
   balanceUsd?: number
   /** Seeds the confirm-step advisory blocker (the gallery has no Sonar to precheck). */
   precheck?: { reason: string; livenessUrl?: string }
-  /** Gallery-only: force the first-24h bonus pill on in the confirm step (the real clock is outside
-   *  the window during review). Never set in production. */
+  /** Gallery-only: force the tiered-bonus pill on in the confirm step (bypasses the flag during
+   *  review). Never set in production. */
   bonus?: boolean
 }
 
@@ -1126,16 +1125,12 @@ function BidRow({
                     : `~${fmtGnot(est)} GNOT`,
               })}
             </span>
-            {prevBid ? null : (
-              <FirstDayBonusPill force={preview?.bonus} className="ml-2 align-middle" />
-            )}
           </p>
           {prevBid ? (
             <p className="mt-1 text-xs text-muted">
               {amountNum > prevBid.committedUsd
                 ? t("confirmDeltaCharged", { amount: fmtUsd(amountNum - prevBid.committedUsd) })
                 : t("confirmNoExtra")}
-              <FirstDayBonusPill force={preview?.bonus} className="ml-2 align-middle" />
             </p>
           ) : null}
           {precheckNotice ? (

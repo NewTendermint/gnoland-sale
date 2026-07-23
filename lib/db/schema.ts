@@ -123,6 +123,36 @@ export const cronLeases = pgTable("cron_leases", {
   leasedUntil: timestamp("leased_until", { withTimezone: true }).notNull(),
 })
 
+// Influencer attribution. Maps a KYC entity to the promoter handle (utm_source) that referred it,
+// captured server-side when a tagged visitor (gnot_attr cookie) reaches an authenticated entity
+// read - so the link survives the Sonar OAuth hop AND a device switch (the entity id is stable per
+// person; the cookie need only be present once on any device the visitor authenticates on).
+// Keyed on the sale-specific entity id (0x bytes16, the same value the sale contract records
+// on-chain and the bid export lists), so a person's whole multi-wallet volume attributes once and
+// the key joins straight to entityStatesByIDs / the export - no wallet or raw PII stored.
+// This is an attribution SIGNAL, not a settlement ledger: the handle comes from a client cookie
+// (spoofable to a KNOWN handle), so influencer payouts stay human-reviewed and off-app.
+export const bidAttribution = pgTable(
+  "bid_attribution",
+  {
+    saleSpecificEntityId: text("sale_specific_entity_id").primaryKey(),
+    influencerHandle: text("influencer_handle").notNull(),
+    firstSeenAt: timestamp("first_seen_at", { withTimezone: true }).notNull().defaultNow(),
+    lastTouchAt: timestamp("last_touch_at", { withTimezone: true }).notNull().defaultNow(),
+    // Filled by the hourly reconcile cron from the entity's on-chain commitment, normalized to USD
+    // (payment tokens use uniform decimals + ~1:1 parity, enforced in onchain.ts). doublePrecision
+    // matches the other USD columns (bid_limit_usd, last_sent_price_usd) and the export's
+    // entity_total_usd; float64 covers a few-$M sale to the cent. committed = put in; accepted =
+    // cleared at settlement (the payout basis once the sale closes).
+    committedUsd: doublePrecision("committed_usd"),
+    acceptedUsd: doublePrecision("accepted_usd"),
+    reconciledAt: timestamp("reconciled_at", { withTimezone: true }),
+    // "attributed" (captured; no on-chain commitment seen yet) | "confirmed" (committed on-chain).
+    status: text("status").notNull().default("attributed"),
+  },
+  (table) => [index("bid_attribution_handle_idx").on(table.influencerHandle)],
+)
+
 // Ephemeral OAuth PKCE state. Single-use (deleted on consume), TTL enforced on read via expires_at.
 // No PII; verifier is a throwaway nonce.
 // Expired/abandoned rows swept daily by /api/db/cleanup (consumed rows self-delete on consume).

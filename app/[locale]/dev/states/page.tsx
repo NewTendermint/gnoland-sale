@@ -19,7 +19,7 @@ import {
   type PickerConnector,
   PostBidOptIns,
 } from "../../(sections)/bid/BidFlow"
-import { FirstDayBonusBanner } from "../../(sections)/bid/BonusNote"
+import { TierBonusMeter } from "../../(sections)/bid/BonusNote"
 import { BidStatusTag, FunnelSteps } from "../../(sections)/bid/FunnelSteps"
 import { SettlementFlow } from "../../(sections)/bid/SettlementFlow"
 import { Cta } from "../../(ui)/Cta"
@@ -171,6 +171,10 @@ function ExpandedBar({
   const input = MOCK_JOURNEY_INPUTS[journey]
   return (
     <div className="overflow-hidden rounded-[var(--frame-radius)] border border-border bg-background">
+      {/* Tier bar in the white header area, above the metrics - mirrors the real live panel. */}
+      <div className="px-6 pt-4 sm:pt-6 lg:px-8">
+        <TierBonusMeter force cumulativeUsd={MOCK_COMMITMENT_LIVE.totalCommittedUsd} />
+      </div>
       <div className="px-6 lg:px-8">
         <MetricsRow dense={true} labelFor={labelFor} right={<FunnelSteps journey={journey} />} />
       </div>
@@ -742,39 +746,35 @@ export default async function DevStatesPage({ params }: { params: Promise<{ loca
           ))}
         </GallerySection>
 
-        <GallerySection title="First-day bonus · promo surfaces (gated, forced on for the gallery)">
+        <GallerySection title="Tiered contribution bonus · promo surfaces (gated, forced on for the gallery)">
           <p className="text-sm text-muted">
-            Display-only promo. Live, these render only when the bonus is enabled and, for the
-            banner and header pill, the clock is inside the first 24h of the sale opening. Forced on
-            here so the surfaces are always reviewable. The bonus itself is granted off-app at the
-            post-mainnet distribution - nothing in the sale flow, contract or settlement changes.
+            Display-only promo. Live, these render only when the bonus is enabled. The bonus scales
+            by where a contribution lands in the CUMULATIVE sale total (15% / 10% / 5% / 3% bands up
+            to $2.5M). One surface everywhere: a compact tier bar in the white header area, showing
+            the schedule with a marker at the live sale total. Forced on here so it is always
+            reviewable. The bonus itself is granted off-app at the post-mainnet distribution -
+            nothing in the sale flow, contract or settlement changes.
           </p>
           <Caption>
-            Pre-sale bar teaser (banner only, no countdown - the bar already counts down to open)
+            IN CONTEXT - the tier bar in the panel header (white area, above the metrics), here at a
+            $1.2M live total: the marker sits in the 10% band with $300K left before it drops
           </Caption>
-          <div className="rounded-[var(--frame-radius)] border border-border bg-background px-6 lg:px-8">
-            <div className="pt-4 sm:pt-6">
-              <FirstDayBonusBanner force="before" />
-            </div>
-            <MetricsRow
-              dense={false}
-              labelFor={labelFor}
-              metrics={[{ icon: "clock", value: "5d 12:30:00", labelKey: "labelTimeLeft" }]}
-              right={<CtaPill journey="disconnected" t={t} />}
-            />
+          <ExpandedBar journey="ready" labelFor={labelFor} />
+          <Caption>
+            Tier bar - fresh sale ($0 committed): marker at the start of the 15% band
+          </Caption>
+          <div className="rounded-[var(--frame-radius)] border border-border bg-background px-6 py-5 lg:px-8">
+            <TierBonusMeter force cumulativeUsd={0} />
           </div>
           <Caption>
-            Live bar with the banner on top (during the 24h window - countdown to the window close)
+            Tier bar - $900K committed: marker near the 15% / 10% boundary, $100K left
           </Caption>
-          <div className="rounded-[var(--frame-radius)] border border-border bg-background px-6 lg:px-8">
-            <div className="pt-4 sm:pt-6">
-              <FirstDayBonusBanner force="during" />
-            </div>
-            <MetricsRow
-              dense={false}
-              labelFor={labelFor}
-              right={<CtaPill journey="ready" t={t} />}
-            />
+          <div className="rounded-[var(--frame-radius)] border border-border bg-background px-6 py-5 lg:px-8">
+            <TierBonusMeter force cumulativeUsd={900_000} />
+          </div>
+          <Caption>Tier bar - $1.95M committed: marker in the 5% band, $50K left before 3%</Caption>
+          <div className="rounded-[var(--frame-radius)] border border-border bg-background px-6 py-5 lg:px-8">
+            <TierBonusMeter force cumulativeUsd={1_950_000} />
           </div>
           <Caption>
             Bid confirm step (raise), in full context - bonus pill inline after the delta line

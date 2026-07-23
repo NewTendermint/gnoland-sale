@@ -1,3 +1,4 @@
+import { captureAttributionFromCookie } from "@/lib/analytics/attribution"
 import { errorMessage } from "@/lib/log"
 import { getSession } from "@/lib/security/session"
 import { getEntity } from "@/lib/sonar/entity"
@@ -20,6 +21,8 @@ export async function GET() {
     if (!entity) {
       return NextResponse.json({ error: "no_entity" }, { status: 404 })
     }
+    // Device-agnostic capture: bind this entity to its promoter (cookie), best-effort.
+    await captureAttributionFromCookie(entity.saleSpecificEntityId)
     return NextResponse.json(entity, { headers: { "Cache-Control": "private, no-store" } })
   } catch (err) {
     // Revoked/expired Sonar token -> 401 so the client reconnects.

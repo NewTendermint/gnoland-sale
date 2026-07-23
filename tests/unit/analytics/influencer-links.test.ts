@@ -1,13 +1,16 @@
 import { describe, expect, it } from "vitest"
 import {
+  ATTRIBUTION_COOKIE,
+  ATTRIBUTION_COOKIE_MAX_AGE,
   INFLUENCER_CAMPAIGN,
   INFLUENCER_HANDLES,
   INFLUENCER_LOCALES,
   INFLUENCER_MEDIUM,
   type InfluencerHandle,
   influencerDestination,
-  influencerRedirectFor,
+  influencerHandleFor,
   isInfluencerHandle,
+  resolveAttributionHandle,
 } from "../../../lib/analytics/influencer-links"
 
 // Route prefixes the app owns; a promoter handle colliding with one would either shadow a real
@@ -25,11 +28,9 @@ function paramsOf(destination: string): URLSearchParams {
 }
 
 describe("influencer vanity links", () => {
-  it("maps each promoter path to a redirect, attributing utm_source to the handle", () => {
+  it("attributes utm_source to the handle on each promoter destination", () => {
     for (const handle of INFLUENCER_HANDLES) {
-      const destination = influencerRedirectFor(`/${handle}`)
-      expect(destination).not.toBeNull()
-      expect(paramsOf(destination as string).get("utm_source")).toBe(handle)
+      expect(paramsOf(influencerDestination(handle)).get("utm_source")).toBe(handle)
     }
   })
 
@@ -52,27 +53,8 @@ describe("influencer vanity links", () => {
     // Every promoter we have so far is Korean-audience; each must land on /ko, not the English root.
     for (const handle of INFLUENCER_HANDLES) {
       expect(INFLUENCER_LOCALES[handle]).toBe("ko")
-      expect(influencerRedirectFor(`/${handle}`)).toMatch(/^\/ko\?/)
+      expect(influencerDestination(handle)).toMatch(/^\/ko\?/)
     }
-  })
-
-  it("ignores a leading/trailing slash on the matched path", () => {
-    const handle = INFLUENCER_HANDLES[0]
-    expect(influencerRedirectFor(`/${handle}`)).toBe(influencerDestination(handle))
-    expect(influencerRedirectFor(`/${handle}/`)).toBe(influencerDestination(handle))
-  })
-
-  // Regression guard for the real bug: locale routing resolves `/<slug>` first on the host, so a
-  // handle must be matched as a BARE segment. A locale-prefixed or nested path must NOT match,
-  // otherwise the redirect and the locale layer fight over the same paths.
-  it("does not match locale-prefixed, nested, or unknown paths", () => {
-    const handle = INFLUENCER_HANDLES[0]
-    expect(influencerRedirectFor("/")).toBeNull()
-    expect(influencerRedirectFor(`/en/${handle}`)).toBeNull()
-    expect(influencerRedirectFor(`/ko/${handle}`)).toBeNull()
-    expect(influencerRedirectFor(`/${handle}/extra`)).toBeNull()
-    expect(influencerRedirectFor("/not-a-promoter")).toBeNull()
-    expect(influencerRedirectFor(`/${handle.toUpperCase()}`)).toBeNull() // case-sensitive
   })
 
   it("recognises exactly the known handles", () => {
@@ -96,5 +78,40 @@ describe("influencer vanity links", () => {
     for (const handle of INFLUENCER_HANDLES) {
       expect(RESERVED_SEGMENTS).not.toContain(handle)
     }
+  })
+})
+
+describe("attribution capture helpers", () => {
+  it("influencerHandleFor returns the handle for a bare promoter path (slashes ignored)", () => {
+    for (const handle of INFLUENCER_HANDLES) {
+      expect(influencerHandleFor(`/${handle}`)).toBe(handle)
+      expect(influencerHandleFor(`/${handle}/`)).toBe(handle)
+    }
+  })
+
+  it("influencerHandleFor rejects locale-prefixed, nested, or unknown paths", () => {
+    const handle = INFLUENCER_HANDLES[0]
+    expect(influencerHandleFor("/")).toBeNull()
+    expect(influencerHandleFor(`/en/${handle}`)).toBeNull()
+    expect(influencerHandleFor(`/${handle}/extra`)).toBeNull()
+    expect(influencerHandleFor("/not-a-promoter")).toBeNull()
+    expect(influencerHandleFor(`/${handle.toUpperCase()}`)).toBeNull() // case-sensitive
+  })
+
+  // The cookie is attacker-controllable (client-side), so the store must trust only known handles.
+  it("resolveAttributionHandle accepts only a known handle, rejecting tampered/absent values", () => {
+    for (const handle of INFLUENCER_HANDLES) {
+      expect(resolveAttributionHandle(handle)).toBe(handle)
+    }
+    expect(resolveAttributionHandle(undefined)).toBeNull()
+    expect(resolveAttributionHandle(null)).toBeNull()
+    expect(resolveAttributionHandle("")).toBeNull()
+    expect(resolveAttributionHandle("not-a-promoter")).toBeNull()
+    expect(resolveAttributionHandle("__proto__")).toBeNull() // no prototype-key leak
+  })
+
+  it("uses a host-locked cookie name and a 30-day window", () => {
+    expect(ATTRIBUTION_COOKIE).toMatch(/gnot_attr$/)
+    expect(ATTRIBUTION_COOKIE_MAX_AGE).toBe(60 * 60 * 24 * 30)
   })
 })
