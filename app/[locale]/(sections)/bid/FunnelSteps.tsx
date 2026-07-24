@@ -15,7 +15,10 @@ const FUNNEL: { labelKey: string; states: JourneyState[] }[] = [
   },
 ]
 
-export function FunnelSteps({ journey }: { journey: JourneyState }) {
+export function FunnelSteps({
+  journey,
+  terminal = "bid",
+}: { journey: JourneyState; terminal?: "bid" | "claim" }) {
   const t = useTranslations("Bid")
   const current = FUNNEL.findIndex((s) => s.states.includes(journey))
   return (
@@ -23,6 +26,9 @@ export function FunnelSteps({ journey }: { journey: JourneyState }) {
     <ol className="hidden items-center gap-x-2.5 gap-y-2 xl:flex">
       {FUNNEL.map((step, i) => {
         const phase = i < current ? "done" : i === current ? "current" : "upcoming"
+        // Same funnel, ended-phase terminal reads "Claim" instead of "Bid".
+        const labelKey =
+          terminal === "claim" && i === FUNNEL.length - 1 ? "funnelClaim" : step.labelKey
         return (
           <li key={step.labelKey} className="flex items-center gap-2.5">
             {i > 0 ? (
@@ -45,7 +51,7 @@ export function FunnelSteps({ journey }: { journey: JourneyState }) {
                   phase === "upcoming" ? "text-faint" : "text-foreground"
                 }`}
               >
-                {t(step.labelKey)}
+                {t(labelKey)}
               </span>
             </span>
           </li>

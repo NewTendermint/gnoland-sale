@@ -764,7 +764,6 @@ export default async function DevStatesPage({ params }: { params: Promise<{ loca
                       clearingPriceUsd={MOCK_COMMITMENT_LIVE.clearingPriceUsd}
                       myBid={s.myBid}
                       gate={s.gate}
-                      previewConnected
                     />
                   </div>
                 </div>
@@ -819,7 +818,6 @@ export default async function DevStatesPage({ params }: { params: Promise<{ loca
                   clearingPriceUsd={MOCK_COMMITMENT_LIVE.clearingPriceUsd}
                   myBid={MOCK_JOURNEY_INPUTS["has-bid-winning"].myBid}
                   gate={{ done: true, claimEnabled: true, refunded: false, refundableUsd: 480 }}
-                  previewConnected
                 />
               </div>
             </div>

@@ -15,6 +15,7 @@ import { SALE_CHAIN } from "@/lib/sale/contracts"
 import { SALE_ECONOMICS } from "@/lib/sale/economics"
 import { fmtCompact, fmtGnot, fmtPrice, fmtUsd, parseDecimal } from "@/lib/sale/format"
 import { type BidPrecheck, usePaymentTokens, useTokenBalance } from "@/lib/sale/hooks"
+import { hasPositionJourney } from "@/lib/sale/journey"
 import {
   SUPPORT_DISCORD_HREF,
   type SaleTranslator,
@@ -381,12 +382,7 @@ function StateContent({
   preview?: BidPreview
 }) {
   // Shared render path keeps BidRow's tree position across ready -> has-bid (stable key preserves the receipt).
-  if (
-    journey === "ready" ||
-    journey === "has-bid-winning" ||
-    journey === "has-bid-outbid" ||
-    journey === "has-bid-pending"
-  ) {
+  if (hasPositionJourney(journey)) {
     return (
       <div className="flex w-full flex-col gap-2">
         <BidRow
@@ -404,16 +400,33 @@ function StateContent({
     )
   }
   return (
+    <GateSection
+      journey={journey}
+      returning={returning}
+      onConnectSonar={onConnectSonar}
+      onSignOut={onSignOut}
+      setupHref={setupHref}
+      entityLabel={entityLabel}
+    />
+  )
+}
+
+type GateProps = {
+  journey: JourneyState
+  returning?: boolean
+  onConnectSonar?: () => void
+  onSignOut: () => void
+  setupHref: string
+  entityLabel?: string | null
+}
+
+/** GateContent in the funnel's gate-row layout. Shared by the live bid flow (StateContent) and the
+ *  ended-phase panel, which swaps the position terminal for the settlement view. */
+export function GateSection(props: GateProps) {
+  return (
     <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4">
       <div className="min-w-0 flex-1">
-        <GateContent
-          journey={journey}
-          returning={returning}
-          onConnectSonar={onConnectSonar}
-          onSignOut={onSignOut}
-          setupHref={setupHref}
-          entityLabel={entityLabel}
-        />
+        <GateContent {...props} />
       </div>
     </div>
   )
@@ -426,14 +439,7 @@ function GateContent({
   onSignOut,
   setupHref,
   entityLabel,
-}: {
-  journey: JourneyState
-  returning?: boolean
-  onConnectSonar?: () => void
-  onSignOut: () => void
-  setupHref: string
-  entityLabel?: string | null
-}) {
+}: GateProps) {
   const t = useTranslations("Bid")
   const st = useTranslations("Sale") as unknown as SaleTranslator
   const vs = verifyStatus(st)
@@ -588,11 +594,10 @@ const matchesRecommended = (c: PickerConnector, rec: RecommendedWallet) => {
 }
 
 export function ConnectChoices({
-  prompt,
   previewConnectors,
-}: { prompt?: string; previewConnectors?: PickerConnector[] } = {}) {
+}: { previewConnectors?: PickerConnector[] } = {}) {
   const t = useTranslations("Bid")
-  const resolvedPrompt = prompt ?? t("connectPrompt")
+  const resolvedPrompt = t("connectPrompt")
   const { connectors, connect, isPending, variables, error } = useConnect()
   // In preview the fixtures stand in for the live connectors; clicks are inert (the fake
   // connectors are not real wagmi connectors, so we never call connect()).
