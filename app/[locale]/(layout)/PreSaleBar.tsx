@@ -188,7 +188,7 @@ export function PreSaleRight({
   returning: boolean
   setupHref: string
   entityLabel?: string | null
-  /** Narrow-width rendering (mobile bar): drops the add-to-calendar control. */
+  /** Narrow-width rendering (mobile bar): drops the add-to-calendar control and the register hint. */
   compact?: boolean
   onRegister?: () => void
   onSignOut?: () => void
@@ -221,6 +221,10 @@ export function PreSaleRight({
             <span>{wb.cta}</span>
           </Cta>
         </div>
+      ) : compact ? (
+        <Cta variant="solid" arrow onClick={onRegister}>
+          <span>{t("registerNow")}</span>
+        </Cta>
       ) : (
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
           <p className="text-sm text-muted">{t("registrationIsOpen")}</p>

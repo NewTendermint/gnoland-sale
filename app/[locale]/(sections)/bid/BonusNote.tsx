@@ -52,7 +52,7 @@ export function TierBonusMeter({
     <div className="mb-3 flex items-center gap-3 overflow-hidden py-1 text-xs lg:gap-6">
       {/* Pill + scarcity figure. On mobile it takes the row and the text wraps (marquee hidden < lg);
           on lg+ it sits at its natural width beside the marquee. */}
-      <span className="flex min-w-0 flex-1 items-center gap-3 lg:flex-none">
+      <span className="flex min-w-0 flex-1 items-start gap-3 lg:flex-none lg:items-center">
         {tier ? <span className={BONUS_TAG}>{t("bonusPill", { pct: tier.pct })}</span> : null}
         {tier && nextPct != null ? (
           // t.rich keeps the amount a styled chunk while letting each locale order the sentence.
@@ -61,9 +61,7 @@ export function TierBonusMeter({
               amount: fmtCompactUsd(tier.remainingUsd),
               next: nextPct,
               b: (chunks) => (
-                <span className="mx-0.5 font-mono text-sm normal-case tracking-normal">
-                  {chunks}
-                </span>
+                <span className="font-mono text-sm normal-case tracking-normal">{chunks}</span>
               ),
             })}
           </span>
