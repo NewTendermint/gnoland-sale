@@ -42,7 +42,10 @@ export const ATTRIBUTION_COOKIE_MAX_AGE = 60 * 60 * 24 * 30
  * attribution). The locale is pinned explicitly rather than left to the visitor's browser language.
  * Add a promoter by adding a line; the value is type-checked against the shipped locales, so an
  * English-audience promoter is just `"en"`. Handles must be lowercase, URL-safe, and not collide
- * with a real route (path matching is case-sensitive).
+ * with a real route. The lowercase key is the canonical form (the `utm_source` value, the cookie,
+ * and the Simple Analytics goal filter all use it); the URL path is matched case-insensitively (see
+ * influencerHandleFor), so a promoter can share their brand casing (e.g. `/CryptoDiffer`, `/PENGUIN`)
+ * and it still resolves to this one canonical handle.
  *
  * `as const` fixes the keys as a literal union (drives InfluencerHandle); the widened public view
  * below re-types the values to Locale so the default-locale branch in influencerDestination stays
@@ -60,6 +63,8 @@ const HANDLE_LOCALE_MAP = {
   cryptodep: "en",
   cryptogics: "en",
   pnxgrp: "en",
+  specguy: "en",
+  thewolfofyourstreet: "en",
 } as const satisfies Record<string, Locale>
 
 export type InfluencerHandle = keyof typeof HANDLE_LOCALE_MAP
@@ -83,11 +88,13 @@ export function influencerDestination(handle: InfluencerHandle): string {
 }
 
 /**
- * The promoter handle for a bare `/<handle>` path, or null. Single bare segment, case-sensitive,
- * leading/trailing slashes ignored; a locale-prefixed or nested path is intentionally not a match.
+ * The canonical promoter handle for a bare `/<handle>` path, or null. Single bare segment, matched
+ * case-INSENSITIVELY: the segment is lowercased before lookup, so `/CryptoDiffer`, `/cryptodiffer`,
+ * and `/CRYPTODIFFER` all resolve to the one canonical lowercase handle (promoters share their brand
+ * casing). Leading/trailing slashes are ignored; a locale-prefixed or nested path is not a match.
  */
 export function influencerHandleFor(pathname: string): InfluencerHandle | null {
-  const segment = pathname.replace(/^\/+/, "").replace(/\/+$/, "")
+  const segment = pathname.replace(/^\/+/, "").replace(/\/+$/, "").toLowerCase()
   return isInfluencerHandle(segment) ? segment : null
 }
 
