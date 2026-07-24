@@ -425,10 +425,6 @@
       "mainnetLaunch": {
         "label": "Expected mainnet launch",
         "value": "Q3 2026"
-      },
-      "tieredBonus": {
-        "label": "Contribution Bonus",
-        "value": "Bonus GNOT for bidders allocated tokens, tiered by the cumulative sale total: 15% up to $1M, 10% to $1.5M, 5% to $2M, 3% to $2.5M. Distributed with the final allocation."
       }
     },
     "pricingCaps": {
@@ -673,22 +669,11 @@
     "captionOpens": "Opens {date}",
     "captionRegistrationOpens": "Registration opens {date}",
     "bonusBannerTitle": "Tiered contribution bonus",
-    "bonusBannerBodyTier": "Currently {pct}% bonus GNOT · {amount} left before it drops",
-    "bonusBannerBodyGeneric": "Earn up to {pct}% bonus GNOT, tiered by the sale total",
     "bonusPill": "+{pct}% bonus",
     "bonusStripPresale": "By bidding early, you are eligible for up to {pct}% bonus on your final allocation.",
     "bonusStripWhat": "By bidding now, you are eligible for a {pct}% bonus on your final allocation.",
     "bonusScarcity": "<b>{amount}</b> until the bonus drops to {next}%",
-    "bonusStripLive": "Bid early to lock in a higher bonus tier - extra GNOT on your final allocation · {amount} more committed until the bonus drops to {next}%",
-    "bonusStripFinal": "Bid early to lock in a higher bonus tier - extra GNOT on your final allocation · final {pct}% tier",
     "bonusStripClosed": "Tiered bonus fully allocated",
-    "bonusMeterHeading": "Tiered contribution bonus",
-    "bonusTierRemaining": "{pct}% tier · {amount} left",
-    "bonusMeterEstimate": "≈ {gnot} bonus GNOT",
-    "bonusMeterCaption": "Estimated at the current sale total. The final bonus is set at settlement.",
-    "bonusMeterHint": "Enter an amount to see your bonus tier.",
-    "bonusUrgency": "{amount} left in this tier before it drops",
-    "bonusSegment": "{pct}% on {amount}",
     "viewResults": "View results",
     "yourBid": "Your bid",
     "headerMaxPrice": "Your max price",

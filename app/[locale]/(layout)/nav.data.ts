@@ -24,7 +24,7 @@ export const communityLinks: ExternalNavLink[] = [
   { label: "X / Twitter", href: "https://x.com/_gnoland" },
   { label: "Discord", href: "https://discord.gg/gnoland" },
   { label: "Telegram", href: "https://t.me/join_gnoland" },
-  { label: "YouTube", href: "https://youtube.com/@gnoland" },
+  { label: "YouTube", href: "https://www.youtube.com/@_gnoland" },
 ]
 
 export const externalLinks: ExternalNavLink[] = [
