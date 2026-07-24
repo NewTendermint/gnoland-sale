@@ -32,11 +32,13 @@ export const pendingCommittedChip = (amountUsd: number, t?: SaleTranslator) =>
   `+${fmtUsd(amountUsd)} ${t ? t("pendingSuffix") : "pending"}`
 
 /** Compact number, e.g. "82.3K" / "1.2M" (deterministic across JS engines, unlike Intl compact).
- * One decimal at every unit; trailing zeros drop, so round amounts stay clean ("82K", never "82.0K"). */
-export const fmtCompact = (n: number) => {
+ * One decimal at every unit; trailing zeros drop, so round amounts stay clean ("82K", never "82.0K").
+ * `floor` truncates to the tenth instead of rounding, so a downstream "+" suffix stays truthful
+ * (the shown figure is then always <= the real value). */
+export const fmtCompact = (n: number, floor = false) => {
   const sign = n < 0 ? "-" : ""
   const abs = Math.abs(n)
-  if (abs < 1000) return `${sign}${Math.round(abs)}`
+  if (abs < 1000) return `${sign}${floor ? Math.floor(abs) : Math.round(abs)}`
   const units = ["K", "M", "B", "T"]
   let v = abs
   let i = -1
@@ -44,7 +46,7 @@ export const fmtCompact = (n: number) => {
     v /= 1000
     i++
   }
-  let rounded = Math.round(v * 10) / 10
+  let rounded = (floor ? Math.floor(v * 10) : Math.round(v * 10)) / 10
   if (rounded >= 1000 && i < units.length - 1) {
     rounded /= 1000
     i++
@@ -54,6 +56,12 @@ export const fmtCompact = (n: number) => {
 
 /** Compact USD, e.g. "$721K" / "$1.2M". */
 export const fmtCompactUsd = (n: number) => (n < 0 ? `-$${fmtCompact(-n)}` : `$${fmtCompact(n)}`)
+
+/** Compact USD floored with a trailing "+", e.g. "$1M+" / "$1.2M+": signals the live total exceeds
+ * the shown figure. The value is truncated (never rounded up), so "$1M+" always reads truthfully as
+ * "at least $1M". Zero and negatives fall back to the plain compact form (no "$0+"). */
+export const fmtCompactUsdPlus = (n: number) =>
+  n > 0 ? `$${fmtCompact(n, true)}+` : fmtCompactUsd(n)
 
 /** Plain count, e.g. "1,247". */
 export const fmtCount = (n: number) => n.toLocaleString("en-US")

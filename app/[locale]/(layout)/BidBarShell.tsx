@@ -4,7 +4,7 @@ import { LG_MEDIA_QUERY } from "@/lib/device/breakpoints"
 import { useMediaQuery } from "@/lib/device/use-media-query"
 import { shouldAnimate } from "@/lib/motion/should-animate"
 import { SALE_ECONOMICS } from "@/lib/sale/economics"
-import { fmtCompactUsd, fmtCount, fmtPrice, fmtUsd } from "@/lib/sale/format"
+import { fmtCompactUsd, fmtCompactUsdPlus, fmtCount, fmtPrice, fmtUsd } from "@/lib/sale/format"
 import type { SaleTranslator } from "@/lib/sale/labels"
 import type { CommitmentData } from "@/lib/sale/types"
 import { useTranslations } from "next-intl"
@@ -173,7 +173,7 @@ export function liveMetrics(
       icon: "database",
       value: expanded
         ? fmtUsd(commitment.totalCommittedUsd)
-        : fmtCompactUsd(commitment.totalCommittedUsd),
+        : fmtCompactUsdPlus(commitment.totalCommittedUsd),
       label: t("labelCommitted"),
       pending: pendingChip,
     },
@@ -200,7 +200,7 @@ export function liveKeyMetrics(t: SaleTranslator, commitment: CommitmentData): B
     },
     {
       icon: "database",
-      value: fmtCompactUsd(commitment.totalCommittedUsd),
+      value: fmtCompactUsdPlus(commitment.totalCommittedUsd),
       label: t("labelRaised"),
     },
   ]

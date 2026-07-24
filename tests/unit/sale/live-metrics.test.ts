@@ -18,15 +18,15 @@ const commitment: CommitmentData = {
 const committedCell = (metrics: ReturnType<typeof liveMetrics>) => metrics.at(-1)
 
 describe("liveMetrics Committed cell", () => {
-  it("uses the compact figure in the collapsed bar (default)", () => {
-    expect(committedCell(liveMetrics(t, commitment))?.value).toBe("$2M")
+  it("uses the compact floored figure with a + in the collapsed bar (default)", () => {
+    expect(committedCell(liveMetrics(t, commitment))?.value).toBe("$2M+")
   })
 
-  it("uses the exact full figure once the panel is expanded", () => {
+  it("uses the exact full figure (no +) once the panel is expanded", () => {
     expect(committedCell(liveMetrics(t, commitment, undefined, true))?.value).toBe("$2,043,900")
   })
 
   it("keeps expanded=false explicit equivalent to the default", () => {
-    expect(committedCell(liveMetrics(t, commitment, undefined, false))?.value).toBe("$2M")
+    expect(committedCell(liveMetrics(t, commitment, undefined, false))?.value).toBe("$2M+")
   })
 })
