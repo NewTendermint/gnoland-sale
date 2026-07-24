@@ -127,6 +127,47 @@ export function MetricCell({
   )
 }
 
+/** The bar's metric row at the live-bar scale: big mono figures with an icon, a thin divider
+ *  between cells, the label beneath. `expanded` shrinks the figures to free room for other
+ *  header controls. Mirrors the live bar's inline metric row; used by the ended bar. */
+export function BarMetrics({
+  metrics,
+  expanded = false,
+}: { metrics: BarMetric[]; expanded?: boolean }) {
+  return (
+    <div
+      className={`flex flex-wrap items-start ${
+        expanded ? "gap-x-5 gap-y-2 sm:gap-x-7" : "gap-5 gap-y-2 xl:gap-7"
+      }`}
+    >
+      {metrics.map((m, i) => (
+        <div
+          key={m.label}
+          className={`flex items-start ${expanded ? "gap-x-5 sm:gap-x-7" : "gap-5 xl:gap-7"}`}
+        >
+          {i > 0 ? <div aria-hidden="true" className="hidden h-8 w-px bg-border sm:block" /> : null}
+          <div>
+            <div className="flex items-center gap-2">
+              <Icon name={m.icon} draw={false} className="h-[18px] w-[18px]" />
+              <p
+                className={`font-mono font-medium tracking-tight tabular-nums ${
+                  expanded ? "text-lg" : "text-2xl xl:text-3xl"
+                }`}
+              >
+                {m.value}
+              </p>
+            </div>
+            <p className="mt-0.5 text-[10px] uppercase tracking-[0.2em] text-muted">
+              {m.label}
+              {m.pending ? <MetricPendingChip label={m.pending} /> : null}
+            </p>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export function BarCountdown({ targetIso, caption }: { targetIso: string; caption: string }) {
   return (
     <div className="flex items-center gap-3">
@@ -224,6 +265,59 @@ export function finalMetrics(t: SaleTranslator, commitment: CommitmentData): Bar
       label: t("labelBidders"),
     },
   ]
+}
+
+/** Ended-phase key figures at the live-bar scale, with a static "Ended" in the countdown slot. */
+export function endedMetrics(t: SaleTranslator, commitment: CommitmentData): BarMetric[] {
+  return [
+    {
+      icon: "clearing",
+      value: fmtPrice(commitment.clearingPriceUsd ?? 0),
+      label: t("labelFinalPrice"),
+    },
+    { icon: "clock", value: t("statusEnded"), label: t("labelStatus") },
+    {
+      icon: "users-group",
+      value: fmtCount(commitment.uniqueCommitmentCount),
+      label: t("labelBidders"),
+    },
+    {
+      icon: "database",
+      value: fmtCompactUsd(commitment.totalCommittedUsd),
+      label: t("labelRaised"),
+    },
+  ]
+}
+
+/** Ended-phase banner mirroring the live bar's promo strip: a mint status pill on the left and a
+ *  looping thank-you marquee (lg+). Text only, no live state. */
+export function EndedBanner() {
+  const t = useTranslations("BidPanel")
+  return (
+    <div className="mb-3 flex items-center gap-3 overflow-hidden py-1 text-xs lg:gap-6">
+      <span className="shrink-0 rounded-full bg-mint px-3 py-1 text-[10px] font-bold uppercase tracking-[0.15em] text-on-mint">
+        {t("endedHeadline")}
+      </span>
+      <div aria-hidden="true" className="hidden min-w-0 flex-1 overflow-hidden lg:block">
+        <div className="bonus-marquee flex w-max">
+          {[0, 1].map((copy) => (
+            <div key={copy} className="flex shrink-0 items-center gap-x-2 pr-2">
+              {[0, 1, 2].map((i) => (
+                <span
+                  key={i}
+                  className="inline-flex items-center gap-2 whitespace-nowrap text-muted"
+                >
+                  {t("endedThanks")}
+                  <span className="px-2 text-faint">·</span>
+                </span>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+      <span className="sr-only">{t("endedThanks")}</span>
+    </div>
+  )
 }
 
 export function PausedBar() {

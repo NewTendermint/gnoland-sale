@@ -48,6 +48,17 @@ export function deriveJourney(i: JourneyInput): JourneyState {
   return "ready"
 }
 
+/** Journey states past every gate, where the bidder holds (or is placing) a position - i.e. the
+ *  live phase shows the bid form and the ended phase shows the settlement/claim. */
+export function hasPositionJourney(journey: JourneyState): boolean {
+  return (
+    journey === "ready" ||
+    journey === "has-bid-winning" ||
+    journey === "has-bid-outbid" ||
+    journey === "has-bid-pending"
+  )
+}
+
 /** The TokenDetails "Your position" display state: active / no-bids / not-ready. */
 export function derivePositionState(journey: JourneyState, hasBid: boolean): PositionState {
   if (hasBid) return "active"

@@ -7,14 +7,14 @@ import { gnotEstimate } from "@/lib/sale/calc"
 import { SALE_ECONOMICS, formatSaleDate } from "@/lib/sale/economics"
 import { fmtGnot, fmtPrice, fmtUsd, pendingCommittedChip } from "@/lib/sale/format"
 import { useBid, useBidPrecheck, useClaim, useClaimGate } from "@/lib/sale/hooks"
-import { derivePreSaleBar } from "@/lib/sale/journey"
+import { derivePreSaleBar, hasPositionJourney } from "@/lib/sale/journey"
 import { type SaleTranslator, bidCtaLabel, bidSectionTitle } from "@/lib/sale/labels"
 import { useSonarSeen } from "@/lib/sale/returning"
 import type { JourneyState, MyBid } from "@/lib/sale/types"
 import { useLocale, useTranslations } from "next-intl"
 import { type ReactNode, useEffect, useRef, useState } from "react"
 import { useAccount } from "wagmi"
-import { BidFlow } from "../(sections)/bid/BidFlow"
+import { BidFlow, GateSection } from "../(sections)/bid/BidFlow"
 import { TierBonusMeter } from "../(sections)/bid/BonusNote"
 import { BidStatusTag, FunnelSteps } from "../(sections)/bid/FunnelSteps"
 import { SonarSignOutButton } from "../(sections)/bid/ManageEntity"
@@ -27,12 +27,13 @@ import { Icon } from "../(ui)/Icon"
 import { Stagger } from "../(ui)/Stagger"
 import {
   BarCountdown,
+  BarMetrics,
   BarShell,
   CARD,
-  MetricCell,
+  EndedBanner,
   MetricPendingChip,
   SHELL,
-  finalMetrics,
+  endedMetrics,
   liveMetrics,
   useBarGrow,
 } from "./BidBarShell"
@@ -139,30 +140,41 @@ export function BidPanelDesktop() {
   }
 
   if (phase === "ended") {
+    // Same funnel as the live phase (Verify -> Connect -> Claim), but the terminal renders the
+    // settlement/claim instead of the bid form. `journey` already carries the gate states here.
+    const settlementReady = hasPositionJourney(journey)
+    // Neutral skeleton until the reads settle, so a gate state does not flash before the
+    // entity/position resolve (mirrors the live panel's statusResolved gate).
+    const statusResolved = entityResolved && (!settlementReady || positionResolved)
     return (
       <BarShell>
         <DrawLine immediate />
-        <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4 py-4 sm:py-6">
-          <div className="flex flex-wrap items-center gap-x-7 gap-y-3 sm:gap-x-9">
-            <span className="status-pill">{t("statusEnded")}</span>
-            {finalMetrics(t as unknown as SaleTranslator, commitment).map((c) => (
-              <MetricCell key={c.label} metric={c} />
-            ))}
+        {/* Mirror the live bar: a marquee strip on top, then the metric row with the CTA. */}
+        <div className="py-4 sm:py-6">
+          <EndedBanner />
+          <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4">
+            <BarMetrics
+              metrics={endedMetrics(t as unknown as SaleTranslator, commitment)}
+              expanded={expanded}
+            />
+            {expanded ? (
+              <div className="ml-auto flex flex-wrap items-center gap-x-5 gap-y-2">
+                {statusResolved ? <FunnelSteps journey={journey} terminal="claim" /> : null}
+                <CloseButton onClick={() => setExpanded(false)} />
+              </div>
+            ) : (
+              <Cta
+                variant="solid"
+                arrow
+                className="ml-auto"
+                onClick={() => setExpanded(true)}
+                buttonRef={triggerRef}
+                ariaExpanded={expanded}
+              >
+                <span>{t("viewResults")}</span>
+              </Cta>
+            )}
           </div>
-          {expanded ? (
-            <CloseButton className="ml-auto" onClick={() => setExpanded(false)} />
-          ) : (
-            <Cta
-              variant="solid"
-              arrow
-              className="ml-auto"
-              onClick={() => setExpanded(true)}
-              buttonRef={triggerRef}
-              ariaExpanded={expanded}
-            >
-              <span>{t("viewResults")}</span>
-            </Cta>
-          )}
         </div>
 
         <div
@@ -180,12 +192,37 @@ export function BidPanelDesktop() {
                   expanded ? "opacity-100" : "opacity-0"
                 }`}
               >
-                <SettlementFlow
-                  clearingPriceUsd={commitment.clearingPriceUsd}
-                  myBid={myBid}
-                  onClaim={claim.claim}
-                  gate={claimGate.data}
-                />
+                {statusResolved ? (
+                  settlementReady ? (
+                    <SettlementFlow
+                      clearingPriceUsd={commitment.clearingPriceUsd}
+                      myBid={myBid}
+                      onClaim={claim.claim}
+                      gate={claimGate.data}
+                      controls={
+                        <>
+                          <ManageEntityLink
+                            href={sonarSetupUrl}
+                            label={entityLabel}
+                            onSignOut={handleSignOut}
+                          />
+                          <WalletButton />
+                        </>
+                      }
+                    />
+                  ) : (
+                    <GateSection
+                      journey={journey}
+                      returning={sonarSeen}
+                      onConnectSonar={redirectToSonarLogin}
+                      onSignOut={handleSignOut}
+                      setupHref={sonarSetupUrl}
+                      entityLabel={entityLabel}
+                    />
+                  )
+                ) : (
+                  <BidPanelSkeleton />
+                )}
               </div>
             </div>
           </div>
@@ -207,11 +244,7 @@ export function BidPanelDesktop() {
   // settle would flash a false status (reconnect prompt, "place your bid") on every load. Hold a
   // neutral skeleton until the claims are backed by data; the position read only matters once the
   // journey needs it (its query is disabled until the wallet connects).
-  const positionRelevant =
-    journey === "ready" ||
-    journey === "has-bid-winning" ||
-    journey === "has-bid-outbid" ||
-    journey === "has-bid-pending"
+  const positionRelevant = hasPositionJourney(journey)
   const statusResolved = entityResolved && (!positionRelevant || positionResolved)
 
   return (
