@@ -17,11 +17,6 @@ function bonusShown(force = false): boolean {
 const BONUS_TAG =
   "shrink-0 rounded-full bg-mint px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.15em] text-on-mint"
 
-/** Gate for the always-on content surfaces (sale-terms row, FAQ). */
-export function useBonusVisible(): boolean {
-  return bonusShown()
-}
-
 /** Header strip: current-tier pill + scarcity figure (amount until the next tier) on the left, and a
  *  scrolling promo marquee that fills the row on lg+. Renders while enabled (or `force`d). */
 export function TierBonusMeter({
