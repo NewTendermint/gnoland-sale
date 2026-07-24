@@ -54,6 +54,12 @@ const HANDLE_LOCALE_MAP = {
   airdr0p_lab: "ko",
   lnsanecoin: "ko",
   incrypted: "en",
+  cryptodiffer: "en",
+  penguin: "en",
+  orioleinsights: "en",
+  cryptodep: "en",
+  cryptogics: "en",
+  pnxgrp: "en",
 } as const satisfies Record<string, Locale>
 
 export type InfluencerHandle = keyof typeof HANDLE_LOCALE_MAP
