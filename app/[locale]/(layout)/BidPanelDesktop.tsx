@@ -27,12 +27,13 @@ import { Icon } from "../(ui)/Icon"
 import { Stagger } from "../(ui)/Stagger"
 import {
   BarCountdown,
+  BarMetrics,
   BarShell,
   CARD,
-  MetricCell,
+  EndedBanner,
   MetricPendingChip,
   SHELL,
-  finalMetrics,
+  endedMetrics,
   liveMetrics,
   useBarGrow,
 } from "./BidBarShell"
@@ -148,30 +149,32 @@ export function BidPanelDesktop() {
     return (
       <BarShell>
         <DrawLine immediate />
-        <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4 py-4 sm:py-6">
-          <div className="flex flex-wrap items-center gap-x-7 gap-y-3 sm:gap-x-9">
-            <span className="status-pill">{t("statusEnded")}</span>
-            {finalMetrics(t as unknown as SaleTranslator, commitment).map((c) => (
-              <MetricCell key={c.label} metric={c} />
-            ))}
+        {/* Mirror the live bar: a marquee strip on top, then the metric row with the CTA. */}
+        <div className="py-4 sm:py-6">
+          <EndedBanner />
+          <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4">
+            <BarMetrics
+              metrics={endedMetrics(t as unknown as SaleTranslator, commitment)}
+              expanded={expanded}
+            />
+            {expanded ? (
+              <div className="ml-auto flex flex-wrap items-center gap-x-5 gap-y-2">
+                {statusResolved ? <FunnelSteps journey={journey} terminal="claim" /> : null}
+                <CloseButton onClick={() => setExpanded(false)} />
+              </div>
+            ) : (
+              <Cta
+                variant="solid"
+                arrow
+                className="ml-auto"
+                onClick={() => setExpanded(true)}
+                buttonRef={triggerRef}
+                ariaExpanded={expanded}
+              >
+                <span>{t("viewResults")}</span>
+              </Cta>
+            )}
           </div>
-          {expanded ? (
-            <div className="ml-auto flex flex-wrap items-center gap-x-5 gap-y-2">
-              {statusResolved ? <FunnelSteps journey={journey} terminal="claim" /> : null}
-              <CloseButton onClick={() => setExpanded(false)} />
-            </div>
-          ) : (
-            <Cta
-              variant="solid"
-              arrow
-              className="ml-auto"
-              onClick={() => setExpanded(true)}
-              buttonRef={triggerRef}
-              ariaExpanded={expanded}
-            >
-              <span>{t("viewResults")}</span>
-            </Cta>
-          )}
         </div>
 
         <div

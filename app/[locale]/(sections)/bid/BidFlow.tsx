@@ -597,7 +597,6 @@ export function ConnectChoices({
   previewConnectors,
 }: { previewConnectors?: PickerConnector[] } = {}) {
   const t = useTranslations("Bid")
-  const resolvedPrompt = t("connectPrompt")
   const { connectors, connect, isPending, variables, error } = useConnect()
   // In preview the fixtures stand in for the live connectors; clicks are inert (the fake
   // connectors are not real wagmi connectors, so we never call connect()).
@@ -673,7 +672,7 @@ export function ConnectChoices({
         <p className="text-sm">
           <span className="font-medium text-foreground">{t("connectWallet")}</span>
           <span className={`ml-1.5 ${error ? "text-danger" : "text-muted"}`}>
-            {error ? t("connectionFailed") : resolvedPrompt}
+            {error ? t("connectionFailed") : t("connectPrompt")}
           </span>
         </p>
       </div>
