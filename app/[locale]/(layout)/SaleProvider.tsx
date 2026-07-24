@@ -61,10 +61,11 @@ export function SaleProvider({
   const sonarSeen = useSonarSeen()
   const sale = useSaleData()
   const [phase, setPhase] = useState<SalePhase>(initialPhase)
-  // Entity (Sonar KYC state) also resolves on mobile during pre-sale - registration is unlocked
-  // there. The position read stays funnel-only: bidding is desktop-only.
+  // Entity (Sonar KYC state) resolves on mobile whenever registration/KYC is available there - i.e.
+  // every phase except ended (pre-sale and live). Without it the journey never leaves "register" and
+  // the funnel loops on welcome-back. The position read stays funnel-only: bidding is desktop-only.
   const entity = useEntity({
-    enabled: funnelCapable === true || (funnelCapable === false && phase === "pre-sale"),
+    enabled: funnelCapable === true || (funnelCapable === false && phase !== "ended"),
   })
   const position = useMyBid({ enabled: funnelCapable === true })
   const [preSaleStage, setPreSaleStage] = useState<PreSaleStage>("registration-closed")
