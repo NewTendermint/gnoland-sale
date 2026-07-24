@@ -121,6 +121,9 @@ export function welcomeBack(t: SaleTranslator): {
 /** Support contact (mailto) shown on a failed verification. null hides the CTA. */
 export const SUPPORT_CONTACT_HREF: string | null = "mailto:tokensale@newtendermint.org"
 
+/** Discord auction-support ticket: the primary get-help link on error surfaces (email is the fallback). null hides it. */
+export const SUPPORT_DISCORD_HREF: string | null = "https://discord.gg/9cEJ7rqrm"
+
 /** Appends terminal punctuation when missing; idempotent. */
 export function punctuate(msg: string): string {
   const m = msg.trim()

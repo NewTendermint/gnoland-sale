@@ -16,6 +16,7 @@ import { SALE_ECONOMICS } from "@/lib/sale/economics"
 import { fmtCompact, fmtGnot, fmtPrice, fmtUsd, parseDecimal } from "@/lib/sale/format"
 import { type BidPrecheck, usePaymentTokens, useTokenBalance } from "@/lib/sale/hooks"
 import {
+  SUPPORT_DISCORD_HREF,
   type SaleTranslator,
   punctuate,
   supportMailtoHref,
@@ -805,6 +806,8 @@ function BidRow({
 }) {
   const t = useTranslations("Bid")
   const st = t as unknown as SaleTranslator
+  // The mailto body keys live in the Sale namespace; st above is the reused Bid translator.
+  const saleT = useTranslations("Sale") as unknown as SaleTranslator
   const minPrice = SALE_ECONOMICS.startingPriceUsd
   const increment = SALE_ECONOMICS.bidIncrementUsd
   // no upper price cap; grid is floor-anchored: minPrice + k*increment
@@ -1041,7 +1044,7 @@ function BidRow({
           submitFailure.at && t("supportWhen", { when: submitFailure.at }),
           browserInfo && t("supportBrowser", { browser: browserInfo }),
         ],
-        st,
+        saleT,
       )
     : null
 
@@ -1293,13 +1296,26 @@ function BidRow({
               <span className="inline-block max-w-[52ch] truncate align-bottom">
                 {punctuate(submitFailure.message)}
               </span>
+              {SUPPORT_DISCORD_HREF ? (
+                <a
+                  href={SUPPORT_DISCORD_HREF}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="ml-2 underline underline-offset-2 hover:opacity-75"
+                >
+                  {t("getHelp")}
+                </a>
+              ) : null}
+              {SUPPORT_DISCORD_HREF && supportHref ? " · " : null}
               {supportHref ? (
-                <>
-                  {" "}
-                  <a href={supportHref} className="underline underline-offset-2 hover:opacity-75">
-                    {t("support")}
-                  </a>
-                </>
+                <a
+                  href={supportHref}
+                  className={`underline underline-offset-2 hover:opacity-75${
+                    SUPPORT_DISCORD_HREF ? "" : " ml-2"
+                  }`}
+                >
+                  {t("supportEmail")}
+                </a>
               ) : null}
             </p>
           ) : raiseNote ? (
