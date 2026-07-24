@@ -46,13 +46,14 @@ export const ATTRIBUTION_COOKIE_MAX_AGE = 60 * 60 * 24 * 30
  *
  * `as const` fixes the keys as a literal union (drives InfluencerHandle); the widened public view
  * below re-types the values to Locale so the default-locale branch in influencerDestination stays
- * live even while every current promoter shares one locale.
+ * well-typed regardless of the cohort's current locale mix.
  */
 const HANDLE_LOCALE_MAP = {
   airdropcosm: "ko",
   enjoymyhobby: "ko",
   airdr0p_lab: "ko",
   lnsanecoin: "ko",
+  incrypted: "en",
 } as const satisfies Record<string, Locale>
 
 export type InfluencerHandle = keyof typeof HANDLE_LOCALE_MAP
