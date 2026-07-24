@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest"
-import { fmtCompactUsd, fmtCountdown, parseDecimal } from "../../../lib/sale/format"
+import {
+  fmtCompactUsd,
+  fmtCompactUsdPlus,
+  fmtCountdown,
+  parseDecimal,
+} from "../../../lib/sale/format"
 
 describe("parseDecimal", () => {
   it("parses plain decimals unchanged", () => {
@@ -79,6 +84,26 @@ describe("fmtCompactUsd", () => {
 
   it("rounds sub-$1 amounts down to $0", () => {
     expect(fmtCompactUsd(0.02)).toBe("$0")
+  })
+})
+
+// fmtCompactUsdPlus floors (never rounds up) then appends "+", so "$1M+" always reads
+// truthfully as "at least $1M". These pin the truncation and the zero/negative fallback.
+describe("fmtCompactUsdPlus", () => {
+  it("floors to the tenth and appends +", () => {
+    expect(fmtCompactUsdPlus(1_000_000)).toBe("$1M+")
+    expect(fmtCompactUsdPlus(1_280_000)).toBe("$1.2M+")
+    expect(fmtCompactUsdPlus(1_299_999)).toBe("$1.2M+")
+  })
+
+  it("never rounds up (unlike fmtCompactUsd, 999_960 stays under $1M)", () => {
+    expect(fmtCompactUsdPlus(999_960)).toBe("$999.9K+")
+    expect(fmtCompactUsdPlus(982_000)).toBe("$982K+")
+  })
+
+  it("drops the + for zero and negatives", () => {
+    expect(fmtCompactUsdPlus(0)).toBe("$0")
+    expect(fmtCompactUsdPlus(-500_000)).toBe("-$500K")
   })
 })
 

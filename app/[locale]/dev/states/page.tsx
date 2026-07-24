@@ -1,4 +1,10 @@
-import { fmtCompactUsd, fmtCount, fmtPrice, pendingCommittedChip } from "@/lib/sale/format"
+import {
+  fmtCompactUsd,
+  fmtCompactUsdPlus,
+  fmtCount,
+  fmtPrice,
+  pendingCommittedChip,
+} from "@/lib/sale/format"
 import { type SaleTranslator, bidCtaLabel } from "@/lib/sale/labels"
 import { MOCK_COMMITMENT_LIVE, MOCK_JOURNEY_INPUTS } from "@/lib/sale/mock"
 import type { ClaimGate } from "@/lib/sale/onchain"
@@ -47,7 +53,7 @@ const METRICS: PreviewMetric[] = [
   },
   {
     icon: "database",
-    value: fmtCompactUsd(MOCK_COMMITMENT_LIVE.totalCommittedUsd),
+    value: fmtCompactUsdPlus(MOCK_COMMITMENT_LIVE.totalCommittedUsd),
     labelKey: "labelCommitted",
   },
 ]
