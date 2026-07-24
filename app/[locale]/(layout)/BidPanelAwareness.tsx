@@ -13,19 +13,19 @@ import { BarShell, BarStatus, MetricCell, finalMetrics, liveKeyMetrics } from ".
 import { PreSaleRight, useSonarSessionActions } from "./PreSaleBar"
 import { useSale } from "./SaleProvider"
 
-// Pre-sale is NOT handled here anymore: mobile serves the real registration funnel during
-// pre-sale (PreSaleBarMobile); this bar covers the live and ended phases. During LIVE it also
-// carries the identity-verification funnel so mobile users can register/KYC (bidding itself stays
-// desktop-only); the ended phase has nothing left to register for.
+// Mobile bar for the live and ended phases (pre-sale is handled by PreSaleBarMobile). During live it
+// shows the registration/KYC funnel until the user is verified, then only the desktop-only note;
+// bidding is always desktop-only. Ended has nothing left to register for.
 export function BidPanelAwareness() {
   const { phase, commitment, preSaleStage, journey, sonarReturn, sonarSetupUrl, entityLabel } =
     useSale()
   const sonarSeen = useSonarSeen()
   const { signOut, refresh } = useSonarSessionActions()
+  const barState = derivePreSaleBar(preSaleStage, journey, sonarReturn)
   const kycFunnel =
-    phase === "live" ? (
+    phase === "live" && barState !== "registered" ? (
       <PreSaleRight
-        state={derivePreSaleBar(preSaleStage, journey, sonarReturn)}
+        state={barState}
         returning={sonarSeen}
         setupHref={sonarSetupUrl}
         entityLabel={entityLabel}
@@ -92,8 +92,8 @@ export function AwarenessBarBody({
           />
         ))}
       </div>
-      <BarStatus icon="shield-check" title={`${desktop.live.title}.`} />
-      {kycFunnel}
+      {/* Before verification: the KYC funnel. Once verified it is null, falling back to the note. */}
+      {kycFunnel ?? <BarStatus icon="shield-check" title={`${desktop.live.title}.`} />}
     </div>
   )
 }
