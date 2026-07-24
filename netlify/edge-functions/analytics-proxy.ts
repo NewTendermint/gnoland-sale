@@ -21,10 +21,12 @@ const FORWARD_HEADERS = ["user-agent", "accept", "accept-language", "content-typ
 
 export default async (request: Request): Promise<Response> => {
   const url = new URL(request.url)
-  const upstream =
-    url.pathname === "/sgl.js"
-      ? LOADER
-      : `${COLLECT_ORIGIN}${url.pathname.slice("/sgl".length)}${url.search}`
+  // Build the collect URL via the URL API rather than string concatenation: resolving the
+  // stripped path against COLLECT_ORIGIN makes it structurally impossible to fuse host and
+  // path (the ".comsgl/append" class of bug). The leading slash on the sliced pathname is
+  // what keeps it an absolute path on the origin instead of being joined relative to it.
+  const collect = new URL(url.pathname.slice("/sgl".length) + url.search, COLLECT_ORIGIN)
+  const upstream = url.pathname === "/sgl.js" ? LOADER : collect.toString()
 
   const headers = new Headers()
   for (const name of FORWARD_HEADERS) {
@@ -36,11 +38,37 @@ export default async (request: Request): Promise<Response> => {
   // request.body: a stream body needs `duplex` on the Deno runtime and would otherwise throw,
   // dropping every POST beacon. Payloads are sub-kB, so buffering is free.
   const hasBody = request.method !== "GET" && request.method !== "HEAD"
-  const upstreamRes = await fetch(upstream, {
-    method: request.method,
-    headers,
-    body: hasBody ? await request.arrayBuffer() : undefined,
-  })
+
+  let upstreamRes: Response
+  try {
+    upstreamRes = await fetch(upstream, {
+      method: request.method,
+      headers,
+      body: hasBody ? await request.arrayBuffer() : undefined,
+    })
+  } catch {
+    // Analytics is non-critical: if SA is unreachable (DNS/network failure), degrade quietly
+    // instead of letting the throw become a 500 for the visitor. A dropped beacon is invisible
+    // to sendBeacon; a failed loader just means no analytics on that page load.
+    const status = url.pathname === "/sgl.js" ? 200 : 204
+    return new Response(null, {
+      status,
+      headers: {
+        "x-content-type-options": "nosniff",
+        "content-security-policy": "default-src 'none'; sandbox",
+      },
+    })
+  }
+
+  // Surface a broken beacon: with the fetch now wrapped in try/catch, a non-2xx/3xx upstream
+  // (e.g. a malformed collect URL that resolves but 404s) would otherwise vanish silently -
+  // green requests, zero analytics. Log it so the function logs still show the failure; the
+  // response is passed through unchanged either way.
+  if (upstreamRes.status >= 400) {
+    console.warn(
+      `analytics-proxy: upstream ${upstreamRes.status} for ${request.method} ${upstream}`,
+    )
+  }
 
   // Pass the body/status/content-type through; strip any upstream Set-Cookie so a third party
   // can never plant a cookie on our origin, and nosniff so a mistyped upstream response can
