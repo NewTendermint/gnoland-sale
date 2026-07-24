@@ -98,7 +98,17 @@ describe("attribution capture helpers", () => {
     expect(influencerHandleFor(`/en/${handle}`)).toBeNull()
     expect(influencerHandleFor(`/${handle}/extra`)).toBeNull()
     expect(influencerHandleFor("/not-a-promoter")).toBeNull()
-    expect(influencerHandleFor(`/${handle.toUpperCase()}`)).toBeNull() // case-sensitive
+  })
+
+  it("influencerHandleFor matches case-insensitively, returning the canonical lowercase handle", () => {
+    // Promoters share their brand casing (e.g. /CryptoDiffer, /PENGUIN); any casing must resolve to
+    // the single canonical lowercase handle so utm_source / cookie / SA goal filter stay consistent.
+    for (const handle of INFLUENCER_HANDLES) {
+      const mixed = handle.charAt(0).toUpperCase() + handle.slice(1)
+      expect(influencerHandleFor(`/${handle.toUpperCase()}`)).toBe(handle)
+      expect(influencerHandleFor(`/${mixed}`)).toBe(handle)
+      expect(influencerHandleFor(`/${mixed}/`)).toBe(handle)
+    }
   })
 
   // The cookie is attacker-controllable (client-side), so the store must trust only known handles.
