@@ -1,21 +1,44 @@
 "use client"
 
+import { redirectToSonarLogin } from "@/lib/sale/api"
+import { derivePreSaleBar } from "@/lib/sale/journey"
 import { type SaleTranslator, desktopOnly } from "@/lib/sale/labels"
+import { useSonarSeen } from "@/lib/sale/returning"
 import type { CommitmentData, SalePhase } from "@/lib/sale/types"
 import { useTranslations } from "next-intl"
+import type { ReactNode } from "react"
 import { TierBonusMeter } from "../(sections)/bid/BonusNote"
 import { DrawLine } from "../(ui)/DrawLine"
 import { BarShell, BarStatus, MetricCell, finalMetrics, liveKeyMetrics } from "./BidBarShell"
+import { PreSaleRight, useSonarSessionActions } from "./PreSaleBar"
 import { useSale } from "./SaleProvider"
 
 // Pre-sale is NOT handled here anymore: mobile serves the real registration funnel during
-// pre-sale (PreSaleBarMobile); this bar only covers the live and ended phases.
+// pre-sale (PreSaleBarMobile); this bar covers the live and ended phases. During LIVE it also
+// carries the identity-verification funnel so mobile users can register/KYC (bidding itself stays
+// desktop-only); the ended phase has nothing left to register for.
 export function BidPanelAwareness() {
-  const { phase, commitment } = useSale()
+  const { phase, commitment, preSaleStage, journey, sonarReturn, sonarSetupUrl, entityLabel } =
+    useSale()
+  const sonarSeen = useSonarSeen()
+  const { signOut, refresh } = useSonarSessionActions()
+  const kycFunnel =
+    phase === "live" ? (
+      <PreSaleRight
+        state={derivePreSaleBar(preSaleStage, journey, sonarReturn)}
+        returning={sonarSeen}
+        setupHref={sonarSetupUrl}
+        entityLabel={entityLabel}
+        compact
+        onRegister={redirectToSonarLogin}
+        onSignOut={signOut}
+        onRefresh={refresh}
+      />
+    ) : null
   return (
     <BarShell>
       <DrawLine immediate />
-      <AwarenessBarBody phase={phase} commitment={commitment} />
+      <AwarenessBarBody phase={phase} commitment={commitment} kycFunnel={kycFunnel} />
     </BarShell>
   )
 }
@@ -23,9 +46,12 @@ export function BidPanelAwareness() {
 export function AwarenessBarBody({
   phase,
   commitment,
+  kycFunnel,
 }: {
   phase: SalePhase
   commitment: CommitmentData
+  /** Identity-verification funnel rendered under the live bar (mobile KYC); absent when ended. */
+  kycFunnel?: ReactNode
 }) {
   const t = useTranslations("BidPanel")
   const tSale = useTranslations("Sale")
@@ -67,6 +93,7 @@ export function AwarenessBarBody({
         ))}
       </div>
       <BarStatus icon="shield-check" title={`${desktop.live.title}.`} />
+      {kycFunnel}
     </div>
   )
 }
