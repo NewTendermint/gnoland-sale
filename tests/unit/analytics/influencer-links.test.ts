@@ -49,11 +49,14 @@ describe("influencer vanity links", () => {
     }
   })
 
-  it("routes the current cohort to the Korean site", () => {
-    // Every promoter we have so far is Korean-audience; each must land on /ko, not the English root.
+  it("routes each promoter to its audience locale (ko prefixed, en at the unprefixed root)", () => {
+    // Mixed cohort: Korean-audience promoters must land on /ko, English-audience ones on the root.
     for (const handle of INFLUENCER_HANDLES) {
-      expect(INFLUENCER_LOCALES[handle]).toBe("ko")
-      expect(influencerDestination(handle)).toMatch(/^\/ko\?/)
+      if (INFLUENCER_LOCALES[handle] === "ko") {
+        expect(influencerDestination(handle)).toMatch(/^\/ko\?/)
+      } else {
+        expect(influencerDestination(handle)).toMatch(/^\/\?/)
+      }
     }
   })
 
