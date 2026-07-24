@@ -591,6 +591,27 @@ export default async function DevStatesPage({ params }: { params: Promise<{ loca
           </div>
         </GallerySection>
 
+        <GallerySection title="Wallet errors · Discord support + email fallback">
+          <p className="text-sm text-muted">
+            The "wallet-risk" verdict, reworded so it reads as this wallet (not a disqualification),
+            with the Discord auction-support ticket as the primary "Get help" and the prefilled
+            diagnostic email as the fallback. Shown on the submit-failure banner (the surface from
+            the support screenshot); the code→copy mapping is shared, so every bid-failure reason
+            gets the same routing.
+          </p>
+          <Caption>Submit-failure banner - message + Get help (Discord) · email</Caption>
+          <ExpandedBar
+            journey="ready"
+            preview={{
+              state: "idle",
+              amountUsd: 1000,
+              balanceUsd: 2500,
+              error: "We can't accept bids from this wallet.",
+            }}
+            labelFor={labelFor}
+          />
+        </GallerySection>
+
         {PRE_SALE_BAR_STATES.map((row) => (
           <GallerySection key={row.label} title={`Pre-sale · ${row.label}`}>
             <PreSaleBarPreview state={row.state} returning={row.returning} />
