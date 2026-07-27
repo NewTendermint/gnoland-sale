@@ -47,7 +47,9 @@ describe("mapCommitmentData", () => {
 })
 
 const hex = (body: string) => `0x${body}` as `0x${string}`
-const MINE = hex("11".repeat(32))
+// SaleSpecificEntityID is bytes16 on the contract (abi.ts) and in Sonar's payloads - keep the
+// fixture the real width, the chain read encodes it as bytes16.
+const MINE = hex("11".repeat(16))
 const withCommitments = (
   commitments: ReadCommitmentDataResponse["Commitments"],
 ): ReadCommitmentDataResponse => ({ ...response, Commitments: commitments })
@@ -192,34 +194,97 @@ describe("mapMyBid", () => {
   })
 })
 
+const ENTITY: EntityDetails = {
+  Label: "Test investor",
+  EntityID: "e1",
+  SaleSpecificEntityID: MINE,
+  EntityType: EntityType.USER,
+  EntitySetupState: EntitySetupState.COMPLETE,
+  SaleEligibility: SaleEligibility.ELIGIBLE,
+  InvestingRegion: InvestingRegion.OTHER,
+}
+
+/** Wire readMyBid with a stubbed Sonar client and a stubbed chain read. */
+async function loadReadMyBid(opts: {
+  entities?: EntityDetails[]
+  chain?: () => Promise<unknown>
+  commitmentData?: ReadCommitmentDataResponse
+}) {
+  vi.resetModules()
+  const listAvailableEntities = vi.fn().mockResolvedValue({ Entities: opts.entities ?? [ENTITY] })
+  const readCommitmentData = vi.fn().mockResolvedValue(opts.commitmentData ?? response)
+  const createSonarClient = vi.fn((_accessToken?: string) => ({
+    listAvailableEntities,
+    readCommitmentData,
+  }))
+  const withSonarAuth = vi.fn((_sessionId: string, fn: (accessToken: string) => unknown) =>
+    fn("mock-token"),
+  )
+  const readEntityBid = vi.fn(opts.chain ?? (async () => null))
+  vi.doMock("../../lib/sonar/client", () => ({ createSonarClient }))
+  vi.doMock("../../lib/sonar/permit", () => ({ withSonarAuth }))
+  vi.doMock("../../lib/sale/server-reads", () => ({ readEntityBid }))
+  const { readMyBid } = await import("../../lib/sonar/commitments")
+  return { readMyBid, withSonarAuth, createSonarClient, readCommitmentData, readEntityBid }
+}
+
 describe("readMyBid", () => {
-  it("reads the public commitment data unauthenticated - only the entity lookup needs a token", async () => {
-    vi.resetModules()
-    const entity: EntityDetails = {
-      Label: "Test investor",
-      EntityID: "e1",
-      SaleSpecificEntityID: MINE,
-      EntityType: EntityType.USER,
-      EntitySetupState: EntitySetupState.COMPLETE,
-      SaleEligibility: SaleEligibility.ELIGIBLE,
-      InvestingRegion: InvestingRegion.OTHER,
-    }
-    const listAvailableEntities = vi.fn().mockResolvedValue({ Entities: [entity] })
-    const readCommitmentData = vi.fn().mockResolvedValue(response)
-    const createSonarClient = vi.fn((_accessToken?: string) => ({
-      listAvailableEntities,
-      readCommitmentData,
-    }))
-    const withSonarAuth = vi.fn((_sessionId: string, fn: (accessToken: string) => unknown) =>
-      fn("mock-token"),
-    )
-    vi.doMock("../../lib/sonar/client", () => ({ createSonarClient }))
-    vi.doMock("../../lib/sonar/permit", () => ({ withSonarAuth }))
-    const { readMyBid } = await import("../../lib/sonar/commitments")
+  it("resolves the entity with the session token, then reads the position from the chain", async () => {
+    const chain = async () => ({ priceUsd: 0.0645, committedUsd: 663 })
+    const t = await loadReadMyBid({ chain })
 
-    await readMyBid("session-1")
+    expect(await t.readMyBid("session-1")).toEqual({ priceUsd: 0.0645, committedUsd: 663 })
+    expect(t.withSonarAuth).toHaveBeenCalledTimes(1)
+    expect(t.readEntityBid).toHaveBeenCalledWith(MINE)
+    // The capped commitment list is NOT consulted while the chain answers.
+    expect(t.readCommitmentData).not.toHaveBeenCalled()
+  })
 
-    expect(withSonarAuth).toHaveBeenCalledTimes(1)
-    expect(createSonarClient).toHaveBeenLastCalledWith()
+  it("returns null for an entity with no bid on-chain", async () => {
+    const t = await loadReadMyBid({ chain: async () => null })
+    expect(await t.readMyBid("session-1")).toBeNull()
+  })
+
+  it("returns null without touching the chain when the account holds no entity", async () => {
+    const t = await loadReadMyBid({ entities: [] })
+    expect(await t.readMyBid("session-1")).toBeNull()
+    expect(t.readEntityBid).not.toHaveBeenCalled()
+  })
+
+  it("falls back to Sonar's window when the chain read fails", async () => {
+    const t = await loadReadMyBid({
+      chain: async () => {
+        throw new Error("rpc down")
+      },
+      commitmentData: withCommitments([
+        {
+          CommitmentID: hex("aa".repeat(32)),
+          SaleSpecificEntityID: MINE,
+          PriceNumerator: "1",
+          PriceDenominator: "1",
+          PriceMicroUSD: "64500",
+          Amounts: [
+            { Wallet: hex("bb".repeat(20)), Token: hex("cc".repeat(20)), Amount: "663000000" },
+          ],
+          CreatedAt: "2026-07-20T12:42:11Z",
+          ExtraRaw: hex(""),
+          ExtraDataParsed: null,
+        },
+      ]),
+    })
+
+    expect(await t.readMyBid("session-1")).toEqual({ priceUsd: 0.0645, committedUsd: 663 })
+  })
+
+  it("THROWS rather than reporting no bid when the chain fails and Sonar's window misses", async () => {
+    // The 100-row cap is exactly this case: absence from the window is not absence of a bid.
+    const t = await loadReadMyBid({
+      chain: async () => {
+        throw new Error("rpc down")
+      },
+      commitmentData: withCommitments([]),
+    })
+
+    await expect(t.readMyBid("session-1")).rejects.toThrow("rpc down")
   })
 })
