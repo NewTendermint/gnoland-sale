@@ -1,8 +1,11 @@
 import "server-only"
 import { http, createPublicClient, erc20Abi, fallback } from "viem"
 import { settlementSaleAbi } from "./abi"
+import { onchainPriceToUsd } from "./calc"
 import { SALE_CHAIN, saleContractsFor } from "./contracts"
+import { SALE_ECONOMICS } from "./economics"
 import { rpcUrlsFor } from "./rpc"
+import type { MyBid } from "./types"
 
 // Dedicated server-side (Node) read client. NOT lib/sale/onchain.ts, which is "use client" and pulls
 // in wagmiConfig + wallet connectors; this mirrors live-window.ts: keyed RPCs, then viem's default.
@@ -63,6 +66,73 @@ function uniformDecimals(perToken: readonly number[]): number {
   return first
 }
 
+/** The sale's uniform payment-token decimals, memoized per sale address (immutable once deployed,
+ *  and this sits on a per-request path). Keyed, not a single slot: the sepolia address is
+ *  env-overridable. null = no payment token provisioned, deliberately not cached. */
+const decimalsCache = new Map<string, number>()
+
+async function paymentDecimals(sale: `0x${string}`): Promise<number | null> {
+  const cached = decimalsCache.get(sale)
+  if (cached != null) return cached
+  const tokens = await publicClient().readContract({
+    address: sale,
+    abi: settlementSaleAbi,
+    functionName: "paymentTokens",
+  })
+  if (tokens.length === 0) return null
+  const perTokenDecimals = await Promise.all(
+    tokens.map((token) =>
+      publicClient().readContract({ address: token, abi: erc20Abi, functionName: "decimals" }),
+    ),
+  )
+  const decimals = uniformDecimals(perTokenDecimals.map(Number))
+  decimalsCache.set(sale, decimals)
+  return decimals
+}
+
+/** Contract `currentBid` -> UI USD. Pure. A zero amount is "no position", never a $0 bid: an
+ *  entity that never bid reads as a zeroed row, not a revert. */
+export function mapEntityBid(
+  currentBid: { price: bigint; amount: bigint } | undefined,
+  decimals: number,
+): MyBid {
+  if (!currentBid || currentBid.amount === 0n) return null
+  return {
+    priceUsd: onchainPriceToUsd(currentBid.price, SALE_ECONOMICS.bidIncrementUsd),
+    committedUsd: unitsToUsd(currentBid.amount, decimals),
+  }
+}
+
+/**
+ * The entity's current bid, read from the sale contract - the authoritative per-entity total, with
+ * no row cap. `currentBid.amount` holds across several wallets and across repeated (replacing)
+ * bids: it is the same field the bid delta is computed against in onchain.ts.
+ *
+ * null = no bid. THROWS when the chain is unreadable, never null: a false "no bid" on an
+ * irrevocable bid is what confirmed-read.ts exists to prevent (the route maps it to a 502).
+ */
+export async function readEntityBid(saleSpecificEntityId: `0x${string}`): Promise<MyBid> {
+  const contracts = saleContractsFor(SALE_CHAIN.id)
+  if (!contracts) {
+    throw new Error("readEntityBid: no sale contract for the sale chain")
+  }
+  // Independent reads: one round trip on a cold instance. Promise.all rejects on the first
+  // failure, which is what we want - an unreadable half must throw, never a partial position.
+  const [decimals, states] = await Promise.all([
+    paymentDecimals(contracts.settlementSale),
+    publicClient().readContract({
+      address: contracts.settlementSale,
+      abi: settlementSaleAbi,
+      functionName: "entityStatesByIDs",
+      args: [[saleSpecificEntityId]],
+    }),
+  ])
+  if (decimals == null) {
+    throw new Error("readEntityBid: the sale lists no payment token")
+  }
+  return mapEntityBid(states[0]?.currentBid, decimals)
+}
+
 export type EntityCommitmentUsd = { committedUsd: number; acceptedUsd: number }
 
 /**
@@ -84,18 +154,8 @@ export async function readEntityCommitmentsUsd(
   const sale = contracts.settlementSale
 
   // Payment-token decimals are read from the contract, never hardcoded, and asserted uniform.
-  const tokens = await publicClient().readContract({
-    address: sale,
-    abi: settlementSaleAbi,
-    functionName: "paymentTokens",
-  })
-  if (tokens.length === 0) return null
-  const perTokenDecimals = await Promise.all(
-    tokens.map((token) =>
-      publicClient().readContract({ address: token, abi: erc20Abi, functionName: "decimals" }),
-    ),
-  )
-  const decimals = uniformDecimals(perTokenDecimals.map(Number))
+  const decimals = await paymentDecimals(sale)
+  if (decimals == null) return null
 
   const results = await publicClient().multicall({
     allowFailure: true,

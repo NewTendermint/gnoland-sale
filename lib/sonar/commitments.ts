@@ -1,6 +1,8 @@
 import "server-only"
 import type { ReadCommitmentDataResponse } from "@echoxyz/sonar-core"
 import { env } from "../env"
+import { errorMessage } from "../log"
+import { readEntityBid } from "../sale/server-reads"
 import type { CommitmentMetrics, MyBid } from "../sale/types"
 import { createSonarClient } from "./client"
 import { pickEntity } from "./entity"
@@ -21,6 +23,13 @@ export function mapCommitmentData(res: ReadCommitmentDataResponse): CommitmentMe
 /** Read live commitment metrics from Sonar (public data, unauthenticated client). */
 export async function readCommitments(): Promise<CommitmentMetrics> {
   const res = await createSonarClient().readCommitmentData({ saleUUID: env.SONAR_SALE_UUID })
+  // The aggregates below are full-set, but Commitments is capped upstream at the latest rows.
+  // Anything deriving per-entity data from that array is silently wrong past the cap.
+  if (res.Commitments.length < res.UniqueCommitmentCount) {
+    console.info(
+      `sonar-commitments: upstream capped Commitments at ${res.Commitments.length} of ${res.UniqueCommitmentCount}`,
+    )
+  }
   return mapCommitmentData(res)
 }
 
@@ -50,11 +59,10 @@ export async function readSaleDecimals(): Promise<number> {
 }
 
 /**
- * Extract the session entity's own position from the commitment set, by per-sale id.
- * null when no commitment.
- * TODO(real-data): confirm against real Sonar - the price field (PriceMicroUSD vs
- * numerator/denominator), and whether an entity can hold multiple commitments
- * (this takes the first match; amounts are summed across its wallets).
+ * An entity's position from Sonar's commitment set, by per-sale id. FALLBACK ONLY - readMyBid
+ * reads the chain; this carries most sessions through an RPC outage.
+ * CAP: `Commitments` holds only the latest rows, so null here means "not in the window", never an
+ * authoritative "no bid".
  */
 export function mapMyBid(res: ReadCommitmentDataResponse, saleSpecificEntityId: string): MyBid {
   // listAvailableEntities and readCommitmentData are two different Sonar endpoints with no
@@ -89,8 +97,9 @@ export function mapMyBid(res: ReadCommitmentDataResponse, saleSpecificEntityId: 
   return { priceUsd, committedUsd }
 }
 
-/** Read the session's position (entity lookup authenticated, commitment read public);
- *  null when no entity or no commitment. */
+/** Read the session's position; null when no entity or no bid. The entity lookup is authenticated
+ *  and its id is ALWAYS server-derived, never client-supplied. The position itself comes from the
+ *  contract (readEntityBid), which has no row cap, unlike readCommitmentData. */
 export async function readMyBid(sessionId: string): Promise<MyBid> {
   const entities = await withSonarAuth(sessionId, (accessToken) =>
     createSonarClient(accessToken).listAvailableEntities({ saleUUID: env.SONAR_SALE_UUID }),
@@ -100,7 +109,20 @@ export async function readMyBid(sessionId: string): Promise<MyBid> {
   if (!entity) {
     return null
   }
-  // readCommitmentData is public; only the entity lookup above needs the session's token.
-  const data = await createSonarClient().readCommitmentData({ saleUUID: env.SONAR_SALE_UUID })
-  return mapMyBid(data, entity.SaleSpecificEntityID)
+  try {
+    return await readEntityBid(entity.SaleSpecificEntityID)
+  } catch (err) {
+    // Availability net, not a second source of truth: the chain's numbers win whenever it answers.
+    // A miss in Sonar's capped window re-throws (502, the UI retries) rather than resolving to a
+    // false "no bid". Worst case is a retry, never a hidden position.
+    console.warn(
+      `sonar-commitments: chain position read failed, trying Sonar: ${errorMessage(err)}`,
+    )
+    const data = await createSonarClient().readCommitmentData({ saleUUID: env.SONAR_SALE_UUID })
+    const fromSonar = mapMyBid(data, entity.SaleSpecificEntityID)
+    if (fromSonar == null) {
+      throw err
+    }
+    return fromSonar
+  }
 }

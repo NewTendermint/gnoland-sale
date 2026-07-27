@@ -120,6 +120,20 @@ export function priceUsdToOnchainPrice(priceUsd: number, incrementUsd: number): 
   return BigInt(Math.round(microPrice / microIncrement))
 }
 
+/** On-chain `uint64` price (an increment count) -> USD. Exact inverse of the above.
+ *  FOOTGUN: multiply in integer micro-USD, never `count * increment` in floats - 33 * 0.0215 is
+ *  0.7094999999999999, which loses the `>=` in bidStatus for a bid at the clearing price. */
+export function onchainPriceToUsd(price: bigint, incrementUsd: number): number {
+  if (!Number.isFinite(incrementUsd) || incrementUsd <= 0) {
+    throw new Error("onchainPriceToUsd: increment must be a finite positive number")
+  }
+  const micro = Number(price) * Math.round(incrementUsd * 1_000_000)
+  if (!Number.isSafeInteger(micro)) {
+    throw new Error("onchainPriceToUsd: price exceeds safe integer range")
+  }
+  return micro / 1_000_000
+}
+
 /** Clamp to >= min and snap UP onto the FLOOR-ANCHORED grid (minPrice + k*increment). No upper cap. */
 export function snapBidPrice(
   priceUsd: number,

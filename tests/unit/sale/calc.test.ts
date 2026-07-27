@@ -5,6 +5,7 @@ import {
   bidStatus,
   forceLockupForRegion,
   gnotEstimate,
+  onchainPriceToUsd,
   priceUsdToOnchainPrice,
   snapBidPrice,
   usdToTokenUnits,
@@ -256,5 +257,41 @@ describe("balanceCoversBid", () => {
   })
   it("rejects a delta beyond the safe-integer range instead of throwing", () => {
     expect(balanceCoversBid(1e16, 0, units(1_000), 6)).toBe(false)
+  })
+})
+
+describe("onchainPriceToUsd", () => {
+  const INC = SALE_ECONOMICS.bidIncrementUsd
+
+  it("round-trips every price on the sale grid, from the floor to 500x the increment", () => {
+    for (let n = 1; n <= 500; n++) {
+      const usd = onchainPriceToUsd(BigInt(n), INC)
+      expect(priceUsdToOnchainPrice(usd, INC)).toBe(BigInt(n))
+    }
+  })
+
+  it("stays exact where a float multiplication drifts - bidStatus compares with >=", () => {
+    // 33 * 0.0215 evaluates to 0.7094999999999999 in IEEE-754. A bidder sitting exactly on the
+    // clearing price would read as "outbid". This is the live sale's two largest bids.
+    expect(33 * INC).not.toBe(0.7095)
+    expect(onchainPriceToUsd(33n, INC)).toBe(0.7095)
+    expect(bidStatus(onchainPriceToUsd(33n, INC), 0.7095)).toBe("winning")
+  })
+
+  it("maps the sale floor (3 increments) to $0.0645", () => {
+    expect(onchainPriceToUsd(3n, INC)).toBe(0.0645)
+  })
+
+  it("maps a zero price to zero", () => {
+    expect(onchainPriceToUsd(0n, INC)).toBe(0)
+  })
+
+  it("rejects a non-positive increment rather than returning Infinity or NaN", () => {
+    expect(() => onchainPriceToUsd(3n, 0)).toThrow(/increment/)
+    expect(() => onchainPriceToUsd(3n, Number.NaN)).toThrow(/increment/)
+  })
+
+  it("throws instead of silently losing precision past the safe-integer range", () => {
+    expect(() => onchainPriceToUsd(2n ** 63n, INC)).toThrow(/safe integer/)
   })
 })
