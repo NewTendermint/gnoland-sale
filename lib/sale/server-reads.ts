@@ -1,24 +1,11 @@
 import "server-only"
-import { http, createPublicClient, erc20Abi, fallback } from "viem"
+import { erc20Abi } from "viem"
 import { settlementSaleAbi } from "./abi"
 import { onchainPriceToUsd } from "./calc"
 import { SALE_CHAIN, saleContractsFor } from "./contracts"
 import { SALE_ECONOMICS } from "./economics"
-import { rpcUrlsFor } from "./rpc"
+import { publicClient } from "./server-client"
 import type { MyBid } from "./types"
-
-// Dedicated server-side (Node) read client. NOT lib/sale/onchain.ts, which is "use client" and pulls
-// in wagmiConfig + wallet connectors; this mirrors live-window.ts: keyed RPCs, then viem's default.
-let client: ReturnType<typeof createPublicClient> | null = null
-function publicClient() {
-  if (!client) {
-    client = createPublicClient({
-      chain: SALE_CHAIN,
-      transport: fallback([...rpcUrlsFor(SALE_CHAIN.id).map((url) => http(url)), http()]),
-    })
-  }
-  return client
-}
 
 type TokenAmount = { token: `0x${string}`; amount: bigint }
 type WalletState = {
