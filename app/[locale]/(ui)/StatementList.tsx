@@ -4,7 +4,6 @@ import { ItemDivider } from "./ItemDivider"
 import { ParallaxBox } from "./ParallaxBox"
 import { Reveal } from "./Reveal"
 import { RevealBoundary, RevealGroup } from "./RevealGroup"
-import type { SceneImageProps } from "./SceneImage"
 import type { SceneVideoProps } from "./SceneVideo"
 import { Section } from "./Section"
 import { SectionHeading } from "./SectionHeading"
@@ -16,19 +15,11 @@ type StatementListProps = {
   eyebrow: string
   title: string
   items: StatementItem[]
-  scene?: SceneImageProps
   /** Scene video banner; takes precedence over `scene`. */
   sceneVideo?: SceneVideoProps
 }
 
-export function StatementList({
-  id,
-  eyebrow,
-  title,
-  items,
-  scene,
-  sceneVideo,
-}: StatementListProps) {
+export function StatementList({ id, eyebrow, title, items, sceneVideo }: StatementListProps) {
   return (
     <Section id={id}>
       <RevealGroup inline staggerMs={150}>
@@ -37,7 +28,6 @@ export function StatementList({
             <ParallaxBox
               className="aspect-2/1 sm:aspect-3/1"
               strength={100}
-              scene={scene}
               sceneVideo={sceneVideo}
             />
           </RevealBoundary>

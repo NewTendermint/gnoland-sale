@@ -8,7 +8,9 @@ One Next.js app serves every stage of the sale. Nothing is redeployed between st
 
 ## Stack
 
-Next.js 15 (App Router) · TypeScript strict · Tailwind v4 · next-themes (light/dark) · Biome · wagmi v3 + viem (Ethereum mainnet / Sepolia only) with bespoke connectors (Coinbase Wallet SDK, WalletConnect, injected EIP-6963) · `@echoxyz/sonar-core` (server-only) · iron-session + libsodium · Drizzle on Netlify Database (GA managed Postgres) · GSAP + baked scene-slot videos · Vitest + Playwright. Hosted on Netlify (Next.js Runtime + DB). No error-reporting SDK (no Sentry); the only telemetry is Simple Analytics, served first-party through an edge function that rebuilds the outgoing request from a header allowlist so no cookie or visitor IP reaches the vendor (`netlify/edge-functions/analytics-proxy.ts`), with a PII firewall on the event payloads (`lib/analytics/track.ts`).
+Next.js 15 (App Router) · TypeScript strict · Tailwind v4 · next-themes (light/dark) · Biome · wagmi v3 + viem (Ethereum mainnet / Sepolia only) with bespoke connectors (Coinbase Wallet SDK, WalletConnect, injected EIP-6963) · `@echoxyz/sonar-core` (server-only) · iron-session + libsodium · Drizzle on Netlify Database (GA managed Postgres) · GSAP + baked scene-slot videos · Vitest + Playwright. Hosted on Netlify (Next.js Runtime + DB).
+
+No error-reporting SDK. The only telemetry is Simple Analytics, proxied first-party by an edge function that rebuilds the outgoing request from a header allowlist, so no cookie or visitor IP reaches the vendor (`netlify/edge-functions/analytics-proxy.ts`), with a PII firewall on the event payloads (`lib/analytics/track.ts`).
 
 ## Run locally
 
@@ -84,6 +86,8 @@ Inside a phase, each visitor gets a derived funnel state (`lib/sale/journey.ts`,
 
 ### Operator runbook
 
+The sale ran on mainnet from 2026-07-20 to 2026-07-27; the table below is how it was operated, kept as the reference for any future run on this code.
+
 | When | What you do | What is automatic |
 |---|---|---|
 | Pre-sale launch | Confirm the 3 dates in `economics.ts` (or env), `NEXT_PUBLIC_NEWSLETTER_ENABLED=1`, Mailchimp creds. The clock drives the phase (no phase-override var exists). | Pre-sale renders; pre-sale -> live -> ended all flip by the dates |
@@ -103,9 +107,15 @@ Copy `.env.example` to `.env.local`. Production secrets live in Netlify env, nev
 
 | Var | Role |
 |---|---|
-| `NEXT_PUBLIC_SITE_URL` | Canonical URL (metadata, sitemap) |
+| `NEXT_PUBLIC_SITE_URL` | Canonical URL (metadata, sitemap). Blank falls back to the production URL |
+| `NEXT_PUBLIC_SALE_CHAIN` | `mainnet` / `sepolia`. Must equal `SALE_CHAIN`; unset falls back to sepolia, never mainnet, and any other value throws at build |
 | `NEXT_PUBLIC_REGISTRATION_OPENS` / `SALE_OPENS` / `SALE_CLOSES` | Milestone date overrides (ISO) |
+| `NEXT_PUBLIC_MAINNET_RPC_URL` / `SEPOLIA_RPC_URL` | Per-chain RPC. Inlined into the bundle, so never an endpoint whose key sits in the URL |
+| `NEXT_PUBLIC_SEPOLIA_SETTLEMENT_SALE` | Sandbox contract override (a sale redeploy changes it) |
+| `NEXT_PUBLIC_MIN_COMMITMENT_USD` | Sandbox minimum override; prod uses the `economics.ts` default |
 | `NEXT_PUBLIC_NEWSLETTER_ENABLED` | `1` renders the newsletter capture (dev defaults on) |
+| `NEXT_PUBLIC_TIERED_BONUS` | `1` renders the tiered-bonus surfaces (display only; the bonus is granted off-app) |
+| `NEXT_PUBLIC_DEV_STATES_ENABLED` | `1` opens `/dev/states`; branch-deploy only, 404 in production |
 | `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` | Public Reown/WalletConnect id (has a built-in default) |
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | Web Push public key (same value as `VAPID_PUBLIC_KEY`) |
 
@@ -122,6 +132,9 @@ Copy `.env.example` to `.env.local`. Production secrets live in Netlify env, nev
 | `SALE_CHAIN` | `mainnet` (prod) / `sepolia` (preview); drives the audit chain_id and chain branching |
 | `MAILCHIMP_API_KEY` / `MAILCHIMP_AUDIENCE_ID` | Newsletter upstream (absent = fails closed; mock only via explicit `MAILCHIMP_MOCK=1`, never in prod) |
 | `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` | Web Push signing (outbid alerts) |
+| `MAILCHIMP_FROM_NAME` / `MAILCHIMP_REPLY_TO` | Sender identity on the price-alert campaign (optional) |
+| `EMAIL_ALERTS_ENABLED` | Exactly `1` sends price alerts; anything else dry-runs. The cron runs either way |
+| `CRON_PROD_URL` / `CRON_STAGING_URL` | Scheduled-function fan-out targets. These receive the `CRON_SECRET` bearer, so a stale hostname leaks it |
 | `CRON_SECRET` | Bearer for the four scheduled routes (`lib/security/cron-auth.ts`); unset = crons off |
 | `SONAR_MOCK` / `MAILCHIMP_MOCK` | Dev-only: `1` serves local fixtures instead of the real APIs |
 
@@ -151,7 +164,11 @@ Our routes only - the browser never talks to Sonar or Mailchimp directly:
 | `/api/auth/sonar/logout` | POST | Destroys the session + deletes stored tokens (204) |
 | `/api/newsletter` | POST | Newsletter capture to Mailchimp (double opt-in). Anti-enumeration uniform 202, honeypot, HMAC-keyed IP rate limit; the email is never logged or stored on our side |
 | `/api/push/subscribe` | POST | Register a Web Push subscription for outbid alerts (no PII) |
-| `/api/push/cron` | POST | Scheduled (Netlify) outbid-alert sweep, bearer `CRON_SECRET` |
+| `/api/push/cron` | POST | Scheduled outbid-alert sweep, bearer `CRON_SECRET` |
+| `/api/email/cron` | POST | Scheduled price-alert campaign, bearer `CRON_SECRET`; dry-runs unless `EMAIL_ALERTS_ENABLED=1` |
+| `/api/attribution/reconcile` | POST | Scheduled on-chain reconcile of attributed entities, bearer `CRON_SECRET` |
+| `/api/db/cleanup` | POST | Scheduled sweep of expired PKCE states and grace-expired tokens, bearer `CRON_SECRET` |
+| `/api/csp-report` | POST | CSP violation sink (uncredentialed by design, always 204) |
 
 The one on-chain write (submitting the signed bid with the permit) happens client-side via wagmi; `lib/sale/onchain.ts` is the seam. It runs against the deployed `SettlementSale` on the active sale chain; both addresses are wired in `lib/sale/contracts.ts` (the Sepolia sandbox one is env-overridable because a sale redeploy changes it, the mainnet one deliberately is not). With no contract configured for the connected chain the bid is blocked, never emulated, so the funnel cannot reach success without a real transaction.
 
@@ -169,25 +186,13 @@ Deploys are driven by **Netlify**, not GitHub Actions. There are no GitHub deplo
 
 CI (`.github/workflows/checks.yml`, `test.yml`, `database.yml`) runs on every PR and on push to `main`: Biome lint, secretlint source scan, typecheck (app + `netlify/`), build, client-bundle secret scan (`scripts/check-secrets.mjs`), `npm audit --omit=dev`, the knip dead-code gate (last, so a hygiene finding cannot abort the run before the security gates report), the Vitest suite and the Playwright wallet-matrix e2e job (injected mock EIP-6963 wallets against a local RPC stub, with trace upload on failure), plus the migration-drift guard. Branch protection is active: `main` requires a PR, the `validate` check and signed commits; `staging` requires signed commits.
 
-## Launch checklist
+## Production configuration
 
-The sale ran on mainnet from 2026-07-20 to 2026-07-27, so this list is now a record rather than a
-plan. Done: the `sale.gno.land` domain and `NEXT_PUBLIC_SITE_URL`, the mainnet `SettlementSale`
-address in `lib/sale/contracts.ts`, `SALE_CHAIN=mainnet` on the production context with
-`SALE_CHAIN` appended to `SECRETS_SCAN_OMIT_KEYS` in `netlify.toml`, the Reown/WalletConnect
-AllowList, and the server-only secrets.
+As shipped: the `sale.gno.land` domain and `NEXT_PUBLIC_SITE_URL`, the mainnet `SettlementSale` address in `lib/sale/contracts.ts`, `SALE_CHAIN=mainnet` on the production context with `SALE_CHAIN` appended to `SECRETS_SCAN_OMIT_KEYS` in `netlify.toml`, the Reown/WalletConnect AllowList, and the server-only secrets. The last two live outside the repo and cannot be verified from it.
 
-Still outstanding:
+**Still outstanding:** flip the strict CSP from Report-Only to enforce in `middleware.ts`. It is deliberately still Report-Only - the page is statically rendered, so the per-request nonce cannot reach the HTML's own script tags and every self-hosted chunk reports under `strict-dynamic`. The enforced policy covers `object-src`, `base-uri`, `form-action` and `frame-ancestors`; `connect-src` could be enforced without the script-src problem.
 
-- Flip the strict CSP from Report-Only to enforce in `middleware.ts`. It is deliberately still
-  Report-Only: the page is statically rendered, so the per-request nonce cannot reach the HTML's own
-  script tags and every self-hosted chunk reports under `strict-dynamic`. The enforced policy today
-  covers `object-src`, `base-uri`, `form-action` and `frame-ancestors`. See the reasoning in
-  `middleware.ts`, and note that `connect-src` could be enforced without the script-src problem.
-
-One footgun worth keeping in view for any future sale on this code: when appending to
-`SECRETS_SCAN_OMIT_KEYS`, never replace the list - the VAPID public-key omits are load-bearing and
-the production build fails the secret scan without them.
+**Footgun for any future run:** when appending to `SECRETS_SCAN_OMIT_KEYS`, never replace the list - the VAPID public-key omits are load-bearing and the production build fails the secret scan without them.
 
 ## Development and review
 
@@ -208,5 +213,5 @@ Design and architecture decision records live in `docs/` (internal, not committe
 
 - All Sonar API calls, OAuth tokens and secrets are server-side; the client gets derived JSON only.
 - OAuth tokens encrypted at rest (libsodium envelope), sessions HttpOnly/Secure/Lax, PKCE state single-use and session-bound.
-- CSP via middleware: `object-src`/`base-uri`/`form-action`/`frame-ancestors` enforced, the strict script/connect/frame policy still Report-Only pending wallet testing; CI build fails if a server-only secret name appears in client output.
+- CSP via middleware, enforced and Report-Only split as described under "Production configuration"; the CI build fails if a server-only secret name appears in client output.
 - No PII in logs: IPs HMAC-peppered, newsletter emails pass through without persistence.
