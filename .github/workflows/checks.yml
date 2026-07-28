@@ -1,4 +1,4 @@
-# Static checks: lint, typecheck, build, secret scanning, and dependency audit.
+# Static checks: lint, typecheck, build, secret scanning, dependency audit, then dead code.
 # Runs on every pull request and on pushes to main, in parallel with the Tests workflow
 # (which carries the unit and wallet-e2e jobs).
 name: Checks
@@ -11,16 +11,13 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
-      # Pull the repo at the commit under test.
       - uses: actions/checkout@v4
 
-      # Pin Node to the project's runtime and cache npm downloads.
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
 
-      # Reproducible install from the lockfile.
       - run: npm ci
 
       # Static analysis: Biome lint covers JS/TS/JSON sources.
@@ -38,6 +35,11 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      # Same, for netlify/ (edge functions + scheduled functions). Separate config because those
+      # files run outside the Next.js build, on their own platforms - see netlify/tsconfig.json.
+      - name: Typecheck (netlify functions)
+        run: npm run typecheck:netlify
+
       # Produce the production build that the secret scanner inspects.
       - name: Build
         run: npm run build
@@ -46,8 +48,15 @@ jobs:
       - name: Scan bundle for secrets
         run: node scripts/check-secrets.mjs
 
-      # Fail the build on high-or-critical vulnerabilities in PRODUCTION dependencies.
-      # Dev/test tooling (e.g. jsdom -> vitest -> undici) is excluded: it never ships to users.
-      # The gate stays strict; a small, documented allowlist of advisory ids lives in the script.
+      # Fail on CRITICAL advisories in PRODUCTION dependencies; high is reported, not blocking
+      # (rationale + allowlist in the script). Dev/test tooling is excluded: it never ships.
       - name: Audit dependencies
         run: node scripts/audit-check.mjs
+
+      # Unreachable files, unused exports, undeclared/unused dependencies. The allow-list of
+      # runtime-only entry points (Netlify functions, service worker, ...) is documented inline in
+      # knip.jsonc; anything it reports is genuinely dead and should go.
+      # LAST on purpose: this job fails fast, and a hygiene finding must not abort the run before
+      # the bundle secret scan and the dependency audit above have produced their signal.
+      - name: Dead code
+        run: npm run deadcode

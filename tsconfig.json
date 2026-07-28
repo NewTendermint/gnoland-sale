@@ -5,6 +5,12 @@
     "allowJs": false,
     "skipLibCheck": true,
     "strict": true,
+    // Unused locals and imports: knip works on exports, Biome's recommended set
+    // leaves this off. Two caveats: these also fail `next build`, including on an
+    // unused destructured prop, and Next exempts *.test.* files while tsc does not.
+    // A dead cluster of two symbols referencing each other escapes both gates.
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "noEmit": true,
     "esModuleInterop": true,
     "module": "esnext",
