@@ -7,9 +7,13 @@ import { execFileSync } from "node:child_process"
 // Scope note: high-severity advisories are still reported by `npm audit` but do NOT block. npm
 // re-fetches the advisory database on every run, so newly published advisories against our frozen
 // dependency versions were breaking the build daily with no code change (e.g. the sharp/libvips
-// high advisory, which is unreachable here anyway: next/image has no remotePatterns and only
-// optimizes first-party local assets, so no attacker-controlled image ever reaches libvips). For
-// the sale's short remaining window we gate on critical only; add "high" back below to tighten.
+// high advisory, which is unreachable here: the app uses no next/image at all, so nothing ever
+// hands an image to libvips - sharp is a dependency the build never invokes). Critical-only is a
+// waiver, not a target: tighten it back to "high" once the outstanding advisories are cleared by
+// upgrade rather than by exception (`npm audit --omit=dev` reports what a bump would fix).
+//
+// Allowlisted ids are waived only at a BLOCKING severity, and the summary names
+// the ones actually hit.
 //
 // Allowlisted here: transitive axios advisories reachable ONLY through the Coinbase wallet SDK
 // (@wagmi/connectors -> @base-org/account -> @coinbase/cdp-sdk -> axios). axios is that SDK's
@@ -44,6 +48,9 @@ function auditReport() {
 const report = JSON.parse(auditReport())
 // One entry per offending advisory id, deduped across the packages that inherit it.
 const offenders = new Map()
+// Allowlisted ids actually encountered at a BLOCKING severity, so the summary can report real
+// suppressions instead of the allowlist's size (which would overstate what the gate waived).
+const suppressed = new Set()
 for (const [pkg, vuln] of Object.entries(report.vulnerabilities ?? {})) {
   for (const via of vuln.via ?? []) {
     // String `via` entries are just parent package names; only objects carry the advisory.
@@ -51,7 +58,11 @@ for (const [pkg, vuln] of Object.entries(report.vulnerabilities ?? {})) {
     const id = String(via.url ?? "")
       .split("/")
       .pop()
-    if (!id || ALLOWLIST.has(id)) continue
+    if (!id) continue
+    if (ALLOWLIST.has(id)) {
+      suppressed.add(id)
+      continue
+    }
     offenders.set(id, `${pkg}: ${via.severity} ${id} - ${via.title ?? "(no title)"}`)
   }
 }
@@ -64,6 +75,8 @@ if (offenders.size > 0) {
   process.exit(1)
 }
 
-console.info(
-  `Dependency audit clean: no non-allowlisted critical advisories (${ALLOWLIST.size} tracked exceptions).`,
-)
+const waived =
+  suppressed.size > 0
+    ? `${suppressed.size} of ${ALLOWLIST.size} allowlisted id(s) waived: ${[...suppressed].join(", ")}`
+    : `allowlist waived nothing (${ALLOWLIST.size} ids held in reserve)`
+console.info(`Dependency audit clean: no non-allowlisted critical advisories; ${waived}.`)
