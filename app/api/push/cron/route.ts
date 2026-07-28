@@ -1,11 +1,10 @@
 import { db } from "@/lib/db/client"
 import { CRON_LEASE_TTL_S, acquireCronLease, releaseCronLease } from "@/lib/db/lease"
 import { pushSubscriptions } from "@/lib/db/schema"
-import { env } from "@/lib/env"
 import { detectTransitions } from "@/lib/push/detect"
 import { OUTBID_TTL_CAP_S, sendOutbidNotifications } from "@/lib/push/send"
 import { pushTtlSeconds, saleIsLive } from "@/lib/sale/live-window"
-import { timingSafeEqualStr } from "@/lib/security/secret-compare"
+import { cronAuthFailure } from "@/lib/security/cron-auth"
 import { readCommitments } from "@/lib/sonar/commitments"
 import { inArray } from "drizzle-orm"
 import { NextResponse } from "next/server"
@@ -14,10 +13,8 @@ export const runtime = "nodejs"
 
 // POST /api/push/cron - Netlify scheduled function; bearer CRON_SECRET required.
 export async function POST(req: Request) {
-  const expected = env.CRON_SECRET ? `Bearer ${env.CRON_SECRET}` : null
-  if (!expected || !timingSafeEqualStr(req.headers.get("authorization"), expected)) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 })
-  }
+  const unauthorized = cronAuthFailure(req)
+  if (unauthorized) return unauthorized
 
   if (!(await saleIsLive(Date.now()))) return NextResponse.json({ skipped: "not-live" })
 

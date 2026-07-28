@@ -6,7 +6,7 @@ import { env } from "@/lib/env"
 import { sendPriceCampaign } from "@/lib/newsletter/campaign"
 import { saleIsLive } from "@/lib/sale/live-window"
 import { resolveSalePhase } from "@/lib/sale/phase"
-import { timingSafeEqualStr } from "@/lib/security/secret-compare"
+import { cronAuthFailure } from "@/lib/security/cron-auth"
 import { readCommitments } from "@/lib/sonar/commitments"
 import { NextResponse } from "next/server"
 
@@ -18,10 +18,8 @@ export const runtime = "nodejs"
 // state advance (only the first-run baseline is recorded), so enabling the flag later sends on
 // the next genuine rise instead of inheriting a cooldown from a dry run nobody received.
 export async function POST(req: Request) {
-  const expected = env.CRON_SECRET ? `Bearer ${env.CRON_SECRET}` : null
-  if (!expected || !timingSafeEqualStr(req.headers.get("authorization"), expected)) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 })
-  }
+  const unauthorized = cronAuthFailure(req)
+  if (unauthorized) return unauthorized
 
   const now = Date.now()
   // Outbound marketing stays inside the ANNOUNCED window AND a live contract - unlike the push

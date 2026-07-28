@@ -1,9 +1,8 @@
 import { db } from "@/lib/db/client"
 import { CRON_LEASE_TTL_S, acquireCronLease, releaseCronLease } from "@/lib/db/lease"
 import { bidAttribution } from "@/lib/db/schema"
-import { env } from "@/lib/env"
 import { readEntityCommitmentsUsd } from "@/lib/sale/server-reads"
-import { timingSafeEqualStr } from "@/lib/security/secret-compare"
+import { cronAuthFailure } from "@/lib/security/cron-auth"
 import { eq } from "drizzle-orm"
 import { NextResponse } from "next/server"
 
@@ -16,10 +15,8 @@ const LEASE = "attribution-reconcile-cron"
 // Read-only on-chain and idempotent (re-reading + overwriting is safe). Deliberately NOT gated on
 // saleIsLive: it must keep running after the sale closes to capture the settled `accepted` amounts.
 export async function POST(req: Request) {
-  const expected = env.CRON_SECRET ? `Bearer ${env.CRON_SECRET}` : null
-  if (!expected || !timingSafeEqualStr(req.headers.get("authorization"), expected)) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 })
-  }
+  const unauthorized = cronAuthFailure(req)
+  if (unauthorized) return unauthorized
 
   if (!(await acquireCronLease(LEASE, CRON_LEASE_TTL_S))) {
     return NextResponse.json({ skipped: "locked" })
