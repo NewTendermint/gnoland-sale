@@ -1,7 +1,6 @@
-// Single source for sale numbers. PROVISIONAL values are flagged; confirm before launch.
-// Schedule instants are the exact UTC moments from the Sonar dashboard (all at 22:00Z on the
-// three dates). The Countdown to saleClosesIso and the phase gates derive from these, so the
-// time-of-day is intentional, not midnight.
+// Single source for sale numbers. Schedule instants are the exact UTC moments from the Sonar
+// dashboard, all at 12:00Z on their three dates. The Countdown to saleClosesIso and the phase
+// gates derive from these, so the time-of-day is intentional, not midnight.
 import { mainnet } from "viem/chains"
 import { SALE_CHAIN } from "./contracts"
 
@@ -80,7 +79,7 @@ export function formatSaleMonth(iso: string, locale: DateLocale = "en"): string 
 }
 
 /**
- * Full schedule line with weekday + time, e.g. "Monday, July 6, 2026 at 22:00 UTC".
+ * Full schedule line with weekday + time, e.g. "Thursday, July 9, 2026 at 12:00 UTC".
  * Rendered in UTC to match the Sonar dashboard exactly (no DST ambiguity; SSR and client agree).
  * The English " at " connector is dropped for locales (e.g. Korean) that read date + time adjacently.
  */

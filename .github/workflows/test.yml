@@ -10,16 +10,13 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      # Pull the repo at the commit under test.
       - uses: actions/checkout@v4
 
-      # Pin Node to the project's runtime and cache npm downloads.
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
 
-      # Reproducible install from the lockfile.
       - run: npm ci
 
       # Unit tests under Vitest.
@@ -29,16 +26,13 @@ jobs:
   e2e:
     runs-on: ubuntu-latest
     steps:
-      # Pull the repo at the commit under test.
       - uses: actions/checkout@v4
 
-      # Pin Node to the project's runtime and cache npm downloads.
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
 
-      # Reproducible install from the lockfile.
       - run: npm ci
 
       # Headless chromium (with its system dependencies) for the wallet-matrix suite.

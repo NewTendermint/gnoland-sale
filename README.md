@@ -8,7 +8,7 @@ One Next.js app serves every stage of the sale. Nothing is redeployed between st
 
 ## Stack
 
-Next.js 15 (App Router) · TypeScript strict · Tailwind v4 · next-themes (light/dark) · Biome · wagmi v3 + viem (Ethereum mainnet / Sepolia only) with bespoke connectors (Coinbase Wallet SDK, WalletConnect, injected EIP-6963) · `@echoxyz/sonar-core` (server-only) · iron-session + libsodium · Drizzle on Netlify Database (GA managed Postgres) · GSAP + baked scene-slot videos · Vitest. Hosted on Netlify (Next.js Runtime + DB). No Sentry, no analytics.
+Next.js 15 (App Router) · TypeScript strict · Tailwind v4 · next-themes (light/dark) · Biome · wagmi v3 + viem (Ethereum mainnet / Sepolia only) with bespoke connectors (Coinbase Wallet SDK, WalletConnect, injected EIP-6963) · `@echoxyz/sonar-core` (server-only) · iron-session + libsodium · Drizzle on Netlify Database (GA managed Postgres) · GSAP + baked scene-slot videos · Vitest + Playwright. Hosted on Netlify (Next.js Runtime + DB). No error-reporting SDK (no Sentry); the only telemetry is Simple Analytics, served first-party through an edge function that rebuilds the outgoing request from a header allowlist so no cookie or visitor IP reaches the vendor (`netlify/edge-functions/analytics-proxy.ts`), with a PII firewall on the event payloads (`lib/analytics/track.ts`).
 
 ## Run locally
 
@@ -34,15 +34,19 @@ Two cases need real config (copy `.env.example` to `.env.local`):
 ## Scripts
 
 ```
-npm run dev          start dev server (mocked, no DB, :3000)
-npm run dev:db       start via Netlify CLI (local DB + injected env, :8888)
-npm run build        production build (the client-bundle secret scan runs in CI)
-npm run lint         Biome
-npm run typecheck    tsc strict
-npm run test         Vitest unit suite
-npm run db:generate  generate a Drizzle migration into netlify/database/migrations
-npm run db:migrate   apply migrations locally to NETLIFY_DB_URL (deploy applies hosted DBs)
-npm run db:studio    Drizzle Studio against NETLIFY_DB_URL
+npm run dev                start dev server (mocked, no DB, :3000)
+npm run dev:db             start via Netlify CLI (local DB + injected env, :8888)
+npm run build              production build (the client-bundle secret scan runs in CI)
+npm run lint               Biome
+npm run typecheck          tsc strict over the app (netlify/ has its own config)
+npm run typecheck:netlify  tsc strict over netlify/ (edge + scheduled functions)
+npm run deadcode           knip: unreachable files, unused exports, dependency drift
+npm run test               Vitest unit suite
+npm run test:e2e           Playwright wallet-matrix e2e (starts the app itself)
+npm run test:e2e:ui        same, in Playwright's UI mode
+npm run db:generate        generate a Drizzle migration into netlify/database/migrations
+npm run db:migrate         apply migrations locally to NETLIFY_DB_URL (deploy applies hosted DBs)
+npm run db:studio          Drizzle Studio against NETLIFY_DB_URL
 ```
 
 ## How the site works
@@ -118,7 +122,7 @@ Copy `.env.example` to `.env.local`. Production secrets live in Netlify env, nev
 | `SALE_CHAIN` | `mainnet` (prod) / `sepolia` (preview); drives the audit chain_id and chain branching |
 | `MAILCHIMP_API_KEY` / `MAILCHIMP_AUDIENCE_ID` | Newsletter upstream (absent = fails closed; mock only via explicit `MAILCHIMP_MOCK=1`, never in prod) |
 | `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` | Web Push signing (outbid alerts) |
-| `CRON_SECRET` | Bearer for the scheduled outbid-cron route |
+| `CRON_SECRET` | Bearer for the four scheduled routes (`lib/security/cron-auth.ts`); unset = crons off |
 | `SONAR_MOCK` / `MAILCHIMP_MOCK` | Dev-only: `1` serves local fixtures instead of the real APIs |
 
 ## Database and storage
@@ -149,7 +153,7 @@ Our routes only - the browser never talks to Sonar or Mailchimp directly:
 | `/api/push/subscribe` | POST | Register a Web Push subscription for outbid alerts (no PII) |
 | `/api/push/cron` | POST | Scheduled (Netlify) outbid-alert sweep, bearer `CRON_SECRET` |
 
-The one on-chain write (submitting the signed bid with the permit) happens client-side via wagmi; `lib/sale/onchain.ts` is the seam. It runs against the deployed `SettlementSale` on the active sale chain (Sepolia wired; mainnet address TBD in `lib/sale/contracts.ts`). With no contract configured for the connected chain the bid is blocked, never emulated, so the funnel cannot reach success without a real transaction.
+The one on-chain write (submitting the signed bid with the permit) happens client-side via wagmi; `lib/sale/onchain.ts` is the seam. It runs against the deployed `SettlementSale` on the active sale chain; both addresses are wired in `lib/sale/contracts.ts` (the Sepolia sandbox one is env-overridable because a sale redeploy changes it, the mainnet one deliberately is not). With no contract configured for the connected chain the bid is blocked, never emulated, so the funnel cannot reach success without a real transaction.
 
 ## Deploy and environments
 
@@ -161,25 +165,34 @@ Deploys are driven by **Netlify**, not GitHub Actions. There are no GitHub deplo
 | `staging` / other branches | branch-deploy | Sonar sandbox, Sepolia (per dashboard env) |
 | Pull requests | deploy-preview | Sonar sandbox, Sepolia |
 
-`NEXT_PUBLIC_STATE_OVERRIDES` (dev state-preview) is set only in the dashboard, scoped to branch + preview contexts, never production, and not committed.
+`NEXT_PUBLIC_DEV_STATES_ENABLED` (the `/dev/states` gallery) is set in `netlify.toml` on the branch-deploy context only, never in production - the page 404s on `sale.gno.land`.
 
-CI (`.github/workflows/checks.yml`, `test.yml`, `database.yml`) runs on every PR and on push to `main`: Biome lint, secretlint source scan, typecheck, Vitest, build, client-bundle secret scan (`scripts/check-secrets.mjs`), migration-drift guard, and `npm audit --omit=dev`. Branch protection is active: `main` requires a PR, the `validate` check and signed commits; `staging` requires signed commits.
+CI (`.github/workflows/checks.yml`, `test.yml`, `database.yml`) runs on every PR and on push to `main`: Biome lint, secretlint source scan, typecheck (app + `netlify/`), build, client-bundle secret scan (`scripts/check-secrets.mjs`), `npm audit --omit=dev`, the knip dead-code gate (last, so a hygiene finding cannot abort the run before the security gates report), the Vitest suite and the Playwright wallet-matrix e2e job (injected mock EIP-6963 wallets against a local RPC stub, with trace upload on failure), plus the migration-drift guard. Branch protection is active: `main` requires a PR, the `validate` check and signed commits; `staging` requires signed commits.
 
-## Before public launch
+## Launch checklist
 
-Tracked items that must be set when going live (most are config, not code):
+The sale ran on mainnet from 2026-07-20 to 2026-07-27, so this list is now a record rather than a
+plan. Done: the `sale.gno.land` domain and `NEXT_PUBLIC_SITE_URL`, the mainnet `SettlementSale`
+address in `lib/sale/contracts.ts`, `SALE_CHAIN=mainnet` on the production context with
+`SALE_CHAIN` appended to `SECRETS_SCAN_OMIT_KEYS` in `netlify.toml`, the Reown/WalletConnect
+AllowList, and the server-only secrets.
 
-- Attach the `sale.gno.land` domain and revert `NEXT_PUBLIC_SITE_URL` in the `netlify.toml` production context (currently a temporary Netlify subdomain).
-- Wire the mainnet `SettlementSale` address in `lib/sale/contracts.ts`.
-- Flip CSP from Report-Only to enforce in `middleware.ts` after wallet testing.
-- Set the Reown/WalletConnect AllowList to `sale.gno.land`.
-- Set `SALE_CHAIN=mainnet` on the production context, and APPEND `SALE_CHAIN` to the existing `SECRETS_SCAN_OMIT_KEYS` list in `netlify.toml` (which already omits the VAPID public keys) - the value `mainnet` trips Netlify's secret scanner otherwise. Do NOT replace the list, or the VAPID omits are lost and the production build fails the scan.
-- Provision the server-only secrets above on the production context.
+Still outstanding:
+
+- Flip the strict CSP from Report-Only to enforce in `middleware.ts`. It is deliberately still
+  Report-Only: the page is statically rendered, so the per-request nonce cannot reach the HTML's own
+  script tags and every self-hosted chunk reports under `strict-dynamic`. The enforced policy today
+  covers `object-src`, `base-uri`, `form-action` and `frame-ancestors`. See the reasoning in
+  `middleware.ts`, and note that `connect-src` could be enforced without the script-src problem.
+
+One footgun worth keeping in view for any future sale on this code: when appending to
+`SECRETS_SCAN_OMIT_KEYS`, never replace the list - the VAPID public-key omits are load-bearing and
+the production build fails the secret scan without them.
 
 ## Development and review
 
 - `SONAR_MOCK=1` (explicit opt-in, dev + sepolia only, fail-closed elsewhere): the whole Sonar surface runs on local fixtures (`lib/sonar/mock-*`), including a slowly climbing mock clearing price.
-- `/dev/states`: every funnel state, collapsed + expanded, without a wallet or Sonar. Gated by `stateOverridesEnabled()` (`lib/sale/overrides.ts`), local dev only - the live page has no URL overrides anymore; to reproduce a state for real, use Sonar sandbox entity overrides.
+- `/dev/states`: every funnel state, collapsed + expanded, without a wallet or Sonar. Gated by `stateOverridesEnabled()` (`lib/sale/overrides.ts`): always on in local dev, on the staging branch-deploy via `NEXT_PUBLIC_DEV_STATES_ENABLED=1`, a 404 in production. The live page has no URL overrides; to reproduce a state for real, use Sonar sandbox entity overrides.
 - Testing + KYC handling guide: `docs/specs/launch-and-test-checklist.md` - the evergreen register (security gates before LIVE, funnel E2E against the Sonar sandbox + Sepolia, KYC states); the KYC state map is `docs/ux-kyc-states.svg`. `docs/` is local-only (not committed).
 
 ## Layout
@@ -187,7 +200,7 @@ Tracked items that must be set when going live (most are config, not code):
 - `app/` App Router: `(sections)` page sections, `(layout)` chrome (bar, provider, forms), `(ui)` primitives, `api/` route handlers, `dev/states` harness
 - `content/sections/*.ts` section copy (edit here), `content/legal/*.ts` legal text
 - `lib/` `sale/` (phase, journey, calc, economics, on-chain seam), `sonar/` (server client, OAuth, mocks), `newsletter/`, `push/`, `security/`, `db/`
-- `tests/` Vitest unit suites; `scripts/` build guards (client-bundle secret scan, on-chain probe)
+- `tests/unit/` Vitest suites, `tests/e2e/` Playwright specs + wallet/RPC stubs; `scripts/` build guards (client-bundle secret scan, dependency audit, on-chain probe)
 
 Design and architecture decision records live in `docs/` (internal, not committed); this README is the canonical doc for the shipped repo.
 

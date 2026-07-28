@@ -33,7 +33,8 @@ export function clearSonarSeen(): void {
 }
 
 // Non-PII "has a bid" flag: bids are irrevocable while the sale runs, so a my-position null on a
-// browser that has seen one is suspect and gets re-read before being trusted (lib/sale/my-bid-read.ts).
+// browser that has seen one is suspect and gets re-read before being trusted (readMyPosition in
+// lib/sale/confirmed-read.ts).
 const BID_KEY = "gnot:bid-seen"
 
 /** Record that this browser has read a live bid. Safe no-op if storage is blocked. */
