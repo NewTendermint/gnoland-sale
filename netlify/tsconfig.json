@@ -1,0 +1,25 @@
+{
+  // netlify/ is excluded from the root config: these files run on Deno (edge-functions) and on
+  // Netlify's Node runtime (functions/*.mts), never through the Next.js build.
+  //
+  // Extends the root so a stricter flag there cannot leave them behind, and so the `@/*` alias
+  // stays available: esbuild bundles functions/*.mts against the NEAREST tsconfig, ignoring
+  // include/exclude, so this is the file it reads for them.
+  //
+  // Scope: type consistency, not platform correctness. The inherited `lib` and the
+  // default all-@types behaviour leave Node globals in scope, so a Deno edge
+  // function reaching for `process` typechecks and fails at runtime.
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    // The next plugin serves tsserver in the app; these files are not a Next.js project.
+    "plugins": [],
+    // The deployed functions import `../cron-fan-out.mts` with the extension present.
+    "allowImportingTsExtensions": true,
+    // `incremental` is inherited; keep its artifact out of the source tree.
+    "tsBuildInfoFile": "../node_modules/.cache/netlify-tsc.tsbuildinfo"
+  },
+  "include": ["**/*.ts", "**/*.mts"],
+  // Specifying `exclude` replaces TS's default, so node_modules is repeated here.
+  // database/ holds SQL migrations and drizzle metadata only.
+  "exclude": ["database", "node_modules"]
+}

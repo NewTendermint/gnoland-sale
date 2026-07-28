@@ -6,7 +6,7 @@ export function newsletterEnabled(): boolean {
 
 // localStorage flag set by ANY NewsletterForm on subscribe success (value only, no address), so
 // every surface (footer, tiles, bid panel) shares one "this browser subscribed" signal.
-export const EMAIL_OPTIN_STORAGE_KEY = "gnot:email-updates"
+const EMAIL_OPTIN_STORAGE_KEY = "gnot:email-updates"
 
 export function markEmailOptInDone(): void {
   try {

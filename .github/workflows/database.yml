@@ -17,16 +17,13 @@ jobs:
   migrations:
     runs-on: ubuntu-latest
     steps:
-      # Pull the repo at the commit under test.
       - uses: actions/checkout@v4
 
-      # Pin Node to the project's runtime and cache npm downloads.
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
 
-      # Reproducible install from the lockfile.
       - run: npm ci
 
       # Migration drift guard: regenerating from lib/db/schema.ts must produce no new/changed

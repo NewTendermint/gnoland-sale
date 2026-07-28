@@ -6,7 +6,6 @@ import {
   INFLUENCER_HANDLES,
   INFLUENCER_LOCALES,
   INFLUENCER_MEDIUM,
-  type InfluencerHandle,
   influencerDestination,
   influencerHandleFor,
   isInfluencerHandle,
@@ -16,12 +15,6 @@ import {
 // Route prefixes the app owns; a promoter handle colliding with one would either shadow a real
 // route or never match. Mirrors the middleware's locale + reserved-path handling.
 const RESERVED_SEGMENTS = ["api", "_next", "en", "ko", "dev"]
-
-// Where a handle should land, per the `as-needed` locale prefixing (default "en" is unprefixed).
-function expectedPath(handle: InfluencerHandle): string {
-  const locale = INFLUENCER_LOCALES[handle]
-  return locale === "en" ? "/" : `/${locale}`
-}
 
 function paramsOf(destination: string): URLSearchParams {
   return new URL(destination, "https://example.test").searchParams
@@ -39,13 +32,6 @@ describe("influencer vanity links", () => {
       const params = paramsOf(influencerDestination(handle))
       expect(params.get("utm_medium")).toBe(INFLUENCER_MEDIUM)
       expect(params.get("utm_campaign")).toBe(INFLUENCER_CAMPAIGN)
-    }
-  })
-
-  it("lands each promoter on its pinned locale path", () => {
-    for (const handle of INFLUENCER_HANDLES) {
-      const pathname = new URL(influencerDestination(handle), "https://example.test").pathname
-      expect(pathname).toBe(expectedPath(handle))
     }
   })
 

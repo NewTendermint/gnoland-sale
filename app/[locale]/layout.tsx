@@ -29,7 +29,7 @@ const geistMono = localFont({
   display: "swap",
 })
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://sale.gno.land"
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://sale.gno.land"
 
 // hreflang map: English is served at "/" (default, as-needed prefix), Korean at "/ko".
 // x-default points at the English root for unmatched languages.

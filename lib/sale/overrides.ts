@@ -2,5 +2,7 @@
 // when NEXT_PUBLIC_DEV_STATES_ENABLED=1 (set for the staging branch-deploy in netlify.toml,
 // never in production). The gallery renders mock fixtures only - no live overrides, no secrets.
 export function stateOverridesEnabled(): boolean {
-  return process.env.NODE_ENV !== "production" || process.env.NEXT_PUBLIC_DEV_STATES_ENABLED === "1"
+  return (
+    process.env.NODE_ENV === "development" || process.env.NEXT_PUBLIC_DEV_STATES_ENABLED === "1"
+  )
 }

@@ -1,22 +1,10 @@
 import "server-only"
-import { http, createPublicClient, fallback } from "viem"
 import { errorMessage } from "../log"
 import { SALE_STAGE, settlementSaleAbi } from "./abi"
 import { SALE_CHAIN, saleContractsFor } from "./contracts"
 import { SALE_ECONOMICS } from "./economics"
 import { resolveSalePhase } from "./phase"
-import { rpcUrlsFor } from "./rpc"
-
-let client: ReturnType<typeof createPublicClient> | null = null
-function publicClient() {
-  if (!client) {
-    client = createPublicClient({
-      chain: SALE_CHAIN,
-      transport: fallback([...rpcUrlsFor(SALE_CHAIN.id).map((url) => http(url)), http()]),
-    })
-  }
-  return client
-}
+import { publicClient } from "./server-client"
 
 /**
  * Bids-open truth for the crons, chain-first: the deployed contract's stage() is authoritative

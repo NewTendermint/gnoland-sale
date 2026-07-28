@@ -119,5 +119,5 @@
   # Never set this in the production context - the page must stay a 404 on sale.gno.land.
   NEXT_PUBLIC_DEV_STATES_ENABLED = "1"
   # Tiered contribution bonus surfaces gate for the branch-deploy context (Sepolia sandbox review):
-  # ON here so the team can review on staging. Production stays OFF (see the production block).
+  # ON here so the team can review on staging. Production is ON too (see the production block).
   NEXT_PUBLIC_TIERED_BONUS = "1"

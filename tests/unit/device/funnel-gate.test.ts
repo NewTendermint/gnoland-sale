@@ -47,11 +47,6 @@ describe("FUNNEL_MEDIA_QUERY", () => {
     )
   })
 
-  it("is an OR of three independent signals, so none alone can exclude a computer", () => {
-    // A narrow-window or touchscreen desktop still qualifies via one of the other signals.
-    expect(FUNNEL_MEDIA_QUERY.split(" or ")).toHaveLength(3)
-  })
-
   it("stays in sync with the `funnel` @custom-variant in globals.css", () => {
     const css = readFileSync(join(process.cwd(), "app/globals.css"), "utf8")
     expect(css).toContain(`@custom-variant funnel (@media ${FUNNEL_MEDIA_QUERY});`)

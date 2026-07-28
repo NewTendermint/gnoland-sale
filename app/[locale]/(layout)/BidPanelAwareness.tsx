@@ -43,7 +43,7 @@ export function BidPanelAwareness() {
   )
 }
 
-export function AwarenessBarBody({
+function AwarenessBarBody({
   phase,
   commitment,
   kycFunnel,

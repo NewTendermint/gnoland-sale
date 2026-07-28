@@ -18,15 +18,11 @@ import { Fragment, type ReactNode } from "react"
 import { MetricPendingChip } from "../../(layout)/BidBarShell"
 import { BidSectionHeader } from "../../(layout)/BidPanelDesktop"
 import { PreSaleRight } from "../../(layout)/PreSaleBar"
-import {
-  BidFlow,
-  type BidPreview,
-  ConnectChoices,
-  type PickerConnector,
-  PostBidOptIns,
-} from "../../(sections)/bid/BidFlow"
+import { BidFlow, type BidPreview } from "../../(sections)/bid/BidFlow"
 import { TierBonusMeter } from "../../(sections)/bid/BonusNote"
+import { ConnectChoices, type PickerConnector } from "../../(sections)/bid/ConnectChoices"
 import { BidStatusTag, FunnelSteps } from "../../(sections)/bid/FunnelSteps"
+import { PostBidOptIns } from "../../(sections)/bid/PostBidOptIns"
 import { SettlementFlow } from "../../(sections)/bid/SettlementFlow"
 import { Cta } from "../../(ui)/Cta"
 import { Icon } from "../../(ui)/Icon"

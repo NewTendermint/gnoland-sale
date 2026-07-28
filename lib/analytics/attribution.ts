@@ -24,7 +24,7 @@ import {
  * Throws on a malformed id or a DB error; callers run it best-effort (captureAttributionFromCookie),
  * so attribution can never break the flow it rides on.
  */
-export async function recordEntityAttribution(
+async function recordEntityAttribution(
   saleSpecificEntityId: string,
   handle: InfluencerHandle,
 ): Promise<void> {

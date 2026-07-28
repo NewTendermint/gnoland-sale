@@ -1,0 +1,61 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+
+  // Dead-code gate. Anything reported here that is not allow-listed below is dead: delete it.
+  //
+  // Entries are listed file by file, never by directory glob: a glob over
+  // netlify/edge-functions/ would whitelist a file with no inline `config`
+  // export, which Netlify never loads.
+  // App Router pages, tests and e2e specs come from knip's own Next, Vitest and
+  // Playwright plugins, so they are deliberately absent here.
+  "entry": [
+    // Netlify discovers each edge function by its inline `config` export.
+    "netlify/edge-functions/analytics-proxy.ts",
+    "netlify/edge-functions/auth-init-rate-limit.ts",
+    "netlify/edge-functions/csp-report-rate-limit.ts",
+    "netlify/edge-functions/newsletter-rate-limit.ts",
+    "netlify/edge-functions/permit-rate-limit.ts",
+    "netlify/edge-functions/push-subscribe-rate-limit.ts",
+    "netlify/edge-functions/sonar-rate-limit.ts",
+    // netlify/functions/*.mts and CI-invoked scripts resolve through knip's own plugins.
+    // Registered by URL from lib/push/subscribe.ts; `js` is in `project` so this is parsed.
+    "public/sw.js",
+    // Referenced by nothing; run by hand.
+    "scripts/probe-sale.mjs"
+  ],
+
+  "project": ["**/*.{ts,tsx,mts,mjs,js}"],
+
+  "ignore": [
+    // Translator reference map, off the render path by design.
+    "lib/i18n/glossary.ts",
+    // Resolved through the vitest.config.ts server-only/client-only alias.
+    "tests/stubs/empty.ts"
+  ],
+
+  "ignoreDependencies": [
+    // Optional peer deps of @wagmi/connectors, required by the connectors we configure.
+    "@coinbase/wallet-sdk",
+    "@walletconnect/ethereum-provider",
+    // Its presence in package.json is what provisions the Netlify Postgres at deploy time.
+    "@netlify/database",
+    // Next's image backend. The app uses no next/image, so this is a removal candidate.
+    "sharp",
+    // Referenced by id from .secretlintrc.json.
+    "@secretlint/secretlint-rule-preset-recommend",
+    // Ambient types, no import.
+    "@types/libsodium-wrappers",
+    // Reached through `@import "tailwindcss"` in app/globals.css, never from JS.
+    "tailwindcss"
+  ],
+
+  // Netlify CLI, installed globally (`npm run dev:db`).
+  "ignoreBinaries": ["netlify"],
+
+  // Types may carry a stray `export`; values may not - an exported value nothing imports is
+  // reported even when its own file uses it.
+  "ignoreExportsUsedInFile": { "interface": true, "type": true },
+
+  // An export kept as a guardrail rather than for a caller declares itself with @knipignore.
+  "tags": ["-knipignore"]
+}

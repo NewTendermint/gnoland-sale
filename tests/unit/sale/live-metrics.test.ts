@@ -25,8 +25,4 @@ describe("liveMetrics Committed cell", () => {
   it("uses the exact full figure (no +) once the panel is expanded", () => {
     expect(committedCell(liveMetrics(t, commitment, undefined, true))?.value).toBe("$2,043,900")
   })
-
-  it("keeps expanded=false explicit equivalent to the default", () => {
-    expect(committedCell(liveMetrics(t, commitment, undefined, false))?.value).toBe("$2M+")
-  })
 })

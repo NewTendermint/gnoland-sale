@@ -5,6 +5,9 @@
     "enabled": true,
     "rules": {
       "recommended": true,
+      "correctness": {
+        "noUnusedImports": "error"
+      },
       "style": {
         "noNonNullAssertion": "warn",
         "useImportType": "error"

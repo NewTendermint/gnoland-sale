@@ -1,6 +1,5 @@
 "use client"
 
-import { track } from "@/lib/analytics/track"
 import { useCtaEntrance } from "@/lib/motion/use-motion"
 import { redirectToSonarLogin } from "@/lib/sale/api"
 import { gnotEstimate } from "@/lib/sale/calc"
@@ -14,9 +13,10 @@ import type { JourneyState, MyBid } from "@/lib/sale/types"
 import { useLocale, useTranslations } from "next-intl"
 import { type ReactNode, useEffect, useRef, useState } from "react"
 import { useAccount } from "wagmi"
-import { BidFlow, GateSection } from "../(sections)/bid/BidFlow"
+import { BidFlow } from "../(sections)/bid/BidFlow"
 import { TierBonusMeter } from "../(sections)/bid/BonusNote"
 import { BidStatusTag, FunnelSteps } from "../(sections)/bid/FunnelSteps"
+import { GateSection } from "../(sections)/bid/GateSection"
 import { SonarSignOutButton } from "../(sections)/bid/ManageEntity"
 import { SettlementFlow } from "../(sections)/bid/SettlementFlow"
 import { CloseButton } from "../(ui)/CloseButton"
@@ -404,7 +404,7 @@ export function BidPanelDesktop() {
 /** The active Sonar entity as a quiet underlined link out to Sonar account management
  *  (add a business entity, switch, finish setup). Not a pill: that shape belongs to the
  *  wallet. Label = user's own PII, shown only to them. */
-export function ManageEntityLink({
+function ManageEntityLink({
   href,
   label,
   onSignOut,

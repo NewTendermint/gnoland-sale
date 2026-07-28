@@ -1,6 +1,6 @@
-// Per-chain RPC failover order, shared by the wagmi client config (web3.ts) and server-side
-// readers (live-window.ts): keyed RPC (env, provision before launch) -> publicnode -> undefined
-// = the chain's default transport. One list, so provisioning the launch RPC updates every reader.
+// Per-chain RPC failover order, shared by the wagmi client (web3.ts) and the
+// server read client (server-client.ts): keyed RPC (env) -> publicnode ->
+// undefined = the chain's default transport. One list, so every reader moves together.
 // Every host here must stay allowlisted in the CSP connect-src (middleware.ts).
 import { mainnet, sepolia } from "viem/chains"
 

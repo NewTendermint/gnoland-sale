@@ -77,30 +77,8 @@ export const allocation: AllocationRow[] = [
   },
 ]
 
-// Unlock schedule. Identical for every allocation: 7% at mainnet launch (TGE,
-// the day GNOT becomes transferable), 7% each subsequent month, 9% in the
-// final month. 13 x 7% + 9% = 100%, fully vested 13 months after mainnet
-// (distribution runs months 1-14). No cliff.
-export const vesting = {
-  tgeUnlockPct: 7,
-  monthlyUnlockPct: 7,
-  finalUnlockPct: 9,
-  /** Fully vested this many months after mainnet launch. */
-  fullyVestedMonths: 13,
-  /** Distribution spans this many monthly releases (m1..m14). */
-  distributionMonths: 14,
-  cliff: "None",
-  /** Circulating at TGE = 7% of total supply. */
-  circulatingAtTge: 93_310_000,
-  circulatingAtTgePct: 7,
-}
-
-// Per-month unlock as percent of an allocation, for the unlock-timeline bars.
-// First 13 months release 7%, the 14th releases 9% (sums to 100%).
-export const monthlyUnlocks: number[] = [
-  ...Array(vesting.distributionMonths - 1).fill(vesting.monthlyUnlockPct),
-  vesting.finalUnlockPct,
-]
+// Unlock schedule, rendered nowhere. Bid.allocationNote only says one exists.
+// 7% at TGE, 7% each month, 9% final: 13 x 7% + 9% = 100%. No cliff.
 
 export type CirculatingRow = {
   /** Stable id, keys into the "Tokenomics" message namespace (circ.<id>.category). */
