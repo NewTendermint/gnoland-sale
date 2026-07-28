@@ -271,7 +271,9 @@ function BidRow({
   function onAmountChange(v: string) {
     setTouched(true)
     setAmount(v)
-    if (!preview && draftAddress) writeBidDraft(v, draftAddress)
+    // `!prevBid` mirrors the restore effect below: a raise-era amount must not survive to
+    // pre-fill a later no-position form as something the user never committed to.
+    if (!preview && !prevBid && draftAddress) writeBidDraft(v, draftAddress)
   }
   // Restore a fresh draft once, after a disconnect remount (client-only: sessionStorage is
   // unavailable during SSR, and seeding state in the initializer would desync hydration).
