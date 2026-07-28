@@ -1,9 +1,14 @@
 "use client"
 
-import { wagmiConfig } from "@/app/[locale]/(layout)/web3"
-// The on-chain steps of the sale: the single swap point for going live. Real path = @wagmi/core
+// The on-chain steps of the sale: the single swap point for going live. Real path = wagmi core
 // actions against the deployed SettlementSale. When no contract is configured for the connected
 // chain, the bid is blocked (a "wrong-chain" reverted result), never emulated.
+// Actions come from `wagmi/actions`, a re-export of `@wagmi/core/actions`: @wagmi/core is wagmi's
+// own pinned dependency, not one this package declares, so importing it directly would rely on a
+// transitive install.
+
+import { wagmiConfig } from "@/app/[locale]/(layout)/web3"
+import { BaseError, ChainMismatchError, ContractFunctionRevertedError } from "viem"
 import {
   getAccount,
   getPublicClient,
@@ -12,8 +17,7 @@ import {
   simulateContract,
   waitForTransactionReceipt,
   writeContract,
-} from "@wagmi/core"
-import { BaseError, ChainMismatchError, ContractFunctionRevertedError } from "viem"
+} from "wagmi/actions"
 import { SALE_STAGE, erc20Abi, settlementSaleAbi } from "./abi"
 import { priceUsdToOnchainPrice, usdToTokenUnits } from "./calc"
 import { SALE_CHAIN, saleContractsFor } from "./contracts"
