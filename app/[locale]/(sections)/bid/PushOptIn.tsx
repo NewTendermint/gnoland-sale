@@ -6,7 +6,7 @@ import { useEffect, useState } from "react"
 
 type PushOptInStatus = "idle" | "working" | PushOptInResult
 
-// Push opt-in state machine, presentation-free: the post-bid row (BidFlow) renders the compact
+// Push opt-in state machine, presentation-free: the post-bid row (./PostBidOptIns) renders the
 // CTA / detail views itself. Probes existing permission + subscription at mount; `enable` runs
 // the SW + permission + subscribe + POST chain. Desktop only; unsupported -> supported: false.
 export function usePushAlerts(bidLimitUsd: number) {
