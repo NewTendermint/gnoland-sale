@@ -2,7 +2,6 @@
 
 import { useClipOpen, useMotion } from "@/lib/motion/use-motion"
 import { type ReactNode, useCallback } from "react"
-import { SceneImage, type SceneImageProps } from "./SceneImage"
 import { SceneVideo, type SceneVideoProps } from "./SceneVideo"
 
 type Props = {
@@ -14,7 +13,6 @@ type Props = {
   index?: number
   "aria-label"?: string
   children?: ReactNode
-  scene?: SceneImageProps
   /** Scene video for this slot; takes precedence over `scene` / `children`. */
   sceneVideo?: SceneVideoProps
 }
@@ -28,7 +26,6 @@ export function ParallaxBox({
   index,
   "aria-label": ariaLabel,
   children,
-  scene,
   sceneVideo,
 }: Props) {
   const { triggerRef, targetRef } = useMotion<HTMLDivElement>({
@@ -57,13 +54,7 @@ export function ParallaxBox({
         aria-label={ariaLabel}
         className="relative h-full w-full overflow-hidden top-8 rounded-[var(--frame-radius)] bg-surface-alt"
       >
-        {sceneVideo ? (
-          <SceneVideo {...sceneVideo} immediate={immediate} />
-        ) : scene ? (
-          <SceneImage {...scene} />
-        ) : (
-          children
-        )}
+        {sceneVideo ? <SceneVideo {...sceneVideo} immediate={immediate} /> : children}
       </div>
     </div>
   )
