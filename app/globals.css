@@ -12,7 +12,6 @@
   --color-foreground: var(--foreground);
   --color-muted: var(--fg-muted);
   --color-faint: var(--fg-faint);
-  --color-label: var(--label-color);
   --color-border: var(--border);
   --color-border-strong: var(--border-strong);
   --color-surface-alt: var(--surface-alt);

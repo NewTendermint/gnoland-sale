@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next"
 
-// Web manifest; keep name/description in sync with app/layout.tsx.
+// Outside the [locale] segment, so one manifest serves every visitor.
+// The strings are hardcoded English, not read from messages/.
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "GNOT Public Token Sale",

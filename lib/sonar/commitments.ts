@@ -51,13 +51,6 @@ export async function readCommitmentsCached(now: number = Date.now()): Promise<C
   return value
 }
 
-/** The sale's payment-token decimals from Sonar (public). The source of truth for converting
- *  smallest-units amounts (limits, commitments) to USD - read, never hardcoded. */
-export async function readSaleDecimals(): Promise<number> {
-  const res = await createSonarClient().readCommitmentData({ saleUUID: env.SONAR_SALE_UUID })
-  return res.PaymentTokenDecimals
-}
-
 /**
  * An entity's position from Sonar's commitment set, by per-sale id. FALLBACK ONLY - readMyBid
  * reads the chain; this carries most sessions through an RPC outage.
