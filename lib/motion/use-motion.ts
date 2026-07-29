@@ -9,7 +9,9 @@ import { RevealGroupContext, doubleRaf, observeReveal, wireReveal } from "./reve
 import { shouldAnimate } from "./should-animate"
 
 const EASE_REVEAL = "cubic-bezier(0.16, 1, 0.3, 1)"
-const EASE_CLIP = "cubic-bezier(0.22, 1, 0.36, 1)"
+// Even in-out, deliberately NOT an easeOut: a front-loaded curve spends ~70% of the travel in the
+// first 25% of the duration, so the opening edge outruns the scroll and the box reads as popping in.
+const EASE_WIPE = "cubic-bezier(0.65, 0, 0.35, 1)"
 
 type MotionConfig = {
   type: "parallax"
@@ -518,9 +520,21 @@ export function useDrawIcon<T extends SVGSVGElement>({
   return ref
 }
 
-// "Window opens" reveal for an image/scene box: clip-path expands the box, keeping rounded corners.
-export function useClipOpen<T extends HTMLElement>({
-  durationMs = 1500,
+/** "Window opens" reveal for an image/scene box: a rounded pane slides into place over the box,
+ *  so the box reads as growing open. `ref` goes on the box (it is the scroll trigger), `paneRef`
+ *  on the pane.
+ *
+ *  The pane is a hole, not a cover: it carries the frame radius and paints `--background` all
+ *  around itself with a spread box-shadow. That buys two things. The edge that travels is a
+ *  rounded rect rather than a straight cut, and the untransformed pane is the revealed state, so
+ *  a cleanup, or a hydration that never runs, leaves the box visible.
+ *
+ *  Only the pane's translate is animated, keeping the reveal on the compositor and the box's own
+ *  content out of paint. Reaching for clip-path or opacity on the box would undo that.
+ *
+ *  Requires a box that sits on the page background and an ancestor that clips the shadow. */
+export function useWipeOpen<T extends HTMLElement>({
+  durationMs = 1000,
   fromBottomPct = 40,
   immediate = false,
   delayMs = 0,
@@ -540,60 +554,61 @@ export function useClipOpen<T extends HTMLElement>({
 } = {}) {
   const group = useContext(RevealGroupContext)
   const ref = useRef<T>(null)
+  const paneRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
     const el = ref.current
-    if (!el || !shouldAnimate()) return
-    const closedInset = (rad: string) =>
-      direction === "up" ? `inset(100% 0 0 0 round ${rad})` : `inset(0 0 100% 0 round ${rad})`
+    const pane = paneRef.current
+    if (!el || !pane || !shouldAnimate()) return
+    // Closed = the pane sits entirely off the box, so its shadow covers everything; opened = the
+    // pane is aligned with the box. Every state goes through `transform`: Tailwind's translate-*
+    // utilities write the separate `translate` property, which composes with ours instead of
+    // replacing it, so the two must never be mixed on the pane.
+    const closed = direction === "up" ? "translateY(100%)" : "translateY(-100%)"
+    const opened = "translateY(0)"
+    pane.style.transform = closed
+    pane.style.willChange = "transform"
 
     if (immediate) {
-      const rad = getComputedStyle(el).getPropertyValue("--frame-radius").trim() || "20px"
-      const closed = closedInset(rad)
-      const opened = `inset(0 0 0 0 round ${rad})`
-      el.style.clipPath = closed
-      el.style.willChange = "clip-path"
       let anim: Animation | undefined
       const off = whenReady(() => {
-        anim = el.animate([{ clipPath: closed }, { clipPath: opened }], {
+        anim = pane.animate([{ transform: closed }, { transform: opened }], {
           duration: durationMs,
           delay: delayMs,
-          easing: EASE_CLIP,
+          easing: EASE_WIPE,
           fill: "both",
         })
         anim.onfinish = () => {
-          el.style.clipPath = opened
-          el.style.willChange = ""
+          pane.style.transform = opened
+          pane.style.willChange = ""
           anim?.cancel()
         }
       })
       return () => {
         off()
         anim?.cancel()
-        el.style.clipPath = ""
-        el.style.willChange = ""
+        pane.style.transform = ""
+        pane.style.willChange = ""
       }
     }
 
-    const r = "var(--frame-radius)"
-    el.style.clipPath = closedInset(r)
     let clearTimer = 0
     const open = (extra = 0) => {
-      el.style.transition = `clip-path ${durationMs}ms ${EASE_CLIP} ${delayMs + extra}ms`
-      el.style.willChange = "clip-path"
-      void el.offsetWidth
-      el.style.clipPath = `inset(0 0 0 0 round ${r})`
+      pane.style.transition = `transform ${durationMs}ms ${EASE_WIPE} ${delayMs + extra}ms`
+      void pane.offsetWidth
+      pane.style.transform = opened
       clearTimer = window.setTimeout(
         () => {
-          el.style.willChange = ""
+          pane.style.willChange = ""
         },
         durationMs + delayMs + extra + 80,
       )
     }
     const reset = () => {
       if (clearTimer) clearTimeout(clearTimer)
-      el.style.clipPath = ""
-      el.style.transition = ""
-      el.style.willChange = ""
+      // Clearing to "" is the revealed state, so a torn-down reveal never hides its box.
+      pane.style.transform = ""
+      pane.style.transition = ""
+      pane.style.willChange = ""
     }
     return wireReveal(el, open, reset, {
       group,
@@ -603,7 +618,7 @@ export function useClipOpen<T extends HTMLElement>({
       lead,
     })
   }, [durationMs, fromBottomPct, immediate, delayMs, group, index, direction, lead])
-  return ref
+  return { ref, paneRef }
 }
 
 // CTA entrance: the button scales in, then its `data-cta-label` fades in once the scale settles.

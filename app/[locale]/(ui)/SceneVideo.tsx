@@ -17,7 +17,9 @@ export type SceneVideoProps = {
   scaleRest?: number
 }
 
-const EASE_CLIP = "cubic-bezier(0.22, 1, 0.36, 1)" // keep in sync with useClipOpen's EASE_CLIP
+// The scene's own motion (cover slide + de-zoom), deliberately decoupled from useWipeOpen's
+// EASE_WIPE: the cover runs after the box has opened, so it wants its own easeOut settle.
+const EASE_SCENE = "cubic-bezier(0.22, 1, 0.36, 1)"
 const SCALE_REST = 1.25 // slight de-zoom at rest; stays >= the parallax headroom
 const SCALE_FROM = 1.16
 const REVEAL_ZOOM = SCALE_REST - SCALE_FROM
@@ -90,8 +92,8 @@ export function SceneVideo({
       { rootMargin: "0px 0px 100% 0px", threshold: 0 },
     )
     preloadIo.observe(box)
-    // Keep this 20 in sync with ParallaxBox's fromBottomPct.
-    const stop = observeReveal(box, 20, () => {
+    // Keep this 40 in sync with ParallaxBox's fromBottomPct.
+    const stop = observeReveal(box, 40, () => {
       timer = window.setTimeout(reveal, innerDelayMs)
     })
     return () => {
@@ -118,7 +120,7 @@ export function SceneVideo({
     }, FADE_MS + 40)
   }
 
-  const ease = armed ? `transform ${innerMs}ms ${EASE_CLIP}` : "none"
+  const ease = armed ? `transform ${innerMs}ms ${EASE_SCENE}` : "none"
 
   return (
     <div ref={boxRef} className="absolute inset-0">

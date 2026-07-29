@@ -54,14 +54,10 @@ export function Tokenomics() {
 
   return (
     <Section id="tokenomics" gridClassName="-mt-6 lg:-mt-14">
-      <RevealGroup inline staggerMs={70} fromBottomPct={0}>
+      <RevealGroup inline staggerMs={70} fromBottomPct={40}>
         <h2 className="sr-only">{t("srHeading")}</h2>
 
-        <RevealGroup
-          as="div"
-          fromBottomPct={50}
-          className="col-span-12 flex flex-col lg:col-span-5 lg:col-start-2"
-        >
+        <RevealGroup as="div" className="col-span-12 flex flex-col lg:col-span-5 lg:col-start-2">
           <ClipOpen
             index={1}
             className="flex flex-1 flex-col rounded-[var(--frame-radius)] bg-surface-alt p-6 text-foreground sm:p-8 lg:p-10"
@@ -124,11 +120,7 @@ export function Tokenomics() {
           </ClipOpen>
         </RevealGroup>
 
-        <RevealGroup
-          as="div"
-          fromBottomPct={50}
-          className="col-span-12 flex flex-col lg:col-span-5 lg:col-start-7"
-        >
+        <RevealGroup as="div" className="col-span-12 flex flex-col lg:col-span-5 lg:col-start-7">
           <ClipOpen
             index={1}
             className="flex flex-1 flex-col rounded-[var(--frame-radius)] bg-surface-alt p-6 text-foreground sm:p-8 lg:p-10"
