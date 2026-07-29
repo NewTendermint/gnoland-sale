@@ -1,6 +1,6 @@
 "use client"
 
-import { useClipOpen, useMotion } from "@/lib/motion/use-motion"
+import { useMotion, useWipeOpen } from "@/lib/motion/use-motion"
 import { type ReactNode, useCallback } from "react"
 import { SceneVideo, type SceneVideoProps } from "./SceneVideo"
 
@@ -32,20 +32,21 @@ export function ParallaxBox({
     type: "parallax",
     distance: strength,
   })
-  // Keep fromBottomPct in sync with SceneVideo's observeReveal threshold.
-  const clipRef = useClipOpen<HTMLDivElement>({
+  // Keep fromBottomPct in sync with SceneVideo's observeReveal threshold. Lower than ~40 and the
+  // box opens with a sliver of itself on screen, so the wipe is over before it is in view.
+  const { ref: boxRef, paneRef } = useWipeOpen<HTMLDivElement>({
     immediate,
     delayMs,
     direction,
     index,
-    fromBottomPct: 20,
+    fromBottomPct: 40,
   })
   const setInner = useCallback(
     (el: HTMLDivElement | null) => {
       targetRef.current = el
-      clipRef.current = el
+      boxRef.current = el
     },
-    [targetRef, clipRef],
+    [targetRef, boxRef],
   )
   return (
     <div ref={triggerRef} className={`${className} w-full`}>
@@ -55,6 +56,13 @@ export function ParallaxBox({
         className="relative h-full w-full overflow-hidden top-8 rounded-[var(--frame-radius)] bg-surface-alt"
       >
         {sceneVideo ? <SceneVideo {...sceneVideo} immediate={immediate} /> : children}
+        {/* Reveal pane (see useWipeOpen); the box already clips its shadow, being overflow-hidden
+            and rounded, so this one needs no shell of its own. */}
+        <div
+          ref={paneRef}
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 z-20 rounded-[inherit] shadow-[0_0_0_100vmax_var(--background)]"
+        />
       </div>
     </div>
   )

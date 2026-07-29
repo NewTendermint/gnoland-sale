@@ -29,8 +29,8 @@ export function PreFooterCta() {
 
   return (
     <section id="pre-footer-cta" className="bg-background py-10 text-foreground lg:py-20">
-      <RevealGroup as="div">
-        <ClipOpen lead className="contrast-tile py-20 lg:py-28">
+      <RevealGroup as="div" fromBottomPct={40}>
+        <ClipOpen lead durationMs={1400} className="contrast-tile py-20 lg:py-28">
           <div className="page-container grid grid-cols-12 gap-6">
             <RevealGroup
               as="div"

@@ -28,7 +28,7 @@ export function Section({
       {tone === "contrast" ? (
         clip ? (
           <RevealGroup fromBottomPct={40}>
-            <ClipOpen lead durationMs={2200} className={tileClass}>
+            <ClipOpen lead durationMs={1400} className={tileClass}>
               {grid}
             </ClipOpen>
           </RevealGroup>

@@ -14,8 +14,8 @@ export function Roadmap() {
       <RevealGroup fromBottomPct={40}>
         <ClipOpen
           lead
-          durationMs={2200}
-          className="contrast-tile relative overflow-hidden py-12 lg:pb-16 lg:pt-0"
+          durationMs={1400}
+          className="contrast-tile overflow-hidden py-12 lg:pb-16 lg:pt-0"
         >
           <div className="page-container">
             <div className="grid grid-cols-12 gap-6">
