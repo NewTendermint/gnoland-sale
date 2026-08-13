@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest"
 import {
+  ALL_LOCALES,
+  DEFAULT_LOCALE,
+  DISABLED_LOCALES,
+  LOCALES,
+  isShippedLocale,
+} from "../../../i18n/locales"
+import {
   ATTRIBUTION_COOKIE,
   ATTRIBUTION_COOKIE_MAX_AGE,
   INFLUENCER_CAMPAIGN,
@@ -13,8 +20,9 @@ import {
 } from "../../../lib/analytics/influencer-links"
 
 // Route prefixes the app owns; a promoter handle colliding with one would either shadow a real
-// route or never match. Mirrors the middleware's locale + reserved-path handling.
-const RESERVED_SEGMENTS = ["api", "_next", "en", "ko", "dev"]
+// route or never match. Mirrors the middleware's locale + reserved-path handling - every declared
+// locale, shipped or not, since a disabled prefix is still redirected there.
+const RESERVED_SEGMENTS = ["api", "_next", ...ALL_LOCALES, "dev"]
 
 function paramsOf(destination: string): URLSearchParams {
   return new URL(destination, "https://example.test").searchParams
@@ -35,14 +43,35 @@ describe("influencer vanity links", () => {
     }
   })
 
-  it("routes each promoter to its audience locale (ko prefixed, en at the unprefixed root)", () => {
-    // Mixed cohort: Korean-audience promoters must land on /ko, English-audience ones on the root.
+  it("routes each promoter to its audience locale, falling back to the root when it is not shipped", () => {
+    // Mixed cohort: a promoter whose audience locale ships under a prefix lands there; the default
+    // locale AND any disabled locale (Korean today) land on the unprefixed root, tags intact.
     for (const handle of INFLUENCER_HANDLES) {
-      if (INFLUENCER_LOCALES[handle] === "ko") {
-        expect(influencerDestination(handle)).toMatch(/^\/ko\?/)
-      } else {
-        expect(influencerDestination(handle)).toMatch(/^\/\?/)
-      }
+      const locale = INFLUENCER_LOCALES[handle]
+      const prefixed = isShippedLocale(locale) && locale !== DEFAULT_LOCALE
+      expect(influencerDestination(handle)).toMatch(
+        prefixed ? new RegExp(`^/${locale}\\?`) : /^\/\?/,
+      )
+    }
+  })
+
+  it("lands every promoter on a root the app actually serves", () => {
+    // Enumerated up front rather than derived from the destination, so the assertion runs (and can
+    // fail) whatever the current locale mix is - including the single-locale one.
+    const servedRoots = ["/", ...LOCALES.filter((l) => l !== DEFAULT_LOCALE).map((l) => `/${l}`)]
+    for (const handle of INFLUENCER_HANDLES) {
+      const { pathname } = new URL(influencerDestination(handle), "https://example.test")
+      expect(servedRoots).toContain(pathname)
+    }
+  })
+
+  it("never points a promoter link at a disabled locale prefix", () => {
+    for (const handle of INFLUENCER_HANDLES) {
+      const destination = influencerDestination(handle)
+      const hitsDisabledLocale = DISABLED_LOCALES.some((locale) =>
+        new RegExp(`^/${locale}([/?]|$)`).test(destination),
+      )
+      expect(hitsDisabledLocale).toBe(false)
     }
   })
 

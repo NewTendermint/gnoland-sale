@@ -1,5 +1,5 @@
 import "../globals.css"
-import { routing } from "@/i18n/routing"
+import { LOCALE_SWITCH_ENABLED, languageAlternates, routing } from "@/i18n/routing"
 import { SALE_ECONOMICS, formatSaleDate } from "@/lib/sale/economics"
 import type { Metadata } from "next"
 import { NextIntlClientProvider, hasLocale } from "next-intl"
@@ -31,14 +31,16 @@ const geistMono = localFont({
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://sale.gno.land"
 
-// hreflang map: English is served at "/" (default, as-needed prefix), Korean at "/ko".
-// x-default points at the English root for unmatched languages.
-const LANGUAGE_ALTERNATES = { en: "/", ko: "/ko", "x-default": "/" } as const
+// hreflang map, derived from the shipped locales (i18n/routing.ts): the default locale is served
+// at "/" (as-needed prefix) and x-default points there for unmatched languages. A disabled locale
+// is absent by construction, so nothing advertises a URL we do not serve.
+const LANGUAGE_ALTERNATES = languageAlternates()
+// OG locale tags, one per catalog; only the shipped ones are ever emitted (see below).
 const OG_LOCALE: Record<string, string> = { en: "en_US", ko: "ko_KR" }
 
 type LocaleParams = { params: Promise<{ locale: string }> }
 
-// Statically render both locales at build time.
+// Statically render every shipped locale at build time.
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }))
 }
@@ -64,7 +66,7 @@ export async function generateMetadata({ params }: LocaleParams): Promise<Metada
       siteName: t("siteName"),
       type: "website",
       locale: OG_LOCALE[locale],
-      alternateLocale: Object.values(OG_LOCALE).filter((l) => l !== OG_LOCALE[locale]),
+      alternateLocale: routing.locales.filter((l) => l !== locale).map((l) => OG_LOCALE[l]),
       images: [
         { url: "/og.jpg", width: 1200, height: 630, type: "image/jpeg", alt: t("ogImageAlt") },
       ],
@@ -163,10 +165,13 @@ export default async function RootLayout({
               </a>
               <Header />
               {/* Sticky language switch: a circular button pinned top-right that opens a menu of
-                  the other locales. Desktop only; mobile gets the switch inside the burger menu. */}
-              <div className="locale-pill fixed right-[var(--reveal-padding)] top-[var(--reveal-padding)] z-[var(--z-header)] mr-6 mt-2 hidden lg:block">
-                <LocaleSwitch />
-              </div>
+                  the other locales. Desktop only; mobile gets the switch inside the burger menu.
+                  Dropped entirely (wrapper included) while a single locale ships. */}
+              {LOCALE_SWITCH_ENABLED ? (
+                <div className="locale-pill fixed right-[var(--reveal-padding)] top-[var(--reveal-padding)] z-[var(--z-header)] mr-6 mt-2 hidden lg:block">
+                  <LocaleSwitch />
+                </div>
+              ) : null}
               <div className="screen">
                 {children}
                 <Footer />

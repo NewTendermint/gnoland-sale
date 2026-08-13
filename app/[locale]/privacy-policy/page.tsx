@@ -1,17 +1,13 @@
 import { privacyPolicyMarkdown } from "@/content/legal/privacy-policy"
 import { Link } from "@/i18n/navigation"
-import { routing } from "@/i18n/routing"
+import { languageAlternates, routing } from "@/i18n/routing"
 import type { Metadata } from "next"
 import { getTranslations, setRequestLocale } from "next-intl/server"
 import { LegalMarkdown } from "../(ui)/LegalMarkdown"
 
 type LocaleParams = { params: Promise<{ locale: string }> }
 
-const LANGUAGES = {
-  en: "/privacy-policy",
-  ko: "/ko/privacy-policy",
-  "x-default": "/privacy-policy",
-} as const
+const LANGUAGES = languageAlternates("/privacy-policy")
 
 export async function generateMetadata({ params }: LocaleParams): Promise<Metadata> {
   const { locale } = await params

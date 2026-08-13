@@ -1,6 +1,7 @@
 import createMiddleware from "next-intl/middleware"
 import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
+import { disabledLocalePath } from "./i18n/locales"
 import { routing } from "./i18n/routing"
 import {
   ATTRIBUTION_COOKIE,
@@ -14,7 +15,8 @@ import {
  *
  * 1) Locale routing (next-intl). Runs on HTML page paths only. It negotiates the active locale
  *    (cookie -> Accept-Language best-fit -> defaultLocale) and, with localePrefix 'as-needed',
- *    keeps English at "/" while redirecting a Korean-preferring browser to "/ko". API routes,
+ *    keeps the default locale at "/". A disabled locale's prefix (see i18n/locales.ts) is stripped
+ *    with a redirect before that layer runs, so an old shared link still resolves. API routes,
  *    Next internals, and static files (any path with a dot) are NEVER locale-routed, so the
  *    Sonar OAuth callback (/api/auth/sonar/callback) and every /api/* route are untouched.
  *
@@ -37,6 +39,17 @@ import {
 
 const handleI18nRouting = createMiddleware(routing)
 
+const HSTS = "max-age=63072000; includeSubDomains; preload"
+
+// Every early return below is a bodyless redirect, which skips the security-header block at the end
+// of the middleware. HSTS is the one header that still matters on such a hop (it is what stops a
+// downgrade on the very first click of a shared link), so each redirect carries it explicitly.
+function secureRedirect(url: URL): NextResponse {
+  const response = NextResponse.redirect(url)
+  response.headers.set("Strict-Transport-Security", HSTS)
+  return response
+}
+
 // A path is a locale-routable page when it is not an API route, not a Next internal, and has no
 // file extension (mirrors next-intl's recommended `(?!api|_next|...|.*\\..*)` matcher intent).
 function isLocaleRoutable(pathname: string): boolean {
@@ -56,9 +69,7 @@ export function middleware(request: NextRequest) {
   // normally (the query is preserved on the locale hop). See lib/analytics/influencer-links.ts.
   const vanityHandle = influencerHandleFor(request.nextUrl.pathname)
   if (vanityHandle) {
-    const redirect = NextResponse.redirect(
-      new URL(influencerDestination(vanityHandle), request.url),
-    )
+    const redirect = secureRedirect(new URL(influencerDestination(vanityHandle), request.url))
     // Not HttpOnly: the value is a public promoter handle (no secret), read server-side for the
     // attribution capture AND client-side for the Simple Analytics funnel tag (track.ts).
     redirect.cookies.set(ATTRIBUTION_COOKIE, vanityHandle, {
@@ -67,13 +78,20 @@ export function middleware(request: NextRequest) {
       path: "/",
       maxAge: ATTRIBUTION_COOKIE_MAX_AGE,
     })
-    // Carry HSTS on this 302 too - it's the first hop of an influencer-link click and this early
-    // return skips the full security-header block below (a bodyless redirect otherwise ships none).
-    redirect.headers.set(
-      "Strict-Transport-Security",
-      "max-age=63072000; includeSubDomains; preload",
-    )
     return redirect
+  }
+
+  // Disabled-locale prefixes (`/ko`, `/ko/terms-of-service`, ...) collapse onto the served path,
+  // query string intact (see disabledLocalePath in i18n/locales.ts for the decoding rules).
+  // Temporary (307, NextResponse.redirect's default), never permanent: a cached 301 would fight
+  // the locale coming back. Done here rather than in next.config redirects because on Netlify the
+  // locale-routing layer runs first and would resolve the prefix to a localized not-found before a
+  // build-time redirect could fire.
+  const servedPath = disabledLocalePath(request.nextUrl.pathname)
+  if (servedPath) {
+    const url = request.nextUrl.clone()
+    url.pathname = servedPath
+    return secureRedirect(url)
   }
 
   const response = isLocaleRoutable(request.nextUrl.pathname)
@@ -124,7 +142,7 @@ export function middleware(request: NextRequest) {
     "Permissions-Policy",
     "camera=(), microphone=(), geolocation=(), payment=(), usb=()",
   )
-  response.headers.set("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload")
+  response.headers.set("Strict-Transport-Security", HSTS)
 
   return response
 }

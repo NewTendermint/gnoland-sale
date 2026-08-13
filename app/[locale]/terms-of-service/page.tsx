@@ -1,17 +1,13 @@
 import { termsOfServiceMarkdown } from "@/content/legal/terms-of-service"
 import { Link } from "@/i18n/navigation"
-import { routing } from "@/i18n/routing"
+import { languageAlternates, routing } from "@/i18n/routing"
 import type { Metadata } from "next"
 import { getTranslations, setRequestLocale } from "next-intl/server"
 import { LegalMarkdown } from "../(ui)/LegalMarkdown"
 
 type LocaleParams = { params: Promise<{ locale: string }> }
 
-const LANGUAGES = {
-  en: "/terms-of-service",
-  ko: "/ko/terms-of-service",
-  "x-default": "/terms-of-service",
-} as const
+const LANGUAGES = languageAlternates("/terms-of-service")
 
 export async function generateMetadata({ params }: LocaleParams): Promise<Metadata> {
   const { locale } = await params

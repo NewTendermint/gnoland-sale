@@ -1,4 +1,4 @@
-import type { Locale } from "../../i18n/routing"
+import { DEFAULT_LOCALE, type Locale, isShippedLocale } from "../../i18n/locales"
 
 /**
  * Vanity redirect links handed to individual promoters.
@@ -14,8 +14,9 @@ import type { Locale } from "../../i18n/routing"
  * the locale-routing layer runs first on the hosting platform and would otherwise swallow
  * `/<handle>` as an unknown localized route (a not-found) before a build-time redirect can fire.
  *
- * Aside from the erased-at-build `Locale` type, this module is free of runtime and environment-only
- * imports: it is read both by the edge middleware and by the unit test runner.
+ * Aside from i18n/locales (a dependency-free constants module), this module is free of runtime and
+ * environment-only imports: it is read by the edge middleware, by the unit test runner, AND - via
+ * lib/analytics/track.ts - by client components, so nothing heavy may leak in through it.
  */
 
 /** Shared across every promoter link: one filter for the whole cohort, one campaign umbrella. */
@@ -81,9 +82,12 @@ export function isInfluencerHandle(segment: string): segment is InfluencerHandle
 /** The locale-pinned, tagged destination for a promoter handle (query values are URL-encoded). */
 export function influencerDestination(handle: InfluencerHandle): string {
   const locale = INFLUENCER_LOCALES[handle]
-  // `as-needed` prefixing (see i18n/routing.ts): the default locale "en" is served at the
-  // unprefixed root, every other locale under `/<locale>`.
-  const path = locale === "en" ? "/" : `/${locale}`
+  // `as-needed` prefixing (see i18n/routing.ts): the default locale is served at the unprefixed
+  // root, every other SHIPPED locale under `/<locale>`. A promoter whose audience locale is
+  // currently disabled lands on the root instead - the campaign tags are untouched, only the
+  // prefix drops, so attribution keeps working and no link advertises an unserved URL.
+  const prefixed = isShippedLocale(locale) && locale !== DEFAULT_LOCALE
+  const path = prefixed ? `/${locale}` : "/"
   return `${path}?utm_source=${encodeURIComponent(handle)}&utm_medium=${INFLUENCER_MEDIUM}&utm_campaign=${INFLUENCER_CAMPAIGN}`
 }
 

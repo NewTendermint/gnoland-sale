@@ -1,6 +1,7 @@
 "use client"
 
 import { Link, usePathname } from "@/i18n/navigation"
+import { LOCALE_SWITCH_ENABLED } from "@/i18n/routing"
 import { track } from "@/lib/analytics/track"
 import { LG_MEDIA_QUERY } from "@/lib/device/breakpoints"
 import { useTranslations } from "next-intl"
@@ -127,9 +128,11 @@ export function Header() {
               </li>
             ))}
           </Stagger>
-          <div className="mt-10">
-            <LocaleSwitch variant="inline" />
-          </div>
+          {LOCALE_SWITCH_ENABLED ? (
+            <div className="mt-10">
+              <LocaleSwitch variant="inline" />
+            </div>
+          ) : null}
         </nav>
       </div>
 
