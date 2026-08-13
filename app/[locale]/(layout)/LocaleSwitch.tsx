@@ -1,7 +1,7 @@
 "use client"
 
 import { usePathname } from "@/i18n/navigation"
-import { routing } from "@/i18n/routing"
+import { LOCALE_SWITCH_ENABLED, routing } from "@/i18n/routing"
 import { useLocale, useTranslations } from "next-intl"
 import { useEffect, useRef, useState } from "react"
 
@@ -30,7 +30,10 @@ function navigateToLocale(next: string, pathname: string): void {
  * Language switch.
  * - "button" (default): a circular button showing the active locale; clicking opens a small menu
  *   of the other locales. Used by the sticky top-right pill.
- * - "inline": a compact segmented "EN / KO" control. Used inside the mobile menu.
+ * - "inline": a compact segmented control. Used inside the mobile menu.
+ *
+ * Renders nothing while a single locale ships (see i18n/routing.ts): no button, no menu, no ARIA
+ * group. Call sites drop their wrapper too, so there is no empty box or stray spacing left.
  */
 export function LocaleSwitch({ variant = "button" }: { variant?: "button" | "inline" }) {
   const t = useTranslations("A11y")
@@ -61,6 +64,9 @@ export function LocaleSwitch({ variant = "button" }: { variant?: "button" | "inl
       document.removeEventListener("keydown", onKey)
     }
   }, [open])
+
+  // After the hooks, never before: hook order must stay stable across renders.
+  if (!LOCALE_SWITCH_ENABLED) return null
 
   if (variant === "inline") {
     return (

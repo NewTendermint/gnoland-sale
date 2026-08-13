@@ -1,13 +1,16 @@
 import { readFileSync, readdirSync } from "node:fs"
 import { join } from "node:path"
 import { describe, expect, it } from "vitest"
-import { routing } from "../../i18n/routing"
+import { ALL_LOCALES, DEFAULT_LOCALE } from "../../i18n/locales"
 
 /**
- * Guards the "no holes in the UI" invariant across EVERY shipped locale: each locale catalog must
- * expose the exact same key paths as the default-locale catalog, with no empty values. Adding a
- * new locale (e.g. fr) is automatically covered - drop messages/fr.json and add "fr" to
- * routing.locales, and this test enforces parity without any edit here.
+ * Guards the "no holes in the UI" invariant across EVERY catalog in the repo: each locale catalog
+ * must expose the exact same key paths as the default-locale catalog, with no empty values. Adding
+ * a new locale (e.g. fr) is automatically covered - drop messages/fr.json and add "fr" to
+ * ALL_LOCALES, and this test enforces parity without any edit here.
+ *
+ * Deliberately iterates ALL_LOCALES, not the shipped ones: a locale kept in the repo while disabled
+ * (Korean today) must stay in sync with en.json, or re-enabling it would ship holes.
  */
 
 type Json = Record<string, unknown>
@@ -38,17 +41,17 @@ function emptyValues(obj: Json, prefix = ""): string[] {
 }
 
 describe("i18n message catalogs", () => {
-  const defaultLocale = routing.defaultLocale
+  const defaultLocale = DEFAULT_LOCALE
   const basePaths = keyPaths(load(defaultLocale)).sort()
 
-  it("every routing locale has a catalog file", () => {
+  it("every declared locale has a catalog file", () => {
     const present = new Set(readdirSync(MESSAGES_DIR).map((f) => f.replace(/\.json$/, "")))
-    for (const locale of routing.locales) {
+    for (const locale of ALL_LOCALES) {
       expect(present.has(locale), `missing messages/${locale}.json`).toBe(true)
     }
   })
 
-  for (const locale of routing.locales) {
+  for (const locale of ALL_LOCALES) {
     if (locale === defaultLocale) continue
 
     it(`"${locale}" exposes the exact same key paths as "${defaultLocale}"`, () => {
@@ -59,7 +62,7 @@ describe("i18n message catalogs", () => {
     })
   }
 
-  for (const locale of routing.locales) {
+  for (const locale of ALL_LOCALES) {
     it(`"${locale}" has no empty string values`, () => {
       expect(emptyValues(load(locale))).toEqual([])
     })
